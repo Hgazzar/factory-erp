@@ -101,6 +101,9 @@
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; display: none; }
         /* Alpine: إخفاء العناصر قبل التهيئة لتفادي الوميض */
         [x-cloak] { display: none !important; }
+        /* مودالات Bootstrap: التأكد من ترتيب الطبقات فوق الـ backdrop (يتعارض أحياناً مع جداول overflow/sticky أو Filament) */
+        .modal-backdrop { z-index: 1050; }
+        .modal { z-index: 1055; }
     </style>
     @stack('styles')
 </head>
@@ -556,6 +559,8 @@
         </div>
     </div>
     @endif
+
+    @stack('modals')
 
     <div id="info-hint-popup" aria-hidden="true"></div>
     @livewire('notifications')

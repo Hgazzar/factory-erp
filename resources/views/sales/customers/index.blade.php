@@ -154,7 +154,9 @@
                                             <div class="mx-2 my-2 border-t border-gray-100"></div>
                                             <button type="button"
                                                     data-bs-toggle="modal"
-                                                    data-bs-target="#deleteCustomerModal-{{ $row->id }}"
+                                                    data-bs-target="#deleteCustomerModal"
+                                                    data-delete-action="{{ route('sales.customers.destroy', $row->id) }}"
+                                                    data-delete-name="{{ $row->name }}"
                                                     class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
                                                     role="menuitem">
                                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
@@ -162,29 +164,6 @@
                                                 </span>
                                                 <span class="flex-1 leading-snug">حذف</span>
                                             </button>
-                                        </div>
-                                    </div>
-                                    <div class="modal fade" id="deleteCustomerModal-{{ $row->id }}" tabindex="-1" aria-hidden="true" dir="rtl">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content rounded-lg">
-                                                <div class="modal-header border-b border-gray-200">
-                                                    <h5 class="modal-title text-base font-semibold text-gray-900">تأكيد حذف العميل</h5>
-                                                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <p class="text-sm text-gray-700 leading-6">
-                                                        هل أنت متأكد من حذف العميل <span class="font-semibold">{{ $row->name }}</span>؟
-                                                    </p>
-                                                </div>
-                                                <div class="modal-footer border-t border-gray-200 flex items-center justify-between gap-3">
-                                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                                    <form action="{{ route('sales.customers.destroy', $row->id) }}" method="POST">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
-                                                    </form>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 @else
@@ -207,57 +186,6 @@
                 {{ $customers->links() }}
             </div>
         @endif
-    </div>
-
-    {{-- مودال استيراد العملاء --}}
-    <div class="modal fade" id="customersImportModal" tabindex="-1" aria-hidden="true" dir="rtl">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content rounded-2xl">
-                <div class="modal-header border-b border-gray-200">
-                    <h5 class="modal-title text-base font-semibold text-gray-900">استيراد العملاء من ملف</h5>
-                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
-                </div>
-                <form method="POST" action="{{ route('sales.customers.import') }}" enctype="multipart/form-data">
-                    @csrf
-                    <div class="modal-body space-y-4">
-                        <p class="text-sm text-gray-600">
-                            قم برفع ملف <strong>CSV أو Excel (XLSX / XLS)</strong> يحتوي على الأعمدة وفق النموذج الإرشادي.
-                            سيتم الاعتماد على <strong>code أو email</strong> لتحديث العميل إن وجد أو إضافته إن لم يكن موجوداً.
-                        </p>
-                        <div class="rounded-xl bg-gray-50 border border-gray-200 p-3 text-xs text-gray-700 space-y-1">
-                            <p class="font-semibold mb-1">الأعمدة الإلزامية:</p>
-                            <ul class="list-disc pr-5 space-y-0.5">
-                                <li><code>name</code> – اسم العميل.</li>
-                                <li><code>code</code> أو <code>email</code> – يجب تعبئة واحد منهما على الأقل في كل سطر.</li>
-                            </ul>
-                            <p class="font-semibold mt-3 mb-1">الأعمدة الاختيارية:</p>
-                            <ul class="list-disc pr-5 space-y-0.5">
-                                <li><code>phone</code>, <code>tax_number</code>, <code>credit_limit</code></li>
-                                <li><code>address</code>, <code>country</code>, <code>city</code>, <code>region</code>, <code>postal_code</code>, <code>is_active</code>, <code>status</code> (active / inactive)</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                ملف البيانات <span class="text-red-500">*</span>
-                            </label>
-                            <input type="file" name="file" accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required
-                                   class="block w-full text-sm text-gray-700 border border-gray-300 rounded-xl px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <a href="{{ route('sales.customers.import-template') }}" class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
-                                تحميل النموذج الإرشادي
-                            </a>
-                            <span class="text-xs text-gray-500">الصيغ المدعومة: CSV, XLSX, XLS</span>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-t border-gray-200 flex items-center justify-between">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-                        <button type="submit" class="btn btn-primary">بدء الاستيراد</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 </div>
 <script>
@@ -355,6 +283,103 @@
 
         window.addEventListener('resize', repositionOpenMenus);
         window.addEventListener('scroll', repositionOpenMenus, true);
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var deleteModal = document.getElementById('deleteCustomerModal');
+            var deleteForm = document.getElementById('deleteCustomerForm');
+            var deleteNameEl = document.getElementById('deleteCustomerModalName');
+            if (!deleteModal || !deleteForm || !deleteNameEl || !window.bootstrap || !bootstrap.Modal) {
+                return;
+            }
+            deleteModal.addEventListener('show.bs.modal', function (e) {
+                closeAllMenus();
+                var btn = e.relatedTarget;
+                if (!btn) return;
+                var action = btn.getAttribute('data-delete-action');
+                var name = btn.getAttribute('data-delete-name') || '';
+                if (action) deleteForm.setAttribute('action', action);
+                deleteNameEl.textContent = name;
+            });
+        });
     })();
 </script>
 @endsection
+
+@push('modals')
+    {{-- مودالات خارج الجدول/overflow لتفادي تداخل طبقات الـ backdrop مع sticky --}}
+    <div class="modal fade" id="deleteCustomerModal" tabindex="-1" aria-labelledby="deleteCustomerModalLabel" aria-hidden="true" dir="rtl"
+         data-bs-backdrop="static" data-bs-focus="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-lg">
+                <div class="modal-header border-b border-gray-200">
+                    <h5 class="modal-title text-base font-semibold text-gray-900" id="deleteCustomerModalLabel">تأكيد حذف العميل</h5>
+                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-sm text-gray-700 leading-6">
+                        هل أنت متأكد من حذف العميل <span id="deleteCustomerModalName" class="font-semibold"></span>؟
+                    </p>
+                </div>
+                <div class="modal-footer border-t border-gray-200 flex items-center justify-between gap-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <form id="deleteCustomerForm" method="POST" action="#">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="customersImportModal" tabindex="-1" aria-hidden="true" dir="rtl"
+         data-bs-backdrop="static" data-bs-focus="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-2xl">
+                <div class="modal-header border-b border-gray-200">
+                    <h5 class="modal-title text-base font-semibold text-gray-900">استيراد العملاء من ملف</h5>
+                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <form method="POST" action="{{ route('sales.customers.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body space-y-4">
+                        <p class="text-sm text-gray-600">
+                            قم برفع ملف <strong>CSV أو Excel (XLSX / XLS)</strong> يحتوي على الأعمدة وفق النموذج الإرشادي.
+                            سيتم الاعتماد على <strong>code أو email</strong> لتحديث العميل إن وجد أو إضافته إن لم يكن موجوداً.
+                        </p>
+                        <div class="rounded-xl bg-gray-50 border border-gray-200 p-3 text-xs text-gray-700 space-y-1">
+                            <p class="font-semibold mb-1">الأعمدة الإلزامية:</p>
+                            <ul class="list-disc pr-5 space-y-0.5">
+                                <li><code>name</code> – اسم العميل.</li>
+                                <li><code>code</code> أو <code>email</code> – يجب تعبئة واحد منهما على الأقل في كل سطر.</li>
+                            </ul>
+                            <p class="font-semibold mt-3 mb-1">الأعمدة الاختيارية:</p>
+                            <ul class="list-disc pr-5 space-y-0.5">
+                                <li><code>phone</code>, <code>tax_number</code>, <code>credit_limit</code></li>
+                                <li><code>address</code>, <code>country</code>, <code>city</code>, <code>region</code>, <code>postal_code</code>, <code>is_active</code>, <code>status</code> (active / inactive)</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                ملف البيانات <span class="text-red-500">*</span>
+                            </label>
+                            <input type="file" name="file" accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required
+                                   class="block w-full text-sm text-gray-700 border border-gray-300 rounded-xl px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <a href="{{ route('sales.customers.import-template') }}" class="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+                                تحميل النموذج الإرشادي
+                            </a>
+                            <span class="text-xs text-gray-500">الصيغ المدعومة: CSV, XLSX, XLS</span>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-t border-gray-200 flex items-center justify-between">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">بدء الاستيراد</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endpush
