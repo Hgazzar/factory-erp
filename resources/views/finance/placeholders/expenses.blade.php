@@ -1,0 +1,411 @@
+@extends('layouts.app')
+
+@section('title', 'المصروفات - MIRADA ERP')
+
+@push('styles')
+<style>
+    .exp-notes-2l {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+    }
+</style>
+@endpush
+
+@section('breadcrumb')
+    <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
+    <span>›</span>
+    <a href="{{ route('finance.dashboard') }}" class="text-gray-500 hover:text-indigo-600">المحاسبة</a>
+    <span>›</span>
+    <span class="text-indigo-900 font-semibold">المصروفات</span>
+@endsection
+
+@section('content')
+<div dir="rtl" class="mx-auto w-full min-w-0 max-w-full">
+    <header class="mb-4 flex w-full flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-3">
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8c-1.886 0-3.59.553-4.818 1.447M12 8c1.886 0 3.59.553 4.818 1.447M12 8V6m-4.818 3.447A6.97 6.97 0 005 14v1a2 2 0 002 2h10a2 2 0 002-2v-1a6.97 6.97 0 00-2.182-4.553M10 14h4" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">المصروفات</h1>
+                <p class="mt-1 text-sm text-gray-500">إدارة طلبات المصروفات والتعويضات</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M8 11l4 4m0 0l4-4m-4 4V3" />
+                </svg>
+                تصدير
+            </button>
+            <button type="button" class="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" data-bs-toggle="modal" data-bs-target="#expensesImportModal">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 7v1a2 2 0 002 2h12a2 2 0 002-2V7M8 13l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                استيراد
+            </button>
+            <a href="{{ route('finance.expenses.create') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">+ مصروف جديد</a>
+        </div>
+    </header>
+
+    @if (session('import_result'))
+        <x-import-summary :result="session('import_result')" />
+    @endif
+
+    <section class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium text-gray-500"><x-info field="finance.expense_index_summary_filtered" /> عدد السجلات</p>
+            <p class="mt-1 text-xl font-bold tabular-nums text-gray-900">{{ number_format($expenseSummary['count'] ?? 0) }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium text-gray-500">مجموع المبلغ (قبل الضريبة)</p>
+            <p class="mt-1 text-xl font-bold tabular-nums text-gray-900">{{ number_format($expenseSummary['sum_amount'] ?? 0, 2) }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-xs font-medium text-gray-500"><x-info field="finance.expense_col_tax_amount" /> مجموع الضريبة</p>
+            <p class="mt-1 text-xl font-bold tabular-nums text-gray-900">{{ number_format($expenseSummary['sum_tax'] ?? 0, 2) }}</p>
+        </div>
+        <div class="rounded-lg border border-emerald-100 bg-emerald-50/80 p-4 shadow-sm">
+            <p class="text-xs font-medium text-emerald-800"><x-info field="finance.expense_col_total_amount" /> الإجمالي</p>
+            <p class="mt-1 text-xl font-bold tabular-nums text-emerald-900">{{ number_format($expenseSummary['sum_grand'] ?? 0, 2) }}</p>
+        </div>
+    </section>
+
+    <section class="mb-4 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+        <form method="GET" action="{{ route('finance.expenses.index') }}" class="flex flex-wrap items-end gap-3">
+            <div class="w-44">
+                <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="expense_index_filter_workflow_status" /> الحالة</label>
+                <select name="status" class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">الكل</option>
+                    <option value="posted" {{ ($status ?? '') === 'posted' ? 'selected' : '' }}>معتمد</option>
+                    <option value="draft" {{ ($status ?? '') === 'draft' ? 'selected' : '' }}>مسودة</option>
+                </select>
+            </div>
+            <div class="min-w-[200px] flex-1 sm:max-w-xs">
+                <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="finance.expense_index_filter_supplier" /> المورد</label>
+                <select name="supplier_id" class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">كل الموردين</option>
+                    @foreach($suppliers ?? [] as $s)
+                        <option value="{{ $s->id }}" {{ (int)($supplierId ?? 0) === (int)$s->id ? 'selected' : '' }}>{{ $s->localized_display_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="w-40">
+                <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="finance.expense_index_filter_date_range" /> من تاريخ</label>
+                <input type="date" name="date_from" value="{{ $dateFrom ?? '' }}" class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div class="w-40">
+                <label class="mb-1 block text-xs font-medium text-gray-600">إلى تاريخ</label>
+                <input type="date" name="date_to" value="{{ $dateTo ?? '' }}" class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div class="relative min-w-[220px] flex-1">
+                <label class="mb-1 block text-xs font-medium text-gray-600">بحث</label>
+                <span class="pointer-events-none absolute bottom-2.5 right-3 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+                    </svg>
+                </span>
+                <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="البحث في المصروفات..." class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 pr-10 pl-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <button type="submit" class="h-10 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700">بحث</button>
+        </form>
+    </section>
+
+    <section class="w-full min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div class="w-full min-w-0 overflow-x-auto">
+            <table class="w-full min-w-[1100px] text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-700">
+                        <th scope="col" class="w-[6.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">رقم المصروف</th>
+                        <th scope="col" class="w-[6.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">التاريخ</th>
+                        <th scope="col" class="w-[8.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_supplier" /> المورد</th>
+                        <th scope="col" class="w-[7rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">التصنيف</th>
+                        <th scope="col" class="w-[6.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_reference" /> رقم مرجعي</th>
+                        <th scope="col" class="min-w-0 border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_description" /> الوصف</th>
+                        <th scope="col" class="w-[5.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">المبلغ</th>
+                        <th scope="col" class="w-[5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_tax_amount" /> الضريبة</th>
+                        <th scope="col" class="w-[5.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_total_amount" /> الإجمالي</th>
+                        <th scope="col" class="w-[5.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="expense_col_workflow_status" /> الحالة</th>
+                        <th scope="col" class="w-[1%] whitespace-nowrap border-b border-gray-200 px-3 py-3 text-center font-semibold"><x-info field="expense_col_actions" /> إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($expenses as $expense)
+                        @php
+                            $tax = (float) ($expense->tax_amount ?? 0);
+                            $lineTotal = (float) $expense->amount + $tax;
+                            $posted = ($expense->status ?? '') === 'posted' || $expense->journal_entry_id;
+                            $u = auth()->user();
+                            $isManagerOrAdmin = $u && in_array($u->role, ['admin', 'supervisor'], true);
+                        @endphp
+                        <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50">
+                            <td class="px-3 py-3 text-right text-gray-700 whitespace-nowrap">{{ $expense->expense_number ?? ('EXP-'.str_pad((string) $expense->id, 5, '0', STR_PAD_LEFT)) }}</td>
+                            <td class="px-3 py-3 text-right text-gray-700 whitespace-nowrap">{{ $expense->date?->format('Y-m-d') ?? '-' }}</td>
+                            <td class="min-w-0 px-3 py-3 text-right text-gray-700 break-words leading-snug">{{ $expense->supplier?->localized_display_name ?? '—' }}</td>
+                            <td class="min-w-0 px-3 py-3 text-right text-gray-700 break-words leading-snug">{{ $expense->expenseCategory?->name_ar ?? ($expense->expenseAccount?->name_ar ?? '—') }}</td>
+                            <td class="min-w-0 px-3 py-3 text-right text-gray-700 break-words">{{ $expense->reference !== null && $expense->reference !== '' ? $expense->reference : '—' }}</td>
+                            <td class="min-w-0 px-3 py-3 align-top text-right text-gray-700">
+                                @php $notesText = $expense->notes !== null && $expense->notes !== '' ? $expense->notes : '—'; @endphp
+                                <p class="exp-notes-2l text-sm leading-snug" title="{{ $notesText !== '—' ? $notesText : '' }}">{{ $notesText }}</p>
+                            </td>
+                            <td class="px-3 py-3 text-right font-medium text-gray-900 tabular-nums whitespace-nowrap">{{ number_format((float) $expense->amount, 2) }}</td>
+                            <td class="px-3 py-3 text-right text-gray-800 tabular-nums whitespace-nowrap">{{ number_format($tax, 2) }}</td>
+                            <td class="px-3 py-3 text-right font-semibold text-gray-900 tabular-nums whitespace-nowrap">{{ number_format($lineTotal, 2) }}</td>
+                            <td class="px-3 py-3 text-right">
+                                @if($posted)
+                                    <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">معتمد</span>
+                                @else
+                                    <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">مسودة</span>
+                                @endif
+                            </td>
+                            <td class="px-3 py-3 text-center align-middle">
+                                @php
+                                    $expenseMenuId = 'expense-actions-'.$expense->id;
+                                    $showPdf = $posted;
+                                    $showApprove = ! $posted && $isManagerOrAdmin;
+                                    $showEditDelete = ! $posted;
+                                @endphp
+                                <div class="relative inline-flex items-center justify-center">
+                                    <button type="button"
+                                            class="erp-actions-trigger inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50"
+                                            data-actions-menu="{{ $expenseMenuId }}"
+                                            aria-haspopup="menu"
+                                            aria-expanded="false"
+                                            title="المزيد من الإجراءات"
+                                            aria-label="المزيد من الإجراءات">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+                                        </svg>
+                                    </button>
+                                    <div id="{{ $expenseMenuId }}"
+                                         class="erp-actions-menu hidden min-w-[13rem] rounded-xl border border-gray-200/90 bg-white py-2 shadow-2xl ring-1 ring-black/5"
+                                         style="list-style: none;"
+                                         role="menu"
+                                         dir="rtl">
+                                        @if($showPdf)
+                                            {{-- رابط PDF منفصل عن x-info لتجنب تداخل عناصر تفاعلية داخل <a> (تعطيل النقر / تجمّد الواجهة) --}}
+                                            <div class="flex w-full min-w-0 items-stretch" role="menuitem">
+                                                {{-- نفس التبويب: يُفادي about:blank عند حظر النوافذ المنبثقة؛ عارض PDF مدمج في المتصفح --}}
+                                                <a href="{{ route('finance.expenses.pdf', $expense) }}"
+                                                   class="erp-menu-item erp-expense-pdf-link flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-right text-sm text-gray-800 transition hover:bg-gray-50"
+                                                   onclick="if (window.closeErpActionMenus) window.closeErpActionMenus();">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3h-3A1.5 1.5 0 0 0 5 4.5v7A1.5 1.5 0 0 0 6.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7z"/><path d="M4.5 12.5A2.5 2.5 0 0 1 2 10V2a2 2 0 0 1 2-2h3.172a2 2 0 0 1 1.414.586l4.828 4.828A2 2 0 0 1 14 4.828V10a2.5 2.5 0 0 1-2.5 2.5h-7z"/></svg>
+                                                    </span>
+                                                    <span class="min-w-0 flex-1 font-medium leading-snug">معاينة وطباعة PDF</span>
+                                                </a>
+                                                <div class="flex shrink-0 items-center ps-1 pe-2">
+                                                    <x-info field="expense_action_download_pdf" />
+                                                </div>
+                                            </div>
+                                        @endif
+                                        @if($showPdf && ($showApprove || $showEditDelete))
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                        @endif
+                                        @if($showApprove)
+                                            <form method="POST" action="{{ route('finance.expenses.approve', $expense) }}" class="m-0">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-emerald-800 transition hover:bg-emerald-50"
+                                                        role="menuitem">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 font-medium leading-snug">اعتماد</span>
+                                                </button>
+                                            </form>
+                                        @endif
+                                        @if($showApprove && $showEditDelete)
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                        @endif
+                                        @if($showEditDelete)
+                                            <a href="{{ route('finance.expenses.edit', $expense) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">تعديل</span>
+                                            </a>
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <button type="button"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#deleteExpenseModal-{{ $expense->id }}"
+                                                    class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                                    role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                                </span>
+                                                <span class="flex-1 leading-snug">حذف</span>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+                                @if($showEditDelete)
+                                    <div class="modal fade" id="deleteExpenseModal-{{ $expense->id }}" tabindex="-1" aria-hidden="true" dir="rtl">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content rounded-lg">
+                                                    <div class="modal-header border-b border-gray-200">
+                                                        <h5 class="modal-title text-base font-semibold text-gray-900">تأكيد الحذف</h5>
+                                                        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p class="text-sm leading-6 text-gray-700">
+                                                            @if(! $posted)
+                                                                هل أنت متأكد من حذف مسودة المصروف رقم <span class="font-semibold">{{ $expense->expense_number ?? ('#'.$expense->id) }}</span>؟
+                                                            @else
+                                                                هل أنت متأكد من حذف المصروف المعتمد رقم <span class="font-semibold">{{ $expense->expense_number ?? ('#'.$expense->id) }}</span> والقيد المحاسبي المرتبط؟
+                                                            @endif
+                                                        </p>
+                                                    </div>
+                                                    <div class="modal-footer flex items-center justify-between gap-3 border-t border-gray-200">
+                                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                        <form action="{{ route('finance.expenses.destroy', $expense) }}" method="POST">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="11" class="px-4 py-12 text-center text-sm text-gray-500">لا توجد بيانات</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if($expenses->hasPages())
+            <div class="border-t border-gray-200 px-4 py-3">
+                {{ $expenses->links() }}
+            </div>
+        @endif
+    </section>
+
+    <div class="modal fade" id="expensesImportModal" tabindex="-1" aria-hidden="true" dir="rtl">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-2xl">
+                <div class="modal-header border-b border-gray-200">
+                    <h5 class="modal-title text-base font-semibold text-gray-900">استيراد المصروفات</h5>
+                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <form method="POST" action="{{ route('finance.expenses.import') }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body space-y-3 text-sm text-gray-700">
+                        <p>ارفع ملف CSV / Excel بنفس ترويسة القالب.</p>
+                        <input type="file" name="file" accept=".csv,.txt,.xlsx,.xls" class="block w-full rounded-md border border-gray-200 px-3 py-2 text-sm" required>
+                        <a href="{{ route('finance.expenses.import-template') }}" class="inline-flex items-center text-xs font-medium text-indigo-700 hover:text-indigo-900">تحميل قالب الاستيراد</a>
+                    </div>
+                    <div class="modal-footer border-t border-gray-200">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إغلاق</button>
+                        <button type="submit" class="btn btn-primary">استيراد</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    (function () {
+        function positionMenu(trigger, menu) {
+            var rect = trigger.getBoundingClientRect();
+            var gap = 8;
+            var pad = 12;
+            menu.style.position = 'fixed';
+            menu.style.zIndex = '9999';
+            var w = menu.offsetWidth || 0;
+            var left = rect.right + gap;
+            if (left + w > window.innerWidth - pad) {
+                left = window.innerWidth - pad - w;
+            }
+            if (left < pad) left = pad;
+            menu.style.left = left + 'px';
+            menu.style.right = 'auto';
+
+            var h = menu.offsetHeight || 0;
+            var spaceBelow = window.innerHeight - rect.bottom - gap - pad;
+            var spaceAbove = rect.top - gap - pad;
+            var openUp = h > 0 && h > spaceBelow && spaceAbove >= spaceBelow;
+            if (openUp) {
+                menu.style.top = 'auto';
+                menu.style.bottom = (window.innerHeight - rect.top + gap) + 'px';
+            } else {
+                menu.style.top = (rect.bottom + gap) + 'px';
+                menu.style.bottom = 'auto';
+            }
+        }
+
+        function closeAllMenus() {
+            document.querySelectorAll('.erp-actions-menu').forEach(function (m) {
+                m.classList.add('hidden');
+                m.style.position = '';
+                m.style.zIndex = '';
+                m.style.top = '';
+                m.style.left = '';
+                m.style.right = '';
+                m.style.bottom = '';
+            });
+            document.querySelectorAll('.erp-actions-trigger[aria-expanded="true"]').forEach(function (b) {
+                b.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        function openMenu(trigger, menu) {
+            menu.classList.remove('hidden');
+            menu.style.position = 'fixed';
+            menu.style.zIndex = '9999';
+            positionMenu(trigger, menu);
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        var repositionScheduled = false;
+        function repositionOpenMenus() {
+            if (repositionScheduled) return;
+            repositionScheduled = true;
+            requestAnimationFrame(function () {
+                repositionScheduled = false;
+                document.querySelectorAll('.erp-actions-menu:not(.hidden)').forEach(function (menu) {
+                    var id = menu.id;
+                    var trigger = document.querySelector('[data-actions-menu="' + id + '"]');
+                    if (trigger) positionMenu(trigger, menu);
+                });
+            });
+        }
+
+        document.addEventListener('click', function (e) {
+            var trigger = e.target.closest('.erp-actions-trigger');
+            if (!trigger) {
+                if (!e.target.closest('.erp-actions-menu')) closeAllMenus();
+                return;
+            }
+            var menuId = trigger.getAttribute('data-actions-menu');
+            var menu = menuId ? document.getElementById(menuId) : null;
+            if (!menu) return;
+            var isOpen = !menu.classList.contains('hidden');
+            closeAllMenus();
+            if (!isOpen) openMenu(trigger, menu);
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeAllMenus();
+        });
+
+        window.addEventListener('resize', repositionOpenMenus);
+        window.addEventListener('scroll', repositionOpenMenus, true);
+
+        document.addEventListener('show.bs.modal', closeAllMenus);
+
+        window.closeErpActionMenus = closeAllMenus;
+    })();
+</script>
+@endsection

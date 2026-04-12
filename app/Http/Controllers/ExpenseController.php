@@ -1,0 +1,724 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Account;
+use App\Models\CompanySetting;
+use App\Models\CostCenter;
+use App\Models\ExpenseCategory;
+use App\Models\JournalEntry;
+use App\Models\JournalItem;
+use App\Models\Payment;
+use App\Models\Supplier;
+use App\Models\User;
+use App\Services\UniversalImportService;
+use App\Support\DefaultLedgerAccounts;
+use App\Support\ErpFilamentNotification;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class ExpenseController extends Controller
+{
+    public function importTemplate(): Response
+    {
+        $csv = "\xEF\xBB\xBF";
+        $csv .= implode(',', [
+            'Amount',
+            'Expense Date',
+            'Category',
+            'Description',
+            'Expense Number',
+            'Account Code',
+            'Account Name',
+            'Tax Amount',
+            'Total Amount',
+            'Status',
+        ])."\n";
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="expenses-import-template.csv"',
+        ]);
+    }
+
+    public function import(Request $request, UniversalImportService $importService): RedirectResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:20480'],
+        ]);
+
+        try {
+            $summary = $importService->import($request->file('file'), UniversalImportService::ENTITY_EXPENSES);
+        } catch (ValidationException $e) {
+            $message = collect($e->errors())->flatten()->first() ?? $e->getMessage();
+
+            return back()->withInput()->with('error', $message);
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $created = (int) ($summary['created'] ?? 0);
+        $updated = (int) ($summary['updated'] ?? 0);
+        $failed = (int) ($summary['failed'] ?? 0);
+        $total = $created + $updated + $failed;
+        ErpFilamentNotification::successImport(
+            'تم استيراد المصروفات بنجاح',
+            "إجمالي الصفوف المعالجة: {$total} — إضافة: {$created} — تحديث: {$updated} — فشل: {$failed}"
+        );
+
+        return redirect()
+            ->route('finance.expenses.index')
+            ->with('import_result', $summary);
+    }
+
+    public function index(Request $request): View
+    {
+        $search = trim((string) $request->query('search', ''));
+        $status = (string) $request->query('status', '');
+        if ($status === 'unposted') {
+            $status = 'draft';
+        }
+        $supplierId = $request->query('supplier_id');
+        $supplierId = ($supplierId !== null && $supplierId !== '') ? (int) $supplierId : null;
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
+
+        if ($supplierId && ! Supplier::query()->whereKey($supplierId)->exists()) {
+            $supplierId = null;
+        }
+
+        $baseQuery = $this->expensesIndexBaseQuery($search, $status, $supplierId, $dateFrom, $dateTo);
+
+        $expenses = (clone $baseQuery)
+            ->with(['expenseAccount', 'expenseCategory', 'supplier'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        $statsRow = (clone $baseQuery)
+            ->selectRaw('COUNT(*) as expense_count')
+            ->selectRaw('COALESCE(SUM(amount), 0) as sum_amount')
+            ->selectRaw('COALESCE(SUM(tax_amount), 0) as sum_tax')
+            ->selectRaw('COALESCE(SUM(amount + COALESCE(tax_amount, 0)), 0) as sum_grand')
+            ->first();
+
+        $expenseSummary = [
+            'count' => (int) ($statsRow->expense_count ?? 0),
+            'sum_amount' => (float) ($statsRow->sum_amount ?? 0),
+            'sum_tax' => (float) ($statsRow->sum_tax ?? 0),
+            'sum_grand' => (float) ($statsRow->sum_grand ?? 0),
+        ];
+
+        $suppliers = Supplier::query()
+            ->where(function ($query) {
+                $query->where('is_active', true)
+                    ->orWhereNull('is_active');
+            })
+            ->orderBy('name')
+            ->get(['id', 'code', 'name', 'name_ar']);
+
+        return view('finance.placeholders.expenses', compact(
+            'expenses',
+            'search',
+            'status',
+            'supplierId',
+            'dateFrom',
+            'dateTo',
+            'expenseSummary',
+            'suppliers'
+        ));
+    }
+
+    /**
+     * @param  mixed  $dateFrom
+     * @param  mixed  $dateTo
+     */
+    private function expensesIndexBaseQuery(string $search, string $status, ?int $supplierId, $dateFrom, $dateTo): Builder
+    {
+        return Payment::query()
+            ->where('type', 'expense')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('reference', 'like', '%'.$search.'%')
+                        ->orWhere('expense_number', 'like', '%'.$search.'%')
+                        ->orWhere('notes', 'like', '%'.$search.'%')
+                        ->orWhere('id', 'like', '%'.$search.'%')
+                        ->orWhereHas('expenseAccount', function ($accountQuery) use ($search) {
+                            $accountQuery->where('code', 'like', '%'.$search.'%')
+                                ->orWhere('name_ar', 'like', '%'.$search.'%')
+                                ->orWhere('name_en', 'like', '%'.$search.'%');
+                        })
+                        ->orWhereHas('supplier', function ($supplierQuery) use ($search) {
+                            $supplierQuery->where('name', 'like', '%'.$search.'%')
+                                ->orWhere('name_ar', 'like', '%'.$search.'%')
+                                ->orWhere('code', 'like', '%'.$search.'%');
+                        });
+                });
+            })
+            ->when($status === 'posted', function ($query) {
+                $query->where(function ($q) {
+                    $q->where('status', 'posted')
+                        ->orWhereNotNull('journal_entry_id');
+                });
+            })
+            ->when($status === 'draft', function ($query) {
+                $query->where(function ($q) {
+                    $q->where('status', 'draft')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('status')
+                                ->whereNull('journal_entry_id');
+                        });
+                });
+            })
+            ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
+            ->when(filled($dateFrom), function ($query) use ($dateFrom) {
+                $query->whereDate('date', '>=', Carbon::parse($dateFrom)->format('Y-m-d'));
+            })
+            ->when(filled($dateTo), function ($query) use ($dateTo) {
+                $query->whereDate('date', '<=', Carbon::parse($dateTo)->format('Y-m-d'));
+            });
+    }
+
+    public function create(): View
+    {
+        // حسابات مصروف قابلة للترحيل: حسابات فرعية (ورقة) أو المسموح بها صراحة للترحيل المباشر
+        $expenseAccounts = Account::query()
+            ->where('type', Account::TYPE_EXPENSE)
+            ->where(function ($query) {
+                $query->whereNotNull('parent_id')
+                    ->orWhere('allow_direct_posting', true);
+            })
+            ->where(function ($query) {
+                $query->where('is_active', true)
+                    ->orWhereNull('is_active');
+            })
+            ->orderBy('code')
+            ->get(['id', 'code', 'name_ar', 'name_en']);
+
+        $categories = ExpenseCategory::query()
+            ->where('status', 'active')
+            ->orderBy('code')
+            ->get(['id', 'code', 'name_ar', 'name_en']);
+
+        $costCenters = CostCenter::query()
+            ->where('status', 'active')
+            ->orderBy('code')
+            ->get(['id', 'code', 'name']);
+
+        $suppliers = Supplier::query()
+            ->where(function ($query) {
+                $query->where('is_active', true)
+                    ->orWhereNull('is_active');
+            })
+            ->orderBy('name')
+            ->get(['id', 'code', 'name']);
+
+        $nextExpenseNumber = Payment::generateNextExpenseNumberForUser((int) (auth()->id() ?? 1));
+
+        return view('finance.expenses.create', compact('categories', 'costCenters', 'expenseAccounts', 'suppliers', 'nextExpenseNumber'));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $uid = (int) ($user?->id ?? auth()->id() ?? 1);
+        $data = $request->validate([
+            'expense_category_id' => ['nullable', Rule::exists('expense_categories', 'id')->where('user_id', $uid)],
+            'date' => ['required', 'date'],
+            'cost_center_id' => ['nullable', Rule::exists('cost_centers', 'id')->where('user_id', $uid)],
+            'account_id' => ['required', Rule::exists('accounts', 'id')->where('user_id', $uid)],
+            'supplier_id' => ['nullable', Rule::exists('suppliers', 'id')->where('user_id', $uid)],
+            'reference' => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0'],
+            'payment_method' => ['required', 'in:cash,bank,card'],
+            'notes' => ['nullable', 'string', 'max:3000'],
+            'receipt' => ['nullable', 'file', 'image', 'max:5120'],
+        ], [
+            'date.required' => 'تاريخ المصروف مطلوب.',
+            'account_id.required' => 'اختر الحساب المحاسبي.',
+            'account_id.exists' => 'الحساب المحاسبي غير صالح.',
+            'amount.required' => 'أدخل مبلغ المصروف.',
+            'amount.numeric' => 'المبلغ يجب أن يكون رقماً.',
+            'amount.min' => 'المبلغ يجب أن يكون أكبر من صفر.',
+            'tax_amount.numeric' => 'مبلغ الضريبة يجب أن يكون رقماً.',
+            'tax_amount.min' => 'مبلغ الضريبة لا يمكن أن يكون سالباً.',
+            'payment_method.required' => 'اختر طريقة الدفع.',
+            'payment_method.in' => 'طريقة الدفع غير صالحة.',
+            'expense_category_id.exists' => 'تصنيف المصروف غير صالح.',
+            'cost_center_id.exists' => 'مركز التكلفة غير صالح.',
+            'supplier_id.exists' => 'المورد غير صالح.',
+        ]);
+
+        $expenseAccount = Account::query()
+            ->where('id', $data['account_id'])
+            ->where('type', Account::TYPE_EXPENSE)
+            ->first();
+
+        if (! $expenseAccount) {
+            return back()
+                ->withInput()
+                ->withErrors(['account_id' => 'الحساب المختار ليس حساب مصروف صالح.']);
+        }
+
+        $amount = (float) $data['amount'];
+        $taxAmount = (float) ($data['tax_amount'] ?? 0);
+
+        $expenseNumber = Payment::generateNextExpenseNumberForUser($uid);
+
+        $notes = $data['notes'] ?? null;
+        if ($notes === null && ! empty($data['description'])) {
+            $notes = $data['description'];
+        } elseif ($notes !== null && ! empty($data['description'])) {
+            $notes = $data['description']."\n\n".$notes;
+        }
+
+        $receiptPath = null;
+        if ($request->hasFile('receipt')) {
+            $receiptPath = $request->file('receipt')->store('expense-receipts', 'public');
+        }
+
+        DB::transaction(function () use ($data, $expenseAccount, $amount, $taxAmount, $user, $uid, $expenseNumber, $notes, $receiptPath): void {
+            Payment::query()->create([
+                'user_id' => $uid,
+                'expense_number' => $expenseNumber,
+                'supplier_id' => $data['supplier_id'] ?? null,
+                'expense_account_id' => $expenseAccount->id,
+                'expense_category_id' => $data['expense_category_id'] ?? null,
+                'cost_center_id' => $data['cost_center_id'] ?? null,
+                'date' => $data['date'],
+                'reference' => $data['reference'] ?? null,
+                'amount' => $amount,
+                'tax_amount' => $taxAmount,
+                'notes' => $notes,
+                'receipt_path' => $receiptPath,
+                'type' => 'expense',
+                'payment_method' => $data['payment_method'] ?? 'cash',
+                'journal_entry_id' => null,
+                'status' => 'draft',
+                'created_by' => $user?->id ?? $uid,
+            ]);
+        });
+
+        return redirect()
+            ->route('finance.expenses.index')
+            ->with('success', 'تم إنشاء المصروف كمسودة. يُرحَّل إلى الأستاذ بعد الاعتماد.');
+    }
+
+    public function edit(Request $request, Payment $expense): View|RedirectResponse
+    {
+        if ($expense->type !== 'expense') {
+            abort(404);
+        }
+
+        $user = $request->user();
+        $expenseIsPosted = $this->expenseIsPosted($expense);
+        $isSuperAdmin = $this->userIsExpenseSuperAdmin($user);
+
+        if ($expenseIsPosted && ! $isSuperAdmin) {
+            return redirect()
+                ->route('finance.expenses.index')
+                ->with('error', 'لا يمكن تعديل مصروف معتمد إلا من قبل مسؤول النظام.');
+        }
+
+        $expenseAccounts = Account::query()
+            ->where('type', Account::TYPE_EXPENSE)
+            ->where(function ($query) use ($expense) {
+                $query->where(function ($q) {
+                    $q->where(function ($inner) {
+                        $inner->whereNotNull('parent_id')
+                            ->orWhere('allow_direct_posting', true);
+                    })->where(function ($inner) {
+                        $inner->where('is_active', true)
+                            ->orWhereNull('is_active');
+                    });
+                });
+                if ($expense->expense_account_id) {
+                    $query->orWhere('id', $expense->expense_account_id);
+                }
+            })
+            ->orderBy('code')
+            ->get(['id', 'code', 'name_ar', 'name_en']);
+
+        $categories = ExpenseCategory::query()
+            ->where(function ($query) use ($expense) {
+                $query->where('status', 'active');
+                if ($expense->expense_category_id) {
+                    $query->orWhere('id', $expense->expense_category_id);
+                }
+            })
+            ->orderBy('code')
+            ->get(['id', 'code', 'name_ar', 'name_en']);
+
+        $costCenters = CostCenter::query()
+            ->where(function ($query) use ($expense) {
+                $query->where('status', 'active');
+                if ($expense->cost_center_id) {
+                    $query->orWhere('id', $expense->cost_center_id);
+                }
+            })
+            ->orderBy('code')
+            ->get(['id', 'code', 'name']);
+
+        $suppliers = Supplier::query()
+            ->where(function ($query) {
+                $query->where('is_active', true)
+                    ->orWhereNull('is_active');
+            })
+            ->orderBy('name')
+            ->get(['id', 'code', 'name']);
+
+        return view('finance.expenses.edit', compact('expense', 'categories', 'costCenters', 'expenseAccounts', 'suppliers', 'expenseIsPosted', 'isSuperAdmin'));
+    }
+
+    public function update(Request $request, Payment $expense): RedirectResponse
+    {
+        if ($expense->type !== 'expense') {
+            abort(404);
+        }
+
+        $user = $request->user();
+        $expenseIsPosted = $this->expenseIsPosted($expense);
+        if ($expenseIsPosted && ! $this->userIsExpenseSuperAdmin($user)) {
+            return back()
+                ->withInput()
+                ->withErrors(['expense' => 'لا يمكن تعديل مصروف معتمد إلا من قبل مسؤول النظام.']);
+        }
+
+        $uid = (int) ($user?->id ?? auth()->id() ?? 1);
+        $data = $request->validate([
+            'expense_category_id' => ['nullable', Rule::exists('expense_categories', 'id')->where('user_id', $uid)],
+            'date' => ['required', 'date'],
+            'cost_center_id' => ['nullable', Rule::exists('cost_centers', 'id')->where('user_id', $uid)],
+            'account_id' => ['required', Rule::exists('accounts', 'id')->where('user_id', $uid)],
+            'supplier_id' => ['nullable', Rule::exists('suppliers', 'id')->where('user_id', $uid)],
+            'reference' => ['nullable', 'string', 'max:50'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0'],
+            'payment_method' => ['required', 'in:cash,bank,card'],
+            'notes' => ['nullable', 'string', 'max:3000'],
+            'receipt' => ['nullable', 'file', 'image', 'max:5120'],
+        ], [
+            'date.required' => 'تاريخ المصروف مطلوب.',
+            'account_id.required' => 'اختر الحساب المحاسبي.',
+            'account_id.exists' => 'الحساب المحاسبي غير صالح.',
+            'amount.required' => 'أدخل مبلغ المصروف.',
+            'amount.numeric' => 'المبلغ يجب أن يكون رقماً.',
+            'amount.min' => 'المبلغ يجب أن يكون أكبر من صفر.',
+            'tax_amount.numeric' => 'مبلغ الضريبة يجب أن يكون رقماً.',
+            'tax_amount.min' => 'مبلغ الضريبة لا يمكن أن يكون سالباً.',
+            'payment_method.required' => 'اختر طريقة الدفع.',
+            'payment_method.in' => 'طريقة الدفع غير صالحة.',
+            'expense_category_id.exists' => 'تصنيف المصروف غير صالح.',
+            'cost_center_id.exists' => 'مركز التكلفة غير صالح.',
+            'supplier_id.exists' => 'المورد غير صالح.',
+        ]);
+
+        $expenseAccount = Account::query()
+            ->where('id', $data['account_id'])
+            ->where('type', Account::TYPE_EXPENSE)
+            ->first();
+
+        if (! $expenseAccount) {
+            return back()
+                ->withInput()
+                ->withErrors(['account_id' => 'الحساب المختار ليس حساب مصروف صالح.']);
+        }
+
+        $totalAmount = (float) $data['amount'] + (float) ($data['tax_amount'] ?? 0);
+
+        $receiptPath = $expense->receipt_path;
+        if ($request->hasFile('receipt')) {
+            if ($receiptPath) {
+                Storage::disk('public')->delete($receiptPath);
+            }
+            $receiptPath = $request->file('receipt')->store('expense-receipts', 'public');
+        }
+
+        DB::transaction(function () use ($expense, $data, $expenseAccount, $totalAmount, $receiptPath): void {
+            $expense->update([
+                'supplier_id' => $data['supplier_id'] ?? null,
+                'expense_account_id' => $expenseAccount->id,
+                'expense_category_id' => $data['expense_category_id'] ?? null,
+                'cost_center_id' => $data['cost_center_id'] ?? null,
+                'date' => $data['date'],
+                'reference' => $data['reference'] ?? null,
+                'amount' => (float) $data['amount'],
+                'tax_amount' => (float) ($data['tax_amount'] ?? 0),
+                'notes' => $data['notes'] ?? null,
+                'payment_method' => $data['payment_method'],
+                'receipt_path' => $receiptPath,
+            ]);
+
+            if ($expense->journal_entry_id) {
+                $this->syncExpenseJournalEntry($expense->fresh(), $expenseAccount, $totalAmount);
+            }
+        });
+
+        return redirect()
+            ->route('finance.expenses.index')
+            ->with('success', 'تم تحديث المصروف بنجاح.');
+    }
+
+    public function approve(Request $request, Payment $expense): RedirectResponse
+    {
+        if ($expense->type !== 'expense') {
+            abort(404);
+        }
+
+        if (! $this->userCanApproveExpense($request->user())) {
+            abort(403);
+        }
+
+        if ($this->expenseIsPosted($expense)) {
+            return back()->with('error', 'هذا المصروف معتمد مسبقاً.');
+        }
+
+        $expenseAccount = Account::query()
+            ->where('id', $expense->expense_account_id)
+            ->where('type', Account::TYPE_EXPENSE)
+            ->first();
+
+        if (! $expenseAccount) {
+            return back()->with('error', 'لا يوجد حساب مصروف صالح لهذا السند.');
+        }
+
+        $uid = (int) ($request->user()?->id ?? auth()->id() ?? 1);
+        $totalAmount = (float) $expense->amount + (float) ($expense->tax_amount ?? 0);
+
+        DB::transaction(function () use ($expense, $expenseAccount, $totalAmount, $uid): void {
+            $entry = $this->createExpenseJournalEntry($expense, $expenseAccount, $totalAmount, $uid);
+
+            $expense->update([
+                'journal_entry_id' => $entry->id,
+                'status' => 'posted',
+            ]);
+        });
+
+        return redirect()
+            ->route('finance.expenses.index')
+            ->with('success', 'تم اعتماد المصروف وترحيله إلى الأستاذ.');
+    }
+
+    public function print(Payment $expense): View
+    {
+        if ($expense->type !== 'expense') {
+            abort(404);
+        }
+
+        $expense->load(['expenseAccount', 'expenseCategory', 'supplier']);
+        $company = CompanySetting::query()->first();
+
+        return view('finance.expenses.print', compact('expense', 'company'));
+    }
+
+    public function pdf(Payment $expense): Response
+    {
+        if ($expense->type !== 'expense') {
+            abort(404);
+        }
+
+        if (! $this->expenseIsPosted($expense)) {
+            abort(403, 'عرض PDF متاح للمصروفات المعتمدة فقط.');
+        }
+
+        $expense->load(['expenseAccount', 'expenseCategory', 'supplier']);
+        $company = CompanySetting::query()->first();
+
+        $logoDataUri = null;
+        if ($company?->logo_url && str_starts_with((string) $company->logo_url, 'company/')) {
+            if (Storage::disk('public')->exists($company->logo_url)) {
+                $logoMime = Storage::disk('public')->mimeType($company->logo_url) ?: 'image/png';
+                if (is_string($logoMime) && str_starts_with($logoMime, 'image/')) {
+                    $logoBytes = Storage::disk('public')->get($company->logo_url);
+                    if ($logoBytes !== false && $logoBytes !== '') {
+                        $logoDataUri = 'data:'.$logoMime.';base64,'.base64_encode($logoBytes);
+                    }
+                }
+            }
+        }
+
+        // تضمين الإيصال كـ data URI من القرص: يعمل على السيرفر دون جلب HTTP (يُفادي الفشل/الصفحة الفارغة عند APP_URL أو SSL خاطئ)
+        $receiptDataUri = null;
+        if ($expense->receipt_path && Storage::disk('public')->exists($expense->receipt_path)) {
+            $mime = Storage::disk('public')->mimeType($expense->receipt_path) ?: 'image/jpeg';
+            if (is_string($mime) && str_starts_with($mime, 'image/')) {
+                $bytes = Storage::disk('public')->get($expense->receipt_path);
+                if ($bytes !== false && $bytes !== '') {
+                    $receiptDataUri = 'data:'.$mime.';base64,'.base64_encode($bytes);
+                }
+            }
+        }
+
+        $safeName = preg_replace('/[^A-Za-z0-9._-]+/', '-', (string) ($expense->expense_number ?? 'EXP-'.$expense->id));
+        $filename = 'expense-'.$safeName.'.pdf';
+
+        try {
+            return Pdf::loadView('finance.expenses.pdf', [
+                'expense' => $expense,
+                'company' => $company,
+                'logoDataUri' => $logoDataUri,
+                'receiptDataUri' => $receiptDataUri,
+            ])
+                ->setPaper('a4', 'portrait')
+                ->setOption('isRemoteEnabled', false)
+                ->setOption('isHtml5ParserEnabled', true)
+                ->stream($filename);
+        } catch (\Throwable $e) {
+            Log::error('Expense PDF generation failed', [
+                'expense_id' => $expense->id,
+                'message' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            abort(500, 'تعذّر إنشاء ملف PDF. راجع سجلات الخادم.');
+        }
+    }
+
+    public function destroy(Request $request, Payment $expense): RedirectResponse
+    {
+        if ($expense->type !== 'expense') {
+            abort(404);
+        }
+
+        $user = $request->user();
+        $posted = $this->expenseIsPosted($expense);
+
+        if ($posted && ! $this->userIsExpenseSuperAdmin($user)) {
+            abort(403);
+        }
+
+        DB::transaction(function () use ($expense): void {
+            if ($expense->journal_entry_id) {
+                $entryId = (int) $expense->journal_entry_id;
+                JournalItem::query()->where('journal_entry_id', $entryId)->delete();
+                JournalEntry::query()->whereKey($entryId)->delete();
+            }
+            if ($expense->receipt_path) {
+                Storage::disk('public')->delete($expense->receipt_path);
+            }
+            $expense->delete();
+        });
+
+        return redirect()
+            ->route('finance.expenses.index')
+            ->with('success', $posted ? 'تم حذف المصروف المعتمد والقيد المرتبط.' : 'تم حذف مسودة المصروف.');
+    }
+
+    private function expenseIsPosted(Payment $expense): bool
+    {
+        if ($expense->type !== 'expense') {
+            return false;
+        }
+
+        if (($expense->status ?? '') === 'posted') {
+            return true;
+        }
+
+        if (($expense->status ?? '') === 'cancelled') {
+            return false;
+        }
+
+        return $expense->journal_entry_id !== null;
+    }
+
+    private function userCanApproveExpense(?Authenticatable $user): bool
+    {
+        return $user instanceof User
+            && in_array($user->role, ['admin', 'supervisor'], true);
+    }
+
+    private function userIsExpenseSuperAdmin(?Authenticatable $user): bool
+    {
+        return $user instanceof User && $user->role === 'admin';
+    }
+
+    private function createExpenseJournalEntry(Payment $expense, Account $expenseAccount, float $totalAmount, int $userId): JournalEntry
+    {
+        $creditAccount = DefaultLedgerAccounts::paymentSourceAsset((string) ($expense->payment_method ?? 'cash'));
+        $desc = ($expense->notes !== null && $expense->notes !== '')
+            ? mb_substr((string) $expense->notes, 0, 500)
+            : ('مصروف #'.($expense->reference ?? 'بدون مرجع'));
+
+        $entry = JournalEntry::query()->create([
+            'user_id' => $userId,
+            'date' => $expense->date,
+            'reference' => 'EXP',
+            'description' => $desc,
+            'total' => $totalAmount,
+        ]);
+
+        JournalItem::query()->create([
+            'journal_entry_id' => $entry->id,
+            'account_id' => $expenseAccount->id,
+            'description' => 'تحميل مصروف',
+            'debit' => $totalAmount,
+            'credit' => 0,
+        ]);
+
+        JournalItem::query()->create([
+            'journal_entry_id' => $entry->id,
+            'account_id' => $creditAccount->id,
+            'description' => 'دفع مصروف',
+            'debit' => 0,
+            'credit' => $totalAmount,
+        ]);
+
+        return $entry;
+    }
+
+    private function syncExpenseJournalEntry(Payment $expense, Account $expenseAccount, float $totalAmount): void
+    {
+        $entryId = $expense->journal_entry_id;
+        if (! $entryId) {
+            return;
+        }
+
+        $entry = JournalEntry::query()->find($entryId);
+        if (! $entry) {
+            return;
+        }
+
+        $creditAccount = DefaultLedgerAccounts::paymentSourceAsset((string) ($expense->payment_method ?? 'cash'));
+        $desc = ($expense->notes !== null && $expense->notes !== '')
+            ? mb_substr((string) $expense->notes, 0, 500)
+            : ('مصروف #'.($expense->reference ?? 'بدون مرجع'));
+
+        JournalItem::query()->where('journal_entry_id', $entry->id)->delete();
+
+        $entry->update([
+            'date' => $expense->date,
+            'description' => $desc,
+            'total' => $totalAmount,
+        ]);
+
+        JournalItem::query()->create([
+            'journal_entry_id' => $entry->id,
+            'account_id' => $expenseAccount->id,
+            'description' => 'تحميل مصروف',
+            'debit' => $totalAmount,
+            'credit' => 0,
+        ]);
+
+        JournalItem::query()->create([
+            'journal_entry_id' => $entry->id,
+            'account_id' => $creditAccount->id,
+            'description' => 'دفع مصروف',
+            'debit' => 0,
+            'credit' => $totalAmount,
+        ]);
+    }
+}

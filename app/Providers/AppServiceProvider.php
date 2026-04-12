@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Providers;
+
+use App\Models\JournalEntry;
+use App\Models\JournalItem;
+use App\Models\ProductionRecord;
+use App\Observers\JournalEntryObserver;
+use App\Observers\JournalItemObserver;
+use App\Observers\ProductionRecordObserver;
+use App\Services\ChartOfAccountsProvisioner;
+use Filament\Notifications\Livewire\Notifications;
+use Filament\Support\Enums\Alignment;
+use Filament\Support\Enums\VerticalAlignment;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        //
+    }
+
+    public function boot(): void
+    {
+        Notifications::alignment(Alignment::Center);
+        Notifications::verticalAlignment(VerticalAlignment::End);
+
+        if (config('app.env') === 'production' || env('FORCE_HTTPS', false)) {
+            URL::forceScheme('https');
+        }
+
+        ProductionRecord::observe(ProductionRecordObserver::class);
+        JournalEntry::observe(JournalEntryObserver::class);
+        JournalItem::observe(JournalItemObserver::class);
+
+        Event::listen(Registered::class, function (Registered $event): void {
+            ChartOfAccountsProvisioner::ensureForUser((int) $event->user->id);
+        });
+    }
+}

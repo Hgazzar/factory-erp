@@ -1,0 +1,22 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('sales_invoices', function (Blueprint $table) {
+            $table->foreignId('service_order_id')->nullable()->constrained('service_orders')->nullOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('sales_invoices', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('service_order_id');
+        });
+    }
+};

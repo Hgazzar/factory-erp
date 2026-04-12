@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class StoreSupplierRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        $userId = (int) auth()->id();
+
+        return [
+            'code' => [
+                'nullable',
+                'string',
+                'max:30',
+                Rule::unique('suppliers', 'code')->where('user_id', $userId),
+            ],
+            'name' => ['required', 'string', 'max:255'],
+            'name_ar' => ['nullable', 'string', 'max:255'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'mobile' => ['nullable', 'string', 'max:50', Rule::unique('suppliers', 'mobile')->where('user_id', $userId)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('suppliers', 'email')->where('user_id', $userId)],
+            'website' => ['nullable', 'string', 'url', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'supplier_type' => ['nullable', 'string', 'in:محلي,دولي,مصنع,موزع,مزود خدمات'],
+            'rating' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'tax_number' => ['nullable', 'string', 'max:50', Rule::unique('suppliers', 'tax_number')->where('user_id', $userId)],
+            'commercial_register' => ['nullable', 'string', 'max:100', Rule::unique('suppliers', 'commercial_register')->where('user_id', $userId)],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
+            'payment_terms_days' => ['nullable', 'integer', 'min:0', 'max:365'],
+            'currency' => ['nullable', 'string', 'max:5'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:100'],
+            'iban' => ['nullable', 'string', 'max:50'],
+            'swift_code' => ['nullable', 'string', 'max:50'],
+            'is_active' => ['nullable', 'boolean'],
+            'documents' => ['nullable', 'array'],
+            'documents.*' => ['file', 'mimes:jpeg,jpg,png,gif,webp,pdf', 'max:10240'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'اسم المورد مطلوب.',
+            'email.email' => 'البريد الإلكتروني يجب أن يكون بصيغة صحيحة.',
+            'email.unique' => 'البريد الإلكتروني مسجّل لمورد آخر.',
+            'code.unique' => 'رمز المورد مُستخدم مسبقاً لهذا الحساب.',
+            'tax_number.max' => 'الرقم الضريبي يجب ألا يتجاوز 50 حرفاً.',
+            'tax_number.unique' => 'الرقم الضريبي مسجّل لمورد آخر.',
+            'commercial_register.unique' => 'السجل التجاري مسجّل لمورد آخر.',
+            'mobile.unique' => 'رقم الجوال مسجّل لمورد آخر.',
+        ];
+    }
+}

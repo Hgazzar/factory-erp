@@ -1,0 +1,1 @@
+Always enforce the use of the <x-info> component for all labels and table headers in new modules, pulling descriptions from config/hints.php.
