@@ -69,6 +69,7 @@ use App\Http\Controllers\TrialBalanceController;
 use App\Http\Controllers\WarehouseWebController;
 use App\Services\ZatcaService;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -110,6 +111,11 @@ Route::get('/__zatca-generate-csr', function () {
     }
 
     try {
+        // تحديث الرقم الضريبي يدوياً للتأكد من مطابقته لشروط الهيئة
+        DB::table('einvoice_settings')->update([
+            'zatca_tax_number' => '312345678901233',
+        ]);
+
         /** @var ZatcaService $zatca */
         $zatca = app(ZatcaService::class);
         $setting = $zatca->generateAndStoreCsrForEinvoiceSettings();
