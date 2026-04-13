@@ -67,8 +67,10 @@ use App\Http\Controllers\TaxReportWebController;
 use App\Http\Controllers\TechnicianServiceOrderController;
 use App\Http\Controllers\TrialBalanceController;
 use App\Http\Controllers\WarehouseWebController;
+use App\Services\ZatcaService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
 /*
@@ -88,6 +90,59 @@ if (app()->environment('production')) {
 Route::get('/', function () {
     return view('welcome');
 });
+
+/*
+|--------------------------------------------------------------------------
+| TEMPORARY — ZATCA CSR على Railway (احذف هذا الراوت بعد توليد CSR)
+|--------------------------------------------------------------------------
+| 1) في Railway Variables: ZATCA_CSR_ROUTE_SECRET=قيمة_عشوائية_قوية
+| 2) افتح: /__zatca-generate-csr?token=نفس_القيمة
+| 3) احذف الكتلة أدناه وامسح المتغير من الإنتاج.
+*/
+Route::get('/__zatca-generate-csr', function () {
+    $expected = (string) config('zatca.csr_route_secret');
+    if ($expected === '') {
+        abort(404);
+    }
+    $given = (string) request()->query('token', '');
+    if (! hash_equals($expected, $given)) {
+        abort(404);
+    }
+
+    try {
+        /** @var ZatcaService $zatca */
+        $zatca = app(ZatcaService::class);
+        $setting = $zatca->generateAndStoreCsrForEinvoiceSettings();
+
+        $csrPath = $setting->csr_path;
+        if ($csrPath === null || $csrPath === '') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'لم يُسجَّل مسار CSR بعد التوليد.',
+            ], 500, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $content = Storage::disk('local')->get($csrPath);
+        if ($content === false || $content === '') {
+            return response()->json([
+                'ok' => false,
+                'message' => 'تعذّر قراءة ملف CSR من التخزين المحلي: '.$csrPath,
+            ], 500, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'تم حفظ CSR والمفتاح الخاص في قاعدة البيانات والتخزين.',
+            'csr_path' => $csrPath,
+            'csr_pem' => $content,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'ok' => false,
+            'message' => $e->getMessage(),
+        ], 500, [], JSON_UNESCAPED_UNICODE);
+    }
+})->name('zatca.temp.generate-csr');
 
 /*
 |--------------------------------------------------------------------------
