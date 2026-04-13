@@ -67,68 +67,84 @@ class UniversalImportService
      */
     public function importCustomers(UploadedFile $file): array
     {
-        return DB::transaction(function () use ($file) {
-            return $this->excelImportService->importSimple(
-                $file,
-                ['Customer Name'],
-                function (array $row, int $line) {
-                    $userId = (int) (auth()->id() ?? 1);
+        /*
+         * لا نلفّ الاستيراد بـ DB::transaction هنا: ExcelImportService يمسك استثناء كل سطر ويكمّل،
+         * وفي PostgreSQL أي خطأ SQL يُجهض المعاملة بالكامل فيبقى الاتصال في حالة aborted حتى ROLLBACK،
+         * فيظهر "current transaction is aborted" لكل الأسطر التالية.
+         *
+         * تطابق السجلات يشمل المحذوف ناعماً: الفهرس الفريد (user_id, code) يبقى سارياً على الصفوف المحذوفة،
+         * لذا البحث بدون withTrashed() يؤدي إلى محاولة create() وتصادم Unique violation.
+         */
+        return $this->excelImportService->importSimple(
+            $file,
+            ['Customer Name'],
+            function (array $row, int $line) {
+                $userId = (int) (auth()->id() ?? 1);
 
-                    $code = $this->value($row, ['Customer Code', 'Code', 'code']);
-                    $name = $this->value($row, ['Customer Name', 'Name', 'name']);
-                    $nameAr = $this->value($row, ['Arabic Name', 'Name Ar', 'name_ar']);
-                    $email = $this->value($row, ['Email', 'email']);
-                    $phone = $this->value($row, ['Phone', 'phone']);
-                    $mobile = $this->value($row, ['Mobile', 'mobile']);
-                    $vatNumber = $this->value($row, ['VAT Number', 'Tax Number', 'vat_number', 'tax_number']);
-                    $creditLimit = $this->toDecimal($this->value($row, ['Credit Limit', 'credit_limit']));
-                    $paymentTermsDays = $this->toInt($this->value($row, ['Payment Terms (Days)', 'Payment Terms', 'payment_terms_days']));
-                    $activeValue = $this->value($row, ['Active', 'Is Active', 'is_active', 'status']);
+                $code = $this->value($row, ['Customer Code', 'Code', 'code']);
+                $name = $this->value($row, ['Customer Name', 'Name', 'name']);
+                $nameAr = $this->value($row, ['Arabic Name', 'Name Ar', 'name_ar']);
+                $email = $this->value($row, ['Email', 'email']);
+                $phone = $this->value($row, ['Phone', 'phone']);
+                $mobile = $this->value($row, ['Mobile', 'mobile']);
+                $vatNumber = $this->value($row, ['VAT Number', 'Tax Number', 'vat_number', 'tax_number']);
+                $creditLimit = $this->toDecimal($this->value($row, ['Credit Limit', 'credit_limit']));
+                $paymentTermsDays = $this->toInt($this->value($row, ['Payment Terms (Days)', 'Payment Terms', 'payment_terms_days']));
+                $activeValue = $this->value($row, ['Active', 'Is Active', 'is_active', 'status']);
 
-                    if (! $name) {
-                        throw new \RuntimeException("حقل Customer Name مطلوب في السطر {$line}.");
-                    }
-
-                    $status = $this->toActiveStatus($activeValue);
-                    $isActive = $status === 'active';
-
-                    if (! $code) {
-                        $code = Customer::generateNextCodeForUser($userId);
-                    }
-
-                    $match = ['code' => $code, 'user_id' => $userId];
-
-                    $data = [
-                        'name' => $name,
-                        'name_ar' => $nameAr ?: null,
-                        'email' => $email ?: null,
-                        'phone' => $phone ?: null,
-                        'mobile' => $mobile ?: null,
-                        'vat_number' => $vatNumber ?: null,
-                        'tax_number' => $vatNumber ?: null,
-                        'credit_limit' => $creditLimit,
-                        'payment_terms_days' => $paymentTermsDays,
-                        'is_active' => $isActive,
-                        'status' => $status,
-                    ];
-
-                    $existing = Customer::query()->where($match)->first();
-                    if (! $existing && $email) {
-                        $existing = Customer::query()->where('email', $email)->where('user_id', $userId)->first();
-                    }
-
-                    if ($existing) {
-                        $existing->update($data);
-
-                        return 'updated';
-                    }
-
-                    Customer::query()->create(array_merge($match, $data));
-
-                    return 'created';
+                if (! $name) {
+                    throw new \RuntimeException("حقل Customer Name مطلوب في السطر {$line}.");
                 }
-            );
-        });
+
+                $status = $this->toActiveStatus($activeValue);
+                $isActive = $status === 'active';
+
+                if (! $code) {
+                    $code = Customer::generateNextCodeForUser($userId);
+                }
+
+                $data = [
+                    'name' => $name,
+                    'name_ar' => $nameAr ?: null,
+                    'email' => $email ?: null,
+                    'phone' => $phone ?: null,
+                    'mobile' => $mobile ?: null,
+                    'vat_number' => $vatNumber ?: null,
+                    'tax_number' => $vatNumber ?: null,
+                    'credit_limit' => $creditLimit,
+                    'payment_terms_days' => $paymentTermsDays,
+                    'is_active' => $isActive,
+                    'status' => $status,
+                ];
+
+                $existing = Customer::withTrashed()
+                    ->where('user_id', $userId)
+                    ->where('code', $code)
+                    ->first();
+                if (! $existing && $email) {
+                    $existing = Customer::withTrashed()
+                        ->where('user_id', $userId)
+                        ->where('email', $email)
+                        ->first();
+                }
+
+                if ($existing) {
+                    if ($existing->trashed()) {
+                        $existing->restore();
+                    }
+                    $existing->update($data);
+
+                    return 'updated';
+                }
+
+                Customer::query()->create(array_merge([
+                    'user_id' => $userId,
+                    'code' => $code,
+                ], $data));
+
+                return 'created';
+            }
+        );
     }
 
     /**
