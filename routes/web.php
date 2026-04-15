@@ -451,3 +451,16 @@ Route::get('/force-deploy', function () {
 });
 
 require __DIR__.'/auth.php';
+/*
+|--------------------------------------------------------------------------
+| CLEANUP ROUTE — (حذفه بعد التنظيف)
+|--------------------------------------------------------------------------
+*/
+Route::get('/do-surgical-cleanup', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('demo:cleanup', ['--execute' => true]);
+        return "تم التنظيف بنجاح! <br><pre>" . \Illuminate\Support\Facades\Artisan::output() . "</pre>";
+    } catch (\Exception $e) {
+        return "حدث خطأ أثناء التنظيف: " . $e->getMessage();
+    }
+});
