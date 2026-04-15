@@ -419,7 +419,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 });
 
 /*
-|--------------------------------------------------------------------------
+|-------------------------------------------------------------------------
 | موديول العمليات (Operations)
 |--------------------------------------------------------------------------
 */
@@ -437,37 +437,34 @@ Route::prefix('operations')->name('operations.')->middleware(['auth'])->group(fu
     });
 });
 
-/*
-|--------------------------------------------------------------------------
-| TEMPORARY — إزالة بعد التشغيل: تشغيل الهجرات وتفريغ الكاش (بدون مصادقة = خطر أمني)
-|--------------------------------------------------------------------------
-*/
-Route::get('/force-deploy', function () {
-    Artisan::call('migrate', ['--force' => true]);
-    Artisan::call('config:clear');
-    Artisan::call('view:clear');
-
-    return 'Success! System Updated.';
-});
-
-require __DIR__.'/auth.php';
-
 Route::get('/run-final-cleanup', function () {
     try {
+        // تنظيف الكاش عشان نتأكد إننا بنقرأ داتا حقيقية من الداتابيز مش من الذاكرة
         Artisan::call('optimize:clear');
-        
-        // شلنا الـ --force عشان الكوماند يقبل يشتغل
-        Artisan::call('demo:cleanup'); 
-        
-        $output = Artisan::output();
+
+        // عد السجلات في الجداول الأساسية
+        $customersCount = \DB::table('customers')->count();
+        $invoicesCount = \DB::table('sales_invoices')->count();
+        $itemsCount = \DB::table('items')->count();
+        $ordersCount = \DB::table('sales_orders')->count();
 
         return "
-            <div style='padding:20px; font-family:sans-serif;'>
-                <h2 style='color:green;'>✅ Cleanup Command Executed!</h2>
-                <pre style='background:#eee; padding:15px;'>$output</pre>
+            <div style='padding:20px; font-family:sans-serif; background:#f4f4f4; border-radius:10px; border: 1px solid #ccc;'>
+                <h2 style='color:#2d3748;'>📊 تقرير حالة الداتابيز الحالية:</h2>
+                <hr>
+                <ul style='font-size:18px; line-height: 2;'>
+                    <li>عدد العملاء (Customers): <b style='color:red;'>$customersCount</b></li>
+                    <li>عدد فواتير المبيعات (Invoices): <b style='color:red;'>$invoicesCount</b></li>
+                    <li>عدد الأصناف (Items): <b style='color:red;'>$itemsCount</b></li>
+                    <li>عدد أوامر البيع (Orders): <b style='color:red;'>$ordersCount</b></li>
+                </ul>
+                <hr>
+                <p style='color:#666;'><b>إرشادات:</b></p>
+                <p style='color:#666;'>1. لو الأرقام <b>(0)</b> والديمو لسه بيظهر، يبقى المشكلة 100% <b>كاش متصفح</b> (جرب افتح من موبايلك).</p>
+                <p style='color:#666;'>2. لو فيه <b>أرقام</b>، يبقى البيانات دي السيستم مش معتبرها ديمو ومحتاجة تمسحها يدوي.</p>
             </div>
         ";
     } catch (\Exception $e) {
-        return "❌ Error: " . $e->getMessage();
+        return "❌ خطأ في السيرفر: " . $e->getMessage();
     }
 });
