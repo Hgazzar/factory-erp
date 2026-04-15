@@ -4,7 +4,9 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "zatca:compliance": "node integrations/zatca-einvoicing/src/cli/requestComplianceCsid.js",
+        "zatca:compliance:validate": "node integrations/zatca-einvoicing/src/cli/validateComplianceEnv.js"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",

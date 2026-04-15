@@ -1,0 +1,20 @@
+{
+  "name": "@factory-erp/zatca-einvoicing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ZATCA E-Invoicing Node.js integration (Compliance CSID, future reporting)",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "compliance:request": "node src/cli/requestComplianceCsid.js",
+    "compliance:validate": "node src/cli/validateComplianceEnv.js",
+    "lint": "node --check src/config/loadEnv.js && node --check src/config/paths.js && node --check src/services/zatcaService.js && node --check src/cli/requestComplianceCsid.js && node --check src/cli/validateComplianceEnv.js && node --check src/index.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1"
+  }
+}

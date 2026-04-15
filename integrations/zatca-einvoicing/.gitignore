@@ -1,0 +1,4 @@
+.env
+storage/zatca/*.json
+!storage/zatca/.gitkeep
+node_modules/

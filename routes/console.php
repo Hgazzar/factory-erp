@@ -13,8 +13,10 @@ use App\Support\AgentDebugLog;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 
 Artisan::command('inspire', function () {
@@ -177,6 +179,323 @@ Artisan::command('import:universal {entity} {file} {--no-create-missing}', funct
 
     return 0;
 })->purpose('Universal import for customers/products/accounts/sales_orders/purchase_orders/expenses');
+
+Artisan::command('demo:cleanup {--execute : Execute deletion (default is dry-run)}', function () {
+    $connection = config('database.default');
+    $schema = (string) (config("database.connections.{$connection}.schema") ?: 'public');
+    $timestamp = now()->format('Ymd_His');
+    $backupPath = storage_path("backups/pre_demo_cleanup_{$timestamp}.json");
+
+    if (! is_dir(dirname($backupPath))) {
+        mkdir(dirname($backupPath), 0755, true);
+    }
+
+    $tables = collect(DB::select(
+        'SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_type = ? ORDER BY table_name',
+        [$schema, 'BASE TABLE']
+    ))->pluck('table_name')->all();
+
+    $backupPayload = [
+        'generated_at' => now()->toIso8601String(),
+        'connection' => $connection,
+        'schema' => $schema,
+        'tables' => [],
+    ];
+
+    foreach ($tables as $table) {
+        $backupPayload['tables'][$table] = DB::table($table)->get()->map(fn ($row) => (array) $row)->all();
+    }
+
+    file_put_contents(
+        $backupPath,
+        json_encode($backupPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+    );
+    $this->info('Backup saved: '.$backupPath);
+
+    // Strict filter only for these keywords and only in code/name/name_ar.
+    $keywords = ['demo', 'test', 'تجريبي', 'اختبار'];
+
+    $tableColumns = function (string $table) use ($schema): array {
+        return collect(DB::select(
+            'SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ?',
+            [$schema, $table]
+        ))->pluck('column_name')->all();
+    };
+    $tableExists = fn (string $table): bool => $tableColumns($table) !== [];
+    $pickColumns = fn (array $columns): array => array_values(array_intersect($columns, ['code', 'name', 'name_ar']));
+
+    $applyStrictDemoFilter = function ($query, array $columns) use ($keywords) {
+        $query->where(function ($outer) use ($columns, $keywords) {
+            foreach ($columns as $column) {
+                $outer->orWhere(function ($w) use ($column, $keywords) {
+                    foreach ($keywords as $keyword) {
+                        $w->orWhereRaw(
+                            'LOWER(COALESCE(CAST("'.$column.'" AS TEXT), \'\')) LIKE ?',
+                            ['%'.Str::lower($keyword).'%']
+                        );
+                    }
+                });
+            }
+        });
+    };
+
+    $collectDemoIds = function (string $table) use ($tableExists, $tableColumns, $pickColumns, $applyStrictDemoFilter) {
+        if (! $tableExists($table)) {
+            return collect();
+        }
+        $columns = $pickColumns($tableColumns($table));
+        if ($columns === []) {
+            return collect();
+        }
+
+        $query = DB::table($table);
+        $applyStrictDemoFilter($query, $columns);
+
+        return $query->pluck('id');
+    };
+
+    $customerIds = $collectDemoIds('customers');
+    $supplierIds = $collectDemoIds('suppliers');
+    $itemIds = $collectDemoIds('items');
+
+    $rootIdSets = [
+        'customer_id' => $customerIds->all(),
+        'supplier_id' => $supplierIds->all(),
+        'item_id' => $itemIds->all(),
+    ];
+
+    $entityLinkedTables = [];
+    foreach (DB::select(
+        'SELECT table_name, column_name
+         FROM information_schema.columns
+         WHERE table_schema = ? AND column_name IN (?, ?, ?)
+         ORDER BY table_name, column_name',
+        [$schema, 'customer_id', 'supplier_id', 'item_id']
+    ) as $row) {
+        $table = $row->table_name;
+        $column = $row->column_name;
+        if (in_array($table, ['customers', 'suppliers', 'items', 'accounts'], true)) {
+            continue;
+        }
+        if (($rootIdSets[$column] ?? []) === []) {
+            continue;
+        }
+        $entityLinkedTables[$table] ??= [];
+        if (! in_array($column, $entityLinkedTables[$table], true)) {
+            $entityLinkedTables[$table][] = $column;
+        }
+    }
+
+    $tableIds = [];
+    $summary = [
+        'customers' => $customerIds->count(),
+        'suppliers' => $supplierIds->count(),
+        'items' => $itemIds->count(),
+    ];
+
+    foreach ($entityLinkedTables as $table => $columns) {
+        $idColumnExists = in_array('id', $tableColumns($table), true);
+        $query = DB::table($table)->where(function ($q) use ($columns, $rootIdSets) {
+            foreach ($columns as $index => $column) {
+                $ids = $rootIdSets[$column] ?? [];
+                if ($ids === []) {
+                    continue;
+                }
+                if ($index === 0) {
+                    $q->whereIn($column, $ids);
+                } else {
+                    $q->orWhereIn($column, $ids);
+                }
+            }
+        });
+
+        $count = (clone $query)->count();
+        $summary[$table] = $count;
+
+        if ($idColumnExists && $count > 0) {
+            $tableIds[$table] = (clone $query)->pluck('id')->all();
+        }
+    }
+
+    $demoJournalEntryIds = collect();
+    foreach ($tableIds as $table => $ids) {
+        if ($ids === []) {
+            continue;
+        }
+        $columns = $tableColumns($table);
+        if (! in_array('journal_entry_id', $columns, true)) {
+            continue;
+        }
+        $idsFound = DB::table($table)
+            ->whereIn('id', $ids)
+            ->whereNotNull('journal_entry_id')
+            ->pluck('journal_entry_id');
+        $demoJournalEntryIds = $demoJournalEntryIds->merge($idsFound);
+    }
+    $demoJournalEntryIds = $demoJournalEntryIds->unique()->values();
+
+    if ($tableExists('journal_entries')) {
+        $summary['journal_entries'] = $demoJournalEntryIds->count();
+    }
+
+    $impactedAccountIds = collect();
+    if ($tableExists('journal_items') && $demoJournalEntryIds->isNotEmpty()) {
+        $summary['journal_items'] = DB::table('journal_items')
+            ->whereIn('journal_entry_id', $demoJournalEntryIds->all())
+            ->count();
+
+        $impactedAccountIds = DB::table('journal_items')
+            ->whereIn('journal_entry_id', $demoJournalEntryIds->all())
+            ->pluck('account_id')
+            ->unique()
+            ->values();
+    } else {
+        $summary['journal_items'] = 0;
+    }
+
+    if ($tableExists('ledger')) {
+        $ledgerColumns = $tableColumns('ledger');
+        if (in_array('journal_entry_id', $ledgerColumns, true) && $demoJournalEntryIds->isNotEmpty()) {
+            $summary['ledger'] = DB::table('ledger')->whereIn('journal_entry_id', $demoJournalEntryIds->all())->count();
+        } else {
+            $summary['ledger'] = 0;
+        }
+    }
+
+    // BOM links for demo items (not covered by generic *_id scan because columns are finished_item_id/component_item_id)
+    $bomComponentIds = collect();
+    if ($tableExists('item_bom_components') && $itemIds->isNotEmpty()) {
+        $bomColumns = $tableColumns('item_bom_components');
+        $bomQuery = DB::table('item_bom_components')->where(function ($q) use ($itemIds, $bomColumns) {
+            if (in_array('finished_item_id', $bomColumns, true)) {
+                $q->whereIn('finished_item_id', $itemIds->all());
+            }
+            if (in_array('component_item_id', $bomColumns, true)) {
+                $q->orWhereIn('component_item_id', $itemIds->all());
+            }
+        });
+        $summary['item_bom_components'] = (clone $bomQuery)->count();
+        if (in_array('id', $bomColumns, true) && ($summary['item_bom_components'] ?? 0) > 0) {
+            $bomComponentIds = (clone $bomQuery)->pluck('id');
+        }
+    } else {
+        $summary['item_bom_components'] = 0;
+    }
+
+    $financialImpact = 0.0;
+    if ($tableExists('sales_invoices') && $customerIds->isNotEmpty()) {
+        $salesCols = $tableColumns('sales_invoices');
+        $amountCol = in_array('total', $salesCols, true) ? 'total' : (in_array('grand_total', $salesCols, true) ? 'grand_total' : null);
+        if ($amountCol !== null) {
+            $financialImpact += (float) DB::table('sales_invoices')
+                ->whereIn('customer_id', $customerIds->all())
+                ->sum($amountCol);
+        }
+    }
+    if ($tableExists('purchase_invoices') && $supplierIds->isNotEmpty()) {
+        $purchaseCols = $tableColumns('purchase_invoices');
+        $amountCol = in_array('total', $purchaseCols, true) ? 'total' : (in_array('grand_total', $purchaseCols, true) ? 'grand_total' : null);
+        if ($amountCol !== null) {
+            $financialImpact += (float) DB::table('purchase_invoices')
+                ->whereIn('supplier_id', $supplierIds->all())
+                ->sum($amountCol);
+        }
+    }
+
+    $rows = collect($summary)->sortKeys()->map(fn ($count, $table) => [$table, (int) $count])->values()->all();
+
+    $this->newLine();
+    $this->info('Strict demo/test cleanup dry-run summary:');
+    $this->table(['Table Name', 'Number of Demo Records to be Deleted'], $rows);
+    $this->line('Total financial impact (demo invoices to purge): '.number_format($financialImpact, 2));
+    $this->line('Accounts table: NOT deleted. Structure and codes remain intact.');
+
+    if (! $this->option('execute')) {
+        $this->warn('Dry-run only. No data deleted. Wait for explicit approval, then run with --execute.');
+
+        return 0;
+    }
+
+    DB::transaction(function () use (
+        $entityLinkedTables,
+        $rootIdSets,
+        $summary,
+        $demoJournalEntryIds,
+        $impactedAccountIds,
+        $tableColumns,
+        $bomComponentIds
+    ) {
+        foreach ($entityLinkedTables as $table => $columns) {
+            if (($summary[$table] ?? 0) <= 0) {
+                continue;
+            }
+            DB::table($table)->where(function ($q) use ($columns, $rootIdSets) {
+                foreach ($columns as $index => $column) {
+                    $ids = $rootIdSets[$column] ?? [];
+                    if ($ids === []) {
+                        continue;
+                    }
+                    if ($index === 0) {
+                        $q->whereIn($column, $ids);
+                    } else {
+                        $q->orWhereIn($column, $ids);
+                    }
+                }
+            })->delete();
+        }
+
+        if (($summary['journal_entries'] ?? 0) > 0) {
+            if (($summary['ledger'] ?? 0) > 0 && in_array('journal_entry_id', $tableColumns('ledger'), true)) {
+                DB::table('ledger')->whereIn('journal_entry_id', $demoJournalEntryIds->all())->delete();
+            }
+
+            // journal_items will be removed by cascade on journal_entries, but keep explicit for clarity/safety.
+            DB::table('journal_items')->whereIn('journal_entry_id', $demoJournalEntryIds->all())->delete();
+            DB::table('journal_entries')->whereIn('id', $demoJournalEntryIds->all())->delete();
+        }
+
+        // Delete BOM links pointing to demo items before deleting items themselves (FK safety).
+        if (($summary['item_bom_components'] ?? 0) > 0 && $bomComponentIds->isNotEmpty()) {
+            DB::table('item_bom_components')->whereIn('id', $bomComponentIds->all())->delete();
+        }
+
+        if (($summary['items'] ?? 0) > 0) {
+            DB::table('items')->whereIn('id', $rootIdSets['item_id'])->delete();
+        }
+        if (($summary['suppliers'] ?? 0) > 0) {
+            DB::table('suppliers')->whereIn('id', $rootIdSets['supplier_id'])->delete();
+        }
+        if (($summary['customers'] ?? 0) > 0) {
+            DB::table('customers')->whereIn('id', $rootIdSets['customer_id'])->delete();
+        }
+
+        // Keep accounts structure; only reset balances for accounts with no remaining real transactions.
+        if ($impactedAccountIds->isNotEmpty()) {
+            $accountColumns = $tableColumns('accounts');
+            foreach ($impactedAccountIds as $accountId) {
+                $remainingJournalItems = DB::table('journal_items')->where('account_id', $accountId)->count();
+                if ($remainingJournalItems > 0) {
+                    continue;
+                }
+
+                $payload = [];
+                if (in_array('opening_balance', $accountColumns, true)) {
+                    $payload['opening_balance'] = 0;
+                }
+                if (in_array('balance', $accountColumns, true)) {
+                    $payload['balance'] = 0;
+                }
+                if ($payload !== []) {
+                    DB::table('accounts')->where('id', $accountId)->update($payload);
+                }
+            }
+        }
+    });
+
+    $this->info('Deletion completed safely in a single DB transaction (accounts table preserved).');
+
+    return 0;
+})->purpose('Strict demo/test cleanup with backup + dry-run summary; deletes only keyword-matched demo entities and linked records');
 
 Schedule::command('contracts:create-draft-invoices')->daily();
 Schedule::command('system:scan-notifications')->everyFifteenMinutes();
