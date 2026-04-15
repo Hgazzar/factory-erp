@@ -451,3 +451,28 @@ Route::get('/force-deploy', function () {
 });
 
 require __DIR__.'/auth.php';
+
+/*
+|--------------------------------------------------------------------------
+| مسح بيانات الديمو - تشغيل يدوي لمرة واحدة
+|--------------------------------------------------------------------------
+*/
+Route::get('/run-final-cleanup', function () {
+    try {
+        // تنظيف الكاش أولاً عشان السيرفر يحس بالتغيير
+        Artisan::call('optimize:clear');
+        
+        // تشغيل أمر المسح الجراحي
+        Artisan::call('demo:cleanup', ['--force' => true]);
+        $output = Artisan::output();
+
+        return "
+            <div style='padding:20px; font-family:sans-serif;'>
+                <h2 style='color:green;'>✅ Cleanup Command Executed!</h2>
+                <pre style='background:#eee; padding:15px;'>$output</pre>
+            </div>
+        ";
+    } catch (\Exception $e) {
+        return "❌ Error: " . $e->getMessage();
+    }
+});
