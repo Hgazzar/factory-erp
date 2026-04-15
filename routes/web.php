@@ -452,18 +452,13 @@ Route::get('/force-deploy', function () {
 
 require __DIR__.'/auth.php';
 
-/*
-|--------------------------------------------------------------------------
-| مسح بيانات الديمو - تشغيل يدوي لمرة واحدة
-|--------------------------------------------------------------------------
-*/
 Route::get('/run-final-cleanup', function () {
     try {
-        // تنظيف الكاش أولاً عشان السيرفر يحس بالتغيير
         Artisan::call('optimize:clear');
         
-        // تشغيل أمر المسح الجراحي
-        Artisan::call('demo:cleanup', ['--force' => true]);
+        // شلنا الـ --force عشان الكوماند يقبل يشتغل
+        Artisan::call('demo:cleanup'); 
+        
         $output = Artisan::output();
 
         return "
