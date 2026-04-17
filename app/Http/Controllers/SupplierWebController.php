@@ -15,6 +15,7 @@ use App\Services\ExcelImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -162,7 +163,29 @@ class SupplierWebController extends Controller
     public function import(Request $request, ExcelImportService $importService): RedirectResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
+            'file' => [
+                'required',
+                'file',
+                'max:20480',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! $value instanceof UploadedFile) {
+                        return;
+                    }
+                    $extension = strtolower($value->getClientOriginalExtension());
+                    if ($extension === '') {
+                        $fail('تعذر تحديد نوع الملف. يُرجى استخدام ملف بامتداد واضح: csv، txt، xls، xlsx.');
+
+                        return;
+                    }
+                    if (! in_array($extension, ['csv', 'txt', 'xlsx', 'xls'], true)) {
+                        $fail('نوع الملف غير مدعوم. يُسمح فقط بامتدادات: csv، txt، xls، xlsx.');
+                    }
+                },
+            ],
+        ], [
+            'file.required' => 'يرجى اختيار ملف للاستيراد.',
+            'file.file' => 'يجب أن يكون المرفق ملفاً صالحاً.',
+            'file.max' => 'حجم الملف يتجاوز الحد المسموح (20 ميجابايت).',
         ]);
 
         try {

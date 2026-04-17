@@ -9,6 +9,7 @@ use App\Services\UniversalImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -16,6 +17,7 @@ use Illuminate\View\View;
 class PurchaseOrderWebController extends Controller
 {
     private const PENDING_STATUS = 'معلق';
+
     public function importTemplate(): Response
     {
         $csv = "\xEF\xBB\xBF";
@@ -51,7 +53,7 @@ class PurchaseOrderWebController extends Controller
 
         return redirect()
             ->route('purchases.orders.index')
-            ->with('success', "تم استيراد أوامر الشراء. نجاح: {$summary['created']} إضافة، {$summary['updated']} تحديث. فشل: {$summary['failed']}. عدد الصفوف المعالجة: ".($summary['total_rows_processed'] ?? 0)." | عدد الرؤوس الناجحة: ".($summary['successful_headers'] ?? 0))
+            ->with('success', "تم استيراد أوامر الشراء. نجاح: {$summary['created']} إضافة، {$summary['updated']} تحديث. فشل: {$summary['failed']}. عدد الصفوف المعالجة: ".($summary['total_rows_processed'] ?? 0).' | عدد الرؤوس الناجحة: '.($summary['successful_headers'] ?? 0))
             ->with('import_result', $summary);
     }
 
@@ -135,6 +137,8 @@ class PurchaseOrderWebController extends Controller
             'lines.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.description' => ['nullable', 'string', 'max:500'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,gif,webp,doc,docx,xls,xlsx,txt,csv'],
         ]);
 
         $currency = $data['currency'] ?? 'SAR';
@@ -170,29 +174,51 @@ class PurchaseOrderWebController extends Controller
         $total = $subtotal - $totalDiscount + $totalTax + $shippingCost;
 
         $uid = (int) (auth()->id() ?? 1);
-        $order = PurchaseOrder::create([
-            'user_id' => $uid,
-            'order_number' => PurchaseOrder::generateNextOrderNumberForUser($uid),
-            'supplier_id' => $data['supplier_id'],
-            'order_date' => $data['order_date'],
-            'currency' => $currency,
-            'reference' => $data['reference'] ?? null,
-            'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
-            'delivery_address' => $data['delivery_address'] ?? null,
-            'shipping_cost' => $shippingCost,
-            'internal_notes' => $data['internal_notes'] ?? null,
-            'notes' => $data['notes'] ?? null,
-            'terms_and_conditions' => $data['terms_and_conditions'] ?? null,
-            'status' => 'معلق',
-            'subtotal' => round($subtotal, 4),
-            'total_discount' => round($totalDiscount, 4),
-            'total_tax' => round($totalTax, 4),
-            'total' => round($total, 4),
-        ]);
-
-        foreach ($lines as $line) {
-            $order->items()->create($line);
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
         }
+
+        DB::transaction(function () use ($data, $lines, $subtotal, $totalDiscount, $totalTax, $total, $shippingCost, $currency, $uid, $uploads): void {
+            $order = PurchaseOrder::create([
+                'user_id' => $uid,
+                'order_number' => PurchaseOrder::generateNextOrderNumberForUser($uid),
+                'supplier_id' => $data['supplier_id'],
+                'order_date' => $data['order_date'],
+                'currency' => $currency,
+                'reference' => $data['reference'] ?? null,
+                'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
+                'delivery_address' => $data['delivery_address'] ?? null,
+                'shipping_cost' => $shippingCost,
+                'internal_notes' => $data['internal_notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'terms_and_conditions' => $data['terms_and_conditions'] ?? null,
+                'status' => 'معلق',
+                'subtotal' => round($subtotal, 4),
+                'total_discount' => round($totalDiscount, 4),
+                'total_tax' => round($totalTax, 4),
+                'total' => round($total, 4),
+            ]);
+
+            foreach ($lines as $line) {
+                $order->items()->create($line);
+            }
+
+            $folder = 'purchase-orders/'.$order->id;
+            foreach ($uploads as $file) {
+                if (! $file instanceof UploadedFile || ! $file->isValid()) {
+                    continue;
+                }
+                $path = $file->store($folder, 'public');
+                $order->attachments()->create([
+                    'file_path' => $path,
+                    'file_name' => $file->getClientOriginalName() ?: basename($path),
+                    'file_type' => $file->getMimeType(),
+                    'file_size' => (int) ($file->getSize() ?: 0),
+                    'user_id' => $uid,
+                ]);
+            }
+        });
 
         return redirect()->route('purchases.orders.index')->with('success', 'تم إنشاء أمر الشراء بنجاح.');
     }

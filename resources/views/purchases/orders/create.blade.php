@@ -45,7 +45,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ $isEdit ? route('purchases.orders.update', $editOrderModel) : route('purchases.orders.store') }}">
+    <form method="POST" action="{{ $isEdit ? route('purchases.orders.update', $editOrderModel) : route('purchases.orders.store') }}" enctype="multipart/form-data">
         @csrf
         @if($isEdit)
             @method('PUT')
@@ -228,10 +228,15 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">الشروط والأحكام</label>
                 <textarea name="terms_and_conditions" rows="3" class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500" placeholder="الشروط والأحكام">{{ old('terms_and_conditions', $isEdit ? $editOrderModel->terms_and_conditions : null) }}</textarea>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">المرفقات</label>
-                <input type="file" name="attachments[]" multiple class="w-full px-3 py-2 border border-gray-300 rounded-2xl text-sm text-right file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700">
-            </div>
+            @unless($isEdit)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"><x-info field="procurement.purchase_order_attachments" /> المرفقات</label>
+                    <input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv" class="w-full px-3 py-2 border border-gray-300 rounded-2xl text-sm text-right file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700">
+                    <p class="mt-1 text-xs text-gray-500">اختياري — حتى 20 ملفاً، بحد أقصى 10 ميجابايت لكل ملف.</p>
+                    @error('attachments')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    @error('attachments.*')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+            @endunless
         </div>
 
         <div class="flex flex-wrap items-center gap-3 justify-end">
