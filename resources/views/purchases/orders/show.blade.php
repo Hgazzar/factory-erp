@@ -55,6 +55,20 @@
         </div>
     </div>
 
+    @if($order->attachments->isNotEmpty())
+        <div class="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+            <h2 class="text-sm font-semibold text-gray-900 mb-3"><x-info field="procurement.purchase_order_attachments" /> المرفقات</h2>
+            <ul class="space-y-2 text-sm">
+                @foreach($order->attachments as $att)
+                    <li class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                        <a href="{{ asset('storage/'.$att->file_path) }}" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-600 hover:text-blue-800 break-all">{{ $att->file_name }}</a>
+                        <span class="text-xs text-gray-500 tabular-nums">{{ $att->file_size ? number_format((int) $att->file_size / 1024, 1).' ك.ب' : '—' }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-right">

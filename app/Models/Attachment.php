@@ -9,13 +9,13 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Attachment extends Model
 {
     protected $fillable = [
-        'attachable_id',
-        'attachable_type',
         'file_path',
         'file_name',
         'file_type',
         'file_size',
         'user_id',
+        'attachable_id',
+        'attachable_type',
     ];
 
     protected function casts(): array

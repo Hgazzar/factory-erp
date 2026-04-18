@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -70,7 +71,7 @@ class PurchaseOrderWebController extends Controller
 
     public function show(PurchaseOrder $order): View
     {
-        $order->load(['supplier', 'items.item']);
+        $order->load(['supplier', 'items.item', 'attachments']);
 
         return view('purchases.orders.show', ['order' => $order]);
     }
@@ -204,20 +205,7 @@ class PurchaseOrderWebController extends Controller
                 $order->items()->create($line);
             }
 
-            $folder = 'purchase-orders/'.$order->id;
-            foreach ($uploads as $file) {
-                if (! $file instanceof UploadedFile || ! $file->isValid()) {
-                    continue;
-                }
-                $path = $file->store($folder, 'public');
-                $order->attachments()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName() ?: basename($path),
-                    'file_type' => $file->getMimeType(),
-                    'file_size' => (int) ($file->getSize() ?: 0),
-                    'user_id' => $uid,
-                ]);
-            }
+            $this->persistPurchaseOrderAttachments($order, $uploads, $uid);
         });
 
         return redirect()->route('purchases.orders.index')->with('success', 'تم إنشاء أمر الشراء بنجاح.');
@@ -258,7 +246,7 @@ class PurchaseOrderWebController extends Controller
             ];
         });
 
-        $order->load('items');
+        $order->load(['items', 'attachments']);
 
         $editOrderPayload = [
             'supplier_id' => $order->supplier_id,
@@ -338,6 +326,8 @@ class PurchaseOrderWebController extends Controller
             'lines.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.description' => ['nullable', 'string', 'max:500'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,gif,webp,doc,docx,xls,xlsx,txt,csv'],
         ]);
 
         $currency = $data['currency'] ?? 'SAR';
@@ -372,7 +362,13 @@ class PurchaseOrderWebController extends Controller
         $totalTax = $lines->sum(fn ($l) => ((float) $l['quantity'] * (float) $l['unit_price'] * (1 - (float) $l['discount_percent'] / 100)) * (float) $l['tax_percent'] / 100);
         $total = $subtotal - $totalDiscount + $totalTax + $shippingCost;
 
-        DB::transaction(function () use ($order, $data, $currency, $shippingCost, $lines, $subtotal, $totalDiscount, $totalTax, $total): void {
+        $uid = (int) (auth()->id() ?? 1);
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
+
+        DB::transaction(function () use ($order, $data, $currency, $shippingCost, $lines, $subtotal, $totalDiscount, $totalTax, $total, $uploads, $uid): void {
             $order->update([
                 'supplier_id' => $data['supplier_id'],
                 'order_date' => $data['order_date'],
@@ -395,6 +391,8 @@ class PurchaseOrderWebController extends Controller
             foreach ($lines as $line) {
                 $order->items()->create($line);
             }
+
+            $this->persistPurchaseOrderAttachments($order, $uploads, $uid);
         });
 
         return redirect()->route('purchases.orders.show', $order)->with('success', 'تم تحديث أمر الشراء.');
@@ -408,11 +406,40 @@ class PurchaseOrderWebController extends Controller
                 ->with('error', 'يمكن حذف أوامر الشراء في حالة «معلق» فقط.');
         }
 
+        $order->load('attachments');
+
         DB::transaction(function () use ($order): void {
+            foreach ($order->attachments as $attachment) {
+                if ($attachment->file_path && Storage::disk('public')->exists($attachment->file_path)) {
+                    Storage::disk('public')->delete($attachment->file_path);
+                }
+            }
+            $order->attachments()->delete();
             $order->items()->delete();
             $order->delete();
         });
 
         return redirect()->route('purchases.orders.index')->with('success', 'تم حذف أمر الشراء.');
+    }
+
+    /**
+     * @param  array<int, mixed>  $uploads
+     */
+    private function persistPurchaseOrderAttachments(PurchaseOrder $order, array $uploads, int $uid): void
+    {
+        $folder = 'purchase-orders/'.$order->id;
+        foreach ($uploads as $file) {
+            if (! $file instanceof UploadedFile || ! $file->isValid()) {
+                continue;
+            }
+            $path = $file->store($folder, 'public');
+            $order->attachments()->create([
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName() ?: basename($path),
+                'file_type' => $file->getMimeType(),
+                'file_size' => (int) ($file->getSize() ?: 0),
+                'user_id' => $uid,
+            ]);
+        }
     }
 }
