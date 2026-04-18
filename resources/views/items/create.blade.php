@@ -198,6 +198,7 @@
                             title="مرفقات الصنف"
                             :existing="[]"
                             :show-existing="false"
+                            :allow-delete="true"
                             help-text="صور، PDF، مستندات (حتى 20 ملفاً). أول صورة تُستخدم كمعاينة في قائمة المنتجات."
                         />
                         <div class="img-preview-wrap mt-2" id="imagePreviewWrap">

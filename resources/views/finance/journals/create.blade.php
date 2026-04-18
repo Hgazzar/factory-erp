@@ -117,6 +117,7 @@
                     title="مرفقات القيد"
                     :existing="[]"
                     :show-existing="false"
+                    :allow-delete="true"
                     help-text="مستندات داعمة اختيارية (حتى 20 ملفاً، 10 ميجابايت لكل ملف)."
                 />
             </section>

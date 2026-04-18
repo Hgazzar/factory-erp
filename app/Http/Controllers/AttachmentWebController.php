@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Storage;
 
 class AttachmentWebController extends Controller
 {
+    /**
+     * Remove one polymorphic attachment row and its stored file only.
+     * Never deletes or mutates the parent (attachable) model.
+     */
     public function destroy(Attachment $attachment): RedirectResponse
     {
         $attachment->loadMissing('attachable');

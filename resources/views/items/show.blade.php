@@ -46,6 +46,24 @@
         </div>
     </div>
 
+    <div class="card mb-4">
+        <div class="card-header fw-semibold d-inline-flex align-items-center gap-1">
+            مرفقات الصنف
+            <x-info field="inventory.item_attachments" />
+        </div>
+        <div class="card-body">
+            <x-attachment-handler
+                theme="bootstrap"
+                hint-field="inventory.item_attachments"
+                title="المرفقات"
+                :existing="$item->attachments"
+                :uploadable="false"
+                :allow-delete="true"
+                help-text="معاينة وحذف آمن. لإضافة ملفات استخدم «تعديل البيانات» (التخزين: items/{{ $item->id }})."
+            />
+        </div>
+    </div>
+
     @if($item->type === \App\Models\Item::TYPE_FINISHED_GOOD)
         <div class="card mb-4 border-primary border-opacity-25">
             <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">

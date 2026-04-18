@@ -86,6 +86,7 @@
             title="المرفقات"
             :existing="$customer->attachments"
             :uploadable="false"
+            :allow-delete="true"
         />
     </div>
 </div>

@@ -76,6 +76,7 @@
             title="المرفقات"
             :existing="$supplier->attachments"
             :uploadable="false"
+            :allow-delete="true"
         />
     </div>
 

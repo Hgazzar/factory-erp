@@ -195,6 +195,7 @@
                 title="مرفقات أمر البيع"
                 :existing="[]"
                 :show-existing="false"
+                :allow-delete="true"
                 help-text="مستندات اختيارية (حتى 20 ملفاً، 10 ميجابايت لكل ملف). تُحفظ مع الأمر في مجلد sales-orders بنفس أسلوب المشتريات."
             />
         </div>

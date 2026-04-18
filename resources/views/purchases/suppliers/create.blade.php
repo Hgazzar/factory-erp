@@ -176,6 +176,7 @@
                     title="رفع الملفات"
                     :existing="[]"
                     :show-existing="false"
+                    :allow-delete="true"
                     help-text="اختياري — صور، PDF، Excel، Word وغيرها (حتى 20 ملفاً، 10 ميجابايت لكل ملف)."
                 />
             </div>

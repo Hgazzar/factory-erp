@@ -103,7 +103,7 @@ class ItemWebController extends Controller
      */
     public function show(Item $item): View
     {
-        $item->load(['unit:id,name_ar,code', 'bomComponents.componentItem:id,code,name_ar,type']);
+        $item->load(['unit:id,name_ar,code', 'bomComponents.componentItem:id,code,name_ar,type', 'attachments']);
 
         $rawMaterials = Item::query()
             ->active()

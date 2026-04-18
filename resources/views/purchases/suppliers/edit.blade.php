@@ -81,6 +81,7 @@
                         hint-field="procurement.supplier_attachments"
                         title="المرفقات"
                         :existing="$supplier->attachments"
+                        :allow-delete="true"
                         help-text="حتى 20 ملفاً، 10 ميجابايت لكل ملف."
                     />
                 </div>

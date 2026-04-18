@@ -127,6 +127,7 @@
                 title="مرفقات العميل"
                 :existing="[]"
                 :show-existing="false"
+                :allow-delete="true"
                 help-text="عقود، مستندات تعريف، ملفات PDF أو صور (حتى 20 ملفاً، 10 ميجابايت لكل ملف)."
             />
         </div>

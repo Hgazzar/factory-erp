@@ -135,6 +135,7 @@
                 hint-field="sales.customer_attachments"
                 title="مرفقات العميل"
                 :existing="$customer->attachments"
+                :allow-delete="true"
                 help-text="إضافة ملفات جديدة دون حذف المرفقات الحالية."
             />
         </div>

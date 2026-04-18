@@ -122,6 +122,7 @@
                         hint-field="inventory.item_attachments"
                         title="مرفقات الصنف"
                         :existing="$item->attachments"
+                        :allow-delete="true"
                         help-text="إضافة ملفات جديدة دون حذف المرفقات الحالية. أول صورة تُستخدم كمعاينة في القائمة."
                     />
                 </div>
