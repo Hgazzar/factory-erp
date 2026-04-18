@@ -189,119 +189,34 @@
     </div>
 </div>
 <script>
-    (function () {
-        var form = document.getElementById('customers-search-form');
-        var input = document.getElementById('customers-search-input');
-        if (form && input) {
-            input.addEventListener('input', function () {
-                if (input.value.trim() === '') {
-                    form.submit();
-                }
-            });
-        }
-
-        function positionMenu(trigger, menu) {
-            var rect = trigger.getBoundingClientRect();
-            var gap = 8;
-            var pad = 12;
-            menu.style.position = 'fixed';
-            menu.style.zIndex = '9999';
-            var w = menu.offsetWidth || 0;
-            var left = rect.right + gap;
-            if (left + w > window.innerWidth - pad) {
-                left = window.innerWidth - pad - w;
+(function () {
+    var form = document.getElementById('customers-search-form');
+    var input = document.getElementById('customers-search-input');
+    if (form && input) {
+        input.addEventListener('input', function () {
+            if (input.value.trim() === '') {
+                form.submit();
             }
-            if (left < pad) left = pad;
-            menu.style.left = left + 'px';
-            menu.style.right = 'auto';
-
-            var h = menu.offsetHeight || 0;
-            var spaceBelow = window.innerHeight - rect.bottom - gap - pad;
-            var spaceAbove = rect.top - gap - pad;
-            var openUp = h > 0 && h > spaceBelow && spaceAbove >= spaceBelow;
-            if (openUp) {
-                menu.style.top = 'auto';
-                menu.style.bottom = (window.innerHeight - rect.top + gap) + 'px';
-            } else {
-                menu.style.top = (rect.bottom + gap) + 'px';
-                menu.style.bottom = 'auto';
-            }
-        }
-
-        function restoreMenuToCell(menu) {
-            if (!menu._erpPlaceholder || !menu._erpPlaceholder.parentNode) return;
-            menu._erpPlaceholder.parentNode.replaceChild(menu, menu._erpPlaceholder);
-            delete menu._erpPlaceholder;
-        }
-
-        function closeAllMenus() {
-            document.querySelectorAll('.erp-actions-menu').forEach(function (m) {
-                m.classList.add('hidden');
-                restoreMenuToCell(m);
-            });
-            document.querySelectorAll('.erp-actions-trigger[aria-expanded="true"]').forEach(function (b) {
-                b.setAttribute('aria-expanded', 'false');
-            });
-        }
-
-        function openMenu(trigger, menu) {
-            if (!menu._erpPlaceholder) {
-                menu._erpPlaceholder = document.createComment('erp-menu-placeholder');
-                menu.parentNode.insertBefore(menu._erpPlaceholder, menu);
-            }
-            document.body.appendChild(menu);
-            menu.classList.remove('hidden');
-            positionMenu(trigger, menu);
-            trigger.setAttribute('aria-expanded', 'true');
-        }
-
-        function repositionOpenMenus() {
-            document.querySelectorAll('.erp-actions-menu:not(.hidden)').forEach(function (menu) {
-                var id = menu.id;
-                var trigger = document.querySelector('[data-actions-menu="' + id + '"]');
-                if (trigger) positionMenu(trigger, menu);
-            });
-        }
-
-        document.addEventListener('click', function (e) {
-            var trigger = e.target.closest('.erp-actions-trigger');
-            if (!trigger) {
-                if (!e.target.closest('.erp-actions-menu')) closeAllMenus();
-                return;
-            }
-            var menuId = trigger.getAttribute('data-actions-menu');
-            var menu = menuId ? document.getElementById(menuId) : null;
-            if (!menu) return;
-            var isOpen = !menu.classList.contains('hidden');
-            closeAllMenus();
-            if (!isOpen) openMenu(trigger, menu);
         });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeAllMenus();
-        });
-
-        window.addEventListener('resize', repositionOpenMenus);
-        window.addEventListener('scroll', repositionOpenMenus, true);
-
-        document.addEventListener('DOMContentLoaded', function () {
-            var deleteModal = document.getElementById('deleteCustomerModal');
-            var deleteForm = document.getElementById('deleteCustomerForm');
-            var deleteNameEl = document.getElementById('deleteCustomerModalName');
-            if (!deleteModal || !deleteForm || !deleteNameEl || !window.bootstrap || !bootstrap.Modal) {
-                return;
-            }
-            deleteModal.addEventListener('show.bs.modal', function (e) {
-                closeAllMenus();
-                var btn = e.relatedTarget;
-                if (!btn) return;
-                var action = btn.getAttribute('data-delete-action');
-                var name = btn.getAttribute('data-delete-name') || '';
-                if (action) deleteForm.setAttribute('action', action);
-                deleteNameEl.textContent = name;
-            });
-        });
-    })();
+    }
+})();
+document.addEventListener('DOMContentLoaded', function () {
+    var deleteModal = document.getElementById('deleteCustomerModal');
+    var deleteForm = document.getElementById('deleteCustomerForm');
+    var deleteNameEl = document.getElementById('deleteCustomerModalName');
+    if (!deleteModal || !deleteForm || !deleteNameEl || !window.bootstrap || !bootstrap.Modal) {
+        return;
+    }
+    deleteModal.addEventListener('show.bs.modal', function (e) {
+        if (window.closeErpActionMenus) window.closeErpActionMenus();
+        var btn = e.relatedTarget;
+        if (!btn) return;
+        var action = btn.getAttribute('data-delete-action');
+        var name = btn.getAttribute('data-delete-name') || '';
+        if (action) deleteForm.setAttribute('action', action);
+        deleteNameEl.textContent = name;
+    });
+});
 </script>
 @endsection
 

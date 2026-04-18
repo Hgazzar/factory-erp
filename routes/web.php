@@ -483,3 +483,12 @@ Route::get('/run-final-cleanup', function () {
         return '❌ Error: '.$e->getMessage();
     }
 });
+
+\Illuminate\Support\Facades\Route::get('/final-cleanup', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        return "✅ Done: " . \Illuminate\Support\Facades\Artisan::output();
+    } catch (\Exception $e) {
+        return "❌ Error: " . $e->getMessage();
+    }
+});

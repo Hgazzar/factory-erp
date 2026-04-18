@@ -671,6 +671,7 @@
             });
         });
     </script>
+    <x-erp-action-menus-script />
     @stack('scripts')
 </body>
 </html>
