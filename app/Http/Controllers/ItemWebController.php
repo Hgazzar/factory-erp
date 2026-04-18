@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Http\Requests\StoreItemRequest;
 use App\Http\Requests\UpdateItemRequest;
 use App\Models\Item;
@@ -11,12 +12,13 @@ use App\Services\UniversalImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ItemWebController extends Controller
 {
+    use PersistsMorphAttachments;
+
     /**
      * عرض قائمة الأصناف.
      */
@@ -30,7 +32,7 @@ class ItemWebController extends Controller
         $stockSubquery = '(SELECT COALESCE(SUM(iw.quantity), 0) FROM item_warehouse iw WHERE iw.item_id = items.id)';
 
         $query = Item::query()
-            ->with(['unit:id,name_ar,code', 'warehouses:id,name_ar,name_en,code'])
+            ->with(['unit:id,name_ar,code', 'warehouses:id,name_ar,name_en,code', 'attachments'])
             ->withSum('warehouses as total_stock', 'item_warehouse.quantity');
 
         if ($search !== '') {
@@ -175,23 +177,20 @@ class ItemWebController extends Controller
         $initialQuantity = $validated['initial_quantity'] ?? 0;
         unset($validated['warehouse_id'], $validated['initial_quantity']);
 
-        if (array_key_exists('image', $validated)) {
-            unset($validated['image']);
+        if (array_key_exists('attachments', $validated)) {
+            unset($validated['attachments']);
         }
 
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $name = Str::uuid().'.'.$file->getClientOriginalExtension();
-            $file->storeAs('items', $name, 'public');
-            $imagePath = 'items/'.$name;
+        $uid = (int) auth()->id();
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
         }
 
-        DB::transaction(function () use ($validated, $warehouseId, $initialQuantity, $imagePath, $request) {
+        DB::transaction(function () use ($validated, $warehouseId, $initialQuantity, $request, $uid, $uploads) {
             $item = Item::create(array_merge($validated, [
-                'user_id' => (int) auth()->id(),
+                'user_id' => $uid,
                 'barcode' => $request->filled('barcode') ? $request->string('barcode')->toString() : null,
-                'image_path' => $imagePath,
                 'min_stock' => $validated['min_stock'] ?? 0,
                 'cost' => $validated['cost'] ?? 0,
                 'selling_price' => $validated['selling_price'] ?? null,
@@ -204,6 +203,8 @@ class ItemWebController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            $this->persistMorphAttachments($item, $uploads, $uid, 'items');
         });
 
         return redirect()->route('items.index')->with('success', 'تم حفظ الصنف وربطه بالمستودع الافتراضي بنجاح');
@@ -211,6 +212,7 @@ class ItemWebController extends Controller
 
     public function edit(Item $item): View
     {
+        $item->load('attachments');
         $units = Unit::active()->get();
         $warehouses = Warehouse::active()->get();
 
@@ -220,11 +222,17 @@ class ItemWebController extends Controller
     public function update(UpdateItemRequest $request, Item $item): RedirectResponse
     {
         $data = $request->validated();
-        if (array_key_exists('image', $data)) {
-            unset($data['image']);
+        if (array_key_exists('attachments', $data)) {
+            unset($data['attachments']);
         }
 
-        DB::transaction(function () use ($request, $item, $data) {
+        $uid = (int) auth()->id();
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
+
+        DB::transaction(function () use ($request, $item, $data, $uid, $uploads) {
             $update = [
                 'code' => $data['code'],
                 'barcode' => $data['barcode'] ?? null,
@@ -240,16 +248,11 @@ class ItemWebController extends Controller
                 'is_active' => $request->boolean('is_active'),
             ];
 
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $name = Str::uuid().'.'.$file->getClientOriginalExtension();
-                $file->storeAs('items', $name, 'public');
-                $update['image_path'] = 'items/'.$name;
-            }
-
             $item->update(array_merge($update, [
-                'user_id' => (int) auth()->id(),
+                'user_id' => $uid,
             ]));
+
+            $this->persistMorphAttachments($item, $uploads, $uid, 'items');
         });
 
         return redirect()->route('items.index')->with('success', 'تم تحديث الصنف بنجاح.');

@@ -44,7 +44,8 @@ class UpdateItemRequest extends FormRequest
             'supplier' => ['nullable', 'string', 'max:255'],
             'material_type' => ['nullable', 'string', 'max:255'],
             'cost' => ['nullable', 'numeric', 'min:0'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

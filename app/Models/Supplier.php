@@ -4,15 +4,18 @@ namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Traits\HasAttachments;
 use Filament\Forms\Components\Select;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Supplier extends Model
 {
+    use HasAttachments;
     use HasFactory;
     use ResolvesRouteBindingForTenant;
 
@@ -52,6 +55,15 @@ class Supplier extends Model
     protected static function booted(): void
     {
         static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+
+        static::deleting(function (Supplier $supplier): void {
+            foreach ($supplier->documents as $doc) {
+                if ($doc->file_path && Storage::disk('public')->exists($doc->file_path)) {
+                    Storage::disk('public')->delete($doc->file_path);
+                }
+            }
+            $supplier->documents()->delete();
+        });
     }
 
     public static function generateNextCodeForUser(int $userId): string

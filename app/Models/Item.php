@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Item extends Model
 {
+    use HasAttachments;
     use HasFactory;
     use ResolvesRouteBindingForTenant;
 
@@ -45,7 +47,6 @@ class Item extends Model
         'unit',
         'unit_id',
         'description',
-        'image_path',
         'type',
         'current_stock',
         'min_stock',
@@ -85,6 +86,25 @@ class Item extends Model
     public function getDisplayNameAttribute(): string
     {
         return (string) ($this->name_ar ?: ($this->name_en ?: $this->code));
+    }
+
+    /**
+     * أول مرفق صورة (حسب ترتيب الإدخال) لاستخدامه كصورة مصغّرة في القوائم.
+     */
+    public function catalogThumbUrl(): ?string
+    {
+        $attachments = $this->relationLoaded('attachments')
+            ? $this->attachments
+            : $this->attachments()->orderBy('id')->get();
+
+        foreach ($attachments as $att) {
+            $mime = strtolower((string) ($att->file_type ?? ''));
+            if (str_starts_with($mime, 'image/') && $att->file_path) {
+                return asset('storage/'.ltrim((string) $att->file_path, '/'));
+            }
+        }
+
+        return null;
     }
 
     public function user(): BelongsTo

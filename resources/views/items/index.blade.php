@@ -163,14 +163,7 @@
                         $statusText = $totalStock <= 0 ? 'نفاد الكمية' : (($minStock > 0 && $totalStock <= $minStock) ? 'منخفض المخزون' : 'متوفر');
                         $statusClass = $totalStock <= 0 ? 'status-out' : (($minStock > 0 && $totalStock <= $minStock) ? 'status-low' : 'status-available');
                         $typeLabel = $categories[$item->type] ?? 'غير محدد';
-                        $thumb = null;
-                        if (!empty($item->image_path)) {
-                            $normalizedPath = ltrim($item->image_path, '/');
-                            if (str_starts_with($normalizedPath, 'storage/')) {
-                                $normalizedPath = substr($normalizedPath, 8);
-                            }
-                            $thumb = \Illuminate\Support\Facades\Storage::disk('public')->url($normalizedPath);
-                        }
+                        $thumb = $item->catalogThumbUrl();
                     @endphp
                     <tr>
                         <td><span class="badge text-bg-light border">{{ $item->code }}</span></td>

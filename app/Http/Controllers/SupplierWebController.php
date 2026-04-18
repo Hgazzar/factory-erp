@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Http\Requests\StoreSupplierRequest;
 use App\Http\Requests\UpdateSupplierRequest;
 use App\Models\DebitNote;
@@ -15,7 +16,6 @@ use App\Services\ExcelImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -23,6 +23,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupplierWebController extends Controller
 {
+    use PersistsMorphAttachments;
+
     public function index(Request $request): View|Response
     {
         $query = Supplier::query()->orderBy('code');
@@ -75,20 +77,14 @@ class SupplierWebController extends Controller
         $data['user_id'] = $uid;
         $data['is_active'] = $request->boolean('is_active', true);
 
-        $supplierData = collect($data)->except('documents')->filter(fn ($v) => $v !== null && $v !== '')->all();
+        $supplierData = collect($data)->except(['documents', 'attachments'])->filter(fn ($v) => $v !== null && $v !== '')->all();
         $supplier = Supplier::create($supplierData);
 
-        $folder = "suppliers/{$supplier->id}";
-        if ($request->hasFile('documents')) {
-            foreach ($request->file('documents') as $file) {
-                $path = $file->store($folder, 'public');
-                $supplier->documents()->create([
-                    'file_path' => $path,
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_type' => $file->getMimeType(),
-                ]);
-            }
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
         }
+        $this->persistMorphAttachments($supplier, $uploads, $uid, 'suppliers');
 
         return redirect()
             ->route('purchases.suppliers.show', $supplier)
@@ -97,7 +93,7 @@ class SupplierWebController extends Controller
 
     public function show(Supplier $supplier): View
     {
-        $supplier->load('documents');
+        $supplier->load(['documents', 'attachments']);
 
         return view('purchases.suppliers.show', compact('supplier'));
     }
@@ -121,6 +117,8 @@ class SupplierWebController extends Controller
 
     public function edit(Supplier $supplier): View
     {
+        $supplier->load('attachments');
+
         return view('purchases.suppliers.edit', compact('supplier'));
     }
 
@@ -131,7 +129,13 @@ class SupplierWebController extends Controller
         // عند عدم إرسال الحقل (الـ checkbox غير محدد) يكون false
         $data['is_active'] = $request->boolean('is_active');
 
-        $supplier->update($data);
+        $supplier->update(collect($data)->except('attachments')->all());
+
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
+        $this->persistMorphAttachments($supplier, $uploads, (int) (auth()->id() ?? 1), 'suppliers');
 
         return redirect()
             ->route('purchases.suppliers.index')
@@ -277,13 +281,6 @@ class SupplierWebController extends Controller
                 ->with('error', 'لا يمكن حذف المورد لوجود مستندات أو حركات مرتبطة به (أوامر شراء، فواتير، سندات، …).');
         }
 
-        foreach ($supplier->documents as $doc) {
-            if ($doc->file_path && Storage::disk('public')->exists($doc->file_path)) {
-                Storage::disk('public')->delete($doc->file_path);
-            }
-        }
-
-        $supplier->documents()->delete();
         $supplier->delete();
 
         return redirect()

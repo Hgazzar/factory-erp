@@ -183,7 +183,7 @@
         </div>
 
         <div class="item-create-card mb-4">
-            <div class="card-header">الوصف والصورة</div>
+            <div class="card-header">الوصف والمرفقات</div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -192,10 +192,16 @@
                         @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">صورة المنتج <x-info field="inventory.item_image" /></label>
-                        <input type="file" name="image" id="itemImage" class="form-control form-control-sm" accept="image/*">
+                        <x-attachment-handler
+                            theme="bootstrap"
+                            hint-field="inventory.item_attachments"
+                            title="مرفقات الصنف"
+                            :existing="[]"
+                            :show-existing="false"
+                            help-text="صور، PDF، مستندات (حتى 20 ملفاً). أول صورة تُستخدم كمعاينة في قائمة المنتجات."
+                        />
                         <div class="img-preview-wrap mt-2" id="imagePreviewWrap">
-                            <span class="text-muted small">معاينة الصورة تظهر هنا</span>
+                            <span class="text-muted small">معاينة أول صورة مرفوعة تظهر هنا</span>
                         </div>
                     </div>
                     <div class="col-12">
@@ -234,18 +240,25 @@ document.addEventListener('DOMContentLoaded', function () {
             barcodeInput.value = out;
         });
     }
-    var fileInput = document.getElementById('itemImage');
+    var fileInput = document.querySelector('#itemCreateForm input[name="attachments[]"]');
     var previewWrap = document.getElementById('imagePreviewWrap');
     if (fileInput && previewWrap) {
         fileInput.addEventListener('change', function () {
-            var f = this.files[0];
             previewWrap.innerHTML = '';
-            if (f && f.type.indexOf('image') === 0) {
+            var files = this.files || [];
+            var f = null;
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].type.indexOf('image') === 0) {
+                    f = files[i];
+                    break;
+                }
+            }
+            if (f) {
                 var img = new Image();
                 img.onload = function () { previewWrap.appendChild(img); };
                 img.src = URL.createObjectURL(f);
             } else {
-                previewWrap.innerHTML = '<span class="text-muted small">معاينة الصورة تظهر هنا</span>';
+                previewWrap.innerHTML = '<span class="text-muted small">معاينة أول صورة مرفوعة تظهر هنا</span>';
             }
         });
     }

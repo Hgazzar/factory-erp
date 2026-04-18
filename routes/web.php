@@ -210,6 +210,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::resource('adjustments', \App\Http\Controllers\StockAdjustmentController::class);
         Route::get('adjustments/items-for-adjustment', [\App\Http\Controllers\StockAdjustmentController::class, 'itemsForAdjustment'])->name('adjustments.items-for-adjustment');
         Route::resource('stock-in', StockInController::class);
+        Route::get('audits/items-for-audit', [\App\Http\Controllers\InventoryAuditController::class, 'itemsForAudit'])->name('audits.items-for-audit');
         Route::resource('audits', \App\Http\Controllers\InventoryAuditController::class);
         Route::post('audits/{audit}/approve', [\App\Http\Controllers\InventoryAuditController::class, 'approve'])->name('audits.approve');
         Route::get('movements', [\App\Http\Controllers\StockMovementController::class, 'index'])->name('movements.index');
@@ -461,7 +462,7 @@ Route::get('/run-final-cleanup', function () {
     try {
         // تنظيف الكاش أولاً عشان السيرفر يحس بالتغيير
         Artisan::call('optimize:clear');
-        
+
         // تشغيل أمر المسح الجراحي
         Artisan::call('demo:cleanup', ['--force' => true]);
         $output = Artisan::output();
@@ -473,6 +474,6 @@ Route::get('/run-final-cleanup', function () {
             </div>
         ";
     } catch (\Exception $e) {
-        return "❌ Error: " . $e->getMessage();
+        return '❌ Error: '.$e->getMessage();
     }
 });

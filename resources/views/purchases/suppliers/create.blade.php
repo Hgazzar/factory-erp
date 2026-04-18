@@ -165,14 +165,19 @@
                 </div>
             </div>
 
-            {{-- 5. المستندات الثبوتية --}}
+            {{-- 5. المرفقات (نظام موحد) --}}
             <div class="sup-card p-5">
                 <h2 class="sup-card-title">
                     <span class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(124, 58, 237, 0.15);"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg></span>
-                    المستندات الثبوتية
+                    المرفقات
                 </h2>
-                <p class="text-sm text-gray-600 mb-3">يمكنك رفع صور أو ملفات PDF (متعددة).</p>
-                <input type="file" name="documents[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf" class="w-full px-3 py-2 border border-gray-300 rounded-2xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-gray-100 file:text-gray-700">
+                <x-attachment-handler
+                    hint-field="procurement.supplier_attachments"
+                    title="رفع الملفات"
+                    :existing="[]"
+                    :show-existing="false"
+                    help-text="اختياري — صور، PDF، Excel، Word وغيرها (حتى 20 ملفاً، 10 ميجابايت لكل ملف)."
+                />
             </div>
         </div>
 

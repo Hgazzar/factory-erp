@@ -69,12 +69,20 @@
         </div>
     </div>
 
-    {{-- المستندات المرفوعة --}}
-    <div class="sup-card p-5">
-        <h2 class="text-base font-semibold text-gray-900 mb-4">المستندات الثبوتية</h2>
-        @if($supplier->documents->isEmpty())
-            <p class="text-gray-500 text-sm">لا توجد مستندات مرفوعة.</p>
-        @else
+    {{-- المرفقات (نظام موحد) --}}
+    <div class="sup-card p-5 mb-6">
+        <x-attachment-handler
+            hint-field="procurement.supplier_attachments"
+            title="المرفقات"
+            :existing="$supplier->attachments"
+            :uploadable="false"
+        />
+    </div>
+
+    @if($supplier->documents->isNotEmpty())
+        <div class="sup-card p-5">
+            <h2 class="text-base font-semibold text-gray-900 mb-2">مستندات قديمة (قبل الترقية)</h2>
+            <p class="text-xs text-gray-500 mb-4">تُعرض للمرجعية فقط؛ المرفقات الجديدة تُحفظ في القسم أعلاه.</p>
             <div class="flex flex-wrap gap-4">
                 @foreach($supplier->documents as $doc)
                     <div class="sup-doc-card">
@@ -92,7 +100,7 @@
                     </div>
                 @endforeach
             </div>
-        @endif
-    </div>
+        </div>
+    @endif
 </div>
 @endsection

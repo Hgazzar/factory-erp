@@ -48,6 +48,7 @@
             wire:ignore.self
             method="POST"
             action="{{ route('finance.journals.update', $entry) }}"
+            enctype="multipart/form-data"
             x-data="() => window.journalEntryForm(@js($journalEditXDataConfig))"
         >
             @csrf
@@ -75,6 +76,15 @@
                             class="block w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-800 focus:border-indigo-500 focus:outline-none focus:ring-0">
                     </div>
                 </div>
+            </section>
+
+            <section class="border-b border-gray-100 px-5 py-4">
+                <x-attachment-handler
+                    hint-field="journal_entry_attachments"
+                    title="مرفقات القيد"
+                    :existing="$entry->attachments"
+                    help-text="إضافة ملفات جديدة دون حذف المرفقات الحالية."
+                />
             </section>
 
             <section class="border-b border-gray-100 px-5 py-4">

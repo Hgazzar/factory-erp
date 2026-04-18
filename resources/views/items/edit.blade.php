@@ -106,30 +106,24 @@
             <hr>
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
-                    <label class="form-label">صورة المنتج الحالية</label>
+                    <label class="form-label d-flex align-items-center gap-1">معاينة القائمة <x-info field="inventory.item_image" /></label>
                     <div class="border rounded p-2 bg-light d-flex align-items-center justify-content-center" style="min-height: 120px;">
-                        @php
-                            $thumb = null;
-                            if (!empty($item->image_path)) {
-                                $normalizedPath = ltrim($item->image_path, '/');
-                                if (str_starts_with($normalizedPath, 'storage/')) {
-                                    $normalizedPath = substr($normalizedPath, 8);
-                                }
-                                $thumb = \Illuminate\Support\Facades\Storage::disk('public')->url($normalizedPath);
-                            }
-                        @endphp
+                        @php $thumb = $item->catalogThumbUrl(); @endphp
                         @if($thumb)
                             <img src="{{ $thumb }}" alt="{{ $item->name_ar }}" style="max-height: 100px; max-width: 100%; object-fit: contain;">
                         @else
-                            <span class="text-muted small">لا توجد صورة مرفوعة حالياً.</span>
+                            <span class="text-muted small">لا توجد صورة في المرفقات بعد.</span>
                         @endif
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">تحديث صورة المنتج</label>
-                    <input type="file" name="image" class="form-control form-control-sm @error('image') is-invalid @enderror" accept="image/*">
-                    @error('image')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                    <div class="form-text">اختياري: يمكنك رفع صورة جديدة لاستبدال الحالية.</div>
+                    <x-attachment-handler
+                        theme="bootstrap"
+                        hint-field="inventory.item_attachments"
+                        title="مرفقات الصنف"
+                        :existing="$item->attachments"
+                        help-text="إضافة ملفات جديدة دون حذف المرفقات الحالية. أول صورة تُستخدم كمعاينة في القائمة."
+                    />
                 </div>
             </div>
 

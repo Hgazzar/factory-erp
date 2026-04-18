@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('sales.customers.update', $customer) }}" class="space-y-6">
+    <form method="POST" action="{{ route('sales.customers.update', $customer) }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @method('PUT')
 
@@ -128,6 +128,15 @@
                 <label for="customer_status_switch" class="form-label fw-normal mb-0 small text-muted">نشط عند التفعيل، غير نشط عند الإيقاف</label>
             </div>
             @error('status')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+        </div>
+
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+            <x-attachment-handler
+                hint-field="sales.customer_attachments"
+                title="مرفقات العميل"
+                :existing="$customer->attachments"
+                help-text="إضافة ملفات جديدة دون حذف المرفقات الحالية."
+            />
         </div>
 
         <div class="flex flex-wrap items-center gap-3">

@@ -25,7 +25,7 @@
     </header>
 
     <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <form method="POST" action="{{ route('purchases.suppliers.update', $supplier) }}" class="space-y-6">
+        <form method="POST" action="{{ route('purchases.suppliers.update', $supplier) }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @method('PUT')
 
@@ -74,6 +74,15 @@
                                {{ old('is_active', $supplier->is_active) ? 'checked' : '' }}>
                         <span>مورد نشط</span>
                     </label>
+                </div>
+
+                <div class="md:col-span-12 rounded-lg border border-gray-100 bg-gray-50 p-4">
+                    <x-attachment-handler
+                        hint-field="procurement.supplier_attachments"
+                        title="المرفقات"
+                        :existing="$supplier->attachments"
+                        help-text="حتى 20 ملفاً، 10 ميجابايت لكل ملف."
+                    />
                 </div>
             </div>
 

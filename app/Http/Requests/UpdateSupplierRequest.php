@@ -31,6 +31,8 @@ class UpdateSupplierRequest extends FormRequest
             'commercial_register' => ['nullable', 'string', 'max:100', Rule::unique('suppliers', 'commercial_register')->where('user_id', $userId)->ignore($supplier->id)],
             'currency' => ['nullable', 'string', 'max:5'],
             'is_active' => ['nullable', 'boolean'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ];
     }
 

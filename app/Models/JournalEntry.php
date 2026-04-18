@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class JournalEntry extends Model
 {
+    use HasAttachments;
     use HasFactory;
     use ResolvesRouteBindingForTenant;
 
@@ -56,4 +58,3 @@ class JournalEntry extends Model
         return (float) $this->items()->sum('credit');
     }
 }
-

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
@@ -9,14 +10,14 @@ use App\Services\UniversalImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PurchaseOrderWebController extends Controller
 {
+    use PersistsMorphAttachments;
+
     private const PENDING_STATUS = 'معلق';
 
     public function importTemplate(): Response
@@ -205,7 +206,7 @@ class PurchaseOrderWebController extends Controller
                 $order->items()->create($line);
             }
 
-            $this->persistPurchaseOrderAttachments($order, $uploads, $uid);
+            $this->persistMorphAttachments($order, $uploads, $uid, 'purchase-orders');
         });
 
         return redirect()->route('purchases.orders.index')->with('success', 'تم إنشاء أمر الشراء بنجاح.');
@@ -392,7 +393,7 @@ class PurchaseOrderWebController extends Controller
                 $order->items()->create($line);
             }
 
-            $this->persistPurchaseOrderAttachments($order, $uploads, $uid);
+            $this->persistMorphAttachments($order, $uploads, $uid, 'purchase-orders');
         });
 
         return redirect()->route('purchases.orders.show', $order)->with('success', 'تم تحديث أمر الشراء.');
@@ -406,40 +407,11 @@ class PurchaseOrderWebController extends Controller
                 ->with('error', 'يمكن حذف أوامر الشراء في حالة «معلق» فقط.');
         }
 
-        $order->load('attachments');
-
         DB::transaction(function () use ($order): void {
-            foreach ($order->attachments as $attachment) {
-                if ($attachment->file_path && Storage::disk('public')->exists($attachment->file_path)) {
-                    Storage::disk('public')->delete($attachment->file_path);
-                }
-            }
-            $order->attachments()->delete();
             $order->items()->delete();
             $order->delete();
         });
 
         return redirect()->route('purchases.orders.index')->with('success', 'تم حذف أمر الشراء.');
-    }
-
-    /**
-     * @param  array<int, mixed>  $uploads
-     */
-    private function persistPurchaseOrderAttachments(PurchaseOrder $order, array $uploads, int $uid): void
-    {
-        $folder = 'purchase-orders/'.$order->id;
-        foreach ($uploads as $file) {
-            if (! $file instanceof UploadedFile || ! $file->isValid()) {
-                continue;
-            }
-            $path = $file->store($folder, 'public');
-            $order->attachments()->create([
-                'file_path' => $path,
-                'file_name' => $file->getClientOriginalName() ?: basename($path),
-                'file_type' => $file->getMimeType(),
-                'file_size' => (int) ($file->getSize() ?: 0),
-                'user_id' => $uid,
-            ]);
-        }
     }
 }

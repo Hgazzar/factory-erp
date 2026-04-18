@@ -43,8 +43,8 @@ class StoreSupplierRequest extends FormRequest
             'iban' => ['nullable', 'string', 'max:50'],
             'swift_code' => ['nullable', 'string', 'max:50'],
             'is_active' => ['nullable', 'boolean'],
-            'documents' => ['nullable', 'array'],
-            'documents.*' => ['file', 'mimes:jpeg,jpg,png,gif,webp,pdf', 'max:10240'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ];
     }
 

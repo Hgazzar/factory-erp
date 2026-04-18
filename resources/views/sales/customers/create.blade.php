@@ -24,7 +24,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('sales.customers.store') }}" class="space-y-6">
+    <form method="POST" action="{{ route('sales.customers.store') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
 
         {{-- المعلومات الأساسية --}}
@@ -119,6 +119,16 @@
                     @error('postal_code')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <x-attachment-handler
+                hint-field="sales.customer_attachments"
+                title="مرفقات العميل"
+                :existing="[]"
+                :show-existing="false"
+                help-text="عقود، مستندات تعريف، ملفات PDF أو صور (حتى 20 ملفاً، 10 ميجابايت لكل ملف)."
+            />
         </div>
 
         {{-- الحالة والأزرار --}}

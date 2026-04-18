@@ -54,6 +54,7 @@
         id="journal-entry-form"
         method="POST"
         action="{{ route('finance.journals.store') }}"
+        enctype="multipart/form-data"
         class="space-y-6"
         novalidate
     >
@@ -108,6 +109,16 @@
                         >
                     </div>
                 </div>
+            </section>
+
+            <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                <x-attachment-handler
+                    hint-field="journal_entry_attachments"
+                    title="مرفقات القيد"
+                    :existing="[]"
+                    :show-existing="false"
+                    help-text="مستندات داعمة اختيارية (حتى 20 ملفاً، 10 ميجابايت لكل ملف)."
+                />
             </section>
 
             <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">

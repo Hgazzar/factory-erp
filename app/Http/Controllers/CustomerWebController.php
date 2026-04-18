@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Models\Customer;
 use App\Services\UniversalImportService;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class CustomerWebController extends Controller
 {
+    use PersistsMorphAttachments;
+
     public function index(Request $request): View|Response
     {
         $searchTerm = trim((string) $request->input('q', ''));
@@ -92,6 +95,8 @@ class CustomerWebController extends Controller
 
     public function show(Customer $customer): View
     {
+        $customer->load('attachments');
+
         return view('sales.customers.show', compact('customer'));
     }
 
@@ -126,6 +131,8 @@ class CustomerWebController extends Controller
             'region' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ], [
             'phone.unique' => 'هذا العميل (رقم الهاتف) مسجل مسبقاً في النظام.',
             'vat_number.unique' => 'هذا العميل (رقم ضريبي VAT) مسجل مسبقاً في النظام.',
@@ -136,8 +143,14 @@ class CustomerWebController extends Controller
         $data['credit_limit'] = isset($data['credit_limit']) ? (float) $data['credit_limit'] : null;
         $data['tax_number'] = $data['vat_number'] ?? null;
 
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
+
         try {
-            Customer::create($data);
+            $customer = Customer::create($data);
+            $this->persistMorphAttachments($customer, $uploads, $data['user_id'], 'customers');
         } catch (\Throwable $e) {
             report($e);
 
@@ -153,6 +166,8 @@ class CustomerWebController extends Controller
 
     public function edit(Customer $customer): View
     {
+        $customer->load('attachments');
+
         return view('sales.customers.edit', compact('customer'));
     }
 
@@ -180,6 +195,8 @@ class CustomerWebController extends Controller
             'region' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'status' => ['required', Rule::in(['active', 'inactive'])],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ], [
             'phone.unique' => 'هذا العميل (رقم الهاتف) مسجل مسبقاً في النظام.',
             'vat_number.unique' => 'هذا العميل (رقم ضريبي VAT) مسجل مسبقاً في النظام.',
@@ -188,7 +205,13 @@ class CustomerWebController extends Controller
         $data['credit_limit'] = isset($data['credit_limit']) ? (float) $data['credit_limit'] : null;
         $data['tax_number'] = $data['vat_number'] ?? null;
 
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
+
         $customer->update($data);
+        $this->persistMorphAttachments($customer, $uploads, (int) (auth()->id() ?? 1), 'customers');
 
         return redirect()
             ->route('sales.customers.index')

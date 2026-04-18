@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Models\Account;
 use App\Models\JournalEntry;
 use Illuminate\Http\RedirectResponse;
@@ -12,6 +13,8 @@ use Illuminate\View\View;
 
 class JournalEntryWebController extends Controller
 {
+    use PersistsMorphAttachments;
+
     public function index(Request $request): View
     {
         $query = JournalEntry::query()
@@ -63,6 +66,8 @@ class JournalEntryWebController extends Controller
             'lines.*.cost_center' => ['nullable', 'string', 'max:120'],
             'lines.*.debit' => ['nullable', 'numeric', 'min:0'],
             'lines.*.credit' => ['nullable', 'numeric', 'min:0'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ], [
             'date.required' => 'تاريخ القيد مطلوب.',
             'date.date' => 'تاريخ القيد غير صالح.',
@@ -75,6 +80,11 @@ class JournalEntryWebController extends Controller
             'lines.*.credit.numeric' => 'مبلغ الدائن يجب أن يكون رقماً.',
             'lines.*.credit.min' => 'مبلغ الدائن لا يمكن أن يكون سالباً.',
         ]);
+
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
 
         $lines = collect($data['lines'])
             ->map(function ($line) {
@@ -111,9 +121,9 @@ class JournalEntryWebController extends Controller
                 ->withErrors(['balance' => 'القيد غير متوازن. يجب أن يكون إجمالي المدين مساوياً لإجمالي الدائن وأكبر من صفر.']);
         }
 
-        DB::transaction(function () use ($data, $lines, $totalDebit) {
+        DB::transaction(function () use ($data, $lines, $totalDebit, $uid, $uploads) {
             $entry = JournalEntry::create([
-                'user_id' => (int) auth()->id(),
+                'user_id' => $uid,
                 'date' => $data['date'],
                 'reference' => $data['reference'] ?? null,
                 'description' => $data['description'] ?? null,
@@ -124,6 +134,8 @@ class JournalEntryWebController extends Controller
             foreach ($lines as $line) {
                 $entry->items()->create($line);
             }
+
+            $this->persistMorphAttachments($entry, $uploads, $uid, 'journal-entries');
         });
 
         return redirect()
@@ -134,7 +146,7 @@ class JournalEntryWebController extends Controller
     public function edit(JournalEntry $journal_entry): View
     {
         $accounts = Account::orderBy('code')->get();
-        $journal_entry->load('items');
+        $journal_entry->load(['items', 'attachments']);
 
         return view('finance.journals.edit', ['entry' => $journal_entry, 'accounts' => $accounts]);
     }
@@ -153,6 +165,8 @@ class JournalEntryWebController extends Controller
             'lines.*.cost_center' => ['nullable', 'string', 'max:120'],
             'lines.*.debit' => ['nullable', 'numeric', 'min:0'],
             'lines.*.credit' => ['nullable', 'numeric', 'min:0'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ], [
             'date.required' => 'تاريخ القيد مطلوب.',
             'date.date' => 'تاريخ القيد غير صالح.',
@@ -165,6 +179,11 @@ class JournalEntryWebController extends Controller
             'lines.*.credit.numeric' => 'مبلغ الدائن يجب أن يكون رقماً.',
             'lines.*.credit.min' => 'مبلغ الدائن لا يمكن أن يكون سالباً.',
         ]);
+
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
 
         $lines = collect($data['lines'])
             ->map(function ($line) {
@@ -198,7 +217,7 @@ class JournalEntryWebController extends Controller
                 ->withErrors(['balance' => 'القيد غير متوازن. يجب أن يكون إجمالي المدين مساوياً لإجمالي الدائن وأكبر من صفر.']);
         }
 
-        DB::transaction(function () use ($journal_entry, $data, $lines, $totalDebit) {
+        DB::transaction(function () use ($journal_entry, $data, $lines, $totalDebit, $uid, $uploads) {
             $journal_entry->update([
                 'date' => $data['date'],
                 'reference' => $data['reference'] ?? null,
@@ -210,6 +229,8 @@ class JournalEntryWebController extends Controller
             foreach ($lines as $line) {
                 $journal_entry->items()->create($line);
             }
+
+            $this->persistMorphAttachments($journal_entry, $uploads, $uid, 'journal-entries');
         });
 
         return redirect()

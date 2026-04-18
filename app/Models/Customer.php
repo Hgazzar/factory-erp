@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Scopes\CustomerTenantScope;
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasAttachments;
+    use HasFactory;
+    use SoftDeletes;
 
     protected $appends = [
         'display_name',

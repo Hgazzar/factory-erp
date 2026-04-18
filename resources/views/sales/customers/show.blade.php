@@ -79,5 +79,14 @@
             </dl>
         </div>
     </div>
+
+    <div class="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+        <x-attachment-handler
+            hint-field="sales.customer_attachments"
+            title="المرفقات"
+            :existing="$customer->attachments"
+            :uploadable="false"
+        />
+    </div>
 </div>
 @endsection
