@@ -5,6 +5,7 @@ use App\Http\Controllers\AccountWebController;
 use App\Http\Controllers\ApAgingController;
 use App\Http\Controllers\Api\ProductSearchController;
 use App\Http\Controllers\ArAgingController;
+use App\Http\Controllers\AttachmentWebController;
 use App\Http\Controllers\AuditLogWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
@@ -193,6 +194,8 @@ Route::get('/storage/{path}', function (string $path) {
 */
 Route::middleware(['auth', 'role:admin'])->group(function () {
 
+    Route::delete('attachments/{attachment}', [AttachmentWebController::class, 'destroy'])->name('attachments.destroy');
+
     // Inventory & Items
     Route::get('api/products/search', [ProductSearchController::class, 'search'])->name('api.products.search');
     Route::get('items/{item}', [ItemWebController::class, 'show'])->whereNumber('item')->name('items.show');
@@ -322,6 +325,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('orders', [PurchaseOrderWebController::class, 'store'])->name('orders.store');
         Route::get('orders/{order}/edit', [PurchaseOrderWebController::class, 'edit'])->name('orders.edit');
         Route::put('orders/{order}', [PurchaseOrderWebController::class, 'update'])->name('orders.update');
+        Route::post('orders/{order}/complete-receipt', [PurchaseOrderWebController::class, 'completeReceipt'])->name('orders.complete-receipt');
         Route::delete('orders/{order}', [PurchaseOrderWebController::class, 'destroy'])->name('orders.destroy');
         Route::get('orders/{order}', [PurchaseOrderWebController::class, 'show'])->name('orders.show');
         Route::get('receive-notes', [ReceiveNoteWebController::class, 'index'])->name('receive-notes.index');
@@ -351,6 +355,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('orders/import', [SalesOrderWebController::class, 'import'])->name('orders.import');
         Route::get('orders/create', [SalesOrderWebController::class, 'create'])->name('orders.create');
         Route::post('orders', [SalesOrderWebController::class, 'store'])->name('orders.store');
+        Route::post('orders/{sales_order}/attachments', [SalesOrderWebController::class, 'storeAttachments'])->name('orders.attachments.store');
+        Route::post('orders/{sales_order}/complete-accounting', [SalesOrderWebController::class, 'completeAccounting'])->name('orders.complete-accounting');
         Route::get('orders/{sales_order}', [SalesOrderWebController::class, 'show'])->name('orders.show');
         Route::get('orders/{sales_order}/print', [SalesOrderWebController::class, 'print'])->name('orders.print');
         Route::get('orders/{sales_order}/delivery-orders/create', [DeliveryOrderWebController::class, 'create'])->name('orders.delivery-orders.create');

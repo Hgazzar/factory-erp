@@ -6,6 +6,7 @@
     $typeLabel = match($account->type) {
         \App\Models\Account::TYPE_ASSET => 'أصل',
         \App\Models\Account::TYPE_LIABILITY => 'خصم',
+        \App\Models\Account::TYPE_EQUITY => 'حقوق ملكية',
         \App\Models\Account::TYPE_EXPENSE => 'مصروف',
         \App\Models\Account::TYPE_REVENUE => 'إيراد',
         default => $account->type ?? '—',

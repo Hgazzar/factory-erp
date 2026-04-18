@@ -18,6 +18,7 @@ class JournalEntry extends Model
 
     protected $fillable = [
         'user_id',
+        'created_by',
         'reference',
         'date',
         'description',
@@ -41,6 +42,11 @@ class JournalEntry extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items(): HasMany

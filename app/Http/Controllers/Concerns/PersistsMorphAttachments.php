@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Services\AttachmentService;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\UploadedFile;
 
 trait PersistsMorphAttachments
 {
@@ -12,22 +12,6 @@ trait PersistsMorphAttachments
      */
     protected function persistMorphAttachments(Model $model, array $uploads, int $userId, string $folderPrefix): void
     {
-        $folder = trim($folderPrefix, '/').'/'.$model->getKey();
-
-        foreach ($uploads as $file) {
-            if (! $file instanceof UploadedFile || ! $file->isValid()) {
-                continue;
-            }
-
-            $path = $file->store($folder, 'public');
-
-            $model->attachments()->create([
-                'file_path' => $path,
-                'file_name' => $file->getClientOriginalName() ?: basename($path),
-                'file_type' => $file->getMimeType(),
-                'file_size' => (int) ($file->getSize() ?: 0),
-                'user_id' => $userId,
-            ]);
-        }
+        app(AttachmentService::class)->storeUploadedFiles($model, $uploads, $userId, $folderPrefix);
     }
 }

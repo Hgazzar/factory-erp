@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Http\Controllers\Concerns\RespondsWithBusinessJsonErrors;
 use App\Models\AuditTrail;
 use App\Models\Customer;
@@ -11,6 +12,7 @@ use App\Models\ItemWarehouse;
 use App\Models\Quotation;
 use App\Models\SalesOrder;
 use App\Models\Warehouse;
+use App\Services\FinancialRecordingService;
 use App\Services\UniversalImportService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +26,7 @@ use Illuminate\View\View;
 
 class SalesOrderWebController extends Controller
 {
+    use PersistsMorphAttachments;
     use RespondsWithBusinessJsonErrors;
 
     public function importTemplate(): Response
@@ -189,7 +192,14 @@ class SalesOrderWebController extends Controller
             'lines.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.description' => ['nullable', 'string', 'max:500'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ]);
+
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
 
         $dedupeKey = 'sales_order_dedupe:'.auth()->id().':'.hash('sha256', json_encode($request->only([
             'customer_id', 'quotation_id', 'order_date', 'expected_delivery', 'lines',
@@ -286,7 +296,7 @@ class SalesOrderWebController extends Controller
 
         $order = null;
         $uid = (int) (auth()->id() ?? 1);
-        DB::transaction(function () use ($request, $data, $lines, $total, $uid, &$order) {
+        DB::transaction(function () use ($request, $data, $lines, $total, $uid, &$order, $uploads) {
             // 1) تحقق من كفاية المخزون لكل بند داخل نفس المستودع
             foreach ($lines as $line) {
                 $pivot = ItemWarehouse::where('item_id', $line['item_id'])
@@ -325,7 +335,7 @@ class SalesOrderWebController extends Controller
                 'expected_delivery' => $data['expected_delivery'],
                 'reference' => $data['reference'] ?? null,
                 'notes' => $data['notes'] ?? null,
-                'status' => 'معلق',
+                'status' => SalesOrder::STATUS_PENDING,
                 'total' => $total,
             ]);
 
@@ -364,6 +374,8 @@ class SalesOrderWebController extends Controller
                 Quotation::where('id', $data['quotation_id'])
                     ->update(['status' => Quotation::STATUS_CONVERTED_TO_ORDER]);
             }
+
+            $this->persistMorphAttachments($order, $uploads, $uid, 'sales-orders');
         });
 
         $order->load('customer');
@@ -403,9 +415,73 @@ class SalesOrderWebController extends Controller
             'customer',
             'items.item:id,code,name_ar,type',
             'deliveryOrders' => fn ($q) => $q->orderByDesc('id'),
+            'attachments',
+            'accountingJournalEntry',
         ]);
 
         return view('sales.orders.show', compact('salesOrder'));
+    }
+
+    public function storeAttachments(Request $request, SalesOrder $salesOrder): RedirectResponse
+    {
+        if ($salesOrder->status !== SalesOrder::STATUS_PENDING) {
+            return back()->with('error', 'يمكن إضافة المرفقات لأوامر البيع في حالة «معلق» فقط.');
+        }
+
+        $request->validate([
+            'attachments' => ['required', 'array', 'min:1', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
+        ], [
+            'attachments.required' => 'اختر ملفاً واحداً على الأقل.',
+        ]);
+
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
+        }
+
+        $uid = (int) (auth()->id() ?? 1);
+        DB::transaction(function () use ($salesOrder, $uploads, $uid): void {
+            $this->persistMorphAttachments($salesOrder, $uploads, $uid, 'sales-orders');
+        });
+
+        return back()->with('success', 'تم حفظ المرفقات.');
+    }
+
+    public function completeAccounting(Request $request, SalesOrder $salesOrder, FinancialRecordingService $financialRecordingService): RedirectResponse
+    {
+        if ($salesOrder->status !== SalesOrder::STATUS_PENDING) {
+            return back()->with('error', 'يمكن ترحيل الإكمال المحاسبي لأوامر «معلق» فقط.');
+        }
+
+        if ($salesOrder->journal_entry_id) {
+            return back()->with('error', 'تم ترحيل هذا الأمر مسبقاً إلى دفتر اليومية.');
+        }
+
+        $request->validate([
+            'settlement' => ['required', 'in:receivable,cash'],
+        ], [
+            'settlement.required' => 'اختر طريقة التسوية (ذمم مدينة أو نقدي).',
+        ]);
+
+        try {
+            DB::transaction(function () use ($salesOrder, $request, $financialRecordingService): void {
+                $entry = $financialRecordingService->recordSalesOrderCompletion(
+                    $salesOrder,
+                    (string) $request->input('settlement')
+                );
+                $salesOrder->update([
+                    'status' => SalesOrder::STATUS_COMPLETED,
+                    'journal_entry_id' => $entry->id,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', $e->getMessage() ?: 'تعذر ترحيل أمر البيع. تحقق من دليل الحسابات (1030/1010/4200/5000/1042) ومن تكلفة الأصناف.');
+        }
+
+        return back()->with('success', 'تم ترحيل أمر البيع وتحديث الحالة إلى «مكتمل».');
     }
 
     public function print(SalesOrder $salesOrder): View

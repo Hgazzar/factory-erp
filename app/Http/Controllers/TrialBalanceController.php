@@ -20,8 +20,11 @@ class TrialBalanceController extends Controller
         $fromDate = $validated['from_date'] ?? null;
         $toDate = $validated['to_date'] ?? null;
 
+        $tenantId = (int) auth()->id();
+
         $periodRows = DB::table('journal_items as ji')
             ->join('journal_entries as je', 'je.id', '=', 'ji.journal_entry_id')
+            ->where('je.user_id', $tenantId)
             ->select(
                 'ji.account_id',
                 DB::raw('COALESCE(SUM(ji.debit), 0) as period_debit'),
@@ -37,6 +40,7 @@ class TrialBalanceController extends Controller
         if ($fromDate) {
             $openingRows = DB::table('journal_items as ji')
                 ->join('journal_entries as je', 'je.id', '=', 'ji.journal_entry_id')
+                ->where('je.user_id', $tenantId)
                 ->select(
                     'ji.account_id',
                     DB::raw('COALESCE(SUM(ji.debit), 0) as opening_debit'),
@@ -55,6 +59,7 @@ class TrialBalanceController extends Controller
             ->values();
 
         $accounts = Account::query()
+            ->where('user_id', $tenantId)
             ->whereIn('id', $accountIds)
             ->orderBy('code')
             ->get(['id', 'code', 'name_ar', 'name_en']);
@@ -98,20 +103,20 @@ class TrialBalanceController extends Controller
 
     private function exportExcel(array $rows, ?string $fromDate, ?string $toDate): StreamedResponse
     {
-        $fileName = 'trial-balance-' . now()->format('Ymd-His') . '.xls';
+        $fileName = 'trial-balance-'.now()->format('Ymd-His').'.xls';
 
         return response()->streamDownload(function () use ($rows, $fromDate, $toDate): void {
             echo "\xEF\xBB\xBF";
             echo "ميزان المراجعة\n";
-            echo 'الفترة: من ' . ($fromDate ?: '—') . ' إلى ' . ($toDate ?: '—') . "\n\n";
+            echo 'الفترة: من '.($fromDate ?: '—').' إلى '.($toDate ?: '—')."\n\n";
             echo "كود الحساب\tاسم الحساب\tمدين\tدائن\tالرصيد النهائي\n";
 
             foreach ($rows as $row) {
-                echo $row['account_code'] . "\t"
-                    . $row['account_name'] . "\t"
-                    . number_format((float) $row['debit'], 2, '.', '') . "\t"
-                    . number_format((float) $row['credit'], 2, '.', '') . "\t"
-                    . number_format((float) $row['closing_balance'], 2, '.', '') . "\n";
+                echo $row['account_code']."\t"
+                    .$row['account_name']."\t"
+                    .number_format((float) $row['debit'], 2, '.', '')."\t"
+                    .number_format((float) $row['credit'], 2, '.', '')."\t"
+                    .number_format((float) $row['closing_balance'], 2, '.', '')."\n";
             }
         }, $fileName, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',

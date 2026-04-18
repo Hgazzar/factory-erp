@@ -22,7 +22,7 @@
         </a>
     </div>
 
-    <form id="order-form" method="POST" action="{{ route('sales.orders.store') }}" @submit.prevent="submitForm($event)">
+    <form id="order-form" method="POST" action="{{ route('sales.orders.store') }}" enctype="multipart/form-data" @submit.prevent="submitForm($event)">
         @csrf
         <input type="hidden" name="quotation_id" :value="quotationId || ''">
 
@@ -187,6 +187,16 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
+            <x-attachment-handler
+                hint-field="sales.order_attachments"
+                title="مرفقات أمر البيع"
+                :existing="[]"
+                :show-existing="false"
+                help-text="مستندات اختيارية (حتى 20 ملفاً، 10 ميجابايت لكل ملف). تُحفظ مع الأمر في مجلد sales-orders بنفس أسلوب المشتريات."
+            />
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-3">

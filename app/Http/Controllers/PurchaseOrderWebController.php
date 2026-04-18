@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
+use App\Services\FinancialRecordingService;
 use App\Services\UniversalImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,8 @@ class PurchaseOrderWebController extends Controller
     use PersistsMorphAttachments;
 
     private const PENDING_STATUS = 'معلق';
+
+    private const RECEIVED_STATUS = 'مستلم';
 
     public function importTemplate(): Response
     {
@@ -72,9 +75,48 @@ class PurchaseOrderWebController extends Controller
 
     public function show(PurchaseOrder $order): View
     {
-        $order->load(['supplier', 'items.item', 'attachments']);
+        $order->load(['supplier', 'items.item', 'attachments', 'receiptJournalEntry']);
 
         return view('purchases.orders.show', ['order' => $order]);
+    }
+
+    /**
+     * تسجيل استلام أمر الشراء محاسبياً: مدين مخزون، دائن ذمم دائنة، ثم تغيير حالة الأمر إلى «مستلم».
+     */
+    public function completeReceipt(PurchaseOrder $order): RedirectResponse
+    {
+        if ($order->status !== self::PENDING_STATUS) {
+            return redirect()
+                ->route('purchases.orders.show', $order)
+                ->with('error', 'يمكن تنفيذ الاستلام المحاسبي لأوامر الشراء في حالة «معلق» فقط.');
+        }
+
+        if ($order->journal_entry_id) {
+            return redirect()
+                ->route('purchases.orders.show', $order)
+                ->with('error', 'تم ترحيل هذا الأمر مسبقاً إلى دفتر اليومية.');
+        }
+
+        try {
+            DB::transaction(function () use ($order): void {
+                $order->loadMissing('items.item');
+                $entry = app(FinancialRecordingService::class)->recordPurchaseOrderReceipt($order);
+                $order->update([
+                    'status' => self::RECEIVED_STATUS,
+                    'journal_entry_id' => $entry->id,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('purchases.orders.show', $order)
+                ->with('error', $e->getMessage() ?: 'تعذر ترحيل الاستلام المحاسبي. تحقق من دليل الحسابات (مخزون 1041/1042، ذمم دائنة 2010).');
+        }
+
+        return redirect()
+            ->route('purchases.orders.show', $order)
+            ->with('success', 'تم تسجيل الاستلام وإنشاء قيد اليومية (مدين مخزون / دائن ذمم دائنة) بنجاح.');
     }
 
     public function create(): View

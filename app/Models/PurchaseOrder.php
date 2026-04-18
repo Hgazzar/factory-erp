@@ -31,6 +31,7 @@ class PurchaseOrder extends Model
         'notes',
         'terms_and_conditions',
         'status',
+        'journal_entry_id',
         'subtotal',
         'total_discount',
         'total_tax',
@@ -113,5 +114,10 @@ class PurchaseOrder extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseOrderItem::class, 'purchase_order_id');
+    }
+
+    public function receiptJournalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'journal_entry_id');
     }
 }

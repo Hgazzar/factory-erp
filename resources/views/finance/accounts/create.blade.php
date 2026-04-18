@@ -54,13 +54,15 @@
                             <option value="asset">عملاء (ذمم مدينة)</option>
                             <option value="asset">مخزون</option>
                         </optgroup>
-                        <optgroup label="الالتزامات وحقوق الملكية">
-                            <option value="liability">التزامات متداولة</option>
+                        <optgroup label="الالتزامات">
+                            <option value="liability" {{ old('type') === 'liability' ? 'selected' : '' }}>التزامات متداولة</option>
                             <option value="liability">التزامات طويلة الأجل</option>
                             <option value="liability">موردون (ذمم دائنة)</option>
                             <option value="liability">ضريبة مستحقة الدفع</option>
-                            <option value="liability" {{ old('type') === 'liability' ? 'selected' : '' }}>حقوق الملكية</option>
-                            <option value="liability">أرباح محتجزة</option>
+                        </optgroup>
+                        <optgroup label="حقوق الملكية">
+                            <option value="equity" {{ old('type') === 'equity' ? 'selected' : '' }}>رأس المال / حقوق الملكية</option>
+                            <option value="equity">أرباح محتجزة</option>
                         </optgroup>
                         <optgroup label="إيرادات">
                             <option value="revenue" {{ old('type') === 'revenue' ? 'selected' : '' }}>إيرادات المبيعات</option>

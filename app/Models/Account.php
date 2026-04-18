@@ -23,6 +23,8 @@ class Account extends Model
 
     public const TYPE_REVENUE = 'revenue';
 
+    public const TYPE_EQUITY = 'equity';
+
     protected $fillable = [
         'user_id',
         'code',

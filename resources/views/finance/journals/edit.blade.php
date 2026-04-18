@@ -83,6 +83,7 @@
                     hint-field="journal_entry_attachments"
                     title="مرفقات القيد"
                     :existing="$entry->attachments"
+                    :allow-delete="true"
                     help-text="إضافة ملفات جديدة دون حذف المرفقات الحالية."
                 />
             </section>

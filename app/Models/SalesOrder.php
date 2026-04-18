@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,8 +12,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SalesOrder extends Model
 {
+    use HasAttachments;
     use HasFactory;
     use ResolvesRouteBindingForTenant;
+
+    public const STATUS_PENDING = 'معلق';
+
+    public const STATUS_COMPLETED = 'مكتمل';
+
+    public const STATUS_CANCELLED = 'ملغي';
 
     protected $fillable = [
         'user_id',
@@ -25,6 +33,7 @@ class SalesOrder extends Model
         'status',
         'reference',
         'notes',
+        'journal_entry_id',
     ];
 
     protected function casts(): array
@@ -91,5 +100,10 @@ class SalesOrder extends Model
     public function deliveryOrders(): HasMany
     {
         return $this->hasMany(DeliveryOrder::class);
+    }
+
+    public function accountingJournalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'journal_entry_id');
     }
 }

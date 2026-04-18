@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             SupplierSeeder::class,
             ItemSeeder::class,
             AccountSeeder::class,
+            FinanceModuleSeeder::class,
             JournalEntrySeeder::class,
             ExpenseCategorySeeder::class,
             FixedAssetSeeder::class,

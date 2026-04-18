@@ -85,7 +85,7 @@ class AccountWebController extends Controller
             'name_ar' => ['required', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
             'parent_id' => ['nullable', 'integer', Rule::exists('accounts', 'id')->where('user_id', auth()->id())],
-            'type' => ['required', 'in:asset,liability,expense,revenue'],
+            'type' => ['required', 'in:asset,liability,equity,expense,revenue'],
             'opening_balance' => ['nullable', 'numeric'],
             'is_bank' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
@@ -198,7 +198,7 @@ class AccountWebController extends Controller
                 ->get();
             $csv = "\xEF\xBB\xBF";
             $csv .= "الكود,الاسم,النوع,الرصيد الافتتاحي,نشط\n";
-            $typeLabels = ['asset' => 'أصول', 'liability' => 'خصوم', 'expense' => 'مصروف', 'revenue' => 'إيراد'];
+            $typeLabels = ['asset' => 'أصول', 'liability' => 'خصوم', 'equity' => 'حقوق ملكية', 'expense' => 'مصروف', 'revenue' => 'إيراد'];
             foreach ($accounts as $a) {
                 $csv .= '"'.str_replace('"', '""', $a->code ?? '').'","'.str_replace('"', '""', $a->name_ar ?? $a->name_en ?? '').'","'.($typeLabels[$a->type] ?? $a->type).'",'.(float) ($a->opening_balance ?? 0).','.($a->is_active ? 'نعم' : 'لا')."\n";
             }

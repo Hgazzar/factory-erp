@@ -124,6 +124,7 @@ class JournalEntryWebController extends Controller
         DB::transaction(function () use ($data, $lines, $totalDebit, $uid, $uploads) {
             $entry = JournalEntry::create([
                 'user_id' => $uid,
+                'created_by' => $uid,
                 'date' => $data['date'],
                 'reference' => $data['reference'] ?? null,
                 'description' => $data['description'] ?? null,
@@ -143,15 +144,20 @@ class JournalEntryWebController extends Controller
             ->with('success', 'تم حفظ القيد المحاسبي بنجاح.');
     }
 
-    public function edit(JournalEntry $journal_entry): View
+    public function show(JournalEntry $journal): RedirectResponse
     {
-        $accounts = Account::orderBy('code')->get();
-        $journal_entry->load(['items', 'attachments']);
-
-        return view('finance.journals.edit', ['entry' => $journal_entry, 'accounts' => $accounts]);
+        return redirect()->route('finance.journals.edit', $journal);
     }
 
-    public function update(Request $request, JournalEntry $journal_entry): RedirectResponse
+    public function edit(JournalEntry $journal): View
+    {
+        $accounts = Account::orderBy('code')->get();
+        $journal->load(['items', 'attachments']);
+
+        return view('finance.journals.edit', ['entry' => $journal, 'accounts' => $accounts]);
+    }
+
+    public function update(Request $request, JournalEntry $journal): RedirectResponse
     {
         $uid = (int) auth()->id();
         $data = $request->validate([
@@ -217,20 +223,20 @@ class JournalEntryWebController extends Controller
                 ->withErrors(['balance' => 'القيد غير متوازن. يجب أن يكون إجمالي المدين مساوياً لإجمالي الدائن وأكبر من صفر.']);
         }
 
-        DB::transaction(function () use ($journal_entry, $data, $lines, $totalDebit, $uid, $uploads) {
-            $journal_entry->update([
+        DB::transaction(function () use ($journal, $data, $lines, $totalDebit, $uid, $uploads) {
+            $journal->update([
                 'date' => $data['date'],
                 'reference' => $data['reference'] ?? null,
                 'description' => $data['description'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'total' => $totalDebit,
             ]);
-            $journal_entry->items()->delete();
+            $journal->items()->delete();
             foreach ($lines as $line) {
-                $journal_entry->items()->create($line);
+                $journal->items()->create($line);
             }
 
-            $this->persistMorphAttachments($journal_entry, $uploads, $uid, 'journal-entries');
+            $this->persistMorphAttachments($journal, $uploads, $uid, 'journal-entries');
         });
 
         return redirect()
@@ -238,10 +244,10 @@ class JournalEntryWebController extends Controller
             ->with('success', 'تم تحديث القيد بنجاح.');
     }
 
-    public function destroy(JournalEntry $journal_entry): RedirectResponse
+    public function destroy(JournalEntry $journal): RedirectResponse
     {
-        $journal_entry->items()->delete();
-        $journal_entry->delete();
+        $journal->items()->delete();
+        $journal->delete();
 
         return redirect()
             ->route('finance.journals.index')

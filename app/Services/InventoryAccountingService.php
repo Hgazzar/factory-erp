@@ -5,12 +5,14 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\DeliveryOrder;
 use App\Models\Item;
-use App\Models\JournalEntry;
-use App\Models\JournalItem;
 use App\Models\ProductionOrder;
 
 class InventoryAccountingService
 {
+    public function __construct(
+        private readonly FinancialRecordingService $financialRecording,
+    ) {}
+
     /**
      * إتمام الإنتاج: مدين مخزن المنتج التام، دائن مخزن الخامات (قيمة تكلفة الخامات المستهلكة).
      */
@@ -33,31 +35,27 @@ class InventoryAccountingService
 
         $journalUserId = (int) (auth()->id() ?? 1);
 
-        $entry = JournalEntry::query()->create([
-            'user_id' => $journalUserId,
-            'reference' => $ref,
-            'date' => now()->toDateString(),
-            'description' => $desc,
-            'total' => $amount,
-        ]);
-
-        JournalItem::query()->create([
-            'journal_entry_id' => $entry->id,
-            'account_id' => $fgId,
-            'description' => 'زيادة مخزون منتج تام (إتمام إنتاج)',
-            'debit' => $amount,
-            'credit' => 0,
-        ]);
-
-        JournalItem::query()->create([
-            'journal_entry_id' => $entry->id,
-            'account_id' => $rmId,
-            'description' => 'تخفيض مخزون خامات (استهلاك إنتاج)',
-            'debit' => 0,
-            'credit' => $amount,
-        ]);
-
-        return $entry;
+        return $this->financialRecording->recordBalancedJournal(
+            $journalUserId,
+            now()->toDateString(),
+            $ref,
+            $desc,
+            [
+                [
+                    'account_id' => $fgId,
+                    'debit' => $amount,
+                    'credit' => 0,
+                    'description' => 'زيادة مخزون منتج تام (إتمام إنتاج)',
+                ],
+                [
+                    'account_id' => $rmId,
+                    'debit' => 0,
+                    'credit' => $amount,
+                    'description' => 'تخفيض مخزون خامات (استهلاك إنتاج)',
+                ],
+            ],
+            $journalUserId
+        );
     }
 
     /**
@@ -94,43 +92,41 @@ class InventoryAccountingService
         $ref = $delivery->delivery_number ?? 'DO-'.$delivery->id;
         $desc = 'تأكيد توريد — '.$ref;
 
-        $entry = JournalEntry::query()->create([
-            'user_id' => (int) $delivery->user_id,
-            'reference' => $ref,
-            'date' => now()->toDateString(),
-            'description' => $desc,
-            'total' => $total,
-        ]);
-
-        JournalItem::query()->create([
-            'journal_entry_id' => $entry->id,
-            'account_id' => $cogsId,
-            'description' => 'تكلفة بضاعة مباعة (توريد)',
-            'debit' => $total,
-            'credit' => 0,
-        ]);
+        $lines = [
+            [
+                'account_id' => $cogsId,
+                'debit' => $total,
+                'credit' => 0,
+                'description' => 'تكلفة بضاعة مباعة (توريد)',
+            ],
+        ];
 
         if ($creditFg > 0) {
-            JournalItem::query()->create([
-                'journal_entry_id' => $entry->id,
+            $lines[] = [
                 'account_id' => $fgId,
-                'description' => 'خصم من مخزن المنتج التام',
                 'debit' => 0,
                 'credit' => $creditFg,
-            ]);
+                'description' => 'خصم من مخزن المنتج التام',
+            ];
         }
 
         if ($creditRm > 0) {
-            JournalItem::query()->create([
-                'journal_entry_id' => $entry->id,
+            $lines[] = [
                 'account_id' => $rmId,
-                'description' => 'خصم من مخزن الخامات',
                 'debit' => 0,
                 'credit' => $creditRm,
-            ]);
+                'description' => 'خصم من مخزن الخامات',
+            ];
         }
 
-        return $entry;
+        return $this->financialRecording->recordBalancedJournal(
+            (int) $delivery->user_id,
+            now()->toDateString(),
+            $ref,
+            $desc,
+            $lines,
+            (int) (auth()->id() ?? $delivery->user_id)
+        );
     }
 
     /**

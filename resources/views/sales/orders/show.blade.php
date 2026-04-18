@@ -16,6 +16,7 @@
 @php
     $typeLabels = ['raw_material' => 'مادة خام', 'finished_good' => 'منتج تام', 'service' => 'خدمة'];
     $canCreateDelivery = $salesOrder->status !== 'ملغي' && $salesOrder->items->contains(fn ($l) => $l->remainingQuantityForDelivery() > 0);
+    $pending = $salesOrder->status === \App\Models\SalesOrder::STATUS_PENDING;
 @endphp
 <div class="max-w-full" dir="rtl">
     @if(session('success'))
@@ -53,6 +54,66 @@
                 <div class="pt-2 border-t border-gray-100"><span class="text-gray-500">ملاحظات</span><p class="text-gray-800 mt-1">{{ $salesOrder->notes }}</p></div>
             @endif
         </div>
+    </div>
+
+    @if($salesOrder->accountingJournalEntry)
+        <div class="mb-6 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-900 flex flex-wrap items-center justify-between gap-3">
+            <span class="font-medium">مرتبط بقيد يومية: #{{ $salesOrder->accountingJournalEntry->id }}</span>
+            <a href="{{ route('finance.journals.edit', ['journal' => $salesOrder->accountingJournalEntry]) }}" class="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-medium text-indigo-800 hover:bg-indigo-50">فتح القيد</a>
+        </div>
+    @elseif($pending)
+        <div class="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 class="mb-3 text-base font-semibold text-gray-900">الإكمال المحاسبي</h2>
+            <p class="mb-4 text-sm text-gray-600 flex flex-wrap items-center gap-2">
+                <x-info field="sales.order_complete_accounting" />
+                <span>بعد الترحيل تُحدَّث الحالة إلى «مكتمل» ويُنشأ قيد المبيعات وتكلفة البضاعة عند توفر تكلفة للأصناف.</span>
+            </p>
+            <form method="POST" action="{{ route('sales.orders.complete-accounting', $salesOrder) }}" class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+                @csrf
+                <div class="space-y-2">
+                    <span class="block text-sm font-medium text-gray-700">طريقة التسوية <span class="text-red-500">*</span></span>
+                    <div class="flex flex-wrap gap-4 text-sm">
+                        <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                            <input type="radio" name="settlement" value="receivable" class="text-indigo-600" checked>
+                            <span class="inline-flex items-center gap-1"><x-info field="sales.order_settlement_receivable" /> ذمم مدينة (آجل)</span>
+                        </label>
+                        <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                            <input type="radio" name="settlement" value="cash" class="text-indigo-600">
+                            <span class="inline-flex items-center gap-1"><x-info field="sales.order_settlement_cash" /> نقدي (خزينة)</span>
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">ترحيل وإكمال</button>
+            </form>
+        </div>
+    @endif
+
+    <div class="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 class="mb-4 text-base font-semibold text-gray-900">المرفقات</h2>
+        @if($pending)
+            <form method="POST" action="{{ route('sales.orders.attachments.store', $salesOrder) }}" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <x-attachment-handler
+                    hint-field="sales.order_attachments"
+                    title="مرفقات أمر البيع"
+                    :existing="$salesOrder->attachments"
+                    :allow-delete="true"
+                    help-text="إضافة ملفات جديدة دون حذف المرفقات الحالية. التخزين: sales-orders/{{ $salesOrder->id }} (مثل أوامر الشراء)."
+                />
+                <div class="flex justify-end">
+                    <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">حفظ المرفقات الجديدة</button>
+                </div>
+            </form>
+        @else
+            <x-attachment-handler
+                hint-field="sales.order_attachments"
+                title="مرفقات أمر البيع"
+                :existing="$salesOrder->attachments"
+                :uploadable="false"
+                :allow-delete="false"
+                help-text="لإضافة مرفقات لاحقاً يجب أن يكون الأمر في حالة «معلق»؛ يمكن دائماً إرفاق مستندات على قيد اليومية من شاشة تعديل القيد."
+            />
+        @endif
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">

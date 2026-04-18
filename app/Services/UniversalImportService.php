@@ -1284,6 +1284,7 @@ class UniversalImportService
         $mapped = match ($v) {
             'asset', 'assets', 'اصل', 'أصل', 'اصول', 'أصول' => 'asset',
             'liability', 'liabilities', 'التزام', 'الالتزامات' => 'liability',
+            'equity', 'حقوق ملكية', 'حقوق الملكية' => 'equity',
             'expense', 'expenses', 'مصروف', 'مصروفات' => 'expense',
             'revenue', 'income', 'ايراد', 'إيراد', 'ايرادات', 'إيرادات' => 'revenue',
             default => null,
