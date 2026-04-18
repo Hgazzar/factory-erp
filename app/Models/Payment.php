@@ -32,7 +32,6 @@ class Payment extends Model
         'total_amount',
         'status',
         'notes',
-        'receipt_path',
         'type',
         'payment_method',
         'journal_entry_id',

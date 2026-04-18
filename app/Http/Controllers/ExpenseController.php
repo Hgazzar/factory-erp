@@ -308,7 +308,6 @@ class ExpenseController extends Controller
                 'amount' => $amount,
                 'tax_amount' => $taxAmount,
                 'notes' => $notes,
-                'receipt_path' => null,
                 'type' => 'expense',
                 'payment_method' => $data['payment_method'] ?? 'cash',
                 'journal_entry_id' => null,
@@ -387,7 +386,6 @@ class ExpenseController extends Controller
             ->orderBy('name')
             ->get(['id', 'code', 'name']);
 
-        $this->migrateLegacyExpenseReceiptIfNeeded($expense);
         $expense->load(['attachments']);
 
         return view('finance.expenses.edit', compact('expense', 'categories', 'costCenters', 'expenseAccounts', 'suppliers', 'expenseIsPosted', 'isSuperAdmin'));
@@ -527,7 +525,6 @@ class ExpenseController extends Controller
             abort(404);
         }
 
-        $this->migrateLegacyExpenseReceiptIfNeeded($expense);
         $expense->load(['expenseAccount', 'expenseCategory', 'supplier', 'attachments']);
         $company = CompanySetting::query()->first();
 
@@ -544,7 +541,6 @@ class ExpenseController extends Controller
             abort(403, 'عرض PDF متاح للمصروفات المعتمدة فقط.');
         }
 
-        $this->migrateLegacyExpenseReceiptIfNeeded($expense);
         $expense->load(['expenseAccount', 'expenseCategory', 'supplier', 'attachments']);
         $company = CompanySetting::query()->first();
 
@@ -630,52 +626,6 @@ class ExpenseController extends Controller
         return redirect()
             ->route('finance.expenses.index')
             ->with('success', $posted ? 'تم حذف المصروف المعتمد والقيد المرتبط.' : 'تم حذف مسودة المصروف.');
-    }
-
-    /**
-     * يحوّل receipt_path القديم (قبل المرفقات polymorphic) إلى سجل attachment مرة واحدة.
-     */
-    private function migrateLegacyExpenseReceiptIfNeeded(Payment $expense): void
-    {
-        if ($expense->type !== 'expense') {
-            return;
-        }
-
-        $raw = $expense->receipt_path;
-        if ($raw === null || $raw === '') {
-            return;
-        }
-
-        $path = ltrim(str_replace('\\', '/', (string) $raw), '/');
-        if ($path === '') {
-            $expense->forceFill(['receipt_path' => null])->saveQuietly();
-
-            return;
-        }
-
-        if (! Storage::disk('public')->exists($path)) {
-            $expense->forceFill(['receipt_path' => null])->saveQuietly();
-
-            return;
-        }
-
-        $uid = (int) $expense->user_id;
-        $exists = $expense->attachments()->where('file_path', $path)->exists();
-        if (! $exists) {
-            $full = Storage::disk('public')->path($path);
-            $mime = is_file($full) ? (mime_content_type($full) ?: null) : null;
-            $size = is_file($full) ? (int) filesize($full) : 0;
-
-            $expense->attachments()->create([
-                'file_path' => $path,
-                'file_name' => basename($path),
-                'file_type' => $mime,
-                'file_size' => $size,
-                'user_id' => $uid,
-            ]);
-        }
-
-        $expense->forceFill(['receipt_path' => null])->saveQuietly();
     }
 
     private function expenseIsPosted(Payment $expense): bool
