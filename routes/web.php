@@ -477,8 +477,3 @@ Route::get('/run-final-cleanup', function () {
         return '❌ Error: '.$e->getMessage();
     }
 });
-
-Route::get('/run-migrate', function() {
-    Artisan::call('migrate --force');
-    return "Database updated successfully!";
-});
