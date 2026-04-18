@@ -117,7 +117,7 @@ class SupplierWebController extends Controller
 
     public function edit(Supplier $supplier): View
     {
-        $supplier->load('attachments');
+        $supplier->load(['attachments']);
 
         return view('purchases.suppliers.edit', compact('supplier'));
     }

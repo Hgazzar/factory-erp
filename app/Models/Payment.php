@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Payment extends Model
 {
+    use HasAttachments;
     use HasFactory;
     use ResolvesRouteBindingForTenant;
 

@@ -54,7 +54,14 @@
     $grand = (float) $expense->amount + $tax;
     $posted = ($expense->status ?? '') === 'posted' || $expense->journal_entry_id;
     $categoryLabel = $expense->expenseCategory?->name_ar ?? ($expense->expenseAccount?->name_ar ?? '—');
-    $receiptUrl = $expense->receipt_path ? asset('storage/'.$expense->receipt_path) : null;
+    $firstImageAtt = ($expense->attachments ?? collect())->sortBy('id')->first(function ($a) {
+        $m = strtolower((string) ($a->file_type ?? ''));
+
+        return $m !== '' && str_starts_with($m, 'image/');
+    });
+    $receiptUrl = ($firstImageAtt && $firstImageAtt->file_path)
+        ? asset('storage/'.ltrim($firstImageAtt->file_path, '/'))
+        : null;
 @endphp
 
 @section('doc_type', 'سند مصروف')

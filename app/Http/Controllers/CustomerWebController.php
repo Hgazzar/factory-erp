@@ -95,7 +95,7 @@ class CustomerWebController extends Controller
 
     public function show(Customer $customer): View
     {
-        $customer->load('attachments');
+        $customer->load(['attachments']);
 
         return view('sales.customers.show', compact('customer'));
     }
@@ -166,7 +166,7 @@ class CustomerWebController extends Controller
 
     public function edit(Customer $customer): View
     {
-        $customer->load('attachments');
+        $customer->load(['attachments']);
 
         return view('sales.customers.edit', compact('customer'));
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Models\Account;
 use App\Models\CompanySetting;
 use App\Models\CostCenter;
@@ -30,6 +31,8 @@ use Illuminate\View\View;
 
 class ExpenseController extends Controller
 {
+    use PersistsMorphAttachments;
+
     public function importTemplate(): Response
     {
         $csv = "\xEF\xBB\xBF";
@@ -246,7 +249,8 @@ class ExpenseController extends Controller
             'tax_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['required', 'in:cash,bank,card'],
             'notes' => ['nullable', 'string', 'max:3000'],
-            'receipt' => ['nullable', 'file', 'image', 'max:5120'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ], [
             'date.required' => 'تاريخ المصروف مطلوب.',
             'account_id.required' => 'اختر الحساب المحاسبي.',
@@ -286,13 +290,13 @@ class ExpenseController extends Controller
             $notes = $data['description']."\n\n".$notes;
         }
 
-        $receiptPath = null;
-        if ($request->hasFile('receipt')) {
-            $receiptPath = $request->file('receipt')->store('expense-receipts', 'public');
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
         }
 
-        DB::transaction(function () use ($data, $expenseAccount, $amount, $taxAmount, $user, $uid, $expenseNumber, $notes, $receiptPath): void {
-            Payment::query()->create([
+        DB::transaction(function () use ($data, $expenseAccount, $amount, $taxAmount, $user, $uid, $expenseNumber, $notes, $uploads): void {
+            $payment = Payment::query()->create([
                 'user_id' => $uid,
                 'expense_number' => $expenseNumber,
                 'supplier_id' => $data['supplier_id'] ?? null,
@@ -304,13 +308,15 @@ class ExpenseController extends Controller
                 'amount' => $amount,
                 'tax_amount' => $taxAmount,
                 'notes' => $notes,
-                'receipt_path' => $receiptPath,
+                'receipt_path' => null,
                 'type' => 'expense',
                 'payment_method' => $data['payment_method'] ?? 'cash',
                 'journal_entry_id' => null,
                 'status' => 'draft',
                 'created_by' => $user?->id ?? $uid,
             ]);
+
+            $this->persistMorphAttachments($payment, $uploads, $uid, 'expenses');
         });
 
         return redirect()
@@ -381,6 +387,9 @@ class ExpenseController extends Controller
             ->orderBy('name')
             ->get(['id', 'code', 'name']);
 
+        $this->migrateLegacyExpenseReceiptIfNeeded($expense);
+        $expense->load(['attachments']);
+
         return view('finance.expenses.edit', compact('expense', 'categories', 'costCenters', 'expenseAccounts', 'suppliers', 'expenseIsPosted', 'isSuperAdmin'));
     }
 
@@ -410,7 +419,8 @@ class ExpenseController extends Controller
             'tax_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['required', 'in:cash,bank,card'],
             'notes' => ['nullable', 'string', 'max:3000'],
-            'receipt' => ['nullable', 'file', 'image', 'max:5120'],
+            'attachments' => ['nullable', 'array', 'max:20'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ], [
             'date.required' => 'تاريخ المصروف مطلوب.',
             'account_id.required' => 'اختر الحساب المحاسبي.',
@@ -440,15 +450,12 @@ class ExpenseController extends Controller
 
         $totalAmount = (float) $data['amount'] + (float) ($data['tax_amount'] ?? 0);
 
-        $receiptPath = $expense->receipt_path;
-        if ($request->hasFile('receipt')) {
-            if ($receiptPath) {
-                Storage::disk('public')->delete($receiptPath);
-            }
-            $receiptPath = $request->file('receipt')->store('expense-receipts', 'public');
+        $uploads = $request->file('attachments', []) ?? [];
+        if (! is_array($uploads)) {
+            $uploads = [];
         }
 
-        DB::transaction(function () use ($expense, $data, $expenseAccount, $totalAmount, $receiptPath): void {
+        DB::transaction(function () use ($expense, $data, $expenseAccount, $totalAmount, $uploads, $uid): void {
             $expense->update([
                 'supplier_id' => $data['supplier_id'] ?? null,
                 'expense_account_id' => $expenseAccount->id,
@@ -460,8 +467,9 @@ class ExpenseController extends Controller
                 'tax_amount' => (float) ($data['tax_amount'] ?? 0),
                 'notes' => $data['notes'] ?? null,
                 'payment_method' => $data['payment_method'],
-                'receipt_path' => $receiptPath,
             ]);
+
+            $this->persistMorphAttachments($expense, $uploads, $uid, 'expenses');
 
             if ($expense->journal_entry_id) {
                 $this->syncExpenseJournalEntry($expense->fresh(), $expenseAccount, $totalAmount);
@@ -519,7 +527,8 @@ class ExpenseController extends Controller
             abort(404);
         }
 
-        $expense->load(['expenseAccount', 'expenseCategory', 'supplier']);
+        $this->migrateLegacyExpenseReceiptIfNeeded($expense);
+        $expense->load(['expenseAccount', 'expenseCategory', 'supplier', 'attachments']);
         $company = CompanySetting::query()->first();
 
         return view('finance.expenses.print', compact('expense', 'company'));
@@ -535,7 +544,8 @@ class ExpenseController extends Controller
             abort(403, 'عرض PDF متاح للمصروفات المعتمدة فقط.');
         }
 
-        $expense->load(['expenseAccount', 'expenseCategory', 'supplier']);
+        $this->migrateLegacyExpenseReceiptIfNeeded($expense);
+        $expense->load(['expenseAccount', 'expenseCategory', 'supplier', 'attachments']);
         $company = CompanySetting::query()->first();
 
         $logoDataUri = null;
@@ -553,10 +563,17 @@ class ExpenseController extends Controller
 
         // تضمين الإيصال كـ data URI من القرص: يعمل على السيرفر دون جلب HTTP (يُفادي الفشل/الصفحة الفارغة عند APP_URL أو SSL خاطئ)
         $receiptDataUri = null;
-        if ($expense->receipt_path && Storage::disk('public')->exists($expense->receipt_path)) {
-            $mime = Storage::disk('public')->mimeType($expense->receipt_path) ?: 'image/jpeg';
+        $receiptPathForPdf = $expense->attachments
+            ->sortBy('id')
+            ->first(function ($att): bool {
+                $mime = strtolower((string) ($att->file_type ?? ''));
+
+                return $mime !== '' && str_starts_with($mime, 'image/');
+            });
+        if ($receiptPathForPdf && $receiptPathForPdf->file_path && Storage::disk('public')->exists($receiptPathForPdf->file_path)) {
+            $mime = Storage::disk('public')->mimeType($receiptPathForPdf->file_path) ?: 'image/jpeg';
             if (is_string($mime) && str_starts_with($mime, 'image/')) {
-                $bytes = Storage::disk('public')->get($expense->receipt_path);
+                $bytes = Storage::disk('public')->get($receiptPathForPdf->file_path);
                 if ($bytes !== false && $bytes !== '') {
                     $receiptDataUri = 'data:'.$mime.';base64,'.base64_encode($bytes);
                 }
@@ -607,15 +624,58 @@ class ExpenseController extends Controller
                 JournalItem::query()->where('journal_entry_id', $entryId)->delete();
                 JournalEntry::query()->whereKey($entryId)->delete();
             }
-            if ($expense->receipt_path) {
-                Storage::disk('public')->delete($expense->receipt_path);
-            }
             $expense->delete();
         });
 
         return redirect()
             ->route('finance.expenses.index')
             ->with('success', $posted ? 'تم حذف المصروف المعتمد والقيد المرتبط.' : 'تم حذف مسودة المصروف.');
+    }
+
+    /**
+     * يحوّل receipt_path القديم (قبل المرفقات polymorphic) إلى سجل attachment مرة واحدة.
+     */
+    private function migrateLegacyExpenseReceiptIfNeeded(Payment $expense): void
+    {
+        if ($expense->type !== 'expense') {
+            return;
+        }
+
+        $raw = $expense->receipt_path;
+        if ($raw === null || $raw === '') {
+            return;
+        }
+
+        $path = ltrim(str_replace('\\', '/', (string) $raw), '/');
+        if ($path === '') {
+            $expense->forceFill(['receipt_path' => null])->saveQuietly();
+
+            return;
+        }
+
+        if (! Storage::disk('public')->exists($path)) {
+            $expense->forceFill(['receipt_path' => null])->saveQuietly();
+
+            return;
+        }
+
+        $uid = (int) $expense->user_id;
+        $exists = $expense->attachments()->where('file_path', $path)->exists();
+        if (! $exists) {
+            $full = Storage::disk('public')->path($path);
+            $mime = is_file($full) ? (mime_content_type($full) ?: null) : null;
+            $size = is_file($full) ? (int) filesize($full) : 0;
+
+            $expense->attachments()->create([
+                'file_path' => $path,
+                'file_name' => basename($path),
+                'file_type' => $mime,
+                'file_size' => $size,
+                'user_id' => $uid,
+            ]);
+        }
+
+        $expense->forceFill(['receipt_path' => null])->saveQuietly();
     }
 
     private function expenseIsPosted(Payment $expense): bool

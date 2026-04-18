@@ -13,6 +13,22 @@
 
 @php
     $existingRows = $existing instanceof \Illuminate\Support\Collection ? $existing : collect($existing);
+    $erpAttachmentIsRenderableImage = static function ($att): bool {
+        $mime = strtolower(trim((string) ($att->file_type ?? '')));
+        $ext = strtolower((string) pathinfo((string) ($att->file_name ?? ''), PATHINFO_EXTENSION));
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif', 'heic', 'heif'];
+        if ($mime !== '' && str_starts_with($mime, 'image/')) {
+            return true;
+        }
+        if ($ext !== '' && in_array($ext, $imageExtensions, true)) {
+            return true;
+        }
+        if ($mime === 'application/octet-stream' && $ext !== '' && in_array($ext, $imageExtensions, true)) {
+            return true;
+        }
+
+        return false;
+    };
 @endphp
 
 <script>
@@ -96,7 +112,7 @@
                             @foreach($existingRows as $att)
                                 @php
                                     $url = asset('storage/'.ltrim($att->file_path ?? '', '/'));
-                                    $isImage = str_starts_with((string) ($att->file_type ?? ''), 'image/');
+                                    $isImage = $erpAttachmentIsRenderableImage($att);
                                 @endphp
                                 <tr>
                                     <td class="text-center align-middle">
@@ -193,7 +209,7 @@
                             @foreach($existingRows as $att)
                                 @php
                                     $url = asset('storage/'.ltrim($att->file_path ?? '', '/'));
-                                    $isImage = str_starts_with((string) ($att->file_type ?? ''), 'image/');
+                                    $isImage = $erpAttachmentIsRenderableImage($att);
                                 @endphp
                                 <tr class="border-b border-gray-100 bg-white">
                                     <td class="px-2 py-2 text-center align-middle">

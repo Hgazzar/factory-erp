@@ -121,17 +121,18 @@
                     @error('description')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
-                <div class="space-y-1 md:col-span-2 xl:col-span-3">
-                    <label for="receipt" class="block text-sm font-medium text-gray-700">
-                        إيصال مرفق (صورة) <x-info field="expense_receipt" />
-                    </label>
-                    @if($expense->receipt_path)
-                        <a href="{{ asset('storage/'.$expense->receipt_path) }}" target="_blank" rel="noopener noreferrer" class="mb-2 inline-flex text-sm font-medium text-blue-600 hover:text-blue-800">عرض الإيصال الحالي</a>
-                    @endif
-                    <input id="receipt" name="receipt" type="file" accept="image/*" class="block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm file:me-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100">
-                    <p class="text-xs text-gray-500">اترك الحقل فارغاً للإبقاء على الإيصال الحالي. رفع ملف جديد يستبدل السابق.</p>
+                <div class="md:col-span-2 xl:col-span-3">
+                    <x-attachment-handler
+                        hint-field="expense_receipt"
+                        title="مرفقات الإيصال"
+                        :existing="$expense->attachments"
+                        :uploadable="true"
+                        :allow-delete="true"
+                        help-text="معاينة وحذف المرفقات الحالية وإضافة ملفات جديدة (حتى 20 ملفاً، 10 ميجابايت لكل ملف)."
+                    />
                     <p id="receipt-local-hint" class="mt-1 hidden text-xs text-blue-800" role="status"></p>
-                    @error('receipt')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    @error('attachments')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    @error('attachments.*')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
         </section>
@@ -199,7 +200,7 @@
 @push('scripts')
 <script>
 (function () {
-    var MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+    var MAX_RECEIPT_BYTES = 10 * 1024 * 1024;
     function syncExpenseTotal() {
         var a = document.getElementById('amount');
         var t = document.getElementById('tax_amount');
@@ -226,13 +227,13 @@
 
         var form = document.getElementById('expense-form-edit');
         var btn = document.getElementById('expense-edit-submit');
-        var receipt = document.getElementById('receipt');
+        var fileInput = form ? form.querySelector('input[name="attachments[]"]') : null;
         var hint = document.getElementById('receipt-local-hint');
 
-        if (receipt && hint) {
-            receipt.addEventListener('change', function () {
+        if (fileInput && hint) {
+            fileInput.addEventListener('change', function () {
                 if (this.files && this.files.length) {
-                    hint.textContent = 'تم اختيار ملف على جهازك فقط. اضغط «حفظ التغييرات» لإرسال النموذج ورفع الإيصال.';
+                    hint.textContent = 'تم اختيار ملفات على جهازك فقط. اضغط «حفظ التغييرات» لإرسال النموذج ورفع المرفقات.';
                     hint.classList.remove('hidden');
                 }
             });
@@ -240,11 +241,15 @@
 
         if (form && btn) {
             form.addEventListener('submit', function (e) {
-                var f = receipt && receipt.files && receipt.files[0];
-                if (f && f.size > MAX_RECEIPT_BYTES) {
-                    e.preventDefault();
-                    window.alert('حجم الإيصال يتجاوز 5 ميجابايت. اختر صورة أصغر.');
-                    return;
+                var inp = form.querySelector('input[name="attachments[]"]');
+                if (inp && inp.files && inp.files.length) {
+                    for (var i = 0; i < inp.files.length; i++) {
+                        if (inp.files[i].size > MAX_RECEIPT_BYTES) {
+                            e.preventDefault();
+                            window.alert('حجم أحد المرفقات يتجاوز 10 ميجابايت. اختر ملفات أصغر.');
+                            return;
+                        }
+                    }
                 }
                 btn.disabled = true;
                 btn.setAttribute('aria-busy', 'true');

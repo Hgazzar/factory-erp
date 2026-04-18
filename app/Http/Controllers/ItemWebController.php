@@ -212,7 +212,7 @@ class ItemWebController extends Controller
 
     public function edit(Item $item): View
     {
-        $item->load('attachments');
+        $item->load(['attachments']);
         $units = Unit::active()->get();
         $warehouses = Warehouse::active()->get();
 

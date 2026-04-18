@@ -228,29 +228,15 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">الشروط والأحكام</label>
                 <textarea name="terms_and_conditions" rows="3" class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500" placeholder="الشروط والأحكام">{{ old('terms_and_conditions', $isEdit ? $editOrderModel->terms_and_conditions : null) }}</textarea>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1"><x-info field="procurement.purchase_order_attachments" /> المرفقات</label>
-                @if($isEdit && isset($editOrderModel) && $editOrderModel->attachments->isNotEmpty())
-                    <ul class="mb-3 space-y-1.5 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-800">
-                        @foreach($editOrderModel->attachments as $att)
-                            <li class="flex flex-wrap items-center justify-between gap-2">
-                                <a href="{{ asset('storage/'.$att->file_path) }}" target="_blank" rel="noopener noreferrer" class="font-medium text-blue-600 hover:text-blue-800 break-all">{{ $att->file_name }}</a>
-                                <span class="text-xs text-gray-500 tabular-nums">{{ $att->file_size ? number_format((int) $att->file_size / 1024, 1).' ك.ب' : '—' }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-                <input type="file" name="attachments[]" multiple accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt,.csv" class="w-full px-3 py-2 border border-gray-300 rounded-2xl text-sm text-right file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700">
-                <p class="mt-1 text-xs text-gray-500">
-                    @if($isEdit)
-                        اختياري — أضف مرفقات جديدة؛ تُحفظ مع الأمر (حتى 20 ملفاً، 10 ميجابايت لكل ملف).
-                    @else
-                        اختياري — حتى 20 ملفاً، بحد أقصى 10 ميجابايت لكل ملف.
-                    @endif
-                </p>
-                @error('attachments')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                @error('attachments.*')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-            </div>
+            <x-attachment-handler
+                hint-field="procurement.purchase_order_attachments"
+                title="المرفقات"
+                :existing="$isEdit && isset($editOrderModel) ? $editOrderModel->attachments : collect()"
+                :show-existing="(bool) ($isEdit && isset($editOrderModel))"
+                :uploadable="true"
+                :allow-delete="true"
+                help-text="{{ $isEdit ? 'معاينة وحذف المرفقات الحالية وإضافة ملفات جديدة (حتى 20 ملفاً، 10 ميجابايت لكل ملف).' : 'اختياري — حتى 20 ملفاً، بحد أقصى 10 ميجابايت لكل ملف.' }}"
+            />
         </div>
 
         <div class="flex flex-wrap items-center gap-3 justify-end">
