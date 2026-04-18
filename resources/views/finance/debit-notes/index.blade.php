@@ -69,7 +69,7 @@
                             <th class="px-4 py-3 text-right">التاريخ <x-info field="debit_note_date" /></th>
                             <th class="px-4 py-3 text-right">المبلغ الإجمالي <x-info field="debit_note_total" /></th>
                             <th class="px-4 py-3 text-right">الحالة <x-info field="debit_status" /></th>
-                            <th class="px-4 py-3 text-right">الإجراءات <x-info field="debit_note_actions" /></th>
+                            <th class="w-[1%] whitespace-nowrap px-4 py-3 text-center"><span class="inline-flex items-center justify-center gap-1"><x-info field="debit_note_actions" /> إجراءات</span></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -88,41 +88,75 @@
                                         <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">مسودة</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3">
-                                    <div class="inline-flex items-center gap-1">
+                                <td class="px-4 py-3 text-center align-middle">
+                                    @php $dnMenuId = 'debit-note-actions-'.$note->id; @endphp
+                                    <x-erp-actions-dropdown :menu-id="$dnMenuId">
                                         @if($note->status === 'draft')
-                                            <form method="POST" action="{{ route('finance.debit-notes.approve', $note) }}" onsubmit="return confirm('هل أنت متأكد من اعتماد هذا الإشعار؟ سيتم توليد قيد محاسبي وتحديث مديونية المورد فوراً.');" class="inline">
+                                            <form method="POST" action="{{ route('finance.debit-notes.approve', $note) }}" class="m-0" onsubmit="return confirm('هل أنت متأكد من اعتماد هذا الإشعار؟ سيتم توليد قيد محاسبي وتحديث مديونية المورد فوراً.');">
                                                 @csrf
-                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-green-200 bg-white text-green-600 hover:bg-green-50" title="اعتماد">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-emerald-800 transition hover:bg-emerald-50"
+                                                        role="menuitem">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 leading-snug">اعتماد الإشعار</span>
                                                 </button>
                                             </form>
-                                            <a href="{{ route('finance.debit-notes.edit', $note) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600" title="تعديل">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.586a2 2 0 112.828 2.828L11.828 14.828a4 4 0 01-1.414.943l-3.029 1.01 1.01-3.029a4 4 0 01.943-1.414l8.586-8.586z" /></svg>
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <a href="{{ route('finance.debit-notes.edit', $note) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">تعديل الإشعار</span>
                                             </a>
-                                            <form method="POST" action="{{ route('finance.debit-notes.destroy', $note) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا الإشعار؟ لا يمكن التراجع عن هذه الخطوة');" class="inline">
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <form method="POST" action="{{ route('finance.debit-notes.destroy', $note) }}" class="m-0" onsubmit="return confirm('هل أنت متأكد من حذف هذا الإشعار؟ لا يمكن التراجع عن هذه الخطوة');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-600" title="حذف">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" /></svg>
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                                        role="menuitem">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 leading-snug">حذف الإشعار</span>
                                                 </button>
                                             </form>
                                         @elseif($note->status === 'approved')
-                                            <a href="{{ route('finance.debit-notes.show', $note) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600" title="عرض">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" /></svg>
+                                            <a href="{{ route('finance.debit-notes.show', $note) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.086.13-.17.252-.264.365A13.133 13.133 0 0 1 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">عرض الإشعار</span>
                                             </a>
-                                            <form method="POST" action="{{ route('finance.debit-notes.cancel', $note) }}" onsubmit="return confirm('هل تريد إلغاء الإشعار المعتمد؟ سيتم عكس القيد المحاسبي.');" class="inline">
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <form method="POST" action="{{ route('finance.debit-notes.cancel', $note) }}" class="m-0" onsubmit="return confirm('هل تريد إلغاء الإشعار المعتمد؟ سيتم عكس القيد المحاسبي.');">
                                                 @csrf
-                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-600" title="إلغاء">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                                        role="menuitem">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M2.146 2.146a.5.5 0 0 1 .708 0L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854a.5.5 0 0 1 0-.708z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 leading-snug">إلغاء الإشعار</span>
                                                 </button>
                                             </form>
                                         @else
-                                            <a href="{{ route('finance.debit-notes.show', $note) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600" title="عرض">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" /></svg>
+                                            <a href="{{ route('finance.debit-notes.show', $note) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.086.13-.17.252-.264.365A13.133 13.133 0 0 1 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">عرض الإشعار</span>
                                             </a>
                                         @endif
-                                    </div>
+                                    </x-erp-actions-dropdown>
                                 </td>
                             </tr>
                         @empty

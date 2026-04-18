@@ -43,7 +43,7 @@
                         <th class="border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="inventory.transfer_to_wh" /> إلى مستودع</th>
                         <th class="border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="inventory.transfer_items_count" /> عدد الأصناف</th>
                         <th class="border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="inventory.transfer_status" /> الحالة</th>
-                        <th class="w-[7rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="inventory.transfer_actions" /> الإجراءات</th>
+                        <th scope="col" class="w-[1%] whitespace-nowrap border-b border-gray-200 px-3 py-3 text-center font-semibold"><span class="inline-flex items-center justify-center gap-1"><x-info field="inventory.transfer_actions" /> إجراءات</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,8 +57,18 @@
                         <td class="px-3 py-3">
                             <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800">مكتمل</span>
                         </td>
-                        <td class="px-3 py-3">
-                            <a href="{{ route('inventory.transfers.show', $t) }}" class="inline-flex rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50">عرض</a>
+                        <td class="px-3 py-3 text-center align-middle">
+                            @php $transferMenuId = 'transfer-actions-'.$t->id; @endphp
+                            <x-erp-actions-dropdown :menu-id="$transferMenuId">
+                                <a href="{{ route('inventory.transfers.show', $t) }}"
+                                   class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                   role="menuitem">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.086.13-.17.252-.264.365A13.133 13.133 0 0 1 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                    </span>
+                                    <span class="flex-1 text-right font-medium leading-snug">عرض التحويل</span>
+                                </a>
+                            </x-erp-actions-dropdown>
                         </td>
                     </tr>
                     @empty

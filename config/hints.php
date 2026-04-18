@@ -112,6 +112,7 @@ return [
         'bank_reconciliation_difference' => 'الفرق الناتج بين رصيد كشف البنك ورصيد الدفاتر.',
         'bank_reconciliation_status' => 'حالة التسوية (معلق أو تمت التسوية).',
         'bank_reconciliation_actions' => 'إجراءات سريعة للتعامل مع سجل التسوية.',
+        'journal_list_actions' => 'تعديل أو حذف القيد من القائمة المنسدلة (⋯).',
         'bank_reconciliation_filter' => 'فلترة قائمة التسويات حسب الحالة.',
         'trial_balance_from_date' => 'بداية الفترة الزمنية للتقرير؛ يُستخدم أيضاً لحساب الرصيد الافتتاحي قبل هذا التاريخ.',
         'trial_balance_to_date' => 'نهاية الفترة الزمنية لتقرير ميزان المراجعة.',

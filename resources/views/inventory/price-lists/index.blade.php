@@ -55,7 +55,7 @@
                         <th class="border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="inventory.pricelist_items_count" /> عدد الأصناف</th>
                         <th class="border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="inventory.pricelist_validity" /> الصلاحية</th>
                         <th class="border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="inventory.pricelist_status" /> الحالة</th>
-                        <th class="w-[10rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="inventory.pricelist_actions" /> الإجراءات</th>
+                        <th scope="col" class="w-[1%] whitespace-nowrap border-b border-gray-200 px-3 py-3 text-center font-semibold"><span class="inline-flex items-center justify-center gap-1"><x-info field="inventory.pricelist_actions" /> إجراءات</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,14 +80,30 @@
                                 <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">غير نشط</span>
                             @endif
                         </td>
-                        <td class="px-3 py-3">
-                            <div class="flex flex-wrap gap-2">
-                                <a href="{{ route('inventory.price-lists.edit', $pl) }}" class="inline-flex rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50">تعديل</a>
-                                <form action="{{ route('inventory.price-lists.duplicate', $pl) }}" method="POST" class="inline" onsubmit="return confirm('تكرار هذه القائمة؟');">
+                        <td class="px-3 py-3 text-center align-middle">
+                            @php $plMenuId = 'pricelist-actions-'.$pl->id; @endphp
+                            <x-erp-actions-dropdown :menu-id="$plMenuId">
+                                <a href="{{ route('inventory.price-lists.edit', $pl) }}"
+                                   class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                   role="menuitem">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
+                                    </span>
+                                    <span class="flex-1 text-right font-medium leading-snug">تعديل القائمة</span>
+                                </a>
+                                <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                <form action="{{ route('inventory.price-lists.duplicate', $pl) }}" method="POST" class="m-0" onsubmit="return confirm('تكرار هذه القائمة؟');">
                                     @csrf
-                                    <button type="submit" class="inline-flex rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">تكرار</button>
+                                    <button type="submit"
+                                            class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-gray-50"
+                                            role="menuitem">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z"/></svg>
+                                        </span>
+                                        <span class="flex-1 leading-snug">تكرار القائمة</span>
+                                    </button>
                                 </form>
-                            </div>
+                            </x-erp-actions-dropdown>
                         </td>
                     </tr>
                     @empty
