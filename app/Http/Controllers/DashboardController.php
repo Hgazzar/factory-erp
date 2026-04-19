@@ -317,10 +317,10 @@ class DashboardController extends Controller
             );
         }
 
-        $recentActivity = self::safeCollection(function () use ($viewerId, $systemWide) {
+        $recentActivity = self::safeCollection(function () use ($viewerId) {
             return AuditTrail::query()
                 ->whereNotIn('table_name', ['journal_entries', 'journal_items'])
-                ->when(! $systemWide, fn ($q) => $q->where('user_id', $viewerId))
+                ->where('user_id', $viewerId)
                 ->with('user:id,name')
                 ->latest()
                 ->limit(10)

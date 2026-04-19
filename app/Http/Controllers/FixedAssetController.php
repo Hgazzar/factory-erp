@@ -41,6 +41,13 @@ class FixedAssetController extends Controller
         return view('finance.fixed-assets.index', compact('assets', 'search', 'status'));
     }
 
+    public function show(FixedAsset $fixedAsset): View
+    {
+        $fixedAsset->load(['categoryRef:id,code,name_ar,name_en', 'costCenter:id,code,name']);
+
+        return view('finance.fixed-assets.show', ['asset' => $fixedAsset]);
+    }
+
     public function create(): View
     {
         $categories = ExpenseCategory::query()

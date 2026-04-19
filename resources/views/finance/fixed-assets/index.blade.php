@@ -60,7 +60,9 @@
                         <th class="px-4 py-3 text-right">تكلفة الاقتناء</th>
                         <th class="px-4 py-3 text-right">القيمة الدفترية <x-info field="book_value" /></th>
                         <th class="px-4 py-3 text-right">الحالة</th>
-                        <th class="px-4 py-3 text-right">العمليات</th>
+                        <th scope="col" class="w-[1%] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                            <span class="inline-flex items-center justify-center gap-1"><x-info field="finance.fixed_asset_list_actions" /> إجراءات</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -82,24 +84,40 @@
                                     <span class="inline-flex rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">خارج الخدمة</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-2">
-                                    <a href="{{ route('finance.fixed-assets.edit', $asset) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100" title="تعديل">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10L3 14l.146-2.854zM11.207 2 4 9.207V12h2.793L14 4.793z"/>
-                                        </svg>
+                            <td class="px-4 py-3 text-center align-middle">
+                                @php $faMenuId = 'fixed-asset-actions-'.$asset->id; @endphp
+                                <x-erp-actions-dropdown :menu-id="$faMenuId">
+                                    <a href="{{ route('finance.fixed-assets.show', $asset) }}"
+                                       class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 text-decoration-none transition hover:bg-gray-50"
+                                       role="menuitem">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.086.13-.17.252-.264.365A13.133 13.133 0 0 1 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                        </span>
+                                        <span class="flex-1 text-right font-medium leading-snug">عرض الأصل</span>
                                     </a>
-                                    <form method="POST" action="{{ route('finance.fixed-assets.destroy', $asset) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا الأصل؟');">
+                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                    <a href="{{ route('finance.fixed-assets.edit', $asset) }}"
+                                       class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 text-decoration-none transition hover:bg-gray-50"
+                                       role="menuitem">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
+                                        </span>
+                                        <span class="flex-1 text-right font-medium leading-snug">تعديل الأصل</span>
+                                    </a>
+                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                    <form method="POST" action="{{ route('finance.fixed-assets.destroy', $asset) }}" class="m-0" onsubmit="return confirm('هل أنت متأكد من حذف هذا الأصل؟');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-100" title="حذف">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0A.5.5 0 0 1 8.5 6v6a.5.5 0 0 1-1 0V6A.5.5 0 0 1 8 5.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3V2h11v1z"/>
-                                            </svg>
+                                        <button type="submit"
+                                                class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                                role="menuitem">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                            </span>
+                                            <span class="flex-1 leading-snug">حذف الأصل</span>
                                         </button>
                                     </form>
-                                </div>
+                                </x-erp-actions-dropdown>
                             </td>
                         </tr>
                     @empty
