@@ -495,3 +495,13 @@ Route::get('/run-final-cleanup', function () {
     }
 });
 
+// في أعلى ملف web.php
+Route::get('/migrate-now', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        \Illuminate\Support\Facades\Artisan::call('accounts:rebuild-current-balance');
+        return "Done!";
+    } catch (\Exception $e) {
+        return "Error: " . $e->getMessage();
+    }
+});
