@@ -495,20 +495,3 @@ Route::get('/run-final-cleanup', function () {
     }
 });
 
-Route::get('/final-update', function () {
-    try {
-        // مسح الكاش من جوه الـ Route عشان ما يضربش الـ Build
-        \Illuminate\Support\Facades\Artisan::call('route:clear');
-        \Illuminate\Support\Facades\Artisan::call('config:clear');
-        
-        // تشغيل الميجراشن
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        
-        // تشغيل الكوماند
-        \Illuminate\Support\Facades\Artisan::call('accounts:rebuild-current-balance');
-        
-        return "<h1>✅ Everything is Up to Date!</h1>";
-    } catch (\Exception $e) {
-        return "<h1>❌ Error:</h1><pre>" . $e->getMessage() . "</pre>";
-    }
-});
