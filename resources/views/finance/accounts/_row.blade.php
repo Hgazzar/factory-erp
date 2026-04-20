@@ -12,9 +12,9 @@
         default => $account->type ?? '—',
     };
 
-    $opening = (float) $account->opening_balance;
-    $debit = $opening > 0 ? $opening : 0;
-    $credit = $opening < 0 ? abs($opening) : 0;
+    $balance = (float) (data_get($balancesByAccount ?? [], $account->id, $account->opening_balance));
+    $debit = $balance > 0 ? $balance : 0;
+    $credit = $balance < 0 ? abs($balance) : 0;
 @endphp
 
 <tr class="border-b border-gray-100 hover:bg-gray-50/80">
@@ -37,9 +37,9 @@
         </div>
     </td>
     <td class="px-3 py-3 text-right text-sm text-gray-700">{{ $typeLabel }}</td>
-    <td class="px-3 py-3 text-left text-sm font-normal" style="color: #059669;">SAR {{ number_format($debit, 2) }}</td>
-    <td class="px-3 py-3 text-left text-sm font-normal" style="color: #dc2626;">SAR {{ number_format($credit, 2) }}</td>
-    <td class="px-3 py-3 text-left text-sm font-bold text-gray-700">SAR {{ number_format($opening, 2) }}</td>
+    <td class="px-3 py-3 text-left text-sm font-normal" style="color: #059669;">SAR {{ erp_money($debit) }}</td>
+    <td class="px-3 py-3 text-left text-sm font-normal" style="color: #dc2626;">SAR {{ erp_money($credit) }}</td>
+    <td class="px-3 py-3 text-left text-sm font-bold text-gray-700">SAR {{ erp_money($balance) }}</td>
     <td class="px-3 py-3">
         <form action="{{ route('finance.accounts.toggle-active', $account) }}" method="POST">
             @csrf

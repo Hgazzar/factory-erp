@@ -11,6 +11,12 @@
 @endsection
 
 @section('content')
+@php
+    $indexFilterCustomerOptions = collect($customers ?? [])->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => (string) ($c->name ?? $c->display_name ?? ''),
+    ])->values()->all();
+@endphp
 <div class="max-w-full" dir="rtl">
     @if (session('import_result'))
         <x-import-summary :result="session('import_result')" />
@@ -86,13 +92,18 @@
             <input type="date" name="date_from" value="{{ request('date_from') }}" placeholder="من تاريخ" class="flex-1 w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-right bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             <input type="date" name="date_to" value="{{ request('date_to') }}" placeholder="إلى تاريخ" class="flex-1 w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-right bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
 
-            <select name="customer_id" class="flex-1 w-full h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white text-right whitespace-nowrap focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                <option value="">{{ request('customer_id') ? 'العميل' : 'العميل' }}</option>
-                <option value="">العميل</option>
-                @foreach($customers as $c)
-                    <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
-                @endforeach
-            </select>
+            <div class="min-w-0 w-full max-w-[220px] shrink-0 flex-1">
+                <x-searchable-select
+                    name="customer_id"
+                    id="filter_sales_orders_customer_id"
+                    :options="$indexFilterCustomerOptions"
+                    :value="request('customer_id')"
+                    :required="false"
+                    empty-label="جميع العملاء"
+                    placeholder="ابحث عن عميل..."
+                    class="[&_button]:h-10 [&_button]:text-sm"
+                />
+            </div>
 
             <select name="status" class="flex-1 w-full h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white text-right whitespace-nowrap focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 <option value="">الحالة</option>
@@ -105,7 +116,10 @@
         </div>
 
         <div class="flex justify-between items-center w-full">
-            <button type="submit" class="w-32 h-10 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">تطبيق</button>
+            <div class="flex items-center gap-2">
+                <button type="submit" class="w-32 h-10 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">تطبيق</button>
+                <a href="{{ route('sales.orders.index') }}" class="inline-flex h-10 items-center rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 hover:bg-gray-50">مسح</a>
+            </div>
             <span class="text-lg font-bold text-blue-600 whitespace-nowrap">الإجمالي {{ $orders->total() }}</span>
         </div>
     </form>

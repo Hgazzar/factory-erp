@@ -23,6 +23,54 @@
         <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
     @endif
 
+    @php
+        $poIndexSupplierOptions = collect($suppliers ?? [])->map(fn ($s) => [
+            'value' => $s->id,
+            'label' => trim((string) ($s->code !== '' && $s->code !== null ? $s->code.' — ' : '').(string) ($s->name_ar ?? $s->name ?? '')),
+        ])->values()->all();
+    @endphp
+    <form method="GET" action="{{ route('purchases.orders.index') }}" class="mb-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-0 w-full max-w-[240px] shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">المورد</label>
+                <x-searchable-select
+                    name="supplier_id"
+                    id="filter_po_supplier_id"
+                    :options="$poIndexSupplierOptions"
+                    :value="request('supplier_id')"
+                    :required="false"
+                    empty-label="كل الموردين"
+                    placeholder="ابحث عن مورد..."
+                    class="[&_button]:h-10 [&_button]:text-sm"
+                />
+            </div>
+            <div class="w-36 shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">الحالة</label>
+                <select name="status" class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm focus:ring-2 focus:ring-indigo-500">
+                    <option value="">الكل</option>
+                    <option value="معلق" {{ request('status') === 'معلق' ? 'selected' : '' }}>معلق</option>
+                    <option value="مستلم" {{ request('status') === 'مستلم' ? 'selected' : '' }}>مستلم</option>
+                </select>
+            </div>
+            <div class="w-40 shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">من تاريخ</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="w-40 shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">إلى تاريخ</label>
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="min-w-0 flex-1 basis-[12rem]">
+                <label class="mb-1 block text-xs font-medium text-gray-600">بحث</label>
+                <input type="search" name="q" value="{{ request('q') }}" placeholder="رقم الأمر، مرجع، مورد…" class="h-10 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex shrink-0 items-center gap-2 pb-0.5">
+                <button type="submit" class="h-10 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white hover:bg-indigo-700">تطبيق</button>
+                <a href="{{ route('purchases.orders.index') }}" class="inline-flex h-10 items-center rounded-xl border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 hover:bg-gray-50">مسح</a>
+            </div>
+        </div>
+    </form>
+
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-3">
             <h1 class="text-2xl font-bold text-gray-900">أوامر الشراء</h1>

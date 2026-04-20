@@ -26,11 +26,11 @@
     <section class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">إجمالي المخطط <x-info field="budget_total_planned" /></p>
-            <p class="mt-2 text-2xl font-bold text-gray-900">SAR {{ number_format((float) $stats['planned'], 2) }}</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">SAR {{ erp_money((float) $stats['planned']) }}</p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">إجمالي الفعلي <x-info field="budget_total_actual" /></p>
-            <p class="mt-2 text-2xl font-bold text-gray-900">SAR {{ number_format((float) $stats['actual'], 2) }}</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">SAR {{ erp_money((float) $stats['actual']) }}</p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">إجمالي الفرق <x-info field="budget_variance" /></p>
@@ -39,8 +39,8 @@
                 $varianceColor = $variance > 0 ? 'text-red-600' : 'text-green-600';
                 $varianceLabel = $variance > 0 ? 'فوق الميزانية' : 'تحت الميزانية';
             @endphp
-            <p class="mt-2 text-2xl font-bold {{ $varianceColor }}">SAR {{ number_format(abs($variance), 2) }}</p>
-            <p class="mt-1 text-xs {{ $varianceColor }}">{{ $varianceLabel }} ({{ number_format((float) $stats['variance_percent'], 2) }}%)</p>
+            <p class="mt-2 text-2xl font-bold {{ $varianceColor }}">SAR {{ erp_money(abs($variance)) }}</p>
+            <p class="mt-1 text-xs {{ $varianceColor }}">{{ $varianceLabel }} ({{ erp_qty((float) $stats['variance_percent']) }}%)</p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">الموازنات النشطة <x-info field="budget_active_count" /></p>
@@ -141,9 +141,9 @@
                                         <span class="inline-flex rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">مسودة</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-gray-800">SAR {{ number_format((float) $budget->planned_total, 2) }}</td>
-                                <td class="px-4 py-3 text-gray-800">SAR {{ number_format((float) $budget->actual_total, 2) }}</td>
-                                <td class="px-4 py-3 font-semibold {{ $rowVarianceClass }}">SAR {{ number_format((float) $budget->variance, 2) }}</td>
+                                <td class="px-4 py-3 text-gray-800">SAR {{ erp_money((float) $budget->planned_total) }}</td>
+                                <td class="px-4 py-3 text-gray-800">SAR {{ erp_money((float) $budget->actual_total) }}</td>
+                                <td class="px-4 py-3 font-semibold {{ $rowVarianceClass }}">SAR {{ erp_money((float) $budget->variance) }}</td>
                                 <td class="px-4 py-3">
                                     <div class="inline-flex items-center gap-1">
                                         @if($budget->archived_at)

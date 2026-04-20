@@ -27,6 +27,9 @@ class PurchaseInvoiceWebController extends Controller
             ->orderByDesc('date')
             ->orderByDesc('id');
 
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', (int) $request->input('supplier_id'));
+        }
         if ($request->filled('q')) {
             $q = $request->q;
             $query->where(function ($qb) use ($q) {
@@ -68,13 +71,21 @@ class PurchaseInvoiceWebController extends Controller
             ->value('amt');
         $totalPaid = (float) PurchaseInvoice::sum('paid_amount');
 
+        $suppliers = Supplier::query()
+            ->where(function ($sub) {
+                $sub->where('is_active', true)->orWhereNull('is_active');
+            })
+            ->orderBy('name')
+            ->get(['id', 'code', 'name', 'name_ar']);
+
         return view('purchases.invoices.index', compact(
             'invoices',
             'totalDue',
             'overdueAmount',
             'overdueCount',
             'dueThisWeek',
-            'totalPaid'
+            'totalPaid',
+            'suppliers'
         ));
     }
 

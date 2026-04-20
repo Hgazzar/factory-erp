@@ -13,6 +13,12 @@
 @endsection
 
 @section('content')
+@php
+    $bankReconAccountOptions = collect($accounts ?? [])->map(fn ($account) => [
+        'value' => $account->id,
+        'label' => trim((string) ($account->code ?? '').' - '.(string) ($account->name_ar ?: $account->name_en ?? '')),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-center gap-3">
         <h1 class="inline-flex items-center gap-2 text-4xl font-bold text-gray-900">
@@ -39,18 +45,19 @@
 
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div class="space-y-1">
-                    <label class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
+                    <label class="inline-flex items-center gap-1 text-sm font-medium text-gray-700" for="account_id-trigger">
                         <span>الحساب البنكي <span class="text-red-500">*</span></span>
                         <x-info field="bank_reconciliation_account" />
                     </label>
-                    <select name="account_id" required class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر حسابا بنكيا</option>
-                        @foreach($accounts as $account)
-                            <option value="{{ $account->id }}" @selected((int) old('account_id') === (int) $account->id)>
-                                {{ $account->code }} - {{ $account->name_ar ?: $account->name_en }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="account_id"
+                        id="account_id"
+                        :options="$bankReconAccountOptions"
+                        :value="old('account_id')"
+                        :required="true"
+                        empty-label="اختر حسابا بنكيا"
+                        placeholder="ابحث بالرمز أو اسم الحساب..."
+                    />
                 </div>
 
                 <div class="space-y-1">

@@ -15,6 +15,22 @@
 @section('content')
 @php
     $selectedCategoryId = old('expense_category_id', $expense->expense_category_id);
+    $expenseAccountOptions = collect($expenseAccounts ?? [])->map(fn ($a) => [
+        'value' => data_get($a, 'id'),
+        'label' => trim((string) data_get($a, 'code').' - '.(string) data_get($a, 'name_ar', data_get($a, 'name', ''))),
+    ])->filter(fn ($o) => (string) ($o['value'] ?? '') !== '')->values()->all();
+    $expenseCostCenterOptions = collect($costCenters ?? [])->map(fn ($c) => [
+        'value' => data_get($c, 'id'),
+        'label' => trim((string) data_get($c, 'name_ar', data_get($c, 'name', ''))),
+    ])->filter(fn ($o) => (string) ($o['value'] ?? '') !== '')->values()->all();
+    $expenseSupplierOptions = collect($suppliers ?? [])->map(fn ($s) => [
+        'value' => data_get($s, 'id'),
+        'label' => trim(((string) data_get($s, 'code') !== '' ? (string) data_get($s, 'code').' - ' : '').(string) data_get($s, 'name', data_get($s, 'name_ar', ''))),
+    ])->filter(fn ($o) => (string) ($o['value'] ?? '') !== '')->values()->all();
+    $expenseBankAccountOptions = collect($bankAccounts ?? [])->map(fn ($b) => [
+        'value' => data_get($b, 'id'),
+        'label' => trim((string) data_get($b, 'bank_name').' — '.(string) data_get($b, 'account_number')),
+    ])->filter(fn ($o) => (string) ($o['value'] ?? '') !== '')->values()->all();
 @endphp
 <div dir="rtl" class="mx-auto w-full max-w-full">
     <header class="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
@@ -66,46 +82,47 @@
                 </div>
 
                 <div class="space-y-1">
-                    <label for="cost_center_id" class="block text-sm font-medium text-gray-700">مركز التكلفة</label>
-                    <select id="cost_center_id" name="cost_center_id" class="h-10 w-full rounded-lg border bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500 {{ $errors->has('cost_center_id') ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200' }}">
-                        <option value="">لا شيء</option>
-                        @forelse(($costCenters ?? collect()) as $costCenter)
-                            <option value="{{ data_get($costCenter, 'id') }}" @selected((string) old('cost_center_id', $expense->cost_center_id) === (string) data_get($costCenter, 'id'))>
-                                {{ data_get($costCenter, 'name_ar', data_get($costCenter, 'name', '')) }}
-                            </option>
-                        @empty
-                        @endforelse
-                    </select>
+                    <label for="cost_center_id-trigger" class="block text-sm font-medium text-gray-700">مركز التكلفة</label>
+                    <x-searchable-select
+                        name="cost_center_id"
+                        id="cost_center_id"
+                        :options="$expenseCostCenterOptions"
+                        :value="old('cost_center_id', $expense->cost_center_id)"
+                        :error="$errors->has('cost_center_id')"
+                        empty-label="لا شيء"
+                        placeholder="ابحث باسم مركز التكلفة..."
+                    />
                     @error('cost_center_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="space-y-1">
-                    <label for="account_id" class="block text-sm font-medium text-gray-700">
-                        الحساب المحاسبي <span class="text-red-500">*</span> <x-info field="expense_expense_account" />
+                    <label for="account_id-trigger" class="block text-sm font-medium text-gray-700">
+                        الحساب المحاسبي (مصروف / أصل رأسمالي) <span class="text-red-500">*</span> <x-info field="expense_expense_account" />
                     </label>
-                    <select id="account_id" name="account_id" class="h-10 w-full rounded-lg border bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500 {{ $errors->has('account_id') ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200' }}">
-                        <option value="">اختر الحساب</option>
-                        @forelse(($expenseAccounts ?? collect()) as $account)
-                            <option value="{{ data_get($account, 'id') }}" @selected((string) old('account_id', $expense->expense_account_id) === (string) data_get($account, 'id'))>
-                                {{ data_get($account, 'code') }} - {{ data_get($account, 'name_ar', data_get($account, 'name', '')) }}
-                            </option>
-                        @empty
-                        @endforelse
-                    </select>
+                    <x-searchable-select
+                        name="account_id"
+                        id="account_id"
+                        :options="$expenseAccountOptions"
+                        :value="old('account_id', $expense->expense_account_id)"
+                        :required="true"
+                        :error="$errors->has('account_id')"
+                        empty-label="اختر الحساب"
+                        placeholder="ابحث بالرمز أو اسم الحساب..."
+                    />
                     @error('account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="space-y-1">
-                    <label for="supplier_id" class="block text-sm font-medium text-gray-700">المورد</label>
-                    <select id="supplier_id" name="supplier_id" class="h-10 w-full rounded-lg border bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500 {{ $errors->has('supplier_id') ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200' }}">
-                        <option value="">لا شيء</option>
-                        @forelse(($suppliers ?? collect()) as $supplier)
-                            <option value="{{ data_get($supplier, 'id') }}" @selected((string) old('supplier_id', $expense->supplier_id) === (string) data_get($supplier, 'id'))>
-                                {{ data_get($supplier, 'code') }} - {{ data_get($supplier, 'name', data_get($supplier, 'name_ar', '')) }}
-                            </option>
-                        @empty
-                        @endforelse
-                    </select>
+                    <label for="supplier_id-trigger" class="block text-sm font-medium text-gray-700">المورد</label>
+                    <x-searchable-select
+                        name="supplier_id"
+                        id="supplier_id"
+                        :options="$expenseSupplierOptions"
+                        :value="old('supplier_id', $expense->supplier_id)"
+                        :error="$errors->has('supplier_id')"
+                        empty-label="لا شيء"
+                        placeholder="ابحث باسم المورد أو الرمز..."
+                    />
                     @error('supplier_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
@@ -168,15 +185,33 @@
                 </div>
             </div>
 
-            <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3" x-data="{ pm: @js(old('payment_method', $expense->payment_method)) }">
                 <div class="space-y-1 md:col-span-1">
                     <label for="payment_method" class="block text-sm font-medium text-gray-700">طريقة الدفع <span class="text-red-500">*</span></label>
-                    <select id="payment_method" name="payment_method" class="h-10 w-full rounded-lg border bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500 {{ $errors->has('payment_method') ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200' }}">
-                        <option value="cash" @selected(old('payment_method', $expense->payment_method) === 'cash')>نقدًا</option>
-                        <option value="bank" @selected(old('payment_method', $expense->payment_method) === 'bank')>تحويل بنكي</option>
-                        <option value="card" @selected(old('payment_method', $expense->payment_method) === 'card')>بطاقة</option>
+                    <select id="payment_method" name="payment_method" x-model="pm" class="h-10 w-full rounded-lg border bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500 {{ $errors->has('payment_method') ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200' }}">
+                        <option value="cash">نقدًا</option>
+                        <option value="bank">تحويل بنكي</option>
+                        <option value="card">بطاقة</option>
+                        <option value="check">شيك</option>
                     </select>
                     @error('payment_method')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div class="space-y-1 md:col-span-2" x-show="['bank','check','card'].includes(pm)" x-cloak>
+                    <label for="bank_account_id-trigger" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
+                        الحساب البنكي <span class="text-red-500">*</span>
+                        <x-info field="expense_bank_account" />
+                    </label>
+                    <x-searchable-select
+                        name="bank_account_id"
+                        id="bank_account_id"
+                        :options="$expenseBankAccountOptions"
+                        :value="old('bank_account_id', $expense->bank_account_id)"
+                        :required="false"
+                        :error="$errors->has('bank_account_id')"
+                        empty-label="اختر الحساب البنكي"
+                        placeholder="ابحث باسم البنك أو رقم الحساب..."
+                    />
+                    @error('bank_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
         </section>

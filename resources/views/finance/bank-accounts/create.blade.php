@@ -56,6 +56,12 @@
 @endpush
 
 @section('content')
+@php
+    $ledgerBankOptions = collect($ledgerAccountOptions ?? [])->map(fn ($o) => [
+        'value' => $o['value'],
+        'label' => $o['label'],
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <h1 class="text-3xl font-bold text-gray-900">إضافة حساب بنكي</h1>
@@ -140,12 +146,22 @@
                     @error('currency') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="space-y-1 md:col-span-2">
-                    <label for="opening_balance" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
-                        <span>الرصيد الافتتاحي <span class="text-red-500">*</span></span>
-                        <x-info field="opening_balance" />
+                    <label for="ledger_account_id-trigger" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
+                        <span>حساب الدليل المرتبط <span class="text-red-500">*</span></span>
+                        <x-info field="bank_ledger_account" />
                     </label>
-                    <input id="opening_balance" name="opening_balance" type="number" inputmode="decimal" step="any" value="{{ old('opening_balance', 0) }}" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                    @error('opening_balance') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                    <x-searchable-select
+                        name="ledger_account_id"
+                        id="ledger_account_id"
+                        :options="$ledgerBankOptions"
+                        :value="old('ledger_account_id')"
+                        :required="true"
+                        :error="$errors->has('ledger_account_id')"
+                        empty-label="اختر حساباً من الأصول"
+                        placeholder="ابحث بالرمز أو اسم الحساب..."
+                    />
+                    @error('ledger_account_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                    <p class="text-xs text-gray-500">يُعرض رصيد البنك من <strong>الرصيد الافتتاحي + القيود</strong> على هذا الحساب في دليل الحسابات (لا يُخزَّن رصيد منفصل هنا).</p>
                 </div>
             </div>
         </section>

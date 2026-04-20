@@ -140,7 +140,7 @@
                     <a href="{{ route('dashboard') }}" class="ufuq-card-stretch" aria-label="إحصائيات اليوم"></a>
                     <div class="ufuq-card-body">
                         <small class="text-muted d-block">إنتاج اليوم</small>
-                        <span class="fw-bold">{{ number_format($totalProductionToday ?? 0, 0) }}</span>
+                        <span class="fw-bold">{{ erp_qty($totalProductionToday ?? 0) }}</span>
                     </div>
                 </div>
             </div>
@@ -149,7 +149,7 @@
                     <a href="{{ route('dashboard') }}" class="ufuq-card-stretch" aria-label="إحصائيات اليوم"></a>
                     <div class="ufuq-card-body">
                         <small class="text-muted d-block">هالك اليوم</small>
-                        <span class="fw-bold">{{ number_format($totalScrapToday ?? 0, 0) }}</span>
+                        <span class="fw-bold">{{ erp_qty($totalScrapToday ?? 0) }}</span>
                     </div>
                 </div>
             </div>

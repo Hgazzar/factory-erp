@@ -59,8 +59,8 @@
                             <td class="px-4 py-3 font-medium text-gray-800">{{ $center->code }}</td>
                             <td class="px-4 py-3 text-gray-800">{{ $center->name }}</td>
                             <td class="px-4 py-3 text-gray-700">{{ $center->branch }}</td>
-                            <td class="px-4 py-3 text-right font-medium text-gray-800">{{ number_format((float) $center->annual_budget, 0) }} SAR</td>
-                            <td class="px-4 py-3 text-right font-medium text-gray-800">{{ number_format((float) $center->spent_amount, 0) }} SAR</td>
+                            <td class="px-4 py-3 text-right font-medium text-gray-800">{{ erp_money($center->annual_budget) }} SAR</td>
+                            <td class="px-4 py-3 text-right font-medium text-gray-800">{{ erp_money($center->spent_amount) }} SAR</td>
                             <td class="px-4 py-3">
                                 @if($center->status === 'active')
                                     <span class="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">نشط</span>

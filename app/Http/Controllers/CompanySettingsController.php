@@ -21,6 +21,7 @@ class CompanySettingsController extends Controller
         $data = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
             'tax_number' => ['nullable', 'string', 'max:100'],
+            'default_vat_percent' => ['required', 'numeric', 'min:0', 'max:100'],
             'commercial_register' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string', 'max:500'],
             'logo_url' => ['nullable', 'string', 'max:500'],
@@ -34,6 +35,7 @@ class CompanySettingsController extends Controller
 
         $setting->name = $data['name'] ?? null;
         $setting->tax_number = $data['tax_number'] ?? null;
+        $setting->default_vat_percent = (float) $data['default_vat_percent'];
         $setting->commercial_register = $data['commercial_register'] ?? null;
         $setting->address = $data['address'] ?? null;
 

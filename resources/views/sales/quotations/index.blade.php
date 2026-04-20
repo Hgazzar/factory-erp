@@ -15,6 +15,12 @@
 @endsection
 
 @section('content')
+@php
+    $indexFilterCustomerOptions = collect($customers ?? [])->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => (string) ($c->display_name ?? $c->name ?? ''),
+    ])->values()->all();
+@endphp
 <div class="max-w-full">
     @if (session('import_result'))
         <x-import-summary :result="session('import_result')" />
@@ -104,16 +110,23 @@
                     <option value="{{ $value }}" {{ request('status') === (string) $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
-            <select name="customer_id" class="py-2 px-3 border border-gray-300 rounded-lg text-sm bg-white min-w-[160px] text-right">
-                <option value="">جميع العملاء</option>
-                @foreach($customers as $c)
-                    <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->display_name }}</option>
-                @endforeach
-            </select>
+            <div class="min-w-0 w-full max-w-[220px] shrink-0">
+                <x-searchable-select
+                    name="customer_id"
+                    id="filter_quotations_customer_id"
+                    :options="$indexFilterCustomerOptions"
+                    :value="request('customer_id')"
+                    :required="false"
+                    empty-label="جميع العملاء"
+                    placeholder="ابحث عن عميل..."
+                    class="[&_button]:min-h-[2.5rem] [&_button]:text-sm"
+                />
+            </div>
             <input type="date" name="date_from" value="{{ request('date_from') }}" class="py-2 px-3 border border-gray-300 rounded-lg text-sm text-right">
             <input type="date" name="date_to" value="{{ request('date_to') }}" class="py-2 px-3 border border-gray-300 rounded-lg text-sm text-right">
             <span class="text-sm text-gray-500">الإجمالي {{ $quotations->total() }}</span>
             <button type="submit" class="py-2 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">تطبيق</button>
+            <a href="{{ route('sales.quotations.index') }}" class="py-2 px-3 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">مسح</a>
         </div>
     </form>
 

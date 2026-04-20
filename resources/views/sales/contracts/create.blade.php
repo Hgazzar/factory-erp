@@ -13,7 +13,13 @@
 @endsection
 
 @section('content')
-<div class="max-w-full" dir="rtl" x-data="contractCreateForm(@js($items))" x-cloak>
+@php
+    $contractCustomerOptions = $customers->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => (string) ($c->name ?? ''),
+    ])->all();
+@endphp
+<div class="max-w-full" dir="rtl" x-data="contractCreateForm(@js($items), @js($defaultVatPercent))" x-cloak>
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-3">
             <a href="{{ route('sales.contracts.index') }}" class="text-gray-500 hover:text-indigo-600" title="الرجوع">
@@ -46,13 +52,17 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">العميل <span class="text-red-500">*</span></label>
-                    <select name="customer_id" required class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                        <option value="">اختر العميل</option>
-                        @foreach($customers as $c)
-                            <option value="{{ $c->id }}" {{ old('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_id-trigger">العميل <span class="text-red-500">*</span></label>
+                    <x-searchable-select
+                        class="w-full"
+                        name="customer_id"
+                        id="customer_id"
+                        :options="$contractCustomerOptions"
+                        :value="old('customer_id')"
+                        :required="true"
+                        empty-label="اختر العميل"
+                        placeholder="ابحث باسم العميل..."
+                    />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">تاريخ البدء <span class="text-red-500">*</span></label>
@@ -78,7 +88,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">الضريبة % <span class="text-red-500">*</span></label>
-                    <input type="number" inputmode="decimal" name="tax_percent" step="any" min="0" max="100" value="{{ old('tax_percent', '10') }}" class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                    <input type="number" inputmode="decimal" name="tax_percent" step="any" min="0" max="100" value="{{ old('tax_percent', (string) $defaultVatPercent) }}" class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">أيام التذكير</label>
@@ -190,14 +200,15 @@
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
-    window.contractCreateForm = function(items) {
+    window.contractCreateForm = function(items, defaultVatPercent) {
+        const vatDef = defaultVatPercent != null ? Number(defaultVatPercent) : 15;
         return {
             items: items || [],
             lines: [
-                { item_id: '', description: '', quantity: 1, unit_price: 0, tax_percent: 10 }
+                { item_id: '', description: '', quantity: 1, unit_price: 0, tax_percent: vatDef }
             ],
             addLine() {
-                this.lines.push({ item_id: '', description: '', quantity: 1, unit_price: 0, tax_percent: 10 });
+                this.lines.push({ item_id: '', description: '', quantity: 1, unit_price: 0, tax_percent: vatDef });
             },
             removeLine(index) {
                 if (this.lines.length > 1) this.lines.splice(index, 1);

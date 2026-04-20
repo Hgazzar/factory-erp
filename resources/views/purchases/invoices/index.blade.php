@@ -23,6 +23,12 @@
 @endpush
 
 @section('content')
+@php
+    $piIndexSupplierOptions = collect($suppliers ?? [])->map(fn ($s) => [
+        'value' => $s->id,
+        'label' => trim((string) ($s->code !== '' && $s->code !== null ? $s->code.' — ' : '').(string) ($s->name_ar ?? $s->name ?? '')),
+    ])->values()->all();
+@endphp
 <div class="max-w-full" dir="rtl">
 
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -78,12 +84,30 @@
     {{-- شريط الأدوات --}}
     <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div class="flex items-center gap-3">
-            <form method="GET" action="{{ route('purchases.invoices.index') }}" class="flex items-center gap-2">
-                <label class="text-sm text-gray-600">بحث</label>
-                <input type="search" name="q" value="{{ request('q') }}" placeholder="بحث..." class="w-48 px-3 py-2 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                <button type="submit" class="p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a.5.5 0 0 0 .708-.708l-3.85-3.85a.877.877 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-                </button>
+            <form method="GET" action="{{ route('purchases.invoices.index') }}" class="flex flex-wrap items-end gap-2">
+                <div class="min-w-0 w-52 max-w-[240px] shrink-0">
+                    <label class="mb-0.5 block text-xs font-medium text-gray-600">المورد</label>
+                    <x-searchable-select
+                        name="supplier_id"
+                        id="filter_pi_supplier_id"
+                        :options="$piIndexSupplierOptions"
+                        :value="request('supplier_id')"
+                        :required="false"
+                        empty-label="كل الموردين"
+                        placeholder="ابحث عن مورد..."
+                        class="[&_button]:h-9 [&_button]:text-sm"
+                    />
+                </div>
+                <div>
+                    <label class="mb-0.5 block text-xs font-medium text-gray-600">بحث</label>
+                    <div class="flex items-center gap-1">
+                        <input type="search" name="q" value="{{ request('q') }}" placeholder="بحث..." class="w-44 min-w-0 px-3 py-2 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <button type="submit" class="shrink-0 rounded-lg border border-gray-300 bg-white p-2 text-gray-600 hover:bg-gray-50" title="تطبيق">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a.5.5 0 0 0 .708-.708l-3.85-3.85a.877.877 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+                        </button>
+                        <a href="{{ route('purchases.invoices.index') }}" class="shrink-0 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100">مسح</a>
+                    </div>
+                </div>
             </form>
             <span class="text-sm text-gray-600">الإجمالي <span class="font-semibold text-gray-900">{{ $invoices->total() }}</span></span>
         </div>

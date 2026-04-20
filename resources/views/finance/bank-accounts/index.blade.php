@@ -91,8 +91,14 @@
                                 </th>
                                 <th class="px-4 py-3 text-right">
                                     <span class="inline-flex items-center gap-1">
-                                        <span>الرصيد الحالي</span>
-                                        <x-info field="opening_balance" />
+                                        <span>حساب الدليل</span>
+                                        <x-info field="bank_ledger_account" />
+                                    </span>
+                                </th>
+                                <th class="px-4 py-3 text-right">
+                                    <span class="inline-flex items-center gap-1">
+                                        <span>الرصيد المحاسبي</span>
+                                        <x-info field="bank_gl_balance" />
                                     </span>
                                 </th>
                                 <th class="px-4 py-3 text-right">
@@ -116,7 +122,15 @@
                                     <td class="px-4 py-3 text-gray-800">{{ $account->bank_name }}</td>
                                     <td class="px-4 py-3 text-gray-700">{{ $account->account_number }}</td>
                                     <td class="px-4 py-3 text-gray-700">{{ $account->currency }}</td>
-                                    <td class="px-4 py-3 font-semibold text-gray-800">{{ number_format((float) $account->current_balance, 2) }} {{ $account->currency }}</td>
+                                    <td class="px-4 py-3 text-gray-700">
+                                        @if($account->ledgerAccount)
+                                            <span class="font-mono text-xs text-gray-600">{{ $account->ledgerAccount->code }}</span>
+                                            <span class="mr-1 text-gray-800">{{ $account->ledgerAccount->name_ar }}</span>
+                                        @else
+                                            <span class="text-xs text-amber-700">غير مربوط</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 font-semibold text-gray-800">{{ erp_money((float) $account->current_balance) }} {{ $account->currency }}</td>
                                     <td class="px-4 py-3">
                                         @if($account->status === 'active')
                                             <span class="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">نشط</span>

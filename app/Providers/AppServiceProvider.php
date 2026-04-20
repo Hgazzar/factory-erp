@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\CompanySetting;
 use App\Models\JournalEntry;
 use App\Models\JournalItem;
 use App\Models\ProductionRecord;
@@ -15,6 +16,7 @@ use Filament\Support\Enums\VerticalAlignment;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -40,5 +42,9 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Registered::class, function (Registered $event): void {
             ChartOfAccountsProvisioner::ensureForUser((int) $event->user->id);
         });
+
+        View::share('defaultVatPercent', CompanySetting::resolvedDefaultVatPercent());
+        View::share('erpMoneyDecimals', (int) config('accounting.display_money_decimal_places', 2));
+        View::share('erpQtyDecimals', (int) config('accounting.display_quantity_decimal_places', 2));
     }
 }

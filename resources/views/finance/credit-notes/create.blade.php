@@ -13,6 +13,12 @@
 @endsection
 
 @section('content')
+@php
+    $creditNoteCustomerOptions = $customers->map(fn ($customer) => [
+        'value' => $customer->id,
+        'label' => trim((string) ($customer->code ?? '').' - '.(string) ($customer->name_ar ?: $customer->name ?? '')),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <h1 class="text-3xl font-bold text-gray-900">إشعار ائتمان جديد</h1>
@@ -26,18 +32,19 @@
             <h2 class="mb-4 text-2xl font-bold text-gray-900">تفاصيل إشعار الائتمان</h2>
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div class="space-y-1">
-                    <label for="customer_id" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
+                    <label for="customer_id-trigger" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
                         <span>العميل <span class="text-red-500">*</span></span>
                         <x-info field="credit_note_customer" />
                     </label>
-                    <select id="customer_id" name="customer_id" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر العميل</option>
-                        @foreach($customers as $customer)
-                            <option value="{{ $customer->id }}" @selected((string) old('customer_id') === (string) $customer->id)>
-                                {{ $customer->code }} - {{ $customer->name_ar ?: $customer->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="customer_id"
+                        id="customer_id"
+                        :options="$creditNoteCustomerOptions"
+                        :value="old('customer_id')"
+                        :error="$errors->has('customer_id')"
+                        empty-label="اختر العميل"
+                        placeholder="ابحث باسم العميل أو الرمز..."
+                    />
                     @error('customer_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="space-y-1">
@@ -150,7 +157,7 @@
 
 @php
     $defaultCreditNoteLines = old('lines', [
-        ['description' => '', 'quantity' => 1, 'unit_price' => 0, 'tax_percent' => 15],
+        ['description' => '', 'quantity' => 1, 'unit_price' => 0, 'tax_percent' => $defaultVatPercent],
     ]);
 @endphp
 
@@ -166,6 +173,7 @@
         'invoicePartyAttr' => 'data-customer-id',
         'currencyLabel' => 'SAR',
         'lineDefaults' => $defaultCreditNoteLines,
+        'defaultVatJs' => (float) $defaultVatPercent,
     ])
 @endpush
 

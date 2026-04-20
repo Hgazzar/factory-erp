@@ -13,6 +13,12 @@
 @endsection
 
 @section('content')
+@php
+    $receiptCustomerOptions = $customers->map(fn ($customer) => [
+        'value' => $customer->id,
+        'label' => trim((string) ($customer->code ?? '').' — '.(string) ($customer->name ?? '')),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4">
         <div>
@@ -36,16 +42,17 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
                 <div class="lg:col-span-4">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">العميل <span class="text-red-500">*</span></label>
-                    <select name="customer_id" required
-                            class="h-10 w-full rounded-lg border px-3 text-sm focus:border-blue-500 focus:ring-blue-500 @error('customer_id') border-red-500 @else border-gray-200 bg-gray-50 @enderror">
-                        <option value="">— اختر العميل —</option>
-                        @foreach($customers as $customer)
-                            <option value="{{ $customer->id }}" @selected(old('customer_id') == $customer->id)>
-                                {{ $customer->code }} — {{ $customer->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <label class="mb-1 block text-sm font-medium text-gray-700" for="customer_id-trigger">العميل <span class="text-red-500">*</span></label>
+                    <x-searchable-select
+                        name="customer_id"
+                        id="customer_id"
+                        :options="$receiptCustomerOptions"
+                        :value="old('customer_id')"
+                        :required="true"
+                        :error="$errors->has('customer_id')"
+                        empty-label="— اختر العميل —"
+                        placeholder="ابحث باسم العميل أو الرمز..."
+                    />
                     @error('customer_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="lg:col-span-3">

@@ -61,7 +61,7 @@
                                 <span class="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-900">خصم كمية</span>
                             @endif
                         </td>
-                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ number_format($a->total_quantity ?? 0, 4) }}</td>
+                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ erp_qty($a->total_quantity ?? 0) }}</td>
                         <td class="px-3 py-3 tabular-nums font-medium text-gray-900">{{ number_format($a->total_value ?? 0, 2) }} SAR</td>
                         <td class="max-w-[12rem] px-3 py-3 text-gray-700">{{ $a->reason_label ? (config('inventory.adjustment_reasons')[$a->reason_label] ?? $a->reason_label) : '—' }}</td>
                         <td class="px-3 py-3 text-gray-800">{{ $a->costCenter ? $a->costCenter->name : '—' }}</td>

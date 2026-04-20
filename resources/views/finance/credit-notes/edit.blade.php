@@ -13,6 +13,12 @@
 @endsection
 
 @section('content')
+@php
+    $creditNoteCustomerOptions = $customers->map(fn ($customer) => [
+        'value' => $customer->id,
+        'label' => trim((string) ($customer->code ?? '').' - '.(string) ($customer->name_ar ?: $customer->name ?? '')),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <h1 class="text-3xl font-bold text-gray-900">تعديل إشعار ائتمان</h1>
@@ -33,18 +39,19 @@
                     <input type="text" value="{{ $creditNote->note_number }}" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 text-sm text-gray-500" disabled>
                 </div>
                 <div class="space-y-1">
-                    <label for="customer_id" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
+                    <label for="customer_id-trigger" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
                         <span>العميل <span class="text-red-500">*</span></span>
                         <x-info field="credit_note_customer" />
                     </label>
-                    <select id="customer_id" name="customer_id" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر العميل</option>
-                        @foreach($customers as $customer)
-                            <option value="{{ $customer->id }}" @selected((string) old('customer_id', $creditNote->customer_id) === (string) $customer->id)>
-                                {{ $customer->code }} - {{ $customer->name_ar ?: $customer->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="customer_id"
+                        id="customer_id"
+                        :options="$creditNoteCustomerOptions"
+                        :value="old('customer_id', $creditNote->customer_id)"
+                        :error="$errors->has('customer_id')"
+                        empty-label="اختر العميل"
+                        placeholder="ابحث باسم العميل أو الرمز..."
+                    />
                     @error('customer_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="space-y-1">
@@ -176,6 +183,8 @@
 
         if (!linesBody || !addLineBtn) return;
 
+        const DEFAULT_VAT = @json((float) $defaultVatPercent);
+
         const oldLines = @json(old('lines', $creditNote->items->map(fn ($item) => [
             'description' => $item->description,
             'quantity' => (float) $item->quantity,
@@ -259,7 +268,7 @@
                     <input data-field="unit_price" type="number" inputmode="decimal" min="0" step="any" value="${line.unit_price ?? 0}" class="h-10 w-32 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
                 </td>
                 <td class="px-4 py-3">
-                    <input data-field="tax_percent" type="number" inputmode="decimal" min="0" max="100" step="any" value="${line.tax_percent ?? 15}" class="h-10 w-24 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    <input data-field="tax_percent" type="number" inputmode="decimal" min="0" max="100" step="any" value="${line.tax_percent ?? DEFAULT_VAT}" class="h-10 w-24 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
                 </td>
                 <td class="px-4 py-3 font-semibold text-gray-800" data-line-total>${formatMoney(0)}</td>
                 <td class="px-4 py-3">

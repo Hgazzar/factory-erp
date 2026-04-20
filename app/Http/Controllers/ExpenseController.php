@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Models\Account;
+use App\Models\BankAccount;
 use App\Models\CompanySetting;
 use App\Models\CostCenter;
 use App\Models\ExpenseCategory;
+use App\Models\FixedAsset;
 use App\Models\JournalEntry;
 use App\Models\JournalItem;
 use App\Models\Payment;
@@ -94,14 +96,24 @@ class ExpenseController extends Controller
         }
         $supplierId = $request->query('supplier_id');
         $supplierId = ($supplierId !== null && $supplierId !== '') ? (int) $supplierId : null;
+        $expenseAccountId = $request->query('expense_account_id');
+        $expenseAccountId = ($expenseAccountId !== null && $expenseAccountId !== '') ? (int) $expenseAccountId : null;
+        $costCenterId = $request->query('cost_center_id');
+        $costCenterId = ($costCenterId !== null && $costCenterId !== '') ? (int) $costCenterId : null;
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
 
         if ($supplierId && ! Supplier::query()->whereKey($supplierId)->exists()) {
             $supplierId = null;
         }
+        if ($expenseAccountId && ! Account::query()->whereKey($expenseAccountId)->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])->exists()) {
+            $expenseAccountId = null;
+        }
+        if ($costCenterId && ! CostCenter::query()->whereKey($costCenterId)->exists()) {
+            $costCenterId = null;
+        }
 
-        $baseQuery = $this->expensesIndexBaseQuery($search, $status, $supplierId, $dateFrom, $dateTo);
+        $baseQuery = $this->expensesIndexBaseQuery($search, $status, $supplierId, $expenseAccountId, $costCenterId, $dateFrom, $dateTo);
 
         $expenses = (clone $baseQuery)
             ->with(['expenseAccount', 'expenseCategory', 'supplier'])
@@ -132,15 +144,37 @@ class ExpenseController extends Controller
             ->orderBy('name')
             ->get(['id', 'code', 'name', 'name_ar']);
 
+        $filterExpenseAccounts = Account::query()
+            ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
+            ->where(function ($query) {
+                $query->whereNotNull('parent_id')
+                    ->orWhere('allow_direct_posting', true);
+            })
+            ->where(function ($query) {
+                $query->where('is_active', true)
+                    ->orWhereNull('is_active');
+            })
+            ->orderBy('code')
+            ->get(['id', 'code', 'name_ar', 'name_en']);
+
+        $filterCostCenters = CostCenter::query()
+            ->where('status', 'active')
+            ->orderBy('code')
+            ->get(['id', 'code', 'name']);
+
         return view('finance.placeholders.expenses', compact(
             'expenses',
             'search',
             'status',
             'supplierId',
+            'expenseAccountId',
+            'costCenterId',
             'dateFrom',
             'dateTo',
             'expenseSummary',
-            'suppliers'
+            'suppliers',
+            'filterExpenseAccounts',
+            'filterCostCenters'
         ));
     }
 
@@ -148,7 +182,7 @@ class ExpenseController extends Controller
      * @param  mixed  $dateFrom
      * @param  mixed  $dateTo
      */
-    private function expensesIndexBaseQuery(string $search, string $status, ?int $supplierId, $dateFrom, $dateTo): Builder
+    private function expensesIndexBaseQuery(string $search, string $status, ?int $supplierId, ?int $expenseAccountId, ?int $costCenterId, $dateFrom, $dateTo): Builder
     {
         return Payment::query()
             ->where('type', 'expense')
@@ -186,6 +220,8 @@ class ExpenseController extends Controller
                 });
             })
             ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
+            ->when($expenseAccountId, fn ($query) => $query->where('expense_account_id', $expenseAccountId))
+            ->when($costCenterId, fn ($query) => $query->where('cost_center_id', $costCenterId))
             ->when(filled($dateFrom), function ($query) use ($dateFrom) {
                 $query->whereDate('date', '>=', Carbon::parse($dateFrom)->format('Y-m-d'));
             })
@@ -198,7 +234,7 @@ class ExpenseController extends Controller
     {
         // حسابات مصروف قابلة للترحيل: حسابات فرعية (ورقة) أو المسموح بها صراحة للترحيل المباشر
         $expenseAccounts = Account::query()
-            ->where('type', Account::TYPE_EXPENSE)
+            ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->where(function ($query) {
                 $query->whereNotNull('parent_id')
                     ->orWhere('allow_direct_posting', true);
@@ -230,13 +266,23 @@ class ExpenseController extends Controller
 
         $nextExpenseNumber = Payment::generateNextExpenseNumberForUser((int) (auth()->id() ?? 1));
 
-        return view('finance.expenses.create', compact('categories', 'costCenters', 'expenseAccounts', 'suppliers', 'nextExpenseNumber'));
+        $bankAccounts = BankAccount::query()
+            ->where('status', 'active')
+            ->whereNotNull('ledger_account_id')
+            ->orderBy('bank_name')
+            ->orderBy('account_number')
+            ->get(['id', 'bank_name', 'account_number']);
+
+        return view('finance.expenses.create', compact('categories', 'costCenters', 'expenseAccounts', 'suppliers', 'nextExpenseNumber', 'bankAccounts'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
         $uid = (int) ($user?->id ?? auth()->id() ?? 1);
+        if (! in_array((string) $request->input('payment_method'), ['bank', 'check', 'card'], true)) {
+            $request->merge(['bank_account_id' => null]);
+        }
         $data = $request->validate([
             'expense_category_id' => ['nullable', Rule::exists('expense_categories', 'id')->where('user_id', $uid)],
             'date' => ['required', 'date'],
@@ -247,7 +293,15 @@ class ExpenseController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'tax_amount' => ['nullable', 'numeric', 'min:0'],
-            'payment_method' => ['required', 'in:cash,bank,card'],
+            'payment_method' => ['required', 'in:cash,bank,card,check'],
+            'bank_account_id' => [
+                Rule::requiredIf(fn () => in_array((string) $request->input('payment_method'), ['bank', 'check', 'card'], true)),
+                'nullable',
+                'integer',
+                Rule::exists('bank_accounts', 'id')->where(function ($q) use ($uid): void {
+                    $q->where('user_id', $uid)->whereNotNull('ledger_account_id');
+                }),
+            ],
             'notes' => ['nullable', 'string', 'max:3000'],
             'attachments' => ['nullable', 'array', 'max:20'],
             'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
@@ -262,6 +316,8 @@ class ExpenseController extends Controller
             'tax_amount.min' => 'مبلغ الضريبة لا يمكن أن يكون سالباً.',
             'payment_method.required' => 'اختر طريقة الدفع.',
             'payment_method.in' => 'طريقة الدفع غير صالحة.',
+            'bank_account_id.required' => 'اختر الحساب البنكي عند الدفع بنك أو شيك أو بطاقة.',
+            'bank_account_id.exists' => 'الحساب البنكي غير صالح أو غير مربوط بدليل الحسابات.',
             'expense_category_id.exists' => 'تصنيف المصروف غير صالح.',
             'cost_center_id.exists' => 'مركز التكلفة غير صالح.',
             'supplier_id.exists' => 'المورد غير صالح.',
@@ -269,19 +325,23 @@ class ExpenseController extends Controller
 
         $expenseAccount = Account::query()
             ->where('id', $data['account_id'])
-            ->where('type', Account::TYPE_EXPENSE)
+            ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->first();
 
         if (! $expenseAccount) {
             return back()
                 ->withInput()
-                ->withErrors(['account_id' => 'الحساب المختار ليس حساب مصروف صالح.']);
+                ->withErrors(['account_id' => 'الحساب المختار ليس حساب مصروف/أصل صالح.']);
         }
 
         $amount = (float) $data['amount'];
         $taxAmount = (float) ($data['tax_amount'] ?? 0);
 
         $expenseNumber = Payment::generateNextExpenseNumberForUser($uid);
+
+        $bankAccountId = in_array((string) ($data['payment_method'] ?? ''), ['bank', 'check', 'card'], true)
+            ? (int) ($data['bank_account_id'] ?? 0)
+            : null;
 
         $notes = $data['notes'] ?? null;
         if ($notes === null && ! empty($data['description'])) {
@@ -295,7 +355,7 @@ class ExpenseController extends Controller
             $uploads = [];
         }
 
-        DB::transaction(function () use ($data, $expenseAccount, $amount, $taxAmount, $user, $uid, $expenseNumber, $notes, $uploads): void {
+        DB::transaction(function () use ($data, $expenseAccount, $amount, $taxAmount, $user, $uid, $expenseNumber, $notes, $uploads, $bankAccountId): void {
             $payment = Payment::query()->create([
                 'user_id' => $uid,
                 'expense_number' => $expenseNumber,
@@ -310,6 +370,7 @@ class ExpenseController extends Controller
                 'notes' => $notes,
                 'type' => 'expense',
                 'payment_method' => $data['payment_method'] ?? 'cash',
+                'bank_account_id' => $bankAccountId,
                 'journal_entry_id' => null,
                 'status' => 'draft',
                 'created_by' => $user?->id ?? $uid,
@@ -340,7 +401,7 @@ class ExpenseController extends Controller
         }
 
         $expenseAccounts = Account::query()
-            ->where('type', Account::TYPE_EXPENSE)
+            ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->where(function ($query) use ($expense) {
                 $query->where(function ($q) {
                     $q->where(function ($inner) {
@@ -388,7 +449,14 @@ class ExpenseController extends Controller
 
         $expense->load(['attachments']);
 
-        return view('finance.expenses.edit', compact('expense', 'categories', 'costCenters', 'expenseAccounts', 'suppliers', 'expenseIsPosted', 'isSuperAdmin'));
+        $bankAccounts = BankAccount::query()
+            ->where('status', 'active')
+            ->whereNotNull('ledger_account_id')
+            ->orderBy('bank_name')
+            ->orderBy('account_number')
+            ->get(['id', 'bank_name', 'account_number']);
+
+        return view('finance.expenses.edit', compact('expense', 'categories', 'costCenters', 'expenseAccounts', 'suppliers', 'expenseIsPosted', 'isSuperAdmin', 'bankAccounts'));
     }
 
     public function update(Request $request, Payment $expense): RedirectResponse
@@ -406,6 +474,9 @@ class ExpenseController extends Controller
         }
 
         $uid = (int) ($user?->id ?? auth()->id() ?? 1);
+        if (! in_array((string) $request->input('payment_method'), ['bank', 'check', 'card'], true)) {
+            $request->merge(['bank_account_id' => null]);
+        }
         $data = $request->validate([
             'expense_category_id' => ['nullable', Rule::exists('expense_categories', 'id')->where('user_id', $uid)],
             'date' => ['required', 'date'],
@@ -415,7 +486,15 @@ class ExpenseController extends Controller
             'reference' => ['nullable', 'string', 'max:50'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'tax_amount' => ['nullable', 'numeric', 'min:0'],
-            'payment_method' => ['required', 'in:cash,bank,card'],
+            'payment_method' => ['required', 'in:cash,bank,card,check'],
+            'bank_account_id' => [
+                Rule::requiredIf(fn () => in_array((string) $request->input('payment_method'), ['bank', 'check', 'card'], true)),
+                'nullable',
+                'integer',
+                Rule::exists('bank_accounts', 'id')->where(function ($q) use ($uid): void {
+                    $q->where('user_id', $uid)->whereNotNull('ledger_account_id');
+                }),
+            ],
             'notes' => ['nullable', 'string', 'max:3000'],
             'attachments' => ['nullable', 'array', 'max:20'],
             'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
@@ -430,6 +509,8 @@ class ExpenseController extends Controller
             'tax_amount.min' => 'مبلغ الضريبة لا يمكن أن يكون سالباً.',
             'payment_method.required' => 'اختر طريقة الدفع.',
             'payment_method.in' => 'طريقة الدفع غير صالحة.',
+            'bank_account_id.required' => 'اختر الحساب البنكي عند الدفع بنك أو شيك أو بطاقة.',
+            'bank_account_id.exists' => 'الحساب البنكي غير صالح أو غير مربوط بدليل الحسابات.',
             'expense_category_id.exists' => 'تصنيف المصروف غير صالح.',
             'cost_center_id.exists' => 'مركز التكلفة غير صالح.',
             'supplier_id.exists' => 'المورد غير صالح.',
@@ -437,23 +518,27 @@ class ExpenseController extends Controller
 
         $expenseAccount = Account::query()
             ->where('id', $data['account_id'])
-            ->where('type', Account::TYPE_EXPENSE)
+            ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->first();
 
         if (! $expenseAccount) {
             return back()
                 ->withInput()
-                ->withErrors(['account_id' => 'الحساب المختار ليس حساب مصروف صالح.']);
+                ->withErrors(['account_id' => 'الحساب المختار ليس حساب مصروف/أصل صالح.']);
         }
 
         $totalAmount = (float) $data['amount'] + (float) ($data['tax_amount'] ?? 0);
+
+        $bankAccountId = in_array((string) ($data['payment_method'] ?? ''), ['bank', 'check', 'card'], true)
+            ? (int) ($data['bank_account_id'] ?? 0)
+            : null;
 
         $uploads = $request->file('attachments', []) ?? [];
         if (! is_array($uploads)) {
             $uploads = [];
         }
 
-        DB::transaction(function () use ($expense, $data, $expenseAccount, $totalAmount, $uploads, $uid): void {
+        DB::transaction(function () use ($expense, $data, $expenseAccount, $totalAmount, $uploads, $uid, $bankAccountId): void {
             $expense->update([
                 'supplier_id' => $data['supplier_id'] ?? null,
                 'expense_account_id' => $expenseAccount->id,
@@ -465,6 +550,7 @@ class ExpenseController extends Controller
                 'tax_amount' => (float) ($data['tax_amount'] ?? 0),
                 'notes' => $data['notes'] ?? null,
                 'payment_method' => $data['payment_method'],
+                'bank_account_id' => $bankAccountId,
             ]);
 
             $this->persistMorphAttachments($expense, $uploads, $uid, 'expenses');
@@ -495,11 +581,11 @@ class ExpenseController extends Controller
 
         $expenseAccount = Account::query()
             ->where('id', $expense->expense_account_id)
-            ->where('type', Account::TYPE_EXPENSE)
+            ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->first();
 
         if (! $expenseAccount) {
-            return back()->with('error', 'لا يوجد حساب مصروف صالح لهذا السند.');
+            return back()->with('error', 'لا يوجد حساب مصروف/أصل صالح لهذا السند.');
         }
 
         $uid = (int) ($request->user()?->id ?? auth()->id() ?? 1);
@@ -508,10 +594,19 @@ class ExpenseController extends Controller
         DB::transaction(function () use ($expense, $expenseAccount, $totalAmount, $uid): void {
             $entry = $this->createExpenseJournalEntry($expense, $expenseAccount, $totalAmount, $uid);
 
-            $expense->update([
+            $updates = [
                 'journal_entry_id' => $entry->id,
                 'status' => 'posted',
-            ]);
+            ];
+
+            if ($expenseAccount->type === Account::TYPE_ASSET && ! $expense->fixed_asset_id) {
+                $fixedAsset = $this->createFixedAssetFromCapexExpense($expense, $expenseAccount, $entry->id);
+                if ($fixedAsset) {
+                    $updates['fixed_asset_id'] = $fixedAsset->id;
+                }
+            }
+
+            $expense->update($updates);
         });
 
         return redirect()
@@ -656,9 +751,78 @@ class ExpenseController extends Controller
         return $user instanceof User && $user->role === 'admin';
     }
 
+    private function createFixedAssetFromCapexExpense(Payment $expense, Account $assetAccount, int $journalEntryId): ?FixedAsset
+    {
+        $cost = (float) (($expense->amount ?? 0) + ($expense->tax_amount ?? 0));
+        if ($cost <= 0) {
+            return null;
+        }
+
+        $code = $this->nextFixedAssetCode();
+        $name = $expense->reference ?: ('أصل رأسمالي من مصروف '.$expense->expense_number);
+        $categoryName = ExpenseCategory::query()
+            ->whereKey($expense->expense_category_id)
+            ->value('name_ar') ?? 'غير مصنف';
+
+        return FixedAsset::query()->create([
+            'asset_code' => $code,
+            'name' => $name,
+            'name_ar' => $name,
+            'category_id' => $expense->expense_category_id,
+            'cost_center_id' => $expense->cost_center_id,
+            'ledger_account_id' => $assetAccount->id,
+            'payment_method' => $expense->payment_method ?? 'cash',
+            'bank_account_id' => $expense->bank_account_id,
+            'journal_entry_id' => $journalEntryId,
+            'source_payment_id' => $expense->id,
+            'category' => $categoryName,
+            'description' => $expense->notes,
+            'acquisition_date' => $expense->date,
+            'acquisition_cost' => $cost,
+            'book_value' => $cost,
+            'status' => 'in_use',
+        ]);
+    }
+
+    private function nextFixedAssetCode(): string
+    {
+        $max = 0;
+        $codes = FixedAsset::query()->where('asset_code', 'like', 'FA-%')->pluck('asset_code');
+        foreach ($codes as $code) {
+            if (preg_match('/^FA-(\d+)$/', (string) $code, $m)) {
+                $max = max($max, (int) $m[1]);
+            }
+        }
+
+        return 'FA-'.str_pad((string) ($max + 1), 5, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * حساب الدائن في قيد المصروف: نقد → صندوق؛ بنك/شيك/بطاقة مع اختيار حساب بنكي → حساب الدليل المرتبط؛ وإلا السلوك الافتراضي القديم.
+     */
+    private function resolveExpenseCreditAccount(Payment $expense): Account
+    {
+        $method = (string) ($expense->payment_method ?? 'cash');
+        if ($method === 'cash') {
+            return DefaultLedgerAccounts::paymentSourceAsset('cash');
+        }
+
+        if (in_array($method, ['bank', 'check', 'card'], true) && $expense->bank_account_id) {
+            $ba = BankAccount::query()->whereKey($expense->bank_account_id)->first();
+            if ($ba && $ba->ledger_account_id) {
+                $acc = Account::query()->whereKey($ba->ledger_account_id)->first();
+                if ($acc) {
+                    return $acc;
+                }
+            }
+        }
+
+        return DefaultLedgerAccounts::paymentSourceAsset($method);
+    }
+
     private function createExpenseJournalEntry(Payment $expense, Account $expenseAccount, float $totalAmount, int $userId): JournalEntry
     {
-        $creditAccount = DefaultLedgerAccounts::paymentSourceAsset((string) ($expense->payment_method ?? 'cash'));
+        $creditAccount = $this->resolveExpenseCreditAccount($expense);
         $desc = ($expense->notes !== null && $expense->notes !== '')
             ? mb_substr((string) $expense->notes, 0, 500)
             : ('مصروف #'.($expense->reference ?? 'بدون مرجع'));
@@ -702,7 +866,7 @@ class ExpenseController extends Controller
             return;
         }
 
-        $creditAccount = DefaultLedgerAccounts::paymentSourceAsset((string) ($expense->payment_method ?? 'cash'));
+        $creditAccount = $this->resolveExpenseCreditAccount($expense);
         $desc = ($expense->notes !== null && $expense->notes !== '')
             ? mb_substr((string) $expense->notes, 0, 500)
             : ('مصروف #'.($expense->reference ?? 'بدون مرجع'));

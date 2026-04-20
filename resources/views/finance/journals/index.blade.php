@@ -11,6 +11,12 @@
 @endsection
 
 @section('content')
+@php
+    $journalFilterAccountOptions = collect($filterAccounts ?? [])->map(fn ($a) => [
+        'value' => $a->id,
+        'label' => trim((string) ($a->code ?? '').' — '.(string) ($a->name_ar ?? $a->name_en ?? '')),
+    ])->values()->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full">
 
     {{-- 1. الهيدر المظبوط: العنوان يمين والزرار شمال --}}
@@ -41,7 +47,7 @@
                 </div>
             </div>
             {{-- السطر الثاني: التواريخ بشكل ملموم على اليمين --}}
-            <div class="flex items-center gap-4 border-t border-gray-50 pt-3">
+            <div class="flex flex-wrap items-end gap-4 border-t border-gray-50 pt-3">
                 <div class="flex items-center gap-2">
                     <span class="text-sm text-gray-500">من:</span>
                     <input type="date" name="date_from" value="{{ request('date_from') }}" class="h-9 w-36 rounded-md border border-gray-200 bg-gray-50 text-sm">
@@ -50,6 +56,20 @@
                     <span class="text-sm text-gray-500">إلى:</span>
                     <input type="date" name="date_to" value="{{ request('date_to') }}" class="h-9 w-36 rounded-md border border-gray-200 bg-gray-50 text-sm">
                 </div>
+                <div class="min-w-0 w-full max-w-[16rem] shrink-0">
+                    <span class="mb-1 block text-sm text-gray-500">حساب في البند</span>
+                    <x-searchable-select
+                        name="account_id"
+                        id="filter_journal_account_id"
+                        :options="$journalFilterAccountOptions"
+                        :value="request('account_id')"
+                        :required="false"
+                        empty-label="كل الحسابات"
+                        placeholder="ابحث بالرمز أو الاسم..."
+                        class="[&_button]:h-9 [&_button]:text-sm"
+                    />
+                </div>
+                <a href="{{ route('finance.journals.index') }}" class="mb-0.5 inline-flex h-9 items-center rounded-md border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 hover:bg-gray-50">مسح الفلاتر</a>
             </div>
         </form>
     </div>

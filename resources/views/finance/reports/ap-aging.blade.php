@@ -38,15 +38,15 @@
     <section class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <article class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">إجمالي الذمم الدائنة <x-info field="ap_aging_total_payables" /></p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">SAR {{ number_format((float) $stats['total_payables'], 2) }}</p>
+            <p class="mt-2 text-3xl font-bold text-gray-900">SAR {{ erp_money((float) $stats['total_payables']) }}</p>
         </article>
         <article class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">المستحق الحالي <x-info field="ap_aging_current_amount" /></p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">SAR {{ number_format((float) $stats['current_amount'], 2) }}</p>
+            <p class="mt-2 text-3xl font-bold text-gray-900">SAR {{ erp_money((float) $stats['current_amount']) }}</p>
         </article>
         <article class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">المبلغ المتأخر <x-info field="ap_aging_overdue_amount" /></p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">SAR {{ number_format((float) $stats['overdue_amount'], 2) }}</p>
+            <p class="mt-2 text-3xl font-bold text-gray-900">SAR {{ erp_money((float) $stats['overdue_amount']) }}</p>
         </article>
         <article class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">إجمالي الموردين <x-info field="ap_aging_suppliers_count" /></p>
@@ -85,12 +85,12 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-3 font-medium text-gray-800">{{ $row->supplier_code ?: '—' }}</td>
                                 <td class="px-4 py-3 text-gray-700">{{ $row->supplier_name }}</td>
-                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ number_format((float) $row->current_amount, 2) }}</td>
-                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ number_format((float) $row->bucket_1_30, 2) }}</td>
-                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ number_format((float) $row->bucket_31_60, 2) }}</td>
-                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ number_format((float) $row->bucket_61_90, 2) }}</td>
-                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ number_format((float) $row->bucket_over_90, 2) }}</td>
-                                <td class="px-4 py-3 font-bold text-blue-800">SAR {{ number_format((float) $row->total_amount, 2) }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ erp_money((float) $row->current_amount) }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ erp_money((float) $row->bucket_1_30) }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ erp_money((float) $row->bucket_31_60) }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ erp_money((float) $row->bucket_61_90) }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-800">SAR {{ erp_money((float) $row->bucket_over_90) }}</td>
+                                <td class="px-4 py-3 font-bold text-blue-800">SAR {{ erp_money((float) $row->total_amount) }}</td>
                             </tr>
                         @empty
                             <tr>
@@ -113,6 +113,11 @@
         }
         main.main-content {
             padding: 0 !important;
+        }
+        td.font-semibold,
+        td.font-bold {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
     }
 </style>

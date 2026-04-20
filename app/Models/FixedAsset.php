@@ -17,6 +17,11 @@ class FixedAsset extends Model
         'name_ar',
         'category_id',
         'cost_center_id',
+        'ledger_account_id',
+        'payment_method',
+        'bank_account_id',
+        'journal_entry_id',
+        'source_payment_id',
         'category',
         'location',
         'description',
@@ -58,6 +63,16 @@ class FixedAsset extends Model
     public function costCenter(): BelongsTo
     {
         return $this->belongsTo(CostCenter::class, 'cost_center_id');
+    }
+
+    public function ledgerAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'ledger_account_id');
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class, 'bank_account_id');
     }
 
     public function getCalculatedBookValueAttribute(): float

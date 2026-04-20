@@ -10,7 +10,7 @@
         .title { font-size: 26px; font-weight: 700; margin: 0; }
         .meta { font-size: 13px; color: #475569; margin-top: 6px; }
         table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th, td { border: 1px solid #e2e8f0; padding: 10px; font-size: 13px; text-align: right; }
+        th, td { border: 1px solid #e2e8f0; padding: 10px; font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
         th { background: #f8fafc; }
         .danger { color: #dc2626; font-weight: 700; }
         .safe { color: #059669; font-weight: 700; }
@@ -50,10 +50,10 @@
                 <tr>
                     <td>{{ $line['account_code'] }} - {{ $line['account_name'] }}</td>
                     <td>{{ $line['cost_center'] ?? '—' }}</td>
-                    <td>SAR {{ number_format((float) $line['planned'], 2) }}</td>
-                    <td>SAR {{ number_format((float) $line['actual'], 2) }}</td>
-                    <td class="{{ $isOver ? 'danger' : 'safe' }}">SAR {{ number_format((float) $line['variance'], 2) }}</td>
-                    <td class="{{ $isOver ? 'danger' : 'safe' }}">{{ number_format((float) $line['variance_percent'], 2) }}%</td>
+                    <td>SAR {{ erp_money((float) $line['planned']) }}</td>
+                    <td>SAR {{ erp_money((float) $line['actual']) }}</td>
+                    <td class="{{ $isOver ? 'danger' : 'safe' }}">SAR {{ erp_money((float) $line['variance']) }}</td>
+                    <td class="{{ $isOver ? 'danger' : 'safe' }}">{{ erp_qty((float) $line['variance_percent']) }}%</td>
                 </tr>
                 @if(!empty($line['monthly']))
                     <tr>
@@ -71,10 +71,10 @@
                                     @foreach($line['monthly'] as $month)
                                         <tr>
                                             <td style="font-size:12px;">{{ $month['label'] }}</td>
-                                            <td style="font-size:12px;">SAR {{ number_format((float) $month['planned'], 2) }}</td>
-                                            <td style="font-size:12px;">SAR {{ number_format((float) $month['actual'], 2) }}</td>
+                                            <td style="font-size:12px;">SAR {{ erp_money((float) $month['planned']) }}</td>
+                                            <td style="font-size:12px;">SAR {{ erp_money((float) $month['actual']) }}</td>
                                             <td style="font-size:12px;" class="{{ (float) $month['variance'] > 0 ? 'danger' : 'safe' }}">
-                                                SAR {{ number_format((float) $month['variance'], 2) }}
+                                                SAR {{ erp_money((float) $month['variance']) }}
                                             </td>
                                         </tr>
                                     @endforeach
@@ -88,9 +88,9 @@
     </table>
 
     <div class="totals">
-        <div>إجمالي المخطط: SAR {{ number_format((float) ($analysis['totals']['planned'] ?? 0), 2) }}</div>
-        <div>إجمالي الفعلي: SAR {{ number_format((float) ($analysis['totals']['actual'] ?? 0), 2) }}</div>
-        <div>إجمالي الانحراف: SAR {{ number_format((float) ($analysis['totals']['variance'] ?? 0), 2) }}</div>
+        <div>إجمالي المخطط: SAR {{ erp_money((float) ($analysis['totals']['planned'] ?? 0)) }}</div>
+        <div>إجمالي الفعلي: SAR {{ erp_money((float) ($analysis['totals']['actual'] ?? 0)) }}</div>
+        <div>إجمالي الانحراف: SAR {{ erp_money((float) ($analysis['totals']['variance'] ?? 0)) }}</div>
     </div>
 </body>
 </html>

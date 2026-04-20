@@ -20,7 +20,13 @@
 @endpush
 
 @section('content')
-<div class="max-w-full" dir="rtl" x-data="purchaseInvoiceCreate()">
+@php
+    $purchaseInvoiceSupplierOptions = $suppliers->map(fn ($s) => [
+        'value' => $s->id,
+        'label' => trim((string) ($s->name ?? '').' ('.(string) ($s->code ?? '').')'),
+    ])->all();
+@endphp
+<div class="max-w-full" dir="rtl" x-data="purchaseInvoiceCreate(@js($defaultVatPercent))">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style="background: rgba(124, 58, 237, 0.2); color: #7c3aed;">
@@ -44,13 +50,17 @@
             <h2 class="inv-card-title">تفاصيل الفاتورة</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">المورد <span class="text-red-500">*</span></label>
-                    <select name="supplier_id" required class="w-full px-3 py-2.5 rounded-2xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500">
-                        <option value="">اختر المورد</option>
-                        @foreach($suppliers as $s)
-                            <option value="{{ $s->id }}" {{ old('supplier_id') == $s->id ? 'selected' : '' }}>{{ $s->name }} ({{ $s->code }})</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="supplier_id-trigger">المورد <span class="text-red-500">*</span></label>
+                    <x-searchable-select
+                        class="w-full"
+                        name="supplier_id"
+                        id="supplier_id"
+                        :options="$purchaseInvoiceSupplierOptions"
+                        :value="old('supplier_id')"
+                        :required="true"
+                        empty-label="اختر المورد"
+                        placeholder="ابحث باسم المورد أو الرمز..."
+                    />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">رقم فاتورة المورد</label>
@@ -199,11 +209,12 @@
 </div>
 
 <script>
-function purchaseInvoiceCreate() {
+function purchaseInvoiceCreate(defaultVatPercent) {
+    const vatDef = defaultVatPercent != null ? Number(defaultVatPercent) : 15;
     return {
-        lines: [{ item_id: '', description: '', quantity: 1, unit_price: 0, discount: 0, vat_percent: 15 }],
+        lines: [{ item_id: '', description: '', quantity: 1, unit_price: 0, discount: 0, vat_percent: vatDef }],
         addLine() {
-            this.lines.push({ item_id: '', description: '', quantity: 1, unit_price: 0, discount: 0, vat_percent: 15 });
+            this.lines.push({ item_id: '', description: '', quantity: 1, unit_price: 0, discount: 0, vat_percent: vatDef });
         },
         removeLine(i) {
             if (this.lines.length <= 1) return;
@@ -221,9 +232,10 @@ function purchaseInvoiceCreate() {
             const q = parseFloat(l.quantity) || 0;
             const p = parseFloat(l.unit_price) || 0;
             const d = parseFloat(l.discount) || 0;
-            const v = parseFloat(l.vat_percent) || 15;
+            const v = parseFloat(l.vat_percent);
+            const vatRate = (l.vat_percent != null && l.vat_percent !== '' && !Number.isNaN(v)) ? v : vatDef;
             const net = q * p - d;
-            return net + (net * v / 100);
+            return net + (net * vatRate / 100);
         },
         calcLineTotal(index) {
             this.lines[index]._lineTotal = this.lineTotal(index);
@@ -239,9 +251,10 @@ function purchaseInvoiceCreate() {
                 const q = parseFloat(l.quantity) || 0;
                 const p = parseFloat(l.unit_price) || 0;
                 const d = parseFloat(l.discount) || 0;
-                const v = parseFloat(l.vat_percent) || 15;
+                const v = parseFloat(l.vat_percent);
+                const vatRate = (l.vat_percent != null && l.vat_percent !== '' && !Number.isNaN(v)) ? v : vatDef;
                 const net = q * p - d;
-                return s + (net * v / 100);
+                return s + (net * vatRate / 100);
             }, 0);
         },
         get grandTotal() {

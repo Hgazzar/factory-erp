@@ -64,13 +64,47 @@ class PurchaseOrderWebController extends Controller
 
     public function index(Request $request): View
     {
-        $orders = PurchaseOrder::with('supplier')
+        $query = PurchaseOrder::with('supplier')
             ->orderByDesc('order_date')
-            ->orderByDesc('id')
-            ->paginate(15)
-            ->withQueryString();
+            ->orderByDesc('id');
 
-        return view('purchases.orders.index', ['orders' => $orders]);
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', (int) $request->input('supplier_id'));
+        }
+        if ($request->filled('status')) {
+            $query->where('status', (string) $request->input('status'));
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('order_date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('order_date', '<=', $request->input('date_to'));
+        }
+        if ($request->filled('q')) {
+            $q = trim((string) $request->input('q'));
+            if ($q !== '') {
+                $query->where(function ($qb) use ($q) {
+                    $qb->where('order_number', 'like', '%'.$q.'%')
+                        ->orWhere('reference', 'like', '%'.$q.'%')
+                        ->orWhereHas('supplier', function ($s) use ($q) {
+                            $s->where('name', 'like', '%'.$q.'%')
+                                ->orWhere('name_ar', 'like', '%'.$q.'%')
+                                ->orWhere('code', 'like', '%'.$q.'%');
+                        });
+                });
+            }
+        }
+
+        $orders = $query->paginate(15)->withQueryString();
+
+        $suppliers = Supplier::query()
+            ->where(function ($sub) {
+                $sub->where('is_active', true)->orWhereNull('is_active');
+            })
+            ->orderBy('name')
+            ->get(['id', 'code', 'name', 'name_ar']);
+
+        return view('purchases.orders.index', compact('orders', 'suppliers'));
     }
 
     public function show(PurchaseOrder $order): View

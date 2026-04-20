@@ -11,6 +11,12 @@
 @endsection
 
 @section('content')
+@php
+    $statementCustomerOptions = $customers->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => (string) ($c->name ?? ''),
+    ])->all();
+@endphp
 <div class="max-w-full" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
@@ -33,13 +39,17 @@
     <form method="GET" action="{{ route('reports.statement.index') }}" class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6 space-y-4" id="statement-filter-form">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">العميل <span class="text-red-500">*</span></label>
-                <select name="customer_id" required class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">اختر العميل</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected($customerId == $c->id)>{{ $c->name }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_id-trigger">العميل <span class="text-red-500">*</span></label>
+                <x-searchable-select
+                    class="w-full"
+                    name="customer_id"
+                    id="customer_id"
+                    :options="$statementCustomerOptions"
+                    :value="old('customer_id', $customerId)"
+                    :required="true"
+                    empty-label="اختر العميل"
+                    placeholder="ابحث باسم العميل..."
+                />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">من تاريخ</label>
@@ -70,7 +80,7 @@
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500 mb-0.5">إجمالي المدين</p>
-                    <p class="text-xl font-bold text-gray-900">SAR {{ number_format($totalDebit, 2) }}</p>
+                    <p class="text-xl font-bold text-gray-900">SAR {{ erp_money($totalDebit) }}</p>
                 </div>
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-red-50 text-red-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M0 4a2 2 0 0 1 2-2h3.5a.5.5 0 0 1 0 1H2a1 1 0 0 0-1 1v7h3v1H1a1 1 0 0 1-1-1V4z"/><path d="M9.5 2a.5.5 0 0 0 0 1H14a2 2 0 0 1 2 2v7a1 1 0 0 1-1 1H9.5a.5.5 0 0 0 0 1H15a2 2 0 0 0 2-2V5a3 3 0 0 0-3-3H9.5z"/><path d="M5 9.5a.5.5 0 0 1 .5-.5h5.793l-2.147-2.146a.5.5 0 1 1 .708-.708l3 3a.498.498 0 0 1 .146.35.498.498 0 0 1-.146.35l-3 3a.5.5 0 0 1-.708-.708L11.293 10H5.5a.5.5 0 0 1-.5-.5z"/></svg>
@@ -79,7 +89,7 @@
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500 mb-0.5">إجمالي الدائن</p>
-                    <p class="text-xl font-bold text-gray-900">SAR {{ number_format($totalCredit, 2) }}</p>
+                    <p class="text-xl font-bold text-gray-900">SAR {{ erp_money($totalCredit) }}</p>
                 </div>
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 0 8 8A8.009 8.009 0 0 0 8 0zm3.707 6.707-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 1 1 1.414-1.414L7 8.586l3.293-3.293a1 1 0 0 1 1.414 1.414z"/></svg>
@@ -88,7 +98,7 @@
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500 mb-0.5">الرصيد الحالي</p>
-                    <p class="text-xl font-bold text-gray-900">SAR {{ number_format($currentBalance, 2) }}</p>
+                    <p class="text-xl font-bold text-gray-900">SAR {{ erp_money($currentBalance) }}</p>
                 </div>
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-sky-50 text-sky-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M0 4a2 2 0 0 1 2-2h3.5a.5.5 0 0 1 0 1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3.5a.5.5 0 0 1 0 1H2a2 2 0 0 1-2-2V4z"/><path d="M7 10.5a.5.5 0 0 1 .5-.5h3.793l-2.147-2.146a.5.5 0 1 1 .708-.708l3 3a.503.503 0 0 1 .146.354v.004a.5.5 0 0 1-.146.35l-3 3a.5.5 0 0 1-.708-.708L11.293 11H7.5a.5.5 0 0 1-.5-.5z"/><path d="M4.5 3a.5.5 0 0 1 .5-.5h7A2.5 2.5 0 0 1 14.5 5v1.5a.5.5 0 0 1-1 0V5A1.5 1.5 0 0 0 12 3.5h-7a.5.5 0 0 1-.5-.5z"/></svg>
@@ -97,7 +107,7 @@
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-500 mb-0.5">الأقساط المتبقية</p>
-                    <p class="text-xl font-bold text-gray-900">SAR {{ number_format($remainingInstallments, 2) }}</p>
+                    <p class="text-xl font-bold text-gray-900">SAR {{ erp_money($remainingInstallments) }}</p>
                 </div>
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M3 0a1 1 0 0 0-1 1v12.5a.5.5 0 0 0 .777.416L6 12.101l3.223 1.815A.5.5 0 0 0 10 13.5V1a1 1 0 0 0-1-1H3z"/></svg>
@@ -151,9 +161,9 @@
                                 </td>
                                 <td class="py-2.5 px-4 text-gray-700 whitespace-nowrap">{{ $row['ref'] }}</td>
                                 <td class="py-2.5 px-4 text-gray-700">{{ $row['desc'] }}</td>
-                                <td class="py-2.5 px-4 text-left text-gray-900">{{ $row['debit'] > 0 ? number_format($row['debit'], 2) : '—' }}</td>
-                                <td class="py-2.5 px-4 text-left text-gray-900">{{ $row['credit'] > 0 ? number_format($row['credit'], 2) : '—' }}</td>
-                                <td class="py-2.5 px-4 text-left font-semibold text-gray-900">{{ number_format($row['balance'], 2) }}</td>
+                                <td class="py-2.5 px-4 text-left text-gray-900 tabular-nums">{{ $row['debit'] > 0 ? erp_money($row['debit']) : '—' }}</td>
+                                <td class="py-2.5 px-4 text-left text-gray-900 tabular-nums">{{ $row['credit'] > 0 ? erp_money($row['credit']) : '—' }}</td>
+                                <td class="py-2.5 px-4 text-left font-semibold text-gray-900 tabular-nums">{{ erp_money($row['balance']) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -170,6 +180,20 @@
         </div>
     @endif
 </div>
+
+@push('styles')
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        td.text-left.tabular-nums,
+        th.text-left {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .overflow-x-auto { overflow: visible !important; }
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>

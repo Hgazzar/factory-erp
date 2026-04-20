@@ -3,6 +3,12 @@
 @section('title', 'طلب خدمة جديد - MIRADA ERP')
 
 @section('content')
+@php
+    $serviceOrderCustomerOptions = $customers->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => (string) ($c->name ?? ''),
+    ])->all();
+@endphp
 <div class="max-w-3xl" dir="rtl">
     <div class="mb-6">
         <a href="{{ route('services.orders.index') }}" class="text-sm text-indigo-600 hover:underline">← رجوع للقائمة</a>
@@ -39,13 +45,16 @@
         @endif
         @if(! $salesOrder && ! $deliveryOrder)
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">العميل</label>
-                <select name="customer_id" class="w-full rounded-lg border-gray-300 text-sm">
-                    <option value="">—</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" @selected(old('customer_id')==$c->id)>{{ $c->name }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_id-trigger">العميل</label>
+                <x-searchable-select
+                    class="w-full"
+                    name="customer_id"
+                    id="customer_id"
+                    :options="$serviceOrderCustomerOptions"
+                    :value="old('customer_id')"
+                    empty-label="—"
+                    placeholder="ابحث باسم العميل..."
+                />
             </div>
         @endif
 

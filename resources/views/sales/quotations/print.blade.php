@@ -73,11 +73,11 @@
                 <tr>
                     <td>{{ $idx + 1 }}</td>
                     <td>{{ $line->item?->name_ar ?? $line->item?->code ?? '—' }}</td>
-                    <td class="num">{{ number_format((float) $line->quantity, 2) }}</td>
-                    <td class="num">{{ number_format((float) $line->unit_price, 2) }}</td>
-                    <td class="num">{{ number_format((float) $line->discount_percent, 1) }}</td>
-                    <td class="num">{{ number_format((float) $line->tax_percent, 1) }}</td>
-                    <td class="num">{{ number_format((float) $line->line_total, 2) }}</td>
+                    <td class="num">{{ erp_qty((float) $line->quantity) }}</td>
+                    <td class="num">{{ erp_money((float) $line->unit_price) }}</td>
+                    <td class="num">{{ erp_qty((float) $line->discount_percent) }}</td>
+                    <td class="num">{{ erp_qty((float) $line->tax_percent) }}</td>
+                    <td class="num">{{ erp_money((float) $line->line_total) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -88,7 +88,7 @@
     <div class="print-totals">
         <div class="print-totals-row grand">
             <span>الإجمالي:</span>
-            <span>SAR {{ number_format((float) $quotation->total_amount, 2) }}</span>
+            <span>SAR {{ erp_money((float) $quotation->total_amount) }}</span>
         </div>
     </div>
     @if(!empty(trim($quotation->terms ?? '')))

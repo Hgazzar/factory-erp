@@ -91,7 +91,7 @@
                     <tr class="border-b border-gray-100">
                         <td class="py-2 px-3">{{ $line->item?->display_name ?? $line->item?->name_ar ?? '—' }}</td>
                         <td class="py-2 px-3">{{ $line->warehouse?->name_ar ?? '—' }}</td>
-                        <td class="py-2 px-3">{{ number_format((float) $line->quantity, 4) }}</td>
+                        <td class="py-2 px-3">{{ erp_qty($line->quantity) }}</td>
                         <td class="py-2 px-3">SAR {{ number_format((float) $line->purchase_price, 2) }}</td>
                         <td class="py-2 px-3 font-medium">SAR {{ number_format((float) $line->quantity * (float) $line->purchase_price, 2) }}</td>
                     </tr>

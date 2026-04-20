@@ -26,7 +26,15 @@
             'credit' => (float) $i->credit,
         ])->values()->all(),
     ];
-    $journalEditXDataConfig = ['initial' => $entryData];
+    $journalAccountSelectOptions = collect($accounts ?? [])->map(fn ($account) => [
+        'v' => (string) $account->id,
+        'l' => trim((string) ($account->code ?? '').' - '.(string) ($account->name_ar ?? '')),
+    ])->values()->all();
+    $journalAccountSelectOptions = array_merge([['v' => '', 'l' => 'اختر الحساب']], $journalAccountSelectOptions);
+    $journalEditXDataConfig = [
+        'initial' => $entryData,
+        'accountOptions' => $journalAccountSelectOptions,
+    ];
 @endphp
 <div dir="rtl" class="content-wrap">
     <div class="mb-3 flex items-center justify-between">
@@ -97,7 +105,7 @@
                         إضافة سطر
                     </button>
                 </div>
-                <div class="overflow-x-auto rounded-md border border-gray-200">
+                <div class="overflow-x-auto overflow-y-visible rounded-md border border-gray-200">
                     <table class="min-w-full border-collapse text-[11px]">
                         <thead class="bg-gray-50 text-gray-600">
                             <tr>
@@ -112,14 +120,66 @@
                         <template x-for="(line, index) in lines" :key="line._lid">
                             <tbody class="border-b border-gray-100 bg-white">
                                 <tr class="h-9 hover:bg-gray-50">
-                                    <td class="border-l border-gray-100 px-2 align-middle">
-                                        <select :name="`lines[${index}][account_id]`" x-model="line.account_id"
-                                            class="block w-full border-none bg-transparent px-1 py-0.5 text-[11px] text-gray-800 focus:outline-none focus:ring-0">
-                                            <option value="">اختر الحساب</option>
-                                            @foreach($accounts as $account)
-                                                <option value="{{ $account->id }}">{{ $account->code }} - {{ $account->name_ar }}</option>
-                                            @endforeach
-                                        </select>
+                                    <td class="relative z-30 min-w-[11rem] border-l border-gray-100 px-2 align-middle">
+                                        <div
+                                            class="relative w-full"
+                                            x-data="window.journalLineAccountSearch(line, accountOptions, index)"
+                                            @resize.window="if (open) positionPanel()"
+                                            @scroll.window.passive="if (open) positionPanel()"
+                                        >
+                                            <input type="hidden" :name="'lines[' + lineIndex + '][account_id]'" x-model="line.account_id">
+                                            <button
+                                                type="button"
+                                                x-ref="jTrigger"
+                                                @click="toggle()"
+                                                @keydown.escape.prevent.stop="close()"
+                                                :aria-expanded="open"
+                                                class="flex h-9 w-full items-center justify-between gap-1 rounded-md border border-gray-200 bg-white px-2 text-right text-[11px] text-gray-800 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-200"
+                                            >
+                                                <span class="min-w-0 flex-1 truncate font-normal" x-text="display()"></span>
+                                                <svg class="h-3.5 w-3.5 shrink-0 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                            <div
+                                                x-show="open"
+                                                x-cloak
+                                                x-ref="jPanel"
+                                                x-transition
+                                                class="fixed z-[200] overflow-hidden rounded-lg border border-gray-200 bg-white py-0.5 text-[11px] shadow-lg ring-1 ring-black/5"
+                                                :style="'top:' + panelTop + 'px;left:' + panelLeft + 'px;width:' + panelWidth + 'px;max-width:calc(100vw - 1rem)'"
+                                                @click.outside="close()"
+                                                @keydown.escape.prevent.stop="close()"
+                                            >
+                                                <div class="border-b border-gray-100 px-2 pb-1 pt-1">
+                                                    <input
+                                                        type="search"
+                                                        x-ref="jq"
+                                                        x-model="q"
+                                                        placeholder="ابحث بالرمز أو الاسم..."
+                                                        autocomplete="off"
+                                                        dir="rtl"
+                                                        class="h-8 w-full rounded border border-gray-200 bg-gray-50 px-2 text-[11px] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                                    >
+                                                </div>
+                                                <ul class="max-h-[min(14rem,45vh)] overflow-y-auto overscroll-contain py-0.5" role="listbox">
+                                                    <template x-for="(row, idx) in filtered" :key="row.v + '-' + idx">
+                                                        <li role="option">
+                                                            <button
+                                                                type="button"
+                                                                class="flex w-full items-center justify-start px-2 py-1.5 text-right hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none"
+                                                                :class="String(line.account_id) === String(row.v) ? 'bg-indigo-50 font-semibold text-indigo-900' : 'text-gray-800'"
+                                                                @click="pick(row.v)"
+                                                                x-text="row.l"
+                                                            ></button>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                                <div class="flex justify-end border-t border-gray-100 px-2 py-1" x-show="line.account_id !== '' && line.account_id != null">
+                                                    <button type="button" class="text-[10px] font-medium text-gray-600 hover:text-indigo-700" @click="clearSel()">مسح</button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="border-l border-gray-100 px-2 align-middle">
                                         <input type="text" :name="`lines[${index}][description]`" x-model="line.description" placeholder="وصف الحركة"

@@ -68,9 +68,9 @@
                 <tr>
                     <td>{{ $idx + 1 }}</td>
                     <td>{{ $line->item?->name_ar ?? $line->item?->code ?? '—' }}</td>
-                    <td class="num">{{ number_format((float) $line->quantity, 2) }}</td>
-                    <td class="num">{{ number_format((float) $line->unit_price, 2) }}</td>
-                    <td class="num">{{ number_format((float) $line->line_total, 2) }}</td>
+                    <td class="num">{{ erp_qty((float) $line->quantity) }}</td>
+                    <td class="num">{{ erp_money((float) $line->unit_price) }}</td>
+                    <td class="num">{{ erp_money((float) $line->line_total) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -81,13 +81,17 @@
     <div class="print-totals">
         @if((float) $invoice->vat_amount > 0)
             <div class="print-totals-row">
+                <span>نسبة ضريبة القيمة المضافة:</span>
+                <span>{{ erp_qty((float) ($invoice->vat_rate ?? $defaultVatPercent)) }}%</span>
+            </div>
+            <div class="print-totals-row">
                 <span>ضريبة القيمة المضافة:</span>
-                <span>SAR {{ number_format((float) $invoice->vat_amount, 2) }}</span>
+                <span>SAR {{ erp_money((float) $invoice->vat_amount) }}</span>
             </div>
         @endif
         <div class="print-totals-row grand">
             <span>الإجمالي:</span>
-            <span>SAR {{ number_format((float) $invoice->total, 2) }}</span>
+            <span>SAR {{ erp_money((float) $invoice->total) }}</span>
         </div>
     </div>
     @if(!empty(trim($invoice->terms ?? '')))

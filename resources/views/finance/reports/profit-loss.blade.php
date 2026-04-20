@@ -70,21 +70,21 @@
                     <tr class="border-b border-gray-100 hover:bg-gray-50/50">
                         <td class="px-4 py-3 text-gray-900"><x-info field="finance.pl_sales_collections" /> إجمالي تحصيل المبيعات</td>
                         <td class="px-4 py-3 text-right text-xs leading-relaxed text-gray-500">
-                            سندات قبض: {{ number_format($receiptsTotal, 2) }}
-                            + دفعات عملاء: {{ number_format($salesPaymentsTotal, 2) }}
+                            سندات قبض: {{ erp_money($receiptsTotal) }}
+                            + دفعات عملاء: {{ erp_money($salesPaymentsTotal) }}
                             ({{ $receiptsCount + $salesPaymentsCount }} عملية)
                         </td>
-                        <td class="px-4 py-3 text-right font-semibold tabular-nums text-emerald-700">{{ number_format($salesCollections, 2) }}</td>
+                        <td class="px-4 py-3 text-right font-semibold tabular-nums text-emerald-700">{{ erp_money($salesCollections) }}</td>
                     </tr>
                     <tr class="border-b border-gray-100 hover:bg-gray-50/50">
                         <td class="px-4 py-3 text-gray-900"><x-info field="finance.pl_cogs" /> تكلفة البضاعة المباعة (COGS)</td>
                         <td class="px-4 py-3 text-right text-xs text-gray-500">حساب {{ $cogsCode }} — حركات القيود</td>
-                        <td class="px-4 py-3 text-right font-medium tabular-nums text-red-600">− {{ number_format($cogs, 2) }}</td>
+                        <td class="px-4 py-3 text-right font-medium tabular-nums text-red-600">− {{ erp_money($cogs) }}</td>
                     </tr>
                     <tr class="border-b border-gray-100 hover:bg-gray-50/50">
                         <td class="px-4 py-3 text-gray-900"><x-info field="finance.pl_admin_expenses" /> مصاريف إدارية (سند صرف مصروف)</td>
                         <td class="px-4 py-3 text-right text-xs text-gray-500">{{ $expensePaymentsCount }} سند</td>
-                        <td class="px-4 py-3 text-right font-medium tabular-nums text-red-600">− {{ number_format($adminExpenses, 2) }}</td>
+                        <td class="px-4 py-3 text-right font-medium tabular-nums text-red-600">− {{ erp_money($adminExpenses) }}</td>
                     </tr>
                     <tr class="bg-gray-50/90">
                         <td class="px-4 py-4 font-bold text-gray-900" colspan="2">
@@ -92,7 +92,7 @@
                         </td>
                         <td class="px-4 py-4 text-right">
                             <span class="text-lg font-bold tabular-nums {{ $netProfit >= 0 ? 'text-emerald-700' : 'text-red-600' }}">
-                                {{ number_format($netProfit, 2) }}
+                                {{ erp_money($netProfit) }}
                             </span>
                         </td>
                     </tr>
@@ -102,3 +102,15 @@
     </section>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        td.tabular-nums {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+    }
+</style>
+@endpush

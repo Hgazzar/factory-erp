@@ -23,6 +23,20 @@
 @endsection
 
 @section('content')
+@php
+    $expenseIdxSupplierOpts = collect($suppliers ?? [])->map(fn ($s) => [
+        'value' => $s->id,
+        'label' => (string) ($s->localized_display_name ?? $s->name_ar ?? $s->name ?? ''),
+    ])->values()->all();
+    $expenseIdxAccountOpts = collect($filterExpenseAccounts ?? [])->map(fn ($a) => [
+        'value' => $a->id,
+        'label' => trim((string) ($a->code ?? '').' — '.(string) ($a->name_ar ?? $a->name_en ?? '')),
+    ])->values()->all();
+    $expenseIdxCcOpts = collect($filterCostCenters ?? [])->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => trim((string) ($c->code ?? '').' — '.(string) ($c->name_ar ?? $c->name ?? '')),
+    ])->values()->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full min-w-0 max-w-full">
     <header class="mb-4 flex w-full flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-3">
         <div class="flex items-center gap-3">
@@ -86,14 +100,44 @@
                     <option value="draft" {{ ($status ?? '') === 'draft' ? 'selected' : '' }}>مسودة</option>
                 </select>
             </div>
-            <div class="min-w-[200px] flex-1 sm:max-w-xs">
+            <div class="min-w-0 w-full max-w-[220px] shrink-0 sm:max-w-xs">
                 <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="finance.expense_index_filter_supplier" /> المورد</label>
-                <select name="supplier_id" class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">كل الموردين</option>
-                    @foreach($suppliers ?? [] as $s)
-                        <option value="{{ $s->id }}" {{ (int)($supplierId ?? 0) === (int)$s->id ? 'selected' : '' }}>{{ $s->localized_display_name }}</option>
-                    @endforeach
-                </select>
+                <x-searchable-select
+                    name="supplier_id"
+                    id="filter_expenses_supplier_id"
+                    :options="$expenseIdxSupplierOpts"
+                    :value="request('supplier_id', $supplierId ?? '')"
+                    :required="false"
+                    empty-label="كل الموردين"
+                    placeholder="ابحث عن مورد..."
+                    class="[&_button]:h-10 [&_button]:text-sm"
+                />
+            </div>
+            <div class="min-w-0 w-full max-w-[240px] shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="expense_expense_account" /> الحساب</label>
+                <x-searchable-select
+                    name="expense_account_id"
+                    id="filter_expenses_account_id"
+                    :options="$expenseIdxAccountOpts"
+                    :value="request('expense_account_id', $expenseAccountId ?? '')"
+                    :required="false"
+                    empty-label="كل الحسابات"
+                    placeholder="ابحث بالرمز أو الاسم..."
+                    class="[&_button]:h-10 [&_button]:text-sm"
+                />
+            </div>
+            <div class="min-w-0 w-full max-w-[220px] shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="cost_center" /> مركز التكلفة</label>
+                <x-searchable-select
+                    name="cost_center_id"
+                    id="filter_expenses_cost_center_id"
+                    :options="$expenseIdxCcOpts"
+                    :value="request('cost_center_id', $costCenterId ?? '')"
+                    :required="false"
+                    empty-label="الكل"
+                    placeholder="ابحث بمركز التكلفة..."
+                    class="[&_button]:h-10 [&_button]:text-sm"
+                />
             </div>
             <div class="w-40">
                 <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="finance.expense_index_filter_date_range" /> من تاريخ</label>
@@ -112,7 +156,10 @@
                 </span>
                 <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="البحث في المصروفات..." class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 pr-10 pl-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500">
             </div>
-            <button type="submit" class="h-10 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700">بحث</button>
+            <div class="flex shrink-0 items-center gap-2 pb-0.5">
+                <button type="submit" class="h-10 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700">بحث</button>
+                <a href="{{ route('finance.expenses.index') }}" class="inline-flex h-10 items-center rounded-md border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 hover:bg-gray-50">مسح</a>
+            </div>
         </form>
     </section>
 

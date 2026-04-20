@@ -13,6 +13,12 @@
 @endsection
 
 @section('content')
+@php
+    $debitNoteSupplierOptions = $suppliers->map(fn ($supplier) => [
+        'value' => $supplier->id,
+        'label' => trim((string) ($supplier->code ?? '').' - '.(string) ($supplier->name ?? '')),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <h1 class="text-3xl font-bold text-gray-900">تعديل إشعار مديونية</h1>
@@ -33,18 +39,19 @@
                     <input type="text" value="{{ $debitNote->note_number }}" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-100 px-3 text-sm text-gray-500" disabled>
                 </div>
                 <div class="space-y-1">
-                    <label for="supplier_id" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
+                    <label for="supplier_id-trigger" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
                         <span>المورد <span class="text-red-500">*</span></span>
                         <x-info field="debit_note_supplier" />
                     </label>
-                    <select id="supplier_id" name="supplier_id" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر المورد</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}" @selected((string) old('supplier_id', $debitNote->supplier_id) === (string) $supplier->id)>
-                                {{ $supplier->code }} - {{ $supplier->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="supplier_id"
+                        id="supplier_id"
+                        :options="$debitNoteSupplierOptions"
+                        :value="old('supplier_id', $debitNote->supplier_id)"
+                        :error="$errors->has('supplier_id')"
+                        empty-label="اختر المورد"
+                        placeholder="ابحث باسم المورد أو الرمز..."
+                    />
                     @error('supplier_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="space-y-1">
@@ -181,6 +188,7 @@
         'invoicePartyAttr' => 'data-supplier-id',
         'currencyLabel' => 'SAR',
         'lineDefaults' => $debitEditLineDefaults,
+        'defaultVatJs' => (float) $defaultVatPercent,
     ])
 @endpush
 

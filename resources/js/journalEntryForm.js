@@ -5,6 +5,7 @@ window.journalEntryForm = function (config) {
     config = config || {};
     const initial = config.initial;
     const headerDefaults = config.headerDefaults || {};
+    const accountOptions = Array.isArray(config.accountOptions) ? config.accountOptions : [];
 
     let nextLineId = 1;
 
@@ -85,6 +86,82 @@ window.journalEntryForm = function (config) {
             const debit = this.totalDebit;
             const credit = this.totalCredit;
             return debit > 0 && Math.abs(debit - credit) < 0.0001;
+        },
+        accountOptions,
+    };
+};
+
+/**
+ * قائمة حسابات قابلة للبحث لسطر قيد (Alpine) — تُستخدم داخل journalEntryForm.
+ */
+window.journalLineAccountSearch = function (line, items, lineIndex) {
+    const accountItems =
+        Array.isArray(items) && items.length
+            ? items
+            : [
+                  { v: '', l: 'اختر الحساب' },
+              ];
+
+    return {
+        line,
+        lineIndex: lineIndex,
+        accountItems,
+        open: false,
+        q: '',
+        panelTop: 0,
+        panelLeft: 0,
+        panelWidth: 0,
+        positionPanel() {
+            const btn = this.$refs.jTrigger;
+            const panel = this.$refs.jPanel;
+            if (!btn || !panel) {
+                return;
+            }
+            const r = btn.getBoundingClientRect();
+            this.panelWidth = Math.max(r.width, 160);
+            this.panelTop = r.bottom + 4;
+            this.panelLeft = r.left;
+        },
+        toggle() {
+            this.open = !this.open;
+            if (this.open) {
+                this.$nextTick(() => {
+                    this.positionPanel();
+                    if (this.$refs.jq) {
+                        this.$refs.jq.focus();
+                    }
+                });
+            }
+        },
+        close() {
+            this.open = false;
+            this.q = '';
+        },
+        pick(v) {
+            this.line.account_id = String(v);
+            this.close();
+        },
+        clearSel() {
+            this.line.account_id = '';
+            this.q = '';
+        },
+        display() {
+            const it = this.accountItems.find((i) => String(i.v) === String(this.line.account_id || ''));
+            return it ? it.l : 'اختر الحساب';
+        },
+        get filtered() {
+            const qq = (this.q || '').trim().toLowerCase();
+            if (!qq) {
+                return this.accountItems;
+            }
+            return this.accountItems.filter((i) => {
+                if (i.v === '') {
+                    return true;
+                }
+                const lab = (i.l || '').toLowerCase();
+                const val = String(i.v || '').toLowerCase();
+                return lab.includes(qq) || val.includes(qq);
+            });
         },
     };
 };

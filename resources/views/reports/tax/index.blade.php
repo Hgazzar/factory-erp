@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div>
         <h1 class="h4 mb-1">التقرير الضريبي</h1>
-        <p class="text-muted mb-0 small">إجمالي ضريبة القيمة المضافة من المبيعات والمشتريات للفترة المحددة.</p>
+        <p class="text-muted mb-0 small">إجمالي ضريبة القيمة المضافة من المبيعات والمشتريات للفترة المحددة (المبالغ من الفواتير المسجّلة؛ النسبة المرجعية للنظام {{ erp_qty((float) $defaultVatPercent) }}%).</p>
     </div>
     <button type="button" class="btn btn-primary no-print" onclick="window.print()">
         طباعة / حفظ كـ PDF
@@ -54,20 +54,20 @@
                         <tr>
                             <td>المبيعات</td>
                             <td class="text-end">{{ $salesCount }}</td>
-                            <td class="text-end">{{ number_format($salesTotal, 2) }}</td>
-                            <td class="text-end">{{ number_format($salesVat, 2) }}</td>
+                            <td class="text-end">{{ erp_money($salesTotal) }}</td>
+                            <td class="text-end">{{ erp_money($salesVat) }}</td>
                         </tr>
                         <tr>
                             <td>المشتريات</td>
                             <td class="text-end">{{ $purchasesCount }}</td>
-                            <td class="text-end">{{ number_format($purchasesTotal, 2) }}</td>
-                            <td class="text-end">{{ number_format($purchasesVat, 2) }}</td>
+                            <td class="text-end">{{ erp_money($purchasesTotal) }}</td>
+                            <td class="text-end">{{ erp_money($purchasesVat) }}</td>
                         </tr>
                         <tr class="table-light">
                             <td><strong>صافي الضريبة (مبيعات - مشتريات)</strong></td>
                             <td class="text-end">—</td>
                             <td class="text-end">—</td>
-                            <td class="text-end"><strong>{{ number_format($salesVat - $purchasesVat, 2) }}</strong></td>
+                            <td class="text-end"><strong>{{ erp_money($salesVat - $purchasesVat) }}</strong></td>
                         </tr>
                     </tbody>
                 </table>
@@ -82,3 +82,17 @@
     @endif
 @endif
 @endsection
+
+@push('styles')
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .table td.text-end,
+        .table th.text-end {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .table-responsive { overflow: visible !important; }
+    }
+</style>
+@endpush

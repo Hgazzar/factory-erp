@@ -20,6 +20,12 @@
 @endpush
 
 @section('content')
+@php
+    $receiveNoteSupplierOptions = $suppliers->map(fn ($s) => [
+        'value' => $s->id,
+        'label' => trim((string) ($s->name ?? '').' ('.(string) ($s->code ?? '').')'),
+    ])->all();
+@endphp
 <div class="max-w-full" dir="rtl" x-data="receiveNoteForm()">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-3">
@@ -42,13 +48,17 @@
                 <h2 class="rn-card-title">تفاصيل الاستلام</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">المورد <span class="text-red-500">*</span></label>
-                        <select name="supplier_id" required class="w-full px-3 py-2.5 rounded-2xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500">
-                            <option value="">اختر المورد</option>
-                            @foreach($suppliers as $s)
-                                <option value="{{ $s->id }}" {{ old('supplier_id') == $s->id ? 'selected' : '' }}>{{ $s->name }} ({{ $s->code }})</option>
-                            @endforeach
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" for="supplier_id-trigger">المورد <span class="text-red-500">*</span></label>
+                        <x-searchable-select
+                            class="w-full"
+                            name="supplier_id"
+                            id="supplier_id"
+                            :options="$receiveNoteSupplierOptions"
+                            :value="old('supplier_id')"
+                            :required="true"
+                            empty-label="اختر المورد"
+                            placeholder="ابحث باسم المورد أو الرمز..."
+                        />
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">أمر الشراء</label>

@@ -11,6 +11,12 @@
 @endsection
 
 @section('content')
+@php
+    $stockInSupplierOptions = $suppliers->map(fn ($s) => [
+        'value' => $s->id,
+        'label' => trim((string) ($s->name ?? '').' ('.(string) ($s->code ?? '').')'),
+    ])->all();
+@endphp
 <div class="max-w-full" dir="rtl" x-data="stockInCreateForm(@js($items), @js($warehouses), @js(route('api.products.search')))" x-cloak>
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 class="text-2xl font-bold text-gray-900">إذن إضافة مخزني جديد</h1>
@@ -32,13 +38,18 @@
             <h2 class="text-base font-semibold text-gray-900 mb-4">بيانات الإذن</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">المورد <span class="text-red-500">*</span> <x-info field="inventory.stock_in_supplier" /></label>
-                    <select name="supplier_id" required class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 @error('supplier_id') border-red-500 @enderror">
-                        <option value="">اختر المورد</option>
-                        @foreach($suppliers as $s)
-                            <option value="{{ $s->id }}" @selected(old('supplier_id') == $s->id)>{{ $s->name }} ({{ $s->code }})</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="supplier_id-trigger">المورد <span class="text-red-500">*</span> <x-info field="inventory.stock_in_supplier" /></label>
+                    <x-searchable-select
+                        class="w-full"
+                        name="supplier_id"
+                        id="supplier_id"
+                        :options="$stockInSupplierOptions"
+                        :value="old('supplier_id')"
+                        :required="true"
+                        :error="$errors->has('supplier_id')"
+                        empty-label="اختر المورد"
+                        placeholder="ابحث باسم المورد أو الرمز..."
+                    />
                     @error('supplier_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>

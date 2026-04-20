@@ -197,11 +197,11 @@
         <tbody>
             @foreach($quotation->items as $idx => $line)
                 <tr>
-                    <td class="num">{{ number_format((float) $line->line_total, 2) }}</td>
-                    <td class="num">{{ number_format((float) $line->tax_percent, 1) }}</td>
-                    <td class="num">{{ number_format((float) $line->discount_percent, 1) }}</td>
-                    <td class="num">{{ number_format((float) $line->unit_price, 2) }}</td>
-                    <td class="num">{{ number_format((float) $line->quantity, 2) }}</td>
+                    <td class="num">{{ erp_money((float) $line->line_total) }}</td>
+                    <td class="num">{{ erp_qty((float) $line->tax_percent) }}</td>
+                    <td class="num">{{ erp_qty((float) $line->discount_percent) }}</td>
+                    <td class="num">{{ erp_money((float) $line->unit_price) }}</td>
+                    <td class="num">{{ erp_qty((float) $line->quantity) }}</td>
                     <td>{{ PdfArabic::glyphsIfArabic($line->item?->name_ar ?? $line->item?->code ?? '—') }}</td>
                     <td>{{ $idx + 1 }}</td>
                 </tr>
@@ -212,7 +212,7 @@
     <div class="totals">
         <div class="totals-inner">
             {{ PdfArabic::glyphs('الإجمالي:') }}
-            <span dir="ltr" style="unicode-bidi: embed;">SAR {{ number_format((float) $quotation->total_amount, 2) }}</span>
+            <span dir="ltr" style="unicode-bidi: embed;">SAR {{ erp_money((float) $quotation->total_amount) }}</span>
         </div>
     </div>
 

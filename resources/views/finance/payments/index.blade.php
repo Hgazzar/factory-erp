@@ -11,6 +11,16 @@
 @endsection
 
 @section('content')
+@php
+    $paymentFilterSupplierOpts = collect($filterSuppliers ?? [])->map(fn ($s) => [
+        'value' => $s->id,
+        'label' => trim((string) ($s->code !== '' && $s->code !== null ? $s->code.' — ' : '').(string) ($s->name_ar ?? $s->name ?? '')),
+    ])->values()->all();
+    $paymentFilterExpenseAccountOpts = collect($filterExpenseAccounts ?? [])->map(fn ($a) => [
+        'value' => $a->id,
+        'label' => trim((string) ($a->code ?? '').' — '.(string) ($a->name_ar ?? $a->name_en ?? '')),
+    ])->values()->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4">
         <div class="flex items-center gap-3">
@@ -28,6 +38,61 @@
             سند صرف جديد
         </a>
     </header>
+
+    <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <form method="GET" action="{{ route('finance.payments.index') }}" class="flex flex-wrap items-end gap-3">
+            <div class="w-36 shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">النوع</label>
+                <select name="type" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">الكل</option>
+                    <option value="supplier" {{ request('type') === 'supplier' ? 'selected' : '' }}>مورد</option>
+                    <option value="expense" {{ request('type') === 'expense' ? 'selected' : '' }}>مصروف</option>
+                </select>
+            </div>
+            <div class="min-w-0 w-full max-w-[220px] shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">المورد</label>
+                <x-searchable-select
+                    name="supplier_id"
+                    id="filter_payments_supplier_id"
+                    :options="$paymentFilterSupplierOpts"
+                    :value="request('supplier_id')"
+                    :required="false"
+                    empty-label="كل الموردين"
+                    placeholder="ابحث عن مورد..."
+                    class="[&_button]:h-10 [&_button]:text-sm"
+                />
+            </div>
+            <div class="min-w-0 w-full max-w-[240px] shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">حساب المصروف</label>
+                <x-searchable-select
+                    name="expense_account_id"
+                    id="filter_payments_expense_account_id"
+                    :options="$paymentFilterExpenseAccountOpts"
+                    :value="request('expense_account_id')"
+                    :required="false"
+                    empty-label="كل الحسابات"
+                    placeholder="ابحث بالرمز أو الاسم..."
+                    class="[&_button]:h-10 [&_button]:text-sm"
+                />
+            </div>
+            <div class="w-40 shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">من تاريخ</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div class="w-40 shrink-0">
+                <label class="mb-1 block text-xs font-medium text-gray-600">إلى تاريخ</label>
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div class="min-w-0 flex-1 basis-[10rem]">
+                <label class="mb-1 block text-xs font-medium text-gray-600">بحث</label>
+                <input type="search" name="q" value="{{ request('q') }}" placeholder="مرجع، ملاحظات…" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div class="flex shrink-0 gap-2 pb-0.5">
+                <button type="submit" class="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700">تطبيق</button>
+                <a href="{{ route('finance.payments.index') }}" class="inline-flex h-10 items-center rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 hover:bg-gray-50">مسح</a>
+            </div>
+        </form>
+    </section>
 
     <section class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
         <div class="overflow-x-auto">

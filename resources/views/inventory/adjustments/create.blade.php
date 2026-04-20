@@ -13,6 +13,12 @@
 @endsection
 
 @section('content')
+@php
+    $adjustmentCostCenterOptions = collect($costCenters ?? [])->map(fn ($cc) => [
+        'value' => $cc->id,
+        'label' => trim((string) ($cc->name ?? '').' ('.(string) ($cc->code ?? '').')'),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4">
         <div>
@@ -62,12 +68,15 @@
                             <x-info field="inventory.adjustment_cost_center" /> مركز التكلفة
                             <span class="text-red-600" id="cost-center-asterisk">*</span>
                         </label>
-                        <select name="cost_center_id" id="cost_center_id" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 @error('cost_center_id') border-red-500 @enderror">
-                            <option value="">— اختر مركز التكلفة —</option>
-                            @foreach($costCenters as $cc)
-                            <option value="{{ $cc->id }}" {{ old('cost_center_id') == $cc->id ? 'selected' : '' }}>{{ $cc->name }} ({{ $cc->code }})</option>
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="cost_center_id"
+                            id="cost_center_id"
+                            :options="$adjustmentCostCenterOptions"
+                            :value="old('cost_center_id')"
+                            :error="$errors->has('cost_center_id')"
+                            empty-label="— اختر مركز التكلفة —"
+                            placeholder="ابحث باسم مركز التكلفة أو الرمز..."
+                        />
                         @error('cost_center_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                         <p class="mt-1 text-xs text-gray-500">إجباري عند تسوية من نوع «خصم» (تلف، هالك، عينات) لتحميل قيمة المصروف على المركز.</p>
                     </div>

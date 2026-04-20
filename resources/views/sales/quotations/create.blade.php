@@ -13,7 +13,13 @@
 @endsection
 
 @section('content')
-<div class="max-w-full" x-data="quotationCreateForm(@js($items), @js($initialLines ?? []))" x-cloak>
+@php
+    $quotationCustomerOptions = $customers->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => (string) ($c->display_name ?? $c->name ?? ''),
+    ])->all();
+@endphp
+<div class="max-w-full" x-data="quotationCreateForm(@js($items), @js($initialLines ?? []), @js($defaultVatPercent))" x-cloak>
     {{-- عنوان الصفحة وزر الرجوع --}}
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-3">
@@ -36,13 +42,18 @@
                     <input type="text" value="{{ $nextQuotationNumber ?? '' }}" readonly class="w-full py-2.5 px-4 text-right bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-600 cursor-not-allowed" title="يُسجَّل تلقائياً عند الحفظ">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">العميل <span class="text-red-500">*</span></label>
-                    <select name="customer_id" required class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 @error('customer_id') border-red-500 @enderror">
-                        <option value="">اختر العميل</option>
-                        @foreach($customers as $c)
-                            <option value="{{ $c->id }}" @selected(old('customer_id') == $c->id)>{{ $c->display_name }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_id-trigger">العميل <span class="text-red-500">*</span></label>
+                    <x-searchable-select
+                        class="w-full"
+                        name="customer_id"
+                        id="customer_id"
+                        :options="$quotationCustomerOptions"
+                        :value="old('customer_id')"
+                        :required="true"
+                        :error="$errors->has('customer_id')"
+                        empty-label="اختر العميل"
+                        placeholder="ابحث باسم العميل..."
+                    />
                     @error('customer_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -179,14 +190,15 @@
 </div>
 
 <script>
-window.quotationCreateForm = function(items, initialLines) {
+window.quotationCreateForm = function(items, initialLines, defaultVatPercent) {
         initialLines = initialLines || [];
+        const vatDef = defaultVatPercent != null ? Number(defaultVatPercent) : 15;
         const emptyLine = () => ({
             item_id: '',
             quantity: 1,
             unit_price: 0,
             discount_percent: 0,
-            tax_percent: 10,
+            tax_percent: vatDef,
         });
         let lines;
         if (Array.isArray(initialLines) && initialLines.length > 0) {
@@ -196,7 +208,7 @@ window.quotationCreateForm = function(items, initialLines) {
                     quantity: parseFloat(l.quantity) || 1,
                     unit_price: parseFloat(l.unit_price) || 0,
                     discount_percent: parseFloat(l.discount_percent) || 0,
-                    tax_percent: l.tax_percent != null ? parseFloat(l.tax_percent) : 10,
+                    tax_percent: l.tax_percent != null ? parseFloat(l.tax_percent) : vatDef,
                 };
             });
         } else {

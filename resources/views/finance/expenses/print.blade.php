@@ -113,15 +113,15 @@
                         <div class="print-expense-desc mt-2">{{ $expense->notes }}</div>
                     @endif
                 </td>
-                <td class="num">{{ number_format((float) $expense->amount, 2) }}</td>
+                <td class="num">{{ erp_money((float) $expense->amount) }}</td>
             </tr>
             <tr>
                 <td><strong>الضريبة</strong></td>
-                <td class="num">{{ number_format($tax, 2) }}</td>
+                <td class="num">{{ erp_money($tax) }}</td>
             </tr>
             <tr>
                 <td><strong>الإجمالي</strong></td>
-                <td class="num"><strong>{{ number_format($grand, 2) }}</strong></td>
+                <td class="num"><strong>{{ erp_money($grand) }}</strong></td>
             </tr>
         </tbody>
     </table>
@@ -138,7 +138,7 @@
     <div class="print-totals">
         <div class="print-totals-row grand">
             <span>الإجمالي شامل الضريبة:</span>
-            <span>{{ number_format($grand, 2) }} ر.س</span>
+            <span>{{ erp_money($grand) }} ر.س</span>
         </div>
     </div>
     <div class="print-signatures">

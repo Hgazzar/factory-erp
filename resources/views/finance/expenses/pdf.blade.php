@@ -193,7 +193,7 @@
         </thead>
         <tbody>
             <tr>
-                <td class="num">{{ number_format((float) $expense->amount, 2) }}</td>
+                <td class="num">{{ erp_money((float) $expense->amount) }}</td>
                 <td>
                     <strong>{{ PdfArabic::glyphs('المبلغ قبل الضريبة') }}</strong>
                     @if($expense->notes)
@@ -202,18 +202,18 @@
                 </td>
             </tr>
             <tr>
-                <td class="num">{{ number_format($tax, 2) }}</td>
+                <td class="num">{{ erp_money($tax) }}</td>
                 <td><strong>{{ PdfArabic::glyphs('الضريبة') }}</strong></td>
             </tr>
             <tr>
-                <td class="num grand">{{ number_format($grand, 2) }}</td>
+                <td class="num grand">{{ erp_money($grand) }}</td>
                 <td class="grand">{{ PdfArabic::glyphs('الإجمالي') }}</td>
             </tr>
         </tbody>
     </table>
 
     <div class="doc-total-footer">
-        {{ PdfArabic::glyphs('الإجمالي شامل الضريبة: '.number_format($grand, 2).' ر.س') }}
+        {{ PdfArabic::glyphs('الإجمالي شامل الضريبة: '.erp_money($grand).' ر.س') }}
     </div>
 
     @if(!empty($receiptDataUri))

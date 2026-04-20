@@ -11,6 +11,12 @@
 @endsection
 
 @section('content')
+@php
+    $ledgerAccountOptions = $accounts->map(fn ($account) => [
+        'value' => $account->id,
+        'label' => trim((string) ($account->code ?? '').' — '.(string) $account->filterHierarchyLabel($accountsById)),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     @if(session('success'))
     <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">{{ session('success') }}</div>
@@ -32,16 +38,16 @@
     <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <form method="GET" action="{{ route('finance.ledger.index') }}" class="flex flex-wrap items-end gap-4">
             <div class="min-w-[220px] flex-1 sm:max-w-md">
-                <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="ledger_filter_account" /> الحساب</label>
-                <select name="account_id" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-800 focus:border-blue-500 focus:ring-blue-500" required>
-                    <option value="">— اختر الحساب —</option>
-                    @foreach($accounts as $account)
-                        <option value="{{ $account->id }}"
-                                @selected(optional($selectedAccount)->id === $account->id)>
-                            {{ $account->code }} — {{ $account->filterHierarchyLabel($accountsById) }}
-                        </option>
-                    @endforeach
-                </select>
+                <label class="mb-1 block text-xs font-medium text-gray-600" for="account_id-trigger"><x-info field="ledger_filter_account" /> الحساب</label>
+                <x-searchable-select
+                    name="account_id"
+                    id="account_id"
+                    :options="$ledgerAccountOptions"
+                    :value="optional($selectedAccount)->id"
+                    :required="true"
+                    empty-label="— اختر الحساب —"
+                    placeholder="ابحث بالرمز أو اسم الحساب..."
+                />
             </div>
             <div class="w-40">
                 <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="ledger_filter_from_date" /> من تاريخ</label>
@@ -92,7 +98,7 @@
                             <td class="px-3 py-3 font-medium text-amber-950">رصيد افتتاحي</td>
                             <td class="px-3 py-3 text-right text-gray-400">—</td>
                             <td class="px-3 py-3 text-right text-gray-400">—</td>
-                            <td class="px-3 py-3 text-right font-semibold tabular-nums text-gray-900">{{ number_format($balance, 2) }}</td>
+                            <td class="px-3 py-3 text-right font-semibold tabular-nums text-gray-900">{{ erp_money($balance) }}</td>
                         </tr>
                         @forelse($items as $item)
                             @php
@@ -104,9 +110,9 @@
                                 <td class="whitespace-nowrap px-3 py-3 text-gray-800">{{ $item->journalEntry?->date?->format('Y-m-d') }}</td>
                                 <td class="px-3 py-3 text-gray-700">{{ $item->journalEntry?->reference ?? '—' }}</td>
                                 <td class="min-w-0 px-3 py-3 text-gray-800 break-words leading-snug">{{ $item->description ?? $item->journalEntry?->description ?? '—' }}</td>
-                                <td class="px-3 py-3 text-right tabular-nums text-gray-900">{{ $debit > 0 ? number_format($debit, 2) : '—' }}</td>
-                                <td class="px-3 py-3 text-right tabular-nums text-gray-900">{{ $credit > 0 ? number_format($credit, 2) : '—' }}</td>
-                                <td class="px-3 py-3 text-right font-medium tabular-nums text-gray-900">{{ number_format($balance, 2) }}</td>
+                                <td class="px-3 py-3 text-right tabular-nums text-gray-900">{{ $debit > 0 ? erp_money($debit) : '—' }}</td>
+                                <td class="px-3 py-3 text-right tabular-nums text-gray-900">{{ $credit > 0 ? erp_money($credit) : '—' }}</td>
+                                <td class="px-3 py-3 text-right font-medium tabular-nums text-gray-900">{{ erp_money($balance) }}</td>
                             </tr>
                         @empty
                             <tr>

@@ -13,7 +13,13 @@
 @endsection
 
 @section('content')
-<div class="max-w-full" x-data="salesReturnForm()" x-cloak>
+@php
+    $salesReturnCustomerOptions = $customers->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => (string) ($c->name ?? ''),
+    ])->all();
+@endphp
+<div class="max-w-full" dir="rtl" x-data="salesReturnForm(@js($defaultVatPercent), @js(old('customer_id', '')))" @searchable-select-change="if ($event.detail.name === 'customer_id') { customerId = $event.detail.value != null && $event.detail.value !== '' ? String($event.detail.value) : ''; onCustomerChange(); }" x-init="if (customerId) { $nextTick(() => onCustomerChange()) }" x-cloak>
     @if(session('error'))
         <div class="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm">
             {{ session('error') }}
@@ -34,13 +40,20 @@
             <h2 class="text-base font-semibold text-gray-900 mb-4">تفاصيل المرتجع</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">العميل <span class="text-red-500">*</span></label>
-                    <select x-model="customerId" @change="onCustomerChange()" required class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="">اختر العميل</option>
-                        @foreach($customers as $c)
-                            <option value="{{ $c->id }}">{{ $c->name }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_id-trigger">العميل <span class="text-red-500">*</span></label>
+                    <input type="hidden" name="customer_id" id="customer_id" required x-model="customerId">
+                    <x-searchable-select
+                        class="w-full"
+                        omit-hidden
+                        name="customer_id"
+                        id="customer_id"
+                        :options="$salesReturnCustomerOptions"
+                        :value="old('customer_id')"
+                        :error="$errors->has('customer_id')"
+                        empty-label="اختر العميل"
+                        placeholder="ابحث باسم العميل..."
+                    />
+                    @error('customer_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">الفاتورة الأصلية</label>
@@ -162,19 +175,22 @@
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
-    window.salesReturnForm = function() {
+    window.salesReturnForm = function(defaultVatPercent, initialCustomerId) {
+        const vatDef = defaultVatPercent != null ? Number(defaultVatPercent) : 15;
+        const blankLine = () => ({ item_id: '', item_name: '', quantity: 1, unit_price: 0, tax_percent: vatDef, line_reason: '', max_returnable: 999999 });
+        const cid = initialCustomerId != null && initialCustomerId !== '' ? String(initialCustomerId) : '';
         return {
-            customerId: '',
+            customerId: cid,
             salesInvoiceId: '',
             returnDate: new Date().toISOString().slice(0, 10),
             invoices: [],
             invoiceItems: [],
-            lines: [{ item_id: '', item_name: '', quantity: 1, unit_price: 0, tax_percent: 10, line_reason: '', max_returnable: 999999 }],
+            lines: [blankLine()],
 
             async onCustomerChange() {
                 this.salesInvoiceId = '';
                 this.invoiceItems = [];
-                this.lines = [{ item_id: '', item_name: '', quantity: 1, unit_price: 0, tax_percent: 10, line_reason: '', max_returnable: 999999 }];
+                this.lines = [blankLine()];
                 if (!this.customerId) { this.invoices = []; return; }
                 try {
                     const r = await fetch('{{ route("sales.returns.invoices-by-customer") }}?customer_id=' + encodeURIComponent(this.customerId), {
@@ -188,7 +204,7 @@ document.addEventListener('alpine:init', () => {
             async onInvoiceChange() {
                 this.lines = [];
                 if (!this.salesInvoiceId) {
-                    this.lines = [{ item_id: '', item_name: '', quantity: 1, unit_price: 0, tax_percent: 10, line_reason: '', max_returnable: 999999 }];
+                    this.lines = [blankLine()];
                     return;
                 }
                 try {
@@ -199,7 +215,7 @@ document.addEventListener('alpine:init', () => {
                     const d = await r.json();
                     const items = d.items || [];
                     if (items.length === 0) {
-                        this.lines = [{ item_id: '', item_name: '', quantity: 1, unit_price: 0, tax_percent: 10, line_reason: '', max_returnable: 0 }];
+                        this.lines = [{ item_id: '', item_name: '', quantity: 1, unit_price: 0, tax_percent: vatDef, line_reason: '', max_returnable: 0 }];
                         return;
                     }
                     this.lines = items.map(i => ({
@@ -207,12 +223,12 @@ document.addEventListener('alpine:init', () => {
                         item_name: i.item_name,
                         quantity: Math.min(1, i.max_returnable),
                         unit_price: i.unit_price,
-                        tax_percent: i.tax_percent || 10,
+                        tax_percent: (i.tax_percent != null && i.tax_percent !== '') ? parseFloat(i.tax_percent) : vatDef,
                         line_reason: '',
                         max_returnable: i.max_returnable
                     }));
                 } catch (e) {
-                    this.lines = [{ item_id: '', item_name: '', quantity: 1, unit_price: 0, tax_percent: 10, line_reason: '', max_returnable: 999999 }];
+                    this.lines = [blankLine()];
                 }
             },
 
@@ -223,7 +239,7 @@ document.addEventListener('alpine:init', () => {
                     item_name: last.item_name || '',
                     quantity: 1,
                     unit_price: last.unit_price || 0,
-                    tax_percent: last.tax_percent ?? 10,
+                    tax_percent: (last.tax_percent != null && last.tax_percent !== '') ? last.tax_percent : vatDef,
                     line_reason: '',
                     max_returnable: last.max_returnable ?? 999999
                 });

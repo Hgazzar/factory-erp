@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\Cheque;
 use App\Models\Payment;
@@ -19,6 +20,7 @@ class BankAccountController extends Controller
         $status = (string) $request->query('status', '');
 
         $accounts = BankAccount::query()
+            ->with(['ledgerAccount:id,code,name_ar'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('bank_name', 'like', '%' . $search . '%')
@@ -38,7 +40,9 @@ class BankAccountController extends Controller
 
     public function create(): View
     {
-        return view('finance.bank-accounts.create');
+        return view('finance.bank-accounts.create', [
+            'ledgerAccountOptions' => $this->ledgerAccountSelectOptions(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -47,9 +51,15 @@ class BankAccountController extends Controller
 
         DB::transaction(function () use ($request, $data): void {
             BankAccount::query()->create([
-                ...$data,
                 'user_id' => (int) $request->user()->id,
-                'opening_balance' => (float) ($data['opening_balance'] ?? 0),
+                'bank_name' => $data['bank_name'],
+                'branch_name' => $data['branch_name'] ?? null,
+                'account_number' => $data['account_number'],
+                'iban' => $data['iban'] ?? null,
+                'currency' => $data['currency'],
+                'ledger_account_id' => (int) $data['ledger_account_id'],
+                'opening_balance' => 0,
+                'status' => $data['status'],
                 'created_by' => $request->user()?->id,
             ]);
         });
@@ -61,7 +71,10 @@ class BankAccountController extends Controller
 
     public function edit(BankAccount $bankAccount): View
     {
-        return view('finance.bank-accounts.edit', ['account' => $bankAccount]);
+        return view('finance.bank-accounts.edit', [
+            'account' => $bankAccount,
+            'ledgerAccountOptions' => $this->ledgerAccountSelectOptions(),
+        ]);
     }
 
     public function update(Request $request, BankAccount $bankAccount): RedirectResponse
@@ -70,8 +83,13 @@ class BankAccountController extends Controller
 
         DB::transaction(function () use ($bankAccount, $data): void {
             $bankAccount->update([
-                ...$data,
-                'opening_balance' => (float) ($data['opening_balance'] ?? 0),
+                'bank_name' => $data['bank_name'],
+                'branch_name' => $data['branch_name'] ?? null,
+                'account_number' => $data['account_number'],
+                'iban' => $data['iban'] ?? null,
+                'currency' => $data['currency'],
+                'ledger_account_id' => (int) $data['ledger_account_id'],
+                'status' => $data['status'],
             ]);
         });
 
@@ -88,7 +106,7 @@ class BankAccountController extends Controller
 
         $hasLinkedExpenses = Payment::query()
             ->where('type', 'expense')
-            ->where('payment_method', 'bank')
+            ->whereIn('payment_method', ['bank', 'check'])
             ->where(function ($query) use ($bankAccount) {
                 $query->where('reference', 'like', '%' . $bankAccount->account_number . '%')
                     ->orWhere('notes', 'like', '%' . $bankAccount->account_number . '%')
@@ -131,8 +149,39 @@ class BankAccountController extends Controller
                 Rule::unique('bank_accounts', 'iban')->where('user_id', $uid)->ignore($ignoreId),
             ],
             'currency' => ['required', 'string', 'size:3'],
-            'opening_balance' => ['nullable', 'numeric'],
+            'ledger_account_id' => [
+                'required',
+                'integer',
+                Rule::exists('accounts', 'id')->where(function ($q) use ($uid): void {
+                    $q->where('user_id', $uid)->where('type', Account::TYPE_ASSET);
+                }),
+                Rule::unique('bank_accounts', 'ledger_account_id')->where('user_id', $uid)->ignore($ignoreId),
+            ],
             'status' => ['required', 'in:active,inactive'],
         ];
+    }
+
+    /**
+     * @return list<array{value:int,label:string}>
+     */
+    private function ledgerAccountSelectOptions(): array
+    {
+        $uid = (int) auth()->id();
+
+        return Account::query()
+            ->where('user_id', $uid)
+            ->where('type', Account::TYPE_ASSET)
+            ->where(function ($q): void {
+                $q->where('is_active', true)
+                    ->orWhereNull('is_active');
+            })
+            ->orderBy('code')
+            ->get(['id', 'code', 'name_ar', 'name_en'])
+            ->map(fn (Account $a) => [
+                'value' => (int) $a->id,
+                'label' => trim($a->code.' — '.(string) ($a->name_ar ?: $a->name_en ?: '')),
+            ])
+            ->values()
+            ->all();
     }
 }

@@ -25,7 +25,23 @@
 @endpush
 
 @section('content')
-<div class="max-w-full" dir="rtl" x-data="purchaseOrderCreateForm(@js($items), @js($suppliers), @js($prefillLines ?? []), @js($editOrderPayload ?? null))" x-cloak>
+@php
+    $purchaseSupplierOptions = collect($suppliers ?? [])->map(function ($s) {
+        if (is_array($s)) {
+            return [
+                'value' => $s['id'] ?? '',
+                'label' => trim(($s['name'] ?? '').(isset($s['code']) && $s['code'] !== '' ? ' ('.$s['code'].')' : '')),
+            ];
+        }
+        $code = $s->code ?? '';
+
+        return [
+            'value' => $s->id,
+            'label' => trim(($s->name ?? '').($code !== '' ? ' ('.$code.')' : '')),
+        ];
+    })->filter(fn ($o) => (string) ($o['value'] ?? '') !== '')->values()->all();
+@endphp
+<div class="max-w-full" dir="rtl" x-data="purchaseOrderCreateForm(@js($items), @js($suppliers), @js($prefillLines ?? []), @js($editOrderPayload ?? null), @js($defaultVatPercent))" @searchable-select-change="if ($event.detail.name === 'supplier_id') { supplierId = $event.detail.value != null && $event.detail.value !== '' ? String($event.detail.value) : ''; }" x-cloak>
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 po-icon-muted" style="background: rgba(124, 58, 237, 0.2);">
@@ -65,13 +81,19 @@
                     <input type="text" value="{{ $isEdit ? ($editOrderModel->display_order_number ?? '') : ($nextOrderNumber ?? '') }}" readonly class="w-full py-2.5 pr-4 text-right bg-gray-100 border border-gray-200 rounded-2xl text-sm text-gray-600 cursor-not-allowed" title="{{ $isEdit ? 'رقم الأمر' : 'يُسجَّل تلقائياً عند الحفظ' }}">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">المورد <span class="text-red-500">*</span> <x-info field="procurement.purchase_order_supplier" /></label>
-                    <select name="supplier_id" x-model="supplierId" required class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 @error('supplier_id') border-red-500 @enderror">
-                        <option value="">اختر المورد</option>
-                        <template x-for="s in suppliers" :key="s.id">
-                            <option :value="s.id" x-text="s.name + (s.code ? ' (' + s.code + ')' : '')"></option>
-                        </template>
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="supplier_id-trigger">المورد <span class="text-red-500">*</span> <x-info field="procurement.purchase_order_supplier" /></label>
+                    <input type="hidden" name="supplier_id" id="supplier_id" required x-model="supplierId">
+                    <x-searchable-select
+                        class="w-full"
+                        omit-hidden
+                        name="supplier_id"
+                        id="supplier_id"
+                        :options="$purchaseSupplierOptions"
+                        :value="old('supplier_id', $isEdit ? ($editOrderModel->supplier_id ?? '') : '')"
+                        :error="$errors->has('supplier_id')"
+                        empty-label="اختر المورد"
+                        placeholder="ابحث باسم المورد أو الرمز..."
+                    />
                     @error('supplier_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -249,9 +271,10 @@
 @push('scripts')
 <script>
 document.addEventListener('alpine:init', () => {
-    window.purchaseOrderCreateForm = function(items, suppliers, prefillLines, editPayload) {
+    window.purchaseOrderCreateForm = function(items, suppliers, prefillLines, editPayload, defaultVatPercent) {
+        const vatDef = defaultVatPercent != null ? Number(defaultVatPercent) : 15;
         const defaultLine = () => ({
-            item_id: '', description: '', quantity: 1, unit_price: 0, discount_percent: 0, tax_percent: 10
+            item_id: '', description: '', quantity: 1, unit_price: 0, discount_percent: 0, tax_percent: vatDef
         });
         const buildLines = () => {
             if (editPayload && Array.isArray(editPayload.lines) && editPayload.lines.length) {
@@ -261,7 +284,7 @@ document.addEventListener('alpine:init', () => {
                     quantity: parseFloat(p.quantity) || 1,
                     unit_price: p.unit_price != null ? parseFloat(p.unit_price) : 0,
                     discount_percent: parseFloat(p.discount_percent) || 0,
-                    tax_percent: p.tax_percent != null ? parseFloat(p.tax_percent) : 10,
+                    tax_percent: p.tax_percent != null ? parseFloat(p.tax_percent) : vatDef,
                 }));
             }
             const list = Array.isArray(prefillLines) ? prefillLines : [];
@@ -274,7 +297,7 @@ document.addEventListener('alpine:init', () => {
                 quantity: parseFloat(p.quantity) || 1,
                 unit_price: p.unit_price != null ? parseFloat(p.unit_price) : 0,
                 discount_percent: 0,
-                tax_percent: 10,
+                tax_percent: p.tax_percent != null && p.tax_percent !== '' ? parseFloat(p.tax_percent) : vatDef,
             }));
         };
         const today = new Date().toISOString().slice(0, 10);

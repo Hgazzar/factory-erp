@@ -34,6 +34,8 @@ class Payment extends Model
         'notes',
         'type',
         'payment_method',
+        'bank_account_id',
+        'fixed_asset_id',
         'journal_entry_id',
         'created_by',
     ];
@@ -97,6 +99,16 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class, 'bank_account_id');
+    }
+
+    public function fixedAsset(): BelongsTo
+    {
+        return $this->belongsTo(FixedAsset::class, 'fixed_asset_id');
     }
 
     public function supplier(): BelongsTo

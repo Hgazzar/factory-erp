@@ -74,7 +74,7 @@
                 </div>
                 <div class="min-w-0">
                     <p class="text-sm text-gray-500">إجمالي المدين</p>
-                    <p class="text-base font-bold" style="color: #059669; font-weight: 700;">SAR {{ number_format((float) $totalDebit, 2) }}</p>
+                    <p class="text-base font-bold" style="color: #059669; font-weight: 700;">SAR {{ erp_money((float) $totalDebit) }}</p>
                 </div>
             </div>
         </div>
@@ -85,7 +85,7 @@
                 </div>
                 <div class="min-w-0">
                     <p class="text-sm text-gray-500">إجمالي الدائن</p>
-                    <p class="text-base font-bold" style="color: #dc2626; font-weight: 700;">SAR {{ number_format((float) $totalCredit, 2) }}</p>
+                    <p class="text-base font-bold" style="color: #dc2626; font-weight: 700;">SAR {{ erp_money((float) $totalCredit) }}</p>
                 </div>
             </div>
         </div>
@@ -96,7 +96,7 @@
                 </div>
                 <div class="min-w-0">
                     <p class="text-sm text-gray-500">الفرق</p>
-                    <p class="text-base font-bold" style="color: #059669; font-weight: 700;">SAR {{ number_format((float) abs($difference), 2) }}</p>
+                    <p class="text-base font-bold" style="color: #059669; font-weight: 700;">SAR {{ erp_money((float) abs($difference)) }}</p>
                 </div>
             </div>
         </div>

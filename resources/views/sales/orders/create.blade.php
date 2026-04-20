@@ -13,7 +13,13 @@
 @endsection
 
 @section('content')
-<div class="max-w-full" dir="rtl" x-data="salesOrderCreateForm(@js($items), @js($warehouses), @js($initialQuotationId ?? null), @js(old('customer_id', $initialCustomerId ?? '')), @js(old('order_date', $initialOrderDate ?? now()->format('Y-m-d'))), @js(old('expected_delivery', $initialExpectedDelivery ?? '')), @js(old('lines', $initialLines ?? [])))" x-cloak>
+@php
+    $salesOrderCustomerOptions = $customers->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => (string) ($c->display_name ?? $c->name ?? ''),
+    ])->all();
+@endphp
+<div class="max-w-full" dir="rtl" x-data="salesOrderCreateForm(@js($items), @js($warehouses), @js($initialQuotationId ?? null), @js(old('customer_id', $initialCustomerId ?? '')), @js(old('order_date', $initialOrderDate ?? now()->format('Y-m-d'))), @js(old('expected_delivery', $initialExpectedDelivery ?? '')), @js(old('lines', $initialLines ?? [])), @js($defaultVatPercent))" @searchable-select-change="if ($event.detail.name === 'customer_id') { customerId = $event.detail.value != null && $event.detail.value !== '' ? String($event.detail.value) : ''; }" x-cloak>
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h1 class="text-2xl font-bold text-gray-900">أمر بيع جديد</h1>
         <a href="{{ route('sales.orders.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium text-sm hover:bg-gray-50 transition">
@@ -47,13 +53,19 @@
                     @endif
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">العميل <span class="text-red-500">*</span></label>
-                    <select name="customer_id" x-model="customerId" required class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 @error('customer_id') border-red-500 @enderror">
-                        <option value="">اختر العميل</option>
-                        @foreach($customers as $c)
-                            <option value="{{ $c->id }}">{{ $c->display_name }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="customer_id-trigger">العميل <span class="text-red-500">*</span></label>
+                    <input type="hidden" name="customer_id" id="customer_id" required x-model="customerId">
+                    <x-searchable-select
+                        class="w-full"
+                        omit-hidden
+                        name="customer_id"
+                        id="customer_id"
+                        :options="$salesOrderCustomerOptions"
+                        :value="old('customer_id', $initialCustomerId ?? '')"
+                        :error="$errors->has('customer_id')"
+                        empty-label="اختر العميل"
+                        placeholder="ابحث باسم العميل..."
+                    />
                     @error('customer_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
@@ -240,15 +252,16 @@ async function erpExplainOrdersFetchFailure(res) {
     }
     return 'تعذر إتمام الحفظ (استجابة الخادم: ' + res.status + ').';
 }
-window.salesOrderCreateForm = function(items, warehouses, initialQuotationId, initialCustomerId, initialOrderDate, initialExpectedDelivery, initialLines) {
+window.salesOrderCreateForm = function(items, warehouses, initialQuotationId, initialCustomerId, initialOrderDate, initialExpectedDelivery, initialLines, defaultVatPercent) {
         const defaultWarehouseId = (warehouses && warehouses.length) ? String(warehouses[0].id) : '';
+        const vatDef = defaultVatPercent != null ? Number(defaultVatPercent) : 15;
         const emptyLine = () => ({
             item_id: '',
             description: '',
             quantity: 1,
             unit_price: 0,
             discount_percent: 0,
-            tax_percent: 0,
+            tax_percent: vatDef,
             warehouse_id: defaultWarehouseId,
         });
         const today = new Date().toISOString().slice(0, 10);
@@ -259,7 +272,7 @@ window.salesOrderCreateForm = function(items, warehouses, initialQuotationId, in
                 quantity: parseFloat(line.quantity) || 1,
                 unit_price: parseFloat(line.unit_price) || 0,
                 discount_percent: parseFloat(line.discount_percent) || 0,
-                tax_percent: parseFloat(line.tax_percent) || 0,
+                tax_percent: line.tax_percent != null && line.tax_percent !== '' ? parseFloat(line.tax_percent) : vatDef,
                 warehouse_id: line.warehouse_id ? String(line.warehouse_id) : defaultWarehouseId,
             }))
             : null;
@@ -291,6 +304,7 @@ window.salesOrderCreateForm = function(items, warehouses, initialQuotationId, in
                     const res = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
                     const data = await res.json();
                     this.customerId = String(data.customer_id || '');
+                    this.$dispatch('erp-sync-searchable', { id: 'customer_id', value: this.customerId });
                     this.orderDate = data.order_date || today;
                     this.expectedDelivery = data.expected_delivery || '';
                     if (data.items && data.items.length) {
@@ -300,7 +314,7 @@ window.salesOrderCreateForm = function(items, warehouses, initialQuotationId, in
                             quantity: i.quantity,
                             unit_price: i.unit_price,
                             discount_percent: i.discount_percent || 0,
-                            tax_percent: i.tax_percent || 0,
+                            tax_percent: (i.tax_percent != null && i.tax_percent !== '') ? parseFloat(i.tax_percent) : vatDef,
                             warehouse_id: defaultWarehouseId,
                         }));
                     }

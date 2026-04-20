@@ -62,16 +62,16 @@
                 <tr>
                     <td>{{ $line->item?->code }} — {{ $line->item?->name_ar }}</td>
                     <td>{{ $types[$line->item?->type] ?? ($line->item?->type ?? '—') }}</td>
-                    <td>{{ rtrim(rtrim(number_format((float) $line->quantity, 4, '.', ''), '0'), '.') }}</td>
-                    <td>{{ number_format((float) $line->unit_price, 2) }}</td>
-                    <td>{{ number_format((float) $line->line_total, 2) }}</td>
+                    <td>{{ erp_qty((float) $line->quantity) }}</td>
+                    <td>{{ erp_money((float) $line->unit_price) }}</td>
+                    <td>{{ erp_money((float) $line->line_total) }}</td>
                 </tr>
             @endforeach
         </tbody>
     </table>
 
     <div class="total">
-        الإجمالي: SAR {{ number_format((float) $salesOrder->total, 2) }}
+        الإجمالي: SAR {{ erp_money((float) $salesOrder->total) }}
     </div>
 
     @if($salesOrder->notes)

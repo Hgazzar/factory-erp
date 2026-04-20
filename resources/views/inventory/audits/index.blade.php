@@ -60,9 +60,9 @@
                         <td class="px-3 py-3">
                             @php $val = $a->total_difference_value ?? 0; @endphp
                             @if($val > 0)
-                                <span class="font-semibold text-emerald-600">+{{ number_format($val, 2) }} SAR</span>
+                                <span class="font-semibold text-emerald-600">+{{ erp_money($val) }} SAR</span>
                             @elseif($val < 0)
-                                <span class="font-semibold text-red-600">{{ number_format($val, 2) }} SAR</span>
+                                <span class="font-semibold text-red-600">{{ erp_money($val) }} SAR</span>
                             @else
                                 <span class="text-gray-400">0.00 SAR</span>
                             @endif

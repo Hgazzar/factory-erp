@@ -21,14 +21,55 @@ use RuntimeException;
 
 class PaymentWebController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $payments = Payment::with(['supplier', 'expenseAccount', 'creator', 'purchaseInvoices'])
+        $query = Payment::with(['supplier', 'expenseAccount', 'creator', 'purchaseInvoices'])
             ->orderByDesc('date')
-            ->orderByDesc('id')
-            ->paginate(20);
+            ->orderByDesc('id');
 
-        return view('finance.payments.index', compact('payments'));
+        if ($request->filled('type') && in_array($request->input('type'), ['supplier', 'expense'], true)) {
+            $query->where('type', $request->input('type'));
+        }
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', (int) $request->input('supplier_id'));
+        }
+        if ($request->filled('expense_account_id')) {
+            $query->where('expense_account_id', (int) $request->input('expense_account_id'));
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('date', '>=', $request->input('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('date', '<=', $request->input('date_to'));
+        }
+        if ($request->filled('q')) {
+            $q = trim((string) $request->input('q'));
+            if ($q !== '') {
+                $query->where(function ($qb) use ($q) {
+                    $qb->where('reference', 'like', '%'.$q.'%')
+                        ->orWhere('notes', 'like', '%'.$q.'%');
+                });
+            }
+        }
+
+        $payments = $query->paginate(20)->withQueryString();
+
+        $filterSuppliers = Supplier::query()
+            ->where(function ($sub) {
+                $sub->where('is_active', true)->orWhereNull('is_active');
+            })
+            ->orderBy('name')
+            ->get(['id', 'code', 'name', 'name_ar']);
+
+        $filterExpenseAccounts = Account::query()
+            ->where('type', Account::TYPE_EXPENSE)
+            ->where(function ($sub) {
+                $sub->where('is_active', true)->orWhereNull('is_active');
+            })
+            ->orderBy('code')
+            ->get(['id', 'code', 'name_ar', 'name_en']);
+
+        return view('finance.payments.index', compact('payments', 'filterSuppliers', 'filterExpenseAccounts'));
     }
 
     public function create(): View

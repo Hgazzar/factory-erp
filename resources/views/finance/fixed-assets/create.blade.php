@@ -13,6 +13,24 @@
 @endsection
 
 @section('content')
+@php
+    $fixedAssetCategoryOptions = collect($categories ?? [])->map(fn ($category) => [
+        'value' => $category->id,
+        'label' => trim((string) ($category->code ?? '').' - '.(string) ($category->name_ar ?? '')),
+    ])->all();
+    $fixedAssetCostCenterOptions = collect($costCenters ?? [])->map(fn ($center) => [
+        'value' => $center->id,
+        'label' => trim((string) ($center->code ?? '').' - '.(string) ($center->name ?? '')),
+    ])->all();
+    $fixedAssetLedgerOptions = collect($ledgerAccounts ?? [])->map(fn ($account) => [
+        'value' => $account->id,
+        'label' => trim((string) ($account->code ?? '').' - '.(string) ($account->name_ar ?? $account->name_en ?? '')),
+    ])->all();
+    $fixedAssetBankOptions = collect($bankAccounts ?? [])->map(fn ($bank) => [
+        'value' => $bank->id,
+        'label' => trim((string) ($bank->bank_name ?? '').' - '.(string) ($bank->account_number ?? '')),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4">
@@ -40,26 +58,30 @@
                 </div>
                 <div>
                     <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">التصنيف <x-info field="asset_category" /> <span class="text-red-500">*</span></label>
-                    <select name="category_id" required class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر التصنيف</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" @selected((string) old('category_id') === (string) $category->id)>
-                                {{ $category->code }} - {{ $category->name_ar }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="category_id"
+                        id="category_id"
+                        :options="$fixedAssetCategoryOptions"
+                        :value="old('category_id', isset($asset) ? $asset->category_id : null)"
+                        :required="true"
+                        :error="$errors->has('category_id')"
+                        empty-label="اختر التصنيف"
+                        placeholder="ابحث بالرمز أو اسم التصنيف..."
+                    />
                     @error('category_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">مركز التكلفة <x-info field="cost_center" /> <span class="text-red-500">*</span></label>
-                    <select name="cost_center_id" required class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر مركز التكلفة</option>
-                        @foreach($costCenters as $center)
-                            <option value="{{ $center->id }}" @selected((string) old('cost_center_id', $asset->cost_center_id ?? '') === (string) $center->id)>
-                                {{ $center->code }} - {{ $center->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="cost_center_id"
+                        id="cost_center_id"
+                        :options="$fixedAssetCostCenterOptions"
+                        :value="old('cost_center_id', isset($asset) ? $asset->cost_center_id : null)"
+                        :required="true"
+                        :error="$errors->has('cost_center_id')"
+                        empty-label="اختر مركز التكلفة"
+                        placeholder="ابحث بالرمز أو اسم مركز التكلفة..."
+                    />
                     @error('cost_center_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
@@ -103,6 +125,44 @@
                         <input type="number" inputmode="decimal" min="0" step="any" name="acquisition_cost" value="{{ old('acquisition_cost', $asset->acquisition_cost ?? '') }}" required class="h-full flex-1 border-0 bg-white px-3 text-sm focus:outline-none focus:ring-0">
                     </div>
                     @error('acquisition_cost')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">حساب الأصل في الدليل <x-info field="fixed_asset_ledger_account" /> <span class="text-red-500">*</span></label>
+                    <x-searchable-select
+                        name="ledger_account_id"
+                        id="ledger_account_id"
+                        :options="$fixedAssetLedgerOptions"
+                        :value="old('ledger_account_id', isset($asset) ? $asset->ledger_account_id : null)"
+                        :required="true"
+                        :error="$errors->has('ledger_account_id')"
+                        empty-label="اختر حساب أصل"
+                        placeholder="ابحث بالرمز أو اسم الحساب..."
+                    />
+                    @error('ledger_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">طريقة الدفع <span class="text-red-500">*</span></label>
+                    <select id="payment_method" name="payment_method" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="cash" @selected(old('payment_method', $asset->payment_method ?? 'cash') === 'cash')>نقدًا</option>
+                        <option value="bank" @selected(old('payment_method', $asset->payment_method ?? '') === 'bank')>تحويل بنكي</option>
+                        <option value="card" @selected(old('payment_method', $asset->payment_method ?? '') === 'card')>بطاقة</option>
+                        <option value="check" @selected(old('payment_method', $asset->payment_method ?? '') === 'check')>شيك</option>
+                    </select>
+                    @error('payment_method')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">الحساب البنكي (عند الدفع البنكي)</label>
+                    <x-searchable-select
+                        name="bank_account_id"
+                        id="bank_account_id"
+                        :options="$fixedAssetBankOptions"
+                        :value="old('bank_account_id', isset($asset) ? $asset->bank_account_id : null)"
+                        :required="false"
+                        :error="$errors->has('bank_account_id')"
+                        empty-label="اختر الحساب البنكي"
+                        placeholder="ابحث باسم البنك أو رقم الحساب..."
+                    />
+                    @error('bank_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
         </section>

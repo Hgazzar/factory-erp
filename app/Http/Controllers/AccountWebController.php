@@ -9,6 +9,7 @@ use App\Support\ErpFilamentNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -214,6 +215,44 @@ class AccountWebController extends Controller
             ->orderBy('code')
             ->get();
 
+        $accountIds = [];
+        $collectIds = function ($accounts) use (&$collectIds, &$accountIds): void {
+            foreach ($accounts as $node) {
+                $accountIds[] = (int) $node->id;
+                if ($node->relationLoaded('childrenRecursive') && $node->childrenRecursive) {
+                    $collectIds($node->childrenRecursive);
+                }
+            }
+        };
+        $collectIds($rootAccounts);
+
+        $movementsByAccount = DB::table('journal_items')
+            ->selectRaw('account_id, SUM(debit - credit) AS movement')
+            ->whereIn('account_id', $accountIds ?: [0])
+            ->groupBy('account_id')
+            ->pluck('movement', 'account_id')
+            ->map(fn ($v) => (float) $v);
+
+        $openingsByAccount = Account::query()
+            ->whereIn('id', $accountIds ?: [0])
+            ->pluck('opening_balance', 'id')
+            ->map(fn ($v) => (float) $v);
+
+        $balancesByAccount = [];
+        $sumDebit = 0.0;
+        $sumCredit = 0.0;
+        foreach ($accountIds as $id) {
+            $opening = (float) ($openingsByAccount[$id] ?? 0);
+            $movement = (float) ($movementsByAccount[$id] ?? 0);
+            $balance = $opening + $movement;
+            $balancesByAccount[$id] = $balance;
+            if ($balance >= 0) {
+                $sumDebit += $balance;
+            } else {
+                $sumCredit += abs($balance);
+            }
+        }
+
         $totalAccountsCount = Account::query()->when($request->filled('search'), function ($q) use ($request) {
             $term = $request->search;
             $q->where(function ($q) use ($term) {
@@ -223,25 +262,17 @@ class AccountWebController extends Controller
             });
         })->when($request->filled('type'), fn ($q) => $q->where('type', $request->type))->count();
 
-        $baseForTotals = Account::query()->when($request->filled('search'), function ($q) use ($request) {
-            $term = $request->search;
-            $q->where(function ($q) use ($term) {
-                $q->where('name_ar', 'like', "%{$term}%")
-                    ->orWhere('name_en', 'like', "%{$term}%")
-                    ->orWhere('code', 'like', "%{$term}%");
-            });
-        })->when($request->filled('type'), fn ($q) => $q->where('type', $request->type));
-
-        $totalDebit = (clone $baseForTotals)->where('opening_balance', '>', 0)->sum('opening_balance');
-        $totalCredit = (clone $baseForTotals)->where('opening_balance', '<', 0)->sum('opening_balance');
-        $difference = $totalDebit + $totalCredit; // opening_balance: positive = debit, negative = credit
+        $totalDebit = $sumDebit;
+        $totalCredit = $sumCredit;
+        $difference = $totalDebit - $totalCredit;
 
         return view('finance.accounts.index', [
             'rootAccounts' => $rootAccounts,
             'totalAccountsCount' => $totalAccountsCount,
             'totalDebit' => $totalDebit,
-            'totalCredit' => abs($totalCredit),
+            'totalCredit' => $totalCredit,
             'difference' => $difference,
+            'balancesByAccount' => $balancesByAccount,
         ]);
     }
 }

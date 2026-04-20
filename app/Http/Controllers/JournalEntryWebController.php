@@ -39,10 +39,20 @@ class JournalEntryWebController extends Controller
         if ($request->filled('type')) {
             // $query->where('entry_type', $request->type);
         }
+        if ($request->filled('account_id')) {
+            $accountId = (int) $request->input('account_id');
+            if ($accountId > 0) {
+                $query->whereHas('items', fn ($q) => $q->where('account_id', $accountId));
+            }
+        }
 
         $entries = $query->paginate(20)->withQueryString();
 
-        return view('finance.journals.index', compact('entries'));
+        $filterAccounts = Account::query()
+            ->orderBy('code')
+            ->get(['id', 'code', 'name_ar']);
+
+        return view('finance.journals.index', compact('entries', 'filterAccounts'));
     }
 
     public function create(): View

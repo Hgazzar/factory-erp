@@ -75,10 +75,10 @@
                                         {{ $row['account_name'] }}
                                     </a>
                                 </td>
-                                <td class="px-4 py-3 font-semibold text-gray-800 text-left">SAR {{ number_format((float) $row['debit'], 2) }}</td>
-                                <td class="px-4 py-3 font-semibold text-gray-800 text-left">SAR {{ number_format((float) $row['credit'], 2) }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-800 text-left">SAR {{ erp_money((float) $row['debit']) }}</td>
+                                <td class="px-4 py-3 font-semibold text-gray-800 text-left">SAR {{ erp_money((float) $row['credit']) }}</td>
                                 <td class="px-4 py-3 font-semibold text-left {{ (float) $row['closing_balance'] >= 0 ? 'text-emerald-700' : 'text-red-600' }}">
-                                    SAR {{ number_format((float) $row['closing_balance'], 2) }}
+                                    SAR {{ erp_money((float) $row['closing_balance']) }}
                                 </td>
                             </tr>
                         @empty
@@ -90,8 +90,8 @@
                     <tfoot class="bg-gray-50 text-sm font-semibold">
                         <tr>
                             <td colspan="2" class="px-4 py-3 text-right text-gray-900">الإجمالي</td>
-                            <td class="px-4 py-3 text-gray-900 text-left">SAR {{ number_format((float) $totalDebit, 2) }}</td>
-                            <td class="px-4 py-3 text-gray-900 text-left">SAR {{ number_format((float) $totalCredit, 2) }}</td>
+                            <td class="px-4 py-3 text-gray-900 text-left">SAR {{ erp_money((float) $totalDebit) }}</td>
+                            <td class="px-4 py-3 text-gray-900 text-left">SAR {{ erp_money((float) $totalCredit) }}</td>
                             <td class="px-4 py-3 text-left">
                                 @if($isBalanced)
                                     <span class="text-emerald-700">الميزان متوازن ✅</span>
@@ -116,6 +116,10 @@
         }
         main.main-content {
             padding: 0 !important;
+        }
+        td.text-left {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
     }
 </style>

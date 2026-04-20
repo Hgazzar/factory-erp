@@ -13,6 +13,16 @@
 @endsection
 
 @section('content')
+@php
+    $paymentSupplierOpts = collect($suppliers ?? [])->map(fn ($s) => [
+        'value' => $s->id,
+        'label' => trim((string) ($s->code ?? '').' — '.(string) ($s->name ?? '')),
+    ])->all();
+    $paymentExpenseAccountOpts = collect($expenseAccounts ?? [])->map(fn ($a) => [
+        'value' => $a->id,
+        'label' => trim((string) ($a->code ?? '').' — '.(string) ($a->name_ar ?? '')),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4">
         <div>
@@ -49,6 +59,7 @@
                 }
             }
          }"
+         @searchable-select-change="if ($event.detail.name === 'supplier_id') { supplierId = $event.detail.value != null && $event.detail.value !== '' ? String($event.detail.value) : ''; invoiceId = ''; loadInvoices(); }"
          x-init="if (type === 'supplier' && supplierId) { loadInvoices(); }">
         @if(session('error'))
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -70,16 +81,19 @@
                     @error('type')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="md:col-span-1 xl:col-span-3" x-show="type === 'supplier'">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">المورد</label>
-                    <select name="supplier_id" x-model="supplierId" @change="invoiceId = ''; loadInvoices()"
-                            class="h-10 w-full rounded-lg border px-3 text-sm focus:border-blue-500 focus:ring-blue-500 @error('supplier_id') border-red-500 @else border-gray-200 bg-gray-50 @enderror">
-                        <option value="">— اختر المورد —</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}" @selected(old('supplier_id') == $supplier->id)>
-                                {{ $supplier->code }} — {{ $supplier->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <label class="mb-1 block text-sm font-medium text-gray-700" for="supplier_id-trigger">المورد</label>
+                    <input type="hidden" name="supplier_id" id="supplier_id" x-model="supplierId">
+                    <x-searchable-select
+                        class="w-full"
+                        omit-hidden
+                        name="supplier_id"
+                        id="supplier_id"
+                        :options="$paymentSupplierOpts"
+                        :value="old('supplier_id')"
+                        :error="$errors->has('supplier_id')"
+                        empty-label="— اختر المورد —"
+                        placeholder="ابحث باسم المورد أو الرمز..."
+                    />
                     @error('supplier_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="md:col-span-2 xl:col-span-5" x-show="type === 'supplier' && supplierId" x-cloak>
@@ -96,16 +110,16 @@
                     @error('purchase_invoice_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="md:col-span-1 xl:col-span-3" x-show="type === 'expense'">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">حساب المصروف</label>
-                    <select name="expense_account_id"
-                            class="h-10 w-full rounded-lg border px-3 text-sm focus:border-blue-500 focus:ring-blue-500 @error('expense_account_id') border-red-500 @else border-gray-200 bg-gray-50 @enderror">
-                        <option value="">— اختر حساب المصروف —</option>
-                        @foreach($expenseAccounts as $acc)
-                            <option value="{{ $acc->id }}" @selected(old('expense_account_id') == $acc->id)>
-                                {{ $acc->code }} — {{ $acc->name_ar }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <label class="mb-1 block text-sm font-medium text-gray-700" for="expense_account_id-trigger">حساب المصروف</label>
+                    <x-searchable-select
+                        name="expense_account_id"
+                        id="expense_account_id"
+                        :options="$paymentExpenseAccountOpts"
+                        :value="old('expense_account_id')"
+                        :error="$errors->has('expense_account_id')"
+                        empty-label="— اختر حساب المصروف —"
+                        placeholder="ابحث بالرمز أو اسم الحساب..."
+                    />
                     @error('expense_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="md:col-span-1 xl:col-span-2">

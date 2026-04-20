@@ -33,11 +33,11 @@
     <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">المخطط <x-info field="budget_total_planned" /></p>
-            <p class="mt-2 text-2xl font-bold text-gray-900">SAR {{ number_format((float) ($analysis['totals']['planned'] ?? 0), 2) }}</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">SAR {{ erp_money((float) ($analysis['totals']['planned'] ?? 0)) }}</p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-xs font-medium text-gray-500">الفعلي <x-info field="budget_total_actual" /></p>
-            <p class="mt-2 text-2xl font-bold text-gray-900">SAR {{ number_format((float) ($analysis['totals']['actual'] ?? 0), 2) }}</p>
+            <p class="mt-2 text-2xl font-bold text-gray-900">SAR {{ erp_money((float) ($analysis['totals']['actual'] ?? 0)) }}</p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             @php
@@ -45,7 +45,7 @@
                 $totalVarianceClass = $totalVariance > 0 ? 'text-red-600' : 'text-emerald-600';
             @endphp
             <p class="text-xs font-medium text-gray-500">الانحراف <x-info field="budget_variance" /></p>
-            <p class="mt-2 text-2xl font-bold {{ $totalVarianceClass }}">SAR {{ number_format($totalVariance, 2) }}</p>
+            <p class="mt-2 text-2xl font-bold {{ $totalVarianceClass }}">SAR {{ erp_money($totalVariance) }}</p>
         </div>
     </section>
 
@@ -78,15 +78,15 @@
                                 <div class="text-xs text-gray-500">{{ $line['account_code'] }}</div>
                             </td>
                             <td class="px-4 py-3 text-gray-700">{{ $line['cost_center'] ?? '—' }}</td>
-                            <td class="px-4 py-3 text-gray-800">SAR {{ number_format((float) $line['planned'], 2) }}</td>
-                            <td class="px-4 py-3 text-gray-800">SAR {{ number_format((float) $line['actual'], 2) }}</td>
-                            <td class="px-4 py-3 font-semibold {{ $varianceClass }}">SAR {{ number_format((float) $line['variance'], 2) }}</td>
-                            <td class="px-4 py-3 {{ $varianceClass }}">{{ number_format((float) $line['variance_percent'], 2) }}%</td>
+                            <td class="px-4 py-3 text-gray-800">SAR {{ erp_money((float) $line['planned']) }}</td>
+                            <td class="px-4 py-3 text-gray-800">SAR {{ erp_money((float) $line['actual']) }}</td>
+                            <td class="px-4 py-3 font-semibold {{ $varianceClass }}">SAR {{ erp_money((float) $line['variance']) }}</td>
+                            <td class="px-4 py-3 {{ $varianceClass }}">{{ erp_qty((float) $line['variance_percent']) }}%</td>
                             <td class="px-4 py-3">
                                 <div class="w-56 rounded-full bg-gray-100">
                                     <div class="h-2.5 rounded-full {{ $barClass }}" style="width: {{ $consumePercent }}%"></div>
                                 </div>
-                                <div class="mt-1 text-xs {{ $varianceClass }}">{{ number_format((float) $line['consumption_percent'], 1) }}%</div>
+                                <div class="mt-1 text-xs {{ $varianceClass }}">{{ erp_qty((float) $line['consumption_percent']) }}%</div>
                             </td>
                             <td class="px-4 py-3">
                                 <details class="group rounded-lg border border-gray-200 bg-white p-2">
@@ -105,10 +105,10 @@
                                                 @foreach(($line['monthly'] ?? []) as $month)
                                                     <tr>
                                                         <td class="px-2 py-1">{{ $month['label'] }}</td>
-                                                        <td class="px-2 py-1">SAR {{ number_format((float) $month['planned'], 2) }}</td>
-                                                        <td class="px-2 py-1">SAR {{ number_format((float) $month['actual'], 2) }}</td>
+                                                        <td class="px-2 py-1">SAR {{ erp_money((float) $month['planned']) }}</td>
+                                                        <td class="px-2 py-1">SAR {{ erp_money((float) $month['actual']) }}</td>
                                                         <td class="px-2 py-1 {{ (float) $month['variance'] > 0 ? 'text-red-600' : 'text-emerald-700' }}">
-                                                            SAR {{ number_format((float) $month['variance'], 2) }}
+                                                            SAR {{ erp_money((float) $month['variance']) }}
                                                         </td>
                                                     </tr>
                                                 @endforeach

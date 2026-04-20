@@ -91,9 +91,9 @@
                     <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/60">
                         <td class="px-3 py-3 text-gray-800">{{ $i + 1 }}</td>
                         <td class="px-3 py-3 font-medium text-gray-900">{{ $line->item?->name_ar ?? $line->item?->code ?? '—' }}</td>
-                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ number_format($line->quantity, 4) }}</td>
-                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ number_format($line->unit_cost ?? 0, 4) }}</td>
-                        <td class="px-3 py-3 font-medium tabular-nums text-gray-900">{{ number_format($lineTotal, 2) }} SAR</td>
+                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ erp_qty($line->quantity) }}</td>
+                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ erp_money($line->unit_cost ?? 0) }}</td>
+                        <td class="px-3 py-3 font-medium tabular-nums text-gray-900">{{ erp_money($lineTotal) }} SAR</td>
                         <td class="px-3 py-3 text-gray-700">{{ $reasonLabel }}</td>
                     </tr>
                     @endforeach
@@ -101,8 +101,8 @@
             </table>
         </div>
         <div class="flex flex-wrap gap-6 border-t border-gray-200 px-4 py-3 text-sm text-gray-700">
-            <span class="inline-flex items-center gap-1"><x-info field="inventory.adjustment_total_qty" /><span>إجمالي الكمية: <strong class="tabular-nums text-gray-900">{{ number_format($adjustment->total_quantity ?? 0, 4) }}</strong></span></span>
-            <span class="inline-flex items-center gap-1"><x-info field="inventory.adjustment_total_value" /><span>إجمالي القيمة: <strong class="tabular-nums text-gray-900">{{ number_format($adjustment->total_value ?? 0, 2) }} SAR</strong></span></span>
+            <span class="inline-flex items-center gap-1"><x-info field="inventory.adjustment_total_qty" /><span>إجمالي الكمية: <strong class="tabular-nums text-gray-900">{{ erp_qty($adjustment->total_quantity ?? 0) }}</strong></span></span>
+            <span class="inline-flex items-center gap-1"><x-info field="inventory.adjustment_total_value" /><span>إجمالي القيمة: <strong class="tabular-nums text-gray-900">{{ erp_money($adjustment->total_value ?? 0) }} SAR</strong></span></span>
         </div>
     </section>
 </div>

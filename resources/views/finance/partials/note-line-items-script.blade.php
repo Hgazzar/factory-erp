@@ -10,6 +10,7 @@
         const invoicePartyAttr = @json($invoicePartyAttr ?? 'data-party-id');
         const currencyLabel = @json($currencyLabel ?? 'SAR');
         const oldLines = @json($lineDefaults ?? []);
+        const DEFAULT_VAT = @json((float) ($defaultVatJs ?? $defaultVatPercent ?? config('accounting.default_vat_percent', 15)));
 
         if (!linesBody || !addLineBtn) return;
 
@@ -89,7 +90,7 @@
                     <input data-field="unit_price" type="number" inputmode="decimal" min="0" step="any" value="${line.unit_price ?? 0}" class="h-10 w-32 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
                 </td>
                 <td class="px-4 py-3">
-                    <input data-field="tax_percent" type="number" inputmode="decimal" min="0" max="100" step="any" value="${line.tax_percent ?? 15}" class="h-10 w-24 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    <input data-field="tax_percent" type="number" inputmode="decimal" min="0" max="100" step="any" value="${line.tax_percent ?? DEFAULT_VAT}" class="h-10 w-24 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
                 </td>
                 <td class="px-4 py-3 font-semibold text-gray-800" data-line-total>${formatMoney(0)}</td>
                 <td class="px-4 py-3">

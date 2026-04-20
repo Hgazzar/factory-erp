@@ -69,9 +69,9 @@
                     <span class="mb-1 block text-xs text-gray-500"><x-info field="inventory.audit_total_diff_value" /> قيمة الفروقات</span>
                     @php $tv = $audit->total_difference_value ?? 0; @endphp
                     @if($tv > 0)
-                        <p class="font-semibold text-emerald-600">+{{ number_format($tv, 2) }} SAR</p>
+                        <p class="font-semibold text-emerald-600">+{{ erp_money($tv) }} SAR</p>
                     @elseif($tv < 0)
-                        <p class="font-semibold text-red-600">{{ number_format($tv, 2) }} SAR</p>
+                        <p class="font-semibold text-red-600">{{ erp_money($tv) }} SAR</p>
                     @else
                         <p class="font-semibold text-gray-900">0.00 SAR</p>
                     @endif
@@ -119,22 +119,22 @@
                         <td class="px-3 py-3 text-gray-800">{{ $i + 1 }}</td>
                         <td class="px-3 py-3 font-medium text-gray-900">{{ $line->item?->code ?? '—' }}</td>
                         <td class="px-3 py-3 text-gray-800">{{ $line->item?->name_ar ?? $line->item?->name_en ?? '—' }}</td>
-                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ number_format($line->book_quantity, 4) }}</td>
-                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ $line->actual_quantity !== null ? number_format($line->actual_quantity, 4) : '—' }}</td>
+                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ erp_qty($line->book_quantity) }}</td>
+                        <td class="px-3 py-3 tabular-nums text-gray-800">{{ $line->actual_quantity !== null ? erp_qty($line->actual_quantity) : '—' }}</td>
                         <td class="px-3 py-3">
                             @if($diff > 0)
-                                <span class="font-semibold text-emerald-600">+{{ number_format($diff, 4) }}</span>
+                                <span class="font-semibold text-emerald-600">+{{ erp_qty($diff) }}</span>
                             @elseif($diff < 0)
-                                <span class="font-semibold text-red-600">{{ number_format($diff, 4) }}</span>
+                                <span class="font-semibold text-red-600">{{ erp_qty($diff) }}</span>
                             @else
                                 <span class="text-gray-400">0</span>
                             @endif
                         </td>
                         <td class="px-3 py-3">
                             @if($val > 0)
-                                <span class="font-semibold text-emerald-600">+{{ number_format($val, 2) }} SAR</span>
+                                <span class="font-semibold text-emerald-600">+{{ erp_money($val) }} SAR</span>
                             @elseif($val < 0)
-                                <span class="font-semibold text-red-600">{{ number_format($val, 2) }} SAR</span>
+                                <span class="font-semibold text-red-600">{{ erp_money($val) }} SAR</span>
                             @else
                                 <span class="text-gray-400">0.00 SAR</span>
                             @endif

@@ -13,6 +13,12 @@
 @endsection
 
 @section('content')
+@php
+    $salesPaymentCustomerOptions = $customers->map(fn ($c) => [
+        'value' => $c->id,
+        'label' => trim((string) ($c->name ?? '').' ('.(string) ($c->code ?? $c->id).')'),
+    ])->all();
+@endphp
 <div class="max-w-full">
     @if(session('error'))
         <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3">{{ session('error') }}</div>
@@ -30,13 +36,18 @@
             <h2 class="text-lg font-semibold text-gray-900 mb-4">بيانات الدفعة</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                    <label for="customer_id" class="block text-sm font-medium text-gray-700 mb-1">العميل <span class="text-red-500">*</span></label>
-                    <select name="customer_id" id="customer_id" required class="w-full py-2.5 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="">-- اختر العميل --</option>
-                        @foreach($customers as $c)
-                            <option value="{{ $c->id }}" {{ old('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->name }} ({{ $c->code ?? $c->id }})</option>
-                        @endforeach
-                    </select>
+                    <label for="customer_id-trigger" class="block text-sm font-medium text-gray-700 mb-1">العميل <span class="text-red-500">*</span></label>
+                    <x-searchable-select
+                        class="w-full"
+                        name="customer_id"
+                        id="customer_id"
+                        :options="$salesPaymentCustomerOptions"
+                        :value="old('customer_id')"
+                        :required="true"
+                        :error="$errors->has('customer_id')"
+                        empty-label="— اختر العميل —"
+                        placeholder="ابحث باسم العميل أو الرمز..."
+                    />
                     @error('customer_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
