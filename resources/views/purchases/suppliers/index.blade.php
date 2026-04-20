@@ -77,7 +77,7 @@
                         <th class="py-3 px-4 font-medium text-gray-600">نوع المورد <x-info field="procurement.supplier_type" /></th>
                         <th class="py-3 px-4 font-medium text-gray-600">تقييم المورد <x-info field="procurement.supplier_rating" /></th>
                         <th class="py-3 px-4 font-medium text-gray-600">الحالة <x-info field="procurement.supplier_status" /></th>
-                        <th class="py-3 px-4 font-medium text-gray-600 text-center w-[1%] whitespace-nowrap">إجراءات</th>
+                        <th scope="col" class="w-[1%] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-gray-600">إجراءات</th>
                     </tr>
                 </thead>
                 <tbody>

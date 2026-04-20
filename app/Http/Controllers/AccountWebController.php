@@ -3,7 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\BankAccount;
+use App\Models\CompanySetting;
+use App\Models\FixedAssetCategory;
+use App\Models\ItemCategory;
 use App\Models\JournalItem;
+use App\Models\PaymentMethodAccount;
+use App\Models\TaxRate;
 use App\Services\UniversalImportService;
 use App\Support\ErpFilamentNotification;
 use Illuminate\Http\RedirectResponse;
@@ -144,6 +150,72 @@ class AccountWebController extends Controller
             return redirect()
                 ->route('finance.accounts.index', $request->only(['search', 'type']))
                 ->with('error', 'لا يمكن حذف هذا الحساب لوجود حسابات فرعية أو حركات مالية مرتبطة به.');
+        }
+
+        if (BankAccount::withoutGlobalScopes()
+            ->where('ledger_account_id', $account->id)
+            ->where('user_id', $account->user_id)
+            ->where('status', 'active')
+            ->exists()) {
+            return redirect()
+                ->route('finance.accounts.index', $request->only(['search', 'type']))
+                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بحساب بنكي نشط.');
+        }
+
+        if (FixedAssetCategory::withoutGlobalScopes()
+            ->where('user_id', $account->user_id)
+            ->where(function ($q) use ($account) {
+                $q->where('ledger_asset_account_id', $account->id)
+                    ->orWhere('ledger_depreciation_cost_account_id', $account->id)
+                    ->orWhere('ledger_accumulated_depreciation_account_id', $account->id);
+            })
+            ->exists()) {
+            return redirect()
+                ->route('finance.accounts.index', $request->only(['search', 'type']))
+                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بفئة أصول ثابتة.');
+        }
+
+        if (TaxRate::withoutGlobalScopes()
+            ->where('user_id', $account->user_id)
+            ->where('ledger_account_id', $account->id)
+            ->exists()) {
+            return redirect()
+                ->route('finance.accounts.index', $request->only(['search', 'type']))
+                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بضريبة في إعدادات الضرائب.');
+        }
+
+        if (PaymentMethodAccount::withoutGlobalScopes()
+            ->where('user_id', $account->user_id)
+            ->where('ledger_account_id', $account->id)
+            ->exists()) {
+            return redirect()
+                ->route('finance.accounts.index', $request->only(['search', 'type']))
+                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بوسيلة دفع.');
+        }
+
+        if (ItemCategory::query()
+            ->where(function ($q) use ($account) {
+                $q->where('inventory_account_id', $account->id)
+                    ->orWhere('sales_income_account_id', $account->id)
+                    ->orWhere('cogs_account_id', $account->id);
+            })
+            ->exists()) {
+            return redirect()
+                ->route('finance.accounts.index', $request->only(['search', 'type']))
+                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بفئة منتجات.');
+        }
+
+        if (CompanySetting::query()
+            ->where(function ($q) use ($account) {
+                $q->where('default_receivable_account_id', $account->id)
+                    ->orWhere('default_payable_account_id', $account->id)
+                    ->orWhere('purchase_discount_ledger_account_id', $account->id)
+                    ->orWhere('sales_allowed_discount_ledger_account_id', $account->id);
+            })
+            ->exists()) {
+            return redirect()
+                ->route('finance.accounts.index', $request->only(['search', 'type']))
+                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مستخدم في إعدادات المنشأة العامة.');
         }
 
         if (JournalItem::query()->where('account_id', $account->id)->exists()) {

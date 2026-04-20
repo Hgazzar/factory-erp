@@ -117,7 +117,12 @@
                             <th class="px-4 py-3 text-right">المخطط <x-info field="budget_total_planned" /></th>
                             <th class="px-4 py-3 text-right">الفعلي <x-info field="budget_total_actual" /></th>
                             <th class="px-4 py-3 text-right">الفرق <x-info field="budget_variance" /></th>
-                            <th class="px-4 py-3 text-right">الإجراءات <x-info field="budget_actions" /></th>
+                            <th scope="col" class="w-[1%] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-gray-500">
+                                <span class="inline-flex items-center justify-center gap-1">
+                                    <x-info field="budget_actions" />
+                                    الإجراءات
+                                </span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -144,51 +149,97 @@
                                 <td class="px-4 py-3 text-gray-800">SAR {{ erp_money((float) $budget->planned_total) }}</td>
                                 <td class="px-4 py-3 text-gray-800">SAR {{ erp_money((float) $budget->actual_total) }}</td>
                                 <td class="px-4 py-3 font-semibold {{ $rowVarianceClass }}">SAR {{ erp_money((float) $budget->variance) }}</td>
-                                <td class="px-4 py-3">
-                                    <div class="inline-flex items-center gap-1">
+                                <td class="px-4 py-3 text-center align-middle">
+                                    @php $budgetMenuId = 'budget-actions-'.$budget->id; @endphp
+                                    <x-erp-actions-dropdown :menu-id="$budgetMenuId">
                                         @if($budget->archived_at)
-                                            <a href="{{ route('finance.budgets.show', $budget) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600" title="عرض">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" /></svg>
+                                            <a href="{{ route('finance.budgets.show', $budget) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.086.13-.17.263-.252.394C12.879 10.668 11.12 11.5 8 11.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">عرض الموازنة</span>
                                             </a>
                                         @elseif($budget->status === 'draft' && ! $budget->archived_at)
-                                            <a href="{{ route('finance.budgets.edit', $budget) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600" title="تعديل">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.586a2 2 0 112.828 2.828L11.828 14.828a4 4 0 01-1.414.943l-3.029 1.01 1.01-3.029a4 4 0 01.943-1.414l8.586-8.586z" /></svg>
+                                            <a href="{{ route('finance.budgets.edit', $budget) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">تعديل الموازنة</span>
                                             </a>
-                                            <form method="POST" action="{{ route('finance.budgets.destroy', $budget) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذه الموازنة؟');" class="inline">
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <form method="POST" action="{{ route('finance.budgets.destroy', $budget) }}" class="m-0" onsubmit="return confirm('هل أنت متأكد من حذف هذه الموازنة؟');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-600" title="حذف">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" /></svg>
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                                        role="menuitem">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 leading-snug">حذف الموازنة</span>
                                                 </button>
                                             </form>
-                                            <form method="POST" action="{{ route('finance.budgets.activate', $budget) }}" class="inline">
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <form method="POST" action="{{ route('finance.budgets.activate', $budget) }}" class="m-0">
                                                 @csrf
-                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-green-200 bg-white text-green-600 hover:bg-green-50" title="تفعيل">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-emerald-800 transition hover:bg-emerald-50"
+                                                        role="menuitem">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 leading-snug">تفعيل الموازنة</span>
                                                 </button>
                                             </form>
                                         @elseif($budget->status === 'active')
-                                            <a href="{{ route('finance.budgets.show', $budget) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600" title="عرض">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" /></svg>
+                                            <a href="{{ route('finance.budgets.show', $budget) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.086.13-.17.263-.252.394C12.879 10.668 11.12 11.5 8 11.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">عرض الموازنة</span>
                                             </a>
-                                            <form method="POST" action="{{ route('finance.budgets.close', $budget) }}" onsubmit="return confirm('هل أنت متأكد من إغلاق هذه الموازنة؟ سيتم حفظ الصورة النهائية للفروقات.');" class="inline">
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <form method="POST" action="{{ route('finance.budgets.close', $budget) }}" class="m-0" onsubmit="return confirm('هل أنت متأكد من إغلاق هذه الموازنة؟ سيتم حفظ الصورة النهائية للفروقات.');">
                                                 @csrf
-                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-amber-200 bg-white text-amber-600 hover:bg-amber-50" title="إغلاق">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2h-1V9a5 5 0 00-10 0v2H6a2 2 0 00-2 2v6a2 2 0 002 2zm3-10V9a3 3 0 116 0v2H9z" /></svg>
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-amber-800 transition hover:bg-amber-50"
+                                                        role="menuitem">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5h12V9a2 2 0 0 0-2-2z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 leading-snug">إغلاق الموازنة</span>
                                                 </button>
                                             </form>
                                         @else
-                                            <a href="{{ route('finance.budgets.show', $budget) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600" title="عرض">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" /></svg>
+                                            <a href="{{ route('finance.budgets.show', $budget) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.086.13-.17.263-.252.394C12.879 10.668 11.12 11.5 8 11.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">عرض الموازنة</span>
                                             </a>
-                                            <form method="POST" action="{{ route('finance.budgets.archive', $budget) }}" class="inline">
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <form method="POST" action="{{ route('finance.budgets.archive', $budget) }}" class="m-0">
                                                 @csrf
-                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-indigo-200 bg-white text-indigo-600 hover:bg-indigo-50 {{ $budget->archived_at ? 'opacity-50 cursor-not-allowed' : '' }}" title="أرشفة" {{ $budget->archived_at ? 'disabled' : '' }}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l2 12h10l2-12M3 5h18v3H3V5z" /></svg>
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-indigo-800 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        role="menuitem"
+                                                        {{ $budget->archived_at ? 'disabled' : '' }}>
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7.184a2.25 2.25 0 0 1-2.244 2.077H8.926a.75.75 0 0 1-.565-.378L6.5 11H2.75a.75.75 0 0 1-.648-.336L.54 3.87z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 leading-snug">أرشفة الموازنة</span>
                                                 </button>
                                             </form>
                                         @endif
-                                    </div>
+                                    </x-erp-actions-dropdown>
                                 </td>
                             </tr>
                         @empty

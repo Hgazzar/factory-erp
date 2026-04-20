@@ -112,6 +112,11 @@ class Item extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function itemCategory(): BelongsTo
+    {
+        return $this->belongsTo(ItemCategory::class, 'category_id');
+    }
+
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);

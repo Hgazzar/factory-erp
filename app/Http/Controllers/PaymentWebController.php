@@ -10,6 +10,7 @@ use App\Models\JournalItem;
 use App\Models\Payment;
 use App\Models\PurchaseInvoice;
 use App\Models\Supplier;
+use App\Services\InvoicePaymentRecordingService;
 use App\Support\DefaultLedgerAccounts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -173,7 +174,7 @@ class PaymentWebController extends Controller
                 ]);
 
                 if ($data['type'] === 'supplier') {
-                    $suppliersAccount = $this->resolveAccountsPayableAccount();
+                    $suppliersAccount = app(InvoicePaymentRecordingService::class)->resolveDefaultPayableAccount($uid);
 
                     JournalItem::query()->create([
                         'journal_entry_id' => $entry->id,
@@ -269,14 +270,4 @@ class PaymentWebController extends Controller
             : DefaultLedgerAccounts::cashOnHand();
     }
 
-    private function resolveAccountsPayableAccount(): Account
-    {
-        $code = (string) config('accounting.accounts_payable_code', DefaultLedgerAccounts::CODE_AP);
-        $acc = Account::query()->where('code', $code)->first();
-        if ($acc) {
-            return $acc;
-        }
-
-        return DefaultLedgerAccounts::accountsPayable();
-    }
 }

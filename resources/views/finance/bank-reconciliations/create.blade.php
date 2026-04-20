@@ -125,7 +125,7 @@
                             <th class="px-3 py-3 text-right">مرجع</th>
                             <th class="px-3 py-3 text-right">مدين</th>
                             <th class="px-3 py-3 text-right">دائن</th>
-                            <th class="px-3 py-3 text-right">الإجراءات</th>
+                            <th scope="col" class="w-[1%] whitespace-nowrap px-3 py-3 text-center text-xs font-semibold text-gray-500">إجراءات</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">

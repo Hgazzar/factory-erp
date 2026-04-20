@@ -292,13 +292,13 @@
                 <span class="qa-icon text-green-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/></svg></span>
                 عرض التقارير
             </a>
-            <a href="#" class="acc-quick-action-btn bg-amber-50 border-amber-200 text-amber-800">
+            <a href="{{ route('finance.budgets.index') }}" class="acc-quick-action-btn bg-amber-50 border-amber-200 text-amber-800">
                 <span class="qa-icon text-amber-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M7 5.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2zm0 4a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2z"/></svg></span>
                 الموازنات
             </a>
-            <a href="#" class="acc-quick-action-btn bg-cyan-50 border-cyan-200 text-cyan-800">
-                <span class="qa-icon text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 15.5 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 12.5v-9zM1.5 3a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-13z"/><path d="M2 4.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/></svg></span>
-                قائمة التدفقات النقدية
+            <a href="{{ route('finance.tax-rates.index') }}" class="acc-quick-action-btn bg-cyan-50 border-cyan-200 text-cyan-800">
+                <span class="qa-icon text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/></svg></span>
+                ضرائب الدليل
             </a>
         </div>
     </div>
@@ -349,6 +349,33 @@
                 <div>
                     <p class="acc-bottom-card-title">التقارير المالية</p>
                     <p class="acc-bottom-card-sub">أقسام المحاسبة</p>
+                </div>
+            </div>
+            <span class="text-gray-400">←</span>
+        </a>
+    </div>
+
+    <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <a href="{{ route('finance.tax-rates.index') }}" class="acc-bottom-card">
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/></svg>
+                </div>
+                <div>
+                    <p class="acc-bottom-card-title">إعدادات الضرائب</p>
+                    <p class="acc-bottom-card-sub">ربط كل ضريبة بحساب خصوم في الدليل</p>
+                </div>
+            </div>
+            <span class="text-gray-400">←</span>
+        </a>
+        <a href="{{ route('finance.payment-method-accounts.edit') }}" class="acc-bottom-card">
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16"><path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 15.5 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 12.5v-9zM1.5 3a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-13z"/></svg>
+                </div>
+                <div>
+                    <p class="acc-bottom-card-title">وسائل الدفع والدليل</p>
+                    <p class="acc-bottom-card-sub">نقد، تحويل، شبكة — أصول نقدية</p>
                 </div>
             </div>
             <span class="text-gray-400">←</span>

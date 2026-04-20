@@ -18,10 +18,15 @@
                 <h1 class="flex items-center gap-2 text-2xl font-bold text-gray-900">الأصول الثابتة <x-info field="book_value" /></h1>
                 <p class="mt-1 text-sm text-gray-500">إدارة الأصول المالية والممتلكات</p>
             </div>
-            <a href="{{ route('finance.fixed-assets.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                <span class="text-base leading-none">+</span>
-                أصل جديد
-            </a>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('finance.fixed-assets.categories.index') }}" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+                    فئات الأصول
+                </a>
+                <a href="{{ route('finance.fixed-assets.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                    <span class="text-base leading-none">+</span>
+                    أصل جديد
+                </a>
+            </div>
         </div>
     </section>
 
@@ -70,7 +75,7 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3 font-medium text-gray-800">{{ $asset->asset_code }}</td>
                             <td class="px-4 py-3 text-gray-800">{{ $asset->name }}</td>
-                            <td class="px-4 py-3 text-gray-700">{{ $asset->categoryRef?->name_ar ?? $asset->category ?? '-' }}</td>
+                            <td class="px-4 py-3 text-gray-700">{{ $asset->fixedAssetCategory?->name_ar ?? $asset->category ?? '-' }}</td>
                             <td class="px-4 py-3 text-gray-700">{{ $asset->costCenter?->name ?? '-' }}</td>
                             <td class="px-4 py-3 text-gray-700">{{ optional($asset->acquisition_date)->format('Y-m-d') }}</td>
                             <td class="px-4 py-3 text-right font-medium text-gray-800">{{ erp_money($asset->acquisition_cost) }} SAR</td>

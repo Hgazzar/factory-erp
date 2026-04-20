@@ -56,12 +56,6 @@
 @endpush
 
 @section('content')
-@php
-    $ledgerBankOptions = collect($ledgerAccountOptions ?? [])->map(fn ($o) => [
-        'value' => $o['value'],
-        'label' => $o['label'],
-    ])->all();
-@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <h1 class="text-3xl font-bold text-gray-900">تعديل حساب بنكي</h1>
@@ -146,23 +140,22 @@
                     </select>
                     @error('currency') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
-                <div class="space-y-1 md:col-span-2">
-                    <label for="ledger_account_id-trigger" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
-                        <span>حساب الدليل المرتبط <span class="text-red-500">*</span></span>
-                        <x-info field="bank_ledger_account" />
-                    </label>
-                    <x-searchable-select
-                        name="ledger_account_id"
-                        id="ledger_account_id"
-                        :options="$ledgerBankOptions"
-                        :value="old('ledger_account_id', $account->ledger_account_id)"
-                        :required="true"
-                        :error="$errors->has('ledger_account_id')"
-                        empty-label="اختر حساباً من الأصول"
-                        placeholder="ابحث بالرمز أو اسم الحساب..."
-                    />
-                    @error('ledger_account_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                    <p class="text-xs text-gray-500">الرصيد المعروض في القائمة = الرصيد الافتتاحي لحساب الدليل + مجموع القيود على ذلك الحساب.</p>
+                <div class="space-y-2 md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p class="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
+                        <span>حساب الدليل المرتبط</span>
+                        <x-info field="bank_ledger_linked_readonly" />
+                    </p>
+                    @if($account->ledgerAccount)
+                        <p class="text-sm text-gray-800">
+                            <span class="font-mono text-gray-600">{{ $account->ledgerAccount->code }}</span>
+                            — {{ $account->ledgerAccount->name_ar }}
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            الرصيد في قائمة البنوك = الرصيد الافتتاحي لحساب الدليل + مجموع (مدين − دائن) من القيود.
+                        </p>
+                    @else
+                        <p class="text-xs text-amber-800">لا يوجد حساب دليل مرتبط بهذا السجل؛ راجع المسؤول لإصلاح الربط إن كان السجل قديماً.</p>
+                    @endif
                 </div>
             </div>
         </section>

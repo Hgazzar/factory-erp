@@ -69,7 +69,7 @@
                         <th scope="col" class="py-3 px-3 font-medium whitespace-nowrap hidden lg:table-cell"><span class="inline-flex items-center gap-1">الحد الائتماني <x-info field="sales.credit_limit" /></span></th>
                         <th scope="col" class="py-3 px-3 font-medium whitespace-nowrap hidden lg:table-cell"><span class="inline-flex items-center gap-1">الرصيد <x-info field="sales.customers_table_balance" /></span></th>
                         <th scope="col" class="py-3 px-3 font-medium whitespace-nowrap"><span class="inline-flex items-center gap-1">الحالة <x-info field="sales.customers_table_status" /></span></th>
-                        <th scope="col" class="sticky left-0 z-20 py-3 px-3 font-medium text-center whitespace-nowrap min-w-[4.5rem] bg-gray-50 shadow-[inset_1px_0_0_0_rgb(229_231_235)] border-gray-200"><span class="inline-flex items-center justify-center gap-1">الإجراءات <x-info field="sales.customers_table_actions" /></span></th>
+                        <th scope="col" class="sticky left-0 z-20 min-w-[4.5rem] whitespace-nowrap border-gray-200 bg-gray-50 px-3 py-3 text-center text-xs font-semibold text-gray-600 shadow-[inset_1px_0_0_0_rgb(229_231_235)]"><span class="inline-flex items-center justify-center gap-1"><x-info field="sales.customers_table_actions" /> الإجراءات</span></th>
                     </tr>
                 </thead>
                 <tbody>

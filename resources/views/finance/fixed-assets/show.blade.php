@@ -53,8 +53,8 @@
                 <dd class="text-sm font-semibold text-gray-900">{{ $asset->asset_code }}</dd>
             </div>
             <div>
-                <dt class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-500">التصنيف <x-info field="asset_category" /></dt>
-                <dd class="text-sm text-gray-800">{{ $asset->categoryRef?->name_ar ?? $asset->category ?? '—' }}</dd>
+                <dt class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-500">فئة الأصل <x-info field="fixed_asset_category_name" /></dt>
+                <dd class="text-sm text-gray-800">{{ $asset->fixedAssetCategory?->name_ar ?? $asset->category ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-500">مركز التكلفة <x-info field="cost_center" /></dt>
@@ -76,6 +76,50 @@
             </div>
         </dl>
     </section>
+
+    @if($asset->fixedAssetCategory)
+        <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 class="mb-6 flex items-center gap-2 text-lg font-bold text-gray-900">
+                حسابات الدليل المرتبطة بالفئة
+                <x-info field="fixed_asset_category_gl_preview" />
+            </h2>
+            <dl class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                    <dt class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-500"><x-info field="fixed_asset_category_col_asset" /> حساب الأصل</dt>
+                    <dd class="text-sm text-gray-800">
+                        @if($asset->fixedAssetCategory->ledgerAssetAccount)
+                            <span class="font-mono text-gray-600">{{ $asset->fixedAssetCategory->ledgerAssetAccount->code }}</span>
+                            — {{ $asset->fixedAssetCategory->ledgerAssetAccount->name_ar }}
+                        @else
+                            —
+                        @endif
+                    </dd>
+                </div>
+                <div>
+                    <dt class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-500"><x-info field="fixed_asset_category_col_dep_expense" /> مصروف الإهلاك</dt>
+                    <dd class="text-sm text-gray-800">
+                        @if($asset->fixedAssetCategory->ledgerDepreciationCostAccount)
+                            <span class="font-mono text-gray-600">{{ $asset->fixedAssetCategory->ledgerDepreciationCostAccount->code }}</span>
+                            — {{ $asset->fixedAssetCategory->ledgerDepreciationCostAccount->name_ar }}
+                        @else
+                            —
+                        @endif
+                    </dd>
+                </div>
+                <div class="md:col-span-2">
+                    <dt class="mb-1 flex items-center gap-1 text-xs font-medium text-gray-500"><x-info field="fixed_asset_category_col_acc_dep" /> مجمع الإهلاك</dt>
+                    <dd class="text-sm text-gray-800">
+                        @if($asset->fixedAssetCategory->ledgerAccumulatedDepreciationAccount)
+                            <span class="font-mono text-gray-600">{{ $asset->fixedAssetCategory->ledgerAccumulatedDepreciationAccount->code }}</span>
+                            — {{ $asset->fixedAssetCategory->ledgerAccumulatedDepreciationAccount->name_ar }}
+                        @else
+                            —
+                        @endif
+                    </dd>
+                </div>
+            </dl>
+        </section>
+    @endif
 
     <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h2 class="mb-6 text-lg font-bold text-gray-900">الاقتناء والقيمة</h2>

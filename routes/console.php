@@ -3,6 +3,7 @@
 use App\Models\Commission;
 use App\Models\Contract;
 use App\Models\Installment;
+use App\Models\Account;
 use App\Models\User;
 use App\Notifications\ContractReminderNotification;
 use App\Notifications\InstallmentDueNotification;
@@ -499,3 +500,45 @@ Artisan::command('demo:cleanup {--execute : Execute deletion (default is dry-run
 
 Schedule::command('contracts:create-draft-invoices')->daily();
 Schedule::command('system:scan-notifications')->everyFifteenMinutes();
+
+Artisan::command('accounts:rebuild-current-balance {--dry-run : Preview without updating rows}', function () {
+    $dryRun = (bool) $this->option('dry-run');
+    $updated = 0;
+
+    DB::transaction(function () use (&$updated, $dryRun) {
+        Account::withoutGlobalScopes()
+            ->select(['id', 'user_id', 'type', 'opening_balance'])
+            ->orderBy('id')
+            ->chunkById(500, function ($accounts) use (&$updated, $dryRun) {
+                foreach ($accounts as $account) {
+                    $sum = DB::table('journal_items')
+                        ->where('account_id', $account->id)
+                        ->selectRaw('COALESCE(SUM(debit),0) as d, COALESCE(SUM(credit),0) as c')
+                        ->first();
+
+                    $debit = (float) ($sum->d ?? 0);
+                    $credit = (float) ($sum->c ?? 0);
+                    $movement = $debit - $credit;
+                    $type = (string) ($account->type ?? '');
+                    $signedMovement = in_array($type, ['liability', 'revenue', 'equity'], true)
+                        ? -$movement
+                        : $movement;
+                    $current = (float) ($account->opening_balance ?? 0) + $signedMovement;
+
+                    if (! $dryRun) {
+                        Account::withoutGlobalScopes()
+                            ->where('id', $account->id)
+                            ->where('user_id', $account->user_id)
+                            ->update(['current_balance' => $current]);
+                    }
+
+                    $updated++;
+                }
+            });
+    });
+
+    $verb = $dryRun ? 'تمت المعاينة' : 'تم التحديث';
+    $this->info("{$verb} لعدد {$updated} حساب.");
+
+    return 0;
+})->purpose('Rebuild accounts.current_balance from opening balance and historical journal items');

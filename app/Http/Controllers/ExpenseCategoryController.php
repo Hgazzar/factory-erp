@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ExpenseCategory;
-use App\Models\FixedAsset;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -119,12 +118,6 @@ class ExpenseCategoryController extends Controller
             return redirect()
                 ->route('finance.expenses.categories.index')
                 ->with('error', 'لا يمكن حذف تصنيف مرتبط بمصروفات مسجّلة.');
-        }
-
-        if (FixedAsset::query()->where('category_id', $category->id)->exists()) {
-            return redirect()
-                ->route('finance.expenses.categories.index')
-                ->with('error', 'لا يمكن حذف تصنيف مرتبط بأصول ثابتة.');
         }
 
         $category->delete();

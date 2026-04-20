@@ -40,7 +40,7 @@
                                 <th>مخطط</th>
                                 <th>فعلي</th>
                                 <th>حالة</th>
-                                <th width="170">إجراءات</th>
+                                <th scope="col" class="text-center" style="width: 1%; white-space: nowrap;">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -99,28 +99,40 @@
                                             {{ $ps->actual_end_at?->format('H:i') ?? '--:--' }}
                                         </div>
                                     </td>
-                                    <td>
-                                        <div class="d-flex flex-column gap-1">
+                                    <td class="text-center align-middle">
+                                        @php $shiftMenuId = 'production-shift-actions-'.$ps->id; @endphp
+                                        <x-erp-actions-dropdown :menu-id="$shiftMenuId">
                                             @if($ps->status !== \App\Models\ProductionShift::STATUS_COMPLETED)
                                                 @if($ps->status !== \App\Models\ProductionShift::STATUS_IN_PROGRESS)
-                                                    <form action="{{ route('operations.shifts.start', $ps) }}" method="POST">
+                                                    <form action="{{ route('operations.shifts.start', $ps) }}" method="POST" class="m-0">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-sm btn-success w-100">
-                                                            بدء
+                                                        <button type="submit"
+                                                                class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-emerald-800 transition hover:bg-emerald-50"
+                                                                role="menuitem">
+                                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/></svg>
+                                                            </span>
+                                                            <span class="flex-1 leading-snug">بدء الوردية</span>
                                                         </button>
                                                     </form>
+                                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
                                                 @endif
-                                                <form action="{{ route('operations.shifts.complete', $ps) }}" method="POST"
+                                                <form action="{{ route('operations.shifts.complete', $ps) }}" method="POST" class="m-0"
                                                       onsubmit="return confirm('تأكيد إنهاء الوردية؟');">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
-                                                        إنهاء
+                                                    <button type="submit"
+                                                            class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-gray-50"
+                                                            role="menuitem">
+                                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M11.354 4.646a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
+                                                        </span>
+                                                        <span class="flex-1 leading-snug">إنهاء الوردية</span>
                                                     </button>
                                                 </form>
                                             @else
-                                                <span class="text-muted small">منتهية</span>
+                                                <p class="m-0 px-3 py-2.5 text-right text-xs text-gray-500" role="presentation">منتهية</p>
                                             @endif
-                                        </div>
+                                        </x-erp-actions-dropdown>
                                     </td>
                                 </tr>
                             @empty

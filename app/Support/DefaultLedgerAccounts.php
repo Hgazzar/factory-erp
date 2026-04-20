@@ -48,6 +48,18 @@ final class DefaultLedgerAccounts
     /** هالك وإتلاف (إنتاج) */
     public const CODE_SCRAP_EXPENSE = '6060';
 
+    /** مجموعة الأصول الثابتة في الدليل (أصول غير متداولة). */
+    public const CODE_FIXED_ASSETS_GROUP = '1500';
+
+    /** مجمع الإهلاك الافتراضي (رصيده سالب عادةً). */
+    public const CODE_ACCUMULATED_DEPRECIATION = '1510';
+
+    /** حساب أصل تفصيلي للترحيل الافتراضي تحت 1500. */
+    public const CODE_PPE_POSTING = '1590';
+
+    /** مصروف إهلاك افتراضي تحت مصروفات التشغيل. */
+    public const CODE_DEPRECIATION_EXPENSE = '6510';
+
     private static function tenantUserId(): int
     {
         return (int) (auth()->id() ?? 1);
@@ -56,14 +68,82 @@ final class DefaultLedgerAccounts
     /**
      * @param  array<string, mixed>  $attributes
      */
-    private static function firstOrCreateAccount(string $code, array $attributes): Account
+    private static function firstOrCreateAccount(string $code, array $attributes, ?int $userId = null): Account
     {
-        $uid = self::tenantUserId();
+        $uid = $userId ?? self::tenantUserId();
 
         return Account::withoutGlobalScopes()->firstOrCreate(
             ['code' => $code, 'user_id' => $uid],
             array_merge($attributes, ['user_id' => $uid])
         );
+    }
+
+    /**
+     * حساب أصل (تفصيلي) لترحيل تكلفة الأصول الثابتة الجديدة.
+     */
+    public static function fixedAssetPostingAccount(?int $userId = null): Account
+    {
+        $parent = self::firstOrCreateAccount(self::CODE_FIXED_ASSETS_GROUP, [
+            'name_ar' => 'الأصول الثابتة',
+            'name_en' => 'Fixed Assets',
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => null,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $userId);
+
+        return self::firstOrCreateAccount(self::CODE_PPE_POSTING, [
+            'name_ar' => 'أصول ثابتة — ترحيل',
+            'name_en' => 'Fixed Assets — Posting',
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => $parent->id,
+            'opening_balance' => 0,
+            'is_active' => true,
+            'allow_direct_posting' => true,
+        ], $userId);
+    }
+
+    /**
+     * حساب مجمع الإهلاك الافتراضي (أصل بالرصيد الدائن/السالب).
+     */
+    public static function accumulatedDepreciationAccount(?int $userId = null): Account
+    {
+        $parent = self::firstOrCreateAccount(self::CODE_FIXED_ASSETS_GROUP, [
+            'name_ar' => 'الأصول الثابتة',
+            'name_en' => 'Fixed Assets',
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => null,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $userId);
+
+        return self::firstOrCreateAccount(self::CODE_ACCUMULATED_DEPRECIATION, [
+            'name_ar' => 'مجمع الإهلاك',
+            'name_en' => 'Accumulated Depreciation',
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => $parent->id,
+            'opening_balance' => 0,
+            'is_active' => true,
+            'allow_direct_posting' => true,
+        ], $userId);
+    }
+
+    /**
+     * مصروف إهلاك افتراضي لربط فئات الأصول.
+     */
+    public static function depreciationExpenseAccount(?int $userId = null): Account
+    {
+        $parent = self::ensureOperatingExpensesRoot($userId);
+
+        return self::firstOrCreateAccount(self::CODE_DEPRECIATION_EXPENSE, [
+            'name_ar' => 'إهلاك الأصول الثابتة',
+            'name_en' => 'Depreciation Expense',
+            'type' => Account::TYPE_EXPENSE,
+            'parent_id' => $parent->id,
+            'opening_balance' => 0,
+            'is_active' => true,
+            'allow_direct_posting' => true,
+        ], $userId);
     }
 
     public static function ensureCurrentAssetsGroup(): Account
@@ -116,7 +196,7 @@ final class DefaultLedgerAccounts
         ]);
     }
 
-    public static function ensureOperatingExpensesRoot(): Account
+    public static function ensureOperatingExpensesRoot(?int $userId = null): Account
     {
         return self::firstOrCreateAccount(self::CODE_OPERATING_EXPENSES, [
             'name_ar' => 'مصروفات التشغيل',
@@ -125,7 +205,7 @@ final class DefaultLedgerAccounts
             'parent_id' => null,
             'opening_balance' => 0,
             'is_active' => true,
-        ]);
+        ], $userId);
     }
 
     public static function cashOnHand(): Account

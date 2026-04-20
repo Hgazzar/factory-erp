@@ -56,12 +56,6 @@
 @endpush
 
 @section('content')
-@php
-    $ledgerBankOptions = collect($ledgerAccountOptions ?? [])->map(fn ($o) => [
-        'value' => $o['value'],
-        'label' => $o['label'],
-    ])->all();
-@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <h1 class="text-3xl font-bold text-gray-900">إضافة حساب بنكي</h1>
@@ -145,23 +139,14 @@
                     </select>
                     @error('currency') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
-                <div class="space-y-1 md:col-span-2">
-                    <label for="ledger_account_id-trigger" class="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
-                        <span>حساب الدليل المرتبط <span class="text-red-500">*</span></span>
-                        <x-info field="bank_ledger_account" />
-                    </label>
-                    <x-searchable-select
-                        name="ledger_account_id"
-                        id="ledger_account_id"
-                        :options="$ledgerBankOptions"
-                        :value="old('ledger_account_id')"
-                        :required="true"
-                        :error="$errors->has('ledger_account_id')"
-                        empty-label="اختر حساباً من الأصول"
-                        placeholder="ابحث بالرمز أو اسم الحساب..."
-                    />
-                    @error('ledger_account_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                    <p class="text-xs text-gray-500">يُعرض رصيد البنك من <strong>الرصيد الافتتاحي + القيود</strong> على هذا الحساب في دليل الحسابات (لا يُخزَّن رصيد منفصل هنا).</p>
+                <div class="space-y-2 md:col-span-2 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+                    <p class="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
+                        <span>ربط دليل الحسابات</span>
+                        <x-info field="bank_ledger_auto" />
+                    </p>
+                    <p class="text-xs leading-relaxed text-gray-600">
+                        عند الحفظ يُنشأ حساب فرعي تلقائياً تحت مجموعة البنوك في الدليل ويُربط بهذا الحساب البنكي؛ رصيد البنك في القائمة يُحسب من حركة ذلك الحساب (افتتاحي + قيود).
+                    </p>
                 </div>
             </div>
         </section>

@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\Customer;
 use App\Models\JournalEntry;
 use App\Models\JournalItem;
+use App\Models\PaymentMethodAccount;
 use App\Models\SalesInvoice;
 use App\Models\SalesPayment;
 use App\Models\Installment;
 use App\Models\SalesPaymentInvoice;
+use App\Services\InvoicePaymentRecordingService;
 use App\Support\DefaultLedgerAccounts;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -137,11 +140,18 @@ class SalesPaymentWebController extends Controller
         }
 
         DB::transaction(function () use ($data, $amount, $allocations, $user, $uid) {
-            $debitAccount = $data['payment_method'] === 'cash'
-                ? DefaultLedgerAccounts::cashOnHand()
-                : DefaultLedgerAccounts::bankMain();
+            PaymentMethodAccount::ensureDefaultsForUser($uid);
+            $ledgerId = PaymentMethodAccount::ledgerAccountIdForMethod($uid, $data['payment_method']);
+            $debitAccount = $ledgerId
+                ? Account::withoutGlobalScopes()->where('user_id', $uid)->whereKey($ledgerId)->first()
+                : null;
+            if (! $debitAccount) {
+                $debitAccount = $data['payment_method'] === 'cash'
+                    ? DefaultLedgerAccounts::cashOnHand()
+                    : DefaultLedgerAccounts::bankMain();
+            }
 
-            $customersAccount = DefaultLedgerAccounts::accountsReceivable();
+            $customersAccount = app(InvoicePaymentRecordingService::class)->resolveDefaultReceivableAccount($uid);
 
             $entry = JournalEntry::create([
                 'user_id' => $uid,
@@ -151,10 +161,17 @@ class SalesPaymentWebController extends Controller
                 'total' => $amount,
             ]);
 
+            $debitDescription = match ($data['payment_method']) {
+                'cash' => 'تحصيل نقدي من العميل',
+                'transfer' => 'تحصيل بنكي من العميل',
+                'card' => 'تحصيل شبكة/بطاقة من العميل',
+                default => 'تحصيل من العميل',
+            };
+
             JournalItem::create([
                 'journal_entry_id' => $entry->id,
                 'account_id' => $debitAccount->id,
-                'description' => $data['payment_method'] === 'cash' ? 'تحصيل نقدي من العميل' : 'تحصيل بنكي من العميل',
+                'description' => $debitDescription,
                 'debit' => $amount,
                 'credit' => 0,
             ]);

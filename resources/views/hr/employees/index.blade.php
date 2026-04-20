@@ -31,7 +31,7 @@
                         <th style="width: 110px;" class="text-end">الراتب</th>
                         <th style="width: 120px;">الدور</th>
                         <th style="width: 120px;">التعيين</th>
-                        <th style="width: 120px;">الإجراءات</th>
+                        <th scope="col" class="text-center" style="width: 1%; white-space: nowrap;">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -65,10 +65,18 @@
                                 @endif
                             </td>
                             <td>{{ ($employee->hire_date ?? $employee->hired_at)?->format('Y-m-d') ?? '—' }}</td>
-                            <td>
-                                <a href="{{ route('hr.employees.edit', $employee) }}" class="btn btn-sm btn-outline-primary rounded-lg">
-                                    تعديل
-                                </a>
+                            <td class="text-center align-middle">
+                                @php $empMenuId = 'hr-emp-actions-'.$employee->id; @endphp
+                                <x-erp-actions-dropdown :menu-id="$empMenuId">
+                                    <a href="{{ route('hr.employees.edit', $employee) }}"
+                                       class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50 text-decoration-none"
+                                       role="menuitem">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
+                                        </span>
+                                        <span class="flex-1 text-right font-medium leading-snug">تعديل الموظف</span>
+                                    </a>
+                                </x-erp-actions-dropdown>
                             </td>
                         </tr>
                     @empty

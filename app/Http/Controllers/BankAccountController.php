@@ -6,6 +6,7 @@ use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\Cheque;
 use App\Models\Payment;
+use App\Support\DefaultLedgerAccounts;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,24 +41,25 @@ class BankAccountController extends Controller
 
     public function create(): View
     {
-        return view('finance.bank-accounts.create', [
-            'ledgerAccountOptions' => $this->ledgerAccountSelectOptions(),
-        ]);
+        return view('finance.bank-accounts.create');
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate($this->rules());
+        $uid = (int) $request->user()->id;
 
-        DB::transaction(function () use ($request, $data): void {
+        DB::transaction(function () use ($request, $data, $uid): void {
+            $ledger = $this->createLedgerAccountForBank($uid, (string) $data['bank_name'], (string) $data['account_number']);
+
             BankAccount::query()->create([
-                'user_id' => (int) $request->user()->id,
+                'user_id' => $uid,
                 'bank_name' => $data['bank_name'],
                 'branch_name' => $data['branch_name'] ?? null,
                 'account_number' => $data['account_number'],
                 'iban' => $data['iban'] ?? null,
                 'currency' => $data['currency'],
-                'ledger_account_id' => (int) $data['ledger_account_id'],
+                'ledger_account_id' => $ledger->id,
                 'opening_balance' => 0,
                 'status' => $data['status'],
                 'created_by' => $request->user()?->id,
@@ -66,15 +68,14 @@ class BankAccountController extends Controller
 
         return redirect()
             ->route('finance.bank-accounts.index')
-            ->with('success', 'تم إنشاء الحساب البنكي بنجاح.');
+            ->with('success', 'تم إنشاء الحساب البنكي وحسابه في الدليل تلقائياً.');
     }
 
     public function edit(BankAccount $bankAccount): View
     {
-        return view('finance.bank-accounts.edit', [
-            'account' => $bankAccount,
-            'ledgerAccountOptions' => $this->ledgerAccountSelectOptions(),
-        ]);
+        $bankAccount->load(['ledgerAccount:id,code,name_ar,name_en']);
+
+        return view('finance.bank-accounts.edit', ['account' => $bankAccount]);
     }
 
     public function update(Request $request, BankAccount $bankAccount): RedirectResponse
@@ -88,9 +89,10 @@ class BankAccountController extends Controller
                 'account_number' => $data['account_number'],
                 'iban' => $data['iban'] ?? null,
                 'currency' => $data['currency'],
-                'ledger_account_id' => (int) $data['ledger_account_id'],
                 'status' => $data['status'],
             ]);
+
+            $this->syncLinkedLedgerAccountLabels($bankAccount->fresh());
         });
 
         return redirect()
@@ -104,6 +106,10 @@ class BankAccountController extends Controller
             ->where('bank_name', $bankAccount->bank_name)
             ->exists();
 
+        $hasLinkedPayments = Payment::query()
+            ->where('bank_account_id', $bankAccount->id)
+            ->exists();
+
         $hasLinkedExpenses = Payment::query()
             ->where('type', 'expense')
             ->whereIn('payment_method', ['bank', 'check'])
@@ -114,7 +120,7 @@ class BankAccountController extends Controller
             })
             ->exists();
 
-        if ($hasLinkedCheques || $hasLinkedExpenses) {
+        if ($hasLinkedCheques || $hasLinkedPayments || $hasLinkedExpenses) {
             return redirect()
                 ->route('finance.bank-accounts.index')
                 ->with('error', 'لا يمكن حذف الحساب لوجود عمليات مالية مرتبطة به، يمكنك تعطيله بدلاً من ذلك.');
@@ -149,39 +155,73 @@ class BankAccountController extends Controller
                 Rule::unique('bank_accounts', 'iban')->where('user_id', $uid)->ignore($ignoreId),
             ],
             'currency' => ['required', 'string', 'size:3'],
-            'ledger_account_id' => [
-                'required',
-                'integer',
-                Rule::exists('accounts', 'id')->where(function ($q) use ($uid): void {
-                    $q->where('user_id', $uid)->where('type', Account::TYPE_ASSET);
-                }),
-                Rule::unique('bank_accounts', 'ledger_account_id')->where('user_id', $uid)->ignore($ignoreId),
-            ],
             'status' => ['required', 'in:active,inactive'],
         ];
     }
 
     /**
-     * @return list<array{value:int,label:string}>
+     * الحساب الأب لفرع كل بنك: من الإعدادات (افتراضي 1020) أو إنشاء شجرة البنك القياسية.
      */
-    private function ledgerAccountSelectOptions(): array
+    private function resolveBankLedgerParent(int $userId): Account
     {
-        $uid = (int) auth()->id();
+        $code = trim((string) config('accounting.bank_ledger_parent_code', '1020'));
 
-        return Account::query()
-            ->where('user_id', $uid)
-            ->where('type', Account::TYPE_ASSET)
-            ->where(function ($q): void {
-                $q->where('is_active', true)
-                    ->orWhereNull('is_active');
-            })
-            ->orderBy('code')
-            ->get(['id', 'code', 'name_ar', 'name_en'])
-            ->map(fn (Account $a) => [
-                'value' => (int) $a->id,
-                'label' => trim($a->code.' — '.(string) ($a->name_ar ?: $a->name_en ?: '')),
-            ])
-            ->values()
-            ->all();
+        $parent = Account::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('code', $code)
+            ->first();
+
+        if ($parent) {
+            return $parent;
+        }
+
+        return DefaultLedgerAccounts::bankMain();
+    }
+
+    /**
+     * إنشاء حساب أصول فرعي تحت مجموعة البنوك وربطه لاحقاً بسجل bank_accounts.
+     */
+    private function createLedgerAccountForBank(int $userId, string $bankName, string $accountNumber): Account
+    {
+        $parent = $this->resolveBankLedgerParent($userId);
+        $code = Account::generateNextNumericCodeForUser($userId, (int) $parent->id);
+
+        $labelAr = 'بنك — '.trim($bankName).' ('.trim($accountNumber).')';
+
+        return Account::withoutGlobalScopes()->create([
+            'user_id' => $userId,
+            'code' => $code,
+            'name_ar' => $labelAr,
+            'name_en' => 'Bank — '.trim($bankName),
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => $parent->id,
+            'opening_balance' => 0,
+            'is_active' => true,
+            'is_bank' => true,
+            'allow_direct_posting' => true,
+        ]);
+    }
+
+    private function syncLinkedLedgerAccountLabels(BankAccount $bank): void
+    {
+        if (! $bank->ledger_account_id) {
+            return;
+        }
+
+        $ledger = Account::withoutGlobalScopes()
+            ->where('user_id', $bank->user_id)
+            ->whereKey($bank->ledger_account_id)
+            ->first();
+
+        if (! $ledger) {
+            return;
+        }
+
+        $labelAr = 'بنك — '.trim((string) $bank->bank_name).' ('.trim((string) $bank->account_number).')';
+
+        $ledger->update([
+            'name_ar' => $labelAr,
+            'name_en' => 'Bank — '.trim((string) $bank->bank_name),
+        ]);
     }
 }

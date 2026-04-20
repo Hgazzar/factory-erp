@@ -15,7 +15,7 @@ class FixedAsset extends Model
         'asset_code',
         'name',
         'name_ar',
-        'category_id',
+        'fixed_asset_category_id',
         'cost_center_id',
         'ledger_account_id',
         'payment_method',
@@ -55,9 +55,9 @@ class FixedAsset extends Model
         ];
     }
 
-    public function categoryRef(): BelongsTo
+    public function fixedAssetCategory(): BelongsTo
     {
-        return $this->belongsTo(ExpenseCategory::class, 'category_id');
+        return $this->belongsTo(FixedAssetCategory::class, 'fixed_asset_category_id');
     }
 
     public function costCenter(): BelongsTo

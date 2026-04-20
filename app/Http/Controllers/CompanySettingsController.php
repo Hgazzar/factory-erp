@@ -2,26 +2,68 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Account;
 use App\Models\CompanySetting;
+use App\Support\AccountingLedgerOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CompanySettingsController extends Controller
 {
     public function edit(): View
     {
+        $uid = (int) auth()->id();
         $setting = CompanySetting::first() ?? new CompanySetting;
-        return view('settings.company', compact('setting'));
+
+        $receivableOpts = $this->mergeAccountOption(
+            AccountingLedgerOptions::receivableAssetAccountsForUser($uid),
+            $uid,
+            (int) ($setting->default_receivable_account_id ?? 0)
+        );
+        $payableOpts = $this->mergeAccountOption(
+            AccountingLedgerOptions::payableLiabilityAccountsForUser($uid),
+            $uid,
+            (int) ($setting->default_payable_account_id ?? 0)
+        );
+        $purchaseDiscOpts = $this->mergeAccountOption(
+            AccountingLedgerOptions::expenseAccountsForUser($uid),
+            $uid,
+            (int) ($setting->purchase_discount_ledger_account_id ?? 0)
+        );
+        $salesDiscOpts = $this->mergeAccountOption(
+            AccountingLedgerOptions::revenueLeafAccountsForUser($uid),
+            $uid,
+            (int) ($setting->sales_allowed_discount_ledger_account_id ?? 0)
+        );
+
+        return view('settings.company', compact(
+            'setting',
+            'receivableOpts',
+            'payableOpts',
+            'purchaseDiscOpts',
+            'salesDiscOpts'
+        ));
     }
 
     public function update(Request $request): RedirectResponse
     {
+        $uid = (int) auth()->id();
+        $recvIds = collect(AccountingLedgerOptions::receivableAssetAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
+        $payIds = collect(AccountingLedgerOptions::payableLiabilityAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
+        $expIds = collect(AccountingLedgerOptions::expenseAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
+        $revIds = collect(AccountingLedgerOptions::revenueLeafAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
+
         $data = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
             'tax_number' => ['nullable', 'string', 'max:100'],
             'default_vat_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+            'default_receivable_account_id' => ['required', 'integer', Rule::in($recvIds)],
+            'default_payable_account_id' => ['required', 'integer', Rule::in($payIds)],
+            'purchase_discount_ledger_account_id' => ['required', 'integer', Rule::in($expIds)],
+            'sales_allowed_discount_ledger_account_id' => ['required', 'integer', Rule::in($revIds)],
             'commercial_register' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string', 'max:500'],
             'logo_url' => ['nullable', 'string', 'max:500'],
@@ -29,13 +71,17 @@ class CompanySettingsController extends Controller
         ]);
 
         $setting = CompanySetting::first();
-        if (!$setting) {
+        if (! $setting) {
             $setting = new CompanySetting;
         }
 
         $setting->name = $data['name'] ?? null;
         $setting->tax_number = $data['tax_number'] ?? null;
         $setting->default_vat_percent = (float) $data['default_vat_percent'];
+        $setting->default_receivable_account_id = (int) $data['default_receivable_account_id'];
+        $setting->default_payable_account_id = (int) $data['default_payable_account_id'];
+        $setting->purchase_discount_ledger_account_id = (int) $data['purchase_discount_ledger_account_id'];
+        $setting->sales_allowed_discount_ledger_account_id = (int) $data['sales_allowed_discount_ledger_account_id'];
         $setting->commercial_register = $data['commercial_register'] ?? null;
         $setting->address = $data['address'] ?? null;
 
@@ -57,5 +103,29 @@ class CompanySettingsController extends Controller
         return redirect()
             ->route('settings.company.edit')
             ->with('success', 'تم حفظ إعدادات المنشأة بنجاح.');
+    }
+
+    /**
+     * @param  list<array{value: int, label: string}>  $options
+     * @return list<array{value: int, label: string}>
+     */
+    private function mergeAccountOption(array $options, int $userId, int $accountId): array
+    {
+        if ($accountId <= 0) {
+            return $options;
+        }
+        $col = collect($options);
+        if ($col->contains('value', $accountId)) {
+            return $options;
+        }
+        $acc = Account::query()->where('user_id', $userId)->whereKey($accountId)->first(['id', 'code', 'name_ar', 'name_en']);
+        if ($acc) {
+            $col->push([
+                'value' => $acc->id,
+                'label' => trim($acc->code.' — '.($acc->name_ar ?: $acc->name_en)),
+            ]);
+        }
+
+        return $col->values()->all();
     }
 }

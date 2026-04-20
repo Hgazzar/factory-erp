@@ -11,13 +11,16 @@ use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
 use App\Models\Supplier;
 use App\Models\Warehouse;
+use App\Models\SalesPayment;
 use App\Services\ExcelImportService;
+use App\Services\InvoicePaymentRecordingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use RuntimeException;
 
 class PurchaseInvoiceWebController extends Controller
 {
@@ -78,6 +81,11 @@ class PurchaseInvoiceWebController extends Controller
             ->orderBy('name')
             ->get(['id', 'code', 'name', 'name_ar']);
 
+        $invoicePaymentMethodOptions = collect(SalesPayment::paymentMethodLabels())
+            ->map(fn (string $label, string $key) => ['value' => $key, 'label' => $label])
+            ->values()
+            ->all();
+
         return view('purchases.invoices.index', compact(
             'invoices',
             'totalDue',
@@ -85,8 +93,40 @@ class PurchaseInvoiceWebController extends Controller
             'overdueCount',
             'dueThisWeek',
             'totalPaid',
-            'suppliers'
+            'suppliers',
+            'invoicePaymentMethodOptions'
         ));
+    }
+
+    public function recordPayment(Request $request, PurchaseInvoice $invoice): RedirectResponse
+    {
+        $uid = (int) auth()->id();
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'date' => ['required', 'date'],
+            'payment_method' => ['required', 'in:cash,transfer,card'],
+            'reference' => ['nullable', 'string', 'max:50'],
+        ], [
+            'amount.required' => 'أدخل مبلغ الدفعة.',
+            'payment_method.required' => 'اختر وسيلة الدفع.',
+        ]);
+
+        try {
+            app(InvoicePaymentRecordingService::class)->recordPurchaseInvoicePayment(
+                $invoice,
+                (float) $data['amount'],
+                $data['date'],
+                $data['payment_method'],
+                $uid,
+                $data['reference'] ?? null,
+            );
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('purchases.invoices.index')
+            ->with('success', 'تم تسجيل الدفعة وإنشاء القيد المحاسبي بنجاح.');
     }
 
     public function create(): View

@@ -9,6 +9,7 @@ use App\Models\CompanySetting;
 use App\Models\CostCenter;
 use App\Models\ExpenseCategory;
 use App\Models\FixedAsset;
+use App\Models\FixedAssetCategory;
 use App\Models\JournalEntry;
 use App\Models\JournalItem;
 use App\Models\Payment;
@@ -760,22 +761,21 @@ class ExpenseController extends Controller
 
         $code = $this->nextFixedAssetCode();
         $name = $expense->reference ?: ('أصل رأسمالي من مصروف '.$expense->expense_number);
-        $categoryName = ExpenseCategory::query()
-            ->whereKey($expense->expense_category_id)
-            ->value('name_ar') ?? 'غير مصنف';
+        $uid = (int) $expense->user_id;
+        $fac = FixedAssetCategory::ensureDefaultForUser($uid);
 
         return FixedAsset::query()->create([
             'asset_code' => $code,
             'name' => $name,
             'name_ar' => $name,
-            'category_id' => $expense->expense_category_id,
+            'fixed_asset_category_id' => $fac->id,
             'cost_center_id' => $expense->cost_center_id,
-            'ledger_account_id' => $assetAccount->id,
+            'ledger_account_id' => (int) $fac->ledger_asset_account_id,
             'payment_method' => $expense->payment_method ?? 'cash',
             'bank_account_id' => $expense->bank_account_id,
             'journal_entry_id' => $journalEntryId,
             'source_payment_id' => $expense->id,
-            'category' => $categoryName,
+            'category' => $fac->name_ar,
             'description' => $expense->notes,
             'acquisition_date' => $expense->date,
             'acquisition_cost' => $cost,

@@ -28,8 +28,25 @@
         'value' => $s->id,
         'label' => trim((string) ($s->code !== '' && $s->code !== null ? $s->code.' — ' : '').(string) ($s->name_ar ?? $s->name ?? '')),
     ])->values()->all();
+    $invoicePaymentMethodOptions = $invoicePaymentMethodOptions ?? [];
 @endphp
 <div class="max-w-full" dir="rtl">
+
+    @if(session('error'))
+        <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ session('error') }}</div>
+    @endif
+    @if(session('success'))
+        <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="alert">{{ session('success') }}</div>
+    @endif
+    @if($errors->any())
+        <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            <ul class="m-0 list-disc pr-5 space-y-1">
+                @foreach($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-3">
@@ -140,6 +157,12 @@
                         <th class="py-3 px-4 font-medium text-gray-600">الإجمالي</th>
                         <th class="py-3 px-4 font-medium text-gray-600">الرصيد المستحق</th>
                         <th class="py-3 px-4 font-medium text-gray-600">الحالة</th>
+                        <th scope="col" class="w-[1%] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-gray-600">
+                            <span class="inline-flex items-center justify-center gap-1">
+                                <x-info field="procurement.purchase_invoice_list_actions" />
+                                الإجراءات
+                            </span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -162,10 +185,24 @@
                                 <span class="inv-badge inv-badge-draft">{{ $inv->status_label }}</span>
                             @endif
                         </td>
+                        <td class="px-4 py-3 text-center align-middle">
+                            @php
+                                $canRecordPi = $inv->status !== \App\Models\PurchaseInvoice::STATUS_DRAFT && $inv->balance > 0.0001;
+                            @endphp
+                            <x-erp-actions-dropdown :menu-id="'pi-inv-'.$inv->id">
+                                @if($canRecordPi)
+                                    <button type="button" role="menuitem" class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm text-gray-800 transition hover:bg-gray-50" data-bs-toggle="modal" data-bs-target="#purchaseInvoiceRecordPaymentModal" data-invoice-id="{{ $inv->id }}" data-balance="{{ number_format($inv->balance, 2, '.', '') }}">
+                                        تسجيل دفعة
+                                    </button>
+                                @else
+                                    <span class="erp-menu-item block px-3 py-2.5 text-right text-xs text-gray-400">لا يتوفر إجراء</span>
+                                @endif
+                            </x-erp-actions-dropdown>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="py-12 text-center">
+                        <td colspan="8" class="py-12 text-center">
                             <p class="text-gray-500 font-medium">لا توجد فواتير</p>
                             <p class="text-sm text-gray-400 mt-1">يمكنك إنشاء فاتورة جديدة باستخدام الزر أعلاه.</p>
                         </td>
@@ -233,5 +270,88 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="purchaseInvoiceRecordPaymentModal" tabindex="-1" aria-labelledby="purchaseInvoiceRecordPaymentModalLabel" aria-hidden="true" dir="rtl">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-2xl border border-gray-200 shadow-xl">
+                <div class="modal-header border-b border-gray-100">
+                    <h5 class="modal-title text-base font-semibold text-gray-900" id="purchaseInvoiceRecordPaymentModalLabel">تسجيل دفعة</h5>
+                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <form id="purchaseInvoiceRecordPaymentForm" method="POST" action="">
+                    @csrf
+                    <div class="modal-body space-y-4 text-sm text-gray-800">
+                        <p class="m-0 inline-flex flex-wrap items-center gap-1.5 text-xs leading-relaxed text-gray-600">
+                            <span>سجّل دفعة المورد على الفاتورة؛ يُنشئ النظام القيد تلقائياً.</span>
+                            <x-info field="procurement.purchase_invoice_record_payment_intro" />
+                        </p>
+                        <div class="space-y-1">
+                            <label class="inline-flex items-center gap-1 text-xs font-medium text-gray-700">
+                                <span>المبلغ <span class="text-red-500" aria-hidden="true">*</span></span>
+                                <x-info field="procurement.purchase_invoice_record_payment_amount" />
+                            </label>
+                            <input type="number" name="amount" step="0.01" min="0.01" required class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="inline-flex items-center gap-1 text-xs font-medium text-gray-700">
+                                <span>التاريخ <span class="text-red-500" aria-hidden="true">*</span></span>
+                                <x-info field="procurement.purchase_invoice_record_payment_date" />
+                            </label>
+                            <input type="date" name="date" required class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="inline-flex items-center gap-1 text-xs font-medium text-gray-700">
+                                <span>وسيلة الدفع <span class="text-red-500" aria-hidden="true">*</span></span>
+                                <x-info field="procurement.purchase_invoice_record_payment_method" />
+                            </label>
+                            <x-searchable-select
+                                name="payment_method"
+                                id="purchase_invoice_record_payment_method"
+                                :options="$invoicePaymentMethodOptions"
+                                value="cash"
+                                :required="true"
+                                :empty-option="false"
+                                in-modal="true"
+                                placeholder="اختر وسيلة الدفع…"
+                                class="[&_button]:min-h-[2.75rem] [&_button]:text-sm"
+                            />
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-gray-700">المرجع (اختياري)</label>
+                            <input type="text" name="reference" maxlength="50" class="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-t border-gray-100 flex items-center justify-between gap-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">حفظ الدفعة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const el = document.getElementById('purchaseInvoiceRecordPaymentModal');
+    const form = document.getElementById('purchaseInvoiceRecordPaymentForm');
+    const base = @json(rtrim(url('/purchases/invoices'), '/'));
+    el?.addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        if (!btn || !form) return;
+        const id = btn.getAttribute('data-invoice-id');
+        if (!id) return;
+        form.action = base + '/' + id + '/record-payment';
+        const amt = form.querySelector('[name="amount"]');
+        if (amt) amt.value = btn.getAttribute('data-balance') || '';
+        const dt = form.querySelector('[name="date"]');
+        if (dt) dt.value = new Date().toISOString().slice(0, 10);
+        const ref = form.querySelector('[name="reference"]');
+        if (ref) ref.value = '';
+        window.dispatchEvent(new CustomEvent('erp-sync-searchable', { detail: { id: 'purchase_invoice_record_payment_method', value: 'cash' } }));
+    });
+});
+</script>
+@endpush

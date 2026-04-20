@@ -154,9 +154,11 @@ class JournalEntryWebController extends Controller
             ->with('success', 'تم حفظ القيد المحاسبي بنجاح.');
     }
 
-    public function show(JournalEntry $journal): RedirectResponse
+    public function show(JournalEntry $journal): View
     {
-        return redirect()->route('finance.journals.edit', $journal);
+        $journal->load(['items.account', 'attachments']);
+
+        return view('finance.journals.show', ['entry' => $journal]);
     }
 
     public function edit(JournalEntry $journal): View

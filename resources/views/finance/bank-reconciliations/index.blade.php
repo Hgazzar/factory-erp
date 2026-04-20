@@ -115,7 +115,12 @@
                             <th class="px-4 py-3 text-right">الرصيد <x-info field="bank_reconciliation_statement_balance" /></th>
                             <th class="px-4 py-3 text-right">الفرق <x-info field="bank_reconciliation_difference" /></th>
                             <th class="px-4 py-3 text-right">الحالة <x-info field="bank_reconciliation_status" /></th>
-                            <th class="px-4 py-3 text-right">إجراءات <x-info field="bank_reconciliation_actions" /></th>
+                            <th scope="col" class="w-[1%] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-gray-500">
+                                <span class="inline-flex items-center justify-center gap-1">
+                                    <x-info field="bank_reconciliation_actions" />
+                                    إجراءات
+                                </span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -137,10 +142,11 @@
                                         <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">معلق</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3">
-                                    <button type="button" class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                                        إجراءات
-                                    </button>
+                                <td class="px-4 py-3 text-center align-middle">
+                                    @php $recMenuId = 'bank-reconciliation-actions-'.$reconciliation->id; @endphp
+                                    <x-erp-actions-dropdown :menu-id="$recMenuId">
+                                        <p class="m-0 px-3 py-2.5 text-right text-xs leading-relaxed text-gray-500" role="presentation">لا توجد إجراءات على السجل حالياً.</p>
+                                    </x-erp-actions-dropdown>
                                 </td>
                             </tr>
                         @empty

@@ -141,7 +141,7 @@
                         <th class="py-3 px-4 font-medium"><x-info field="sales.quotation_valid_until" /> صالح حتى</th>
                         <th class="py-3 px-4 font-medium"><x-info field="sales.quotation_total" /> الإجمالي</th>
                         <th class="py-3 px-4 font-medium"><x-info field="sales.quotation_status" /> الحالة</th>
-                        <th class="py-3 px-4 font-medium text-center w-[1%] whitespace-nowrap"><x-info field="sales.quotation_actions" /> الإجراءات</th>
+                        <th scope="col" class="w-[1%] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-gray-600"><span class="inline-flex items-center justify-center gap-1"><x-info field="sales.quotation_actions" /> الإجراءات</span></th>
                     </tr>
                 </thead>
                 <tbody>

@@ -26,11 +26,13 @@ use App\Http\Controllers\EinvoiceSettingsController;
 use App\Http\Controllers\EmployeeWebController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\FixedAssetCategoryController;
 use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\HRDashboardController;
 use App\Http\Controllers\InstallmentWebController;
 use App\Http\Controllers\InventoryDashboardController;
 use App\Http\Controllers\ItemBomController;
+use App\Http\Controllers\ItemCategoryController;
 use App\Http\Controllers\ItemWebController;
 use App\Http\Controllers\JournalEntryWebController;
 use App\Http\Controllers\LedgerWebController;
@@ -38,6 +40,7 @@ use App\Http\Controllers\MachineWebController;
 use App\Http\Controllers\NotificationWebController;
 use App\Http\Controllers\OperationsDashboardController;
 use App\Http\Controllers\OperationsShiftController;
+use App\Http\Controllers\PaymentMethodAccountController;
 use App\Http\Controllers\PaymentWebController;
 use App\Http\Controllers\ProcurementDashboardController;
 use App\Http\Controllers\ProductionEntryWebController;
@@ -64,6 +67,7 @@ use App\Http\Controllers\ServicesDashboardController;
 use App\Http\Controllers\StatementReportWebController;
 use App\Http\Controllers\StockInController;
 use App\Http\Controllers\SupplierWebController;
+use App\Http\Controllers\TaxRateController;
 use App\Http\Controllers\TaxReportWebController;
 use App\Http\Controllers\TechnicianServiceOrderController;
 use App\Http\Controllers\TrialBalanceController;
@@ -208,6 +212,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Inventory Management
     Route::prefix('inventory')->name('inventory.')->group(function () {
         Route::get('/', [InventoryDashboardController::class, 'index'])->name('dashboard');
+        Route::resource('item-categories', ItemCategoryController::class)->except(['show']);
         Route::resource('transfers', \App\Http\Controllers\StockTransferController::class);
         Route::get('transfers/items-by-warehouse', [\App\Http\Controllers\StockTransferController::class, 'itemsByWarehouse'])->name('transfers.items-by-warehouse');
         Route::resource('adjustments', \App\Http\Controllers\StockAdjustmentController::class);
@@ -275,9 +280,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::resource('expenses', ExpenseController::class);
 
         // الأصول الثابتة، مراكز التكلفة، والحسابات البنكية
+        Route::resource('fixed-assets/categories', FixedAssetCategoryController::class)->names('fixed-assets.categories');
         Route::resource('fixed-assets', FixedAssetController::class);
         Route::resource('cost-centers', CostCenterController::class);
         Route::resource('bank-accounts', BankAccountController::class);
+        Route::resource('tax-rates', TaxRateController::class)->except(['show']);
+        Route::get('payment-method-accounts/edit', [PaymentMethodAccountController::class, 'edit'])->name('payment-method-accounts.edit');
+        Route::put('payment-method-accounts', [PaymentMethodAccountController::class, 'update'])->name('payment-method-accounts.update');
 
         // إشعارات الخصم والإضافة
         Route::post('credit-notes/{creditNote}/approve', [CreditNoteController::class, 'approve'])->name('credit-notes.approve');
@@ -335,6 +344,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('receive-notes/import', [ReceiveNoteWebController::class, 'import'])->name('receive-notes.import');
         Route::get('invoices/import/template', [PurchaseInvoiceWebController::class, 'importTemplate'])->name('invoices.import-template');
         Route::post('invoices/import', [PurchaseInvoiceWebController::class, 'import'])->name('invoices.import');
+        Route::post('invoices/{invoice}/record-payment', [PurchaseInvoiceWebController::class, 'recordPayment'])->name('invoices.record-payment');
         Route::resource('invoices', PurchaseInvoiceWebController::class)->only(['index', 'create', 'store']);
         Route::get('returns/invoices-by-supplier', [PurchaseReturnWebController::class, 'invoicesBySupplier'])->name('returns.invoices-by-supplier');
         Route::get('returns/invoice-items/{invoice}', [PurchaseReturnWebController::class, 'invoiceItems'])->name('returns.invoice-items');
@@ -378,6 +388,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('quotations/{quotation}/print', [SalesQuotationWebController::class, 'print'])->name('quotations.print');
         Route::get('quotations/{quotation}/pdf', [SalesQuotationWebController::class, 'pdf'])->name('quotations.pdf');
         Route::get('invoices/{invoice}/print', [SalesInvoiceWebController::class, 'print'])->name('invoices.print');
+        Route::post('invoices/{invoice}/record-payment', [SalesInvoiceWebController::class, 'recordPayment'])->name('invoices.record-payment');
         Route::resource('invoices', SalesInvoiceWebController::class)->only(['index', 'create', 'store']);
         Route::get('payments/customer-outstanding', [SalesPaymentWebController::class, 'customerOutstanding'])->name('payments.customer-outstanding');
         Route::resource('payments', SalesPaymentWebController::class)->only(['index', 'create', 'store']);

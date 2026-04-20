@@ -102,7 +102,7 @@
                         <th class="py-3 px-4 font-medium text-gray-600">الحالة</th>
                         <th class="py-3 px-4 font-medium text-gray-600 text-left">الضريبة</th>
                         <th class="py-3 px-4 font-medium text-gray-600 text-left">الإجمالي</th>
-                        <th class="py-3 px-4 font-medium text-gray-600 text-center w-[1%] whitespace-nowrap">الإجراءات</th>
+                        <th scope="col" class="w-[1%] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-gray-600">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody>

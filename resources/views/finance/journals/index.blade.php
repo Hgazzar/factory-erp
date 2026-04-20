@@ -112,6 +112,15 @@
                             <td class="px-3 py-3 text-center align-middle">
                                 @php $journalMenuId = 'journal-actions-'.$entry->id; @endphp
                                 <x-erp-actions-dropdown :menu-id="$journalMenuId">
+                                    <a href="{{ route('finance.journals.show', $entry) }}"
+                                       class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                       role="menuitem">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.086.13-.17.263-.252.394C12.879 10.668 11.12 11.5 8 11.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/></svg>
+                                        </span>
+                                        <span class="flex-1 text-right font-medium leading-snug">عرض القيد</span>
+                                    </a>
+                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
                                     <a href="{{ route('finance.journals.edit', $entry) }}"
                                        class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
                                        role="menuitem">

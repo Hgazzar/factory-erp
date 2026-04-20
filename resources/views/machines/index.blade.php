@@ -23,7 +23,7 @@
                         <th>اسم الماكينة</th>
                         <th>خط الإنتاج</th>
                         <th>الحالة</th>
-                        <th style="width: 150px;">الإجراءات</th>
+                        <th scope="col" class="text-center" style="width: 1%; white-space: nowrap;">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,20 +49,31 @@
                                     <span class="badge bg-secondary">متوقفة</span>
                                 @endif
                             </td>
-                            <td>
-                                <div class="d-flex gap-1">
-                                    <a href="{{ route('machines.edit', $machine) }}" class="btn btn-sm btn-outline-primary">
-                                        تعديل
+                            <td class="text-center align-middle">
+                                @php $machineMenuId = 'machine-actions-'.$machine->id; @endphp
+                                <x-erp-actions-dropdown :menu-id="$machineMenuId">
+                                    <a href="{{ route('machines.edit', $machine) }}"
+                                       class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50 text-decoration-none"
+                                       role="menuitem">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
+                                        </span>
+                                        <span class="flex-1 text-right font-medium leading-snug">تعديل الماكينة</span>
                                     </a>
-                                    <form action="{{ route('machines.destroy', $machine) }}" method="POST" class="d-inline"
-                                          onsubmit="return confirm('حذف هذه الماكينة؟');">
+                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                    <form action="{{ route('machines.destroy', $machine) }}" method="POST" class="m-0" onsubmit="return confirm('حذف هذه الماكينة؟');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            حذف
+                                        <button type="submit"
+                                                class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                                role="menuitem">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                            </span>
+                                            <span class="flex-1 leading-snug">حذف الماكينة</span>
                                         </button>
                                     </form>
-                                </div>
+                                </x-erp-actions-dropdown>
                             </td>
                         </tr>
                     @empty
@@ -72,66 +83,6 @@
                             </td>
                         </tr>
                     @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-@endsection
-
-@extends('layouts.app')
-
-@section('content')
-<div class="container">
-    <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">إدارة الماكينات</h5>
-            <a href="{{ route('machines.create') }}" class="btn btn-primary btn-sm">إضافة ماكينة جديدة</a>
-        </div>
-        <div class="card-body">
-            @if(session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
-
-            <table class="table table-hover text-center">
-                <thead class="table-dark">
-                    <tr>
-                        <th>الكود</th>
-                        <th>اسم الماكينة</th>
-                        <th>خط الإنتاج</th> <th>الحالة</th>
-                        <th>تاريخ الإضافة</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($machines as $machine)
-                    <tr>
-                        <td><span class="badge bg-secondary">{{ $machine->code }}</span></td>
-                        <td>{{ $machine->name_ar }}</td>
-                        
-                        <td class="fw-bold text-primary">
-                            {{ $machine->productionLine?->name_ar ?? 'غير مرتبطة بخط' }}
-                        </td>
-
-                        <td>
-                            @if($machine->status == 'active')
-                                <span class="badge bg-success">تعمل</span>
-                            @elseif($machine->status == 'maintenance')
-                                <span class="badge bg-warning text-dark">صيانة</span>
-                            @else
-                                <span class="badge bg-danger">متوقفة</span>
-                            @endif
-                        </td>
-                        <td>{{ $machine->created_at->format('Y-m-d') }}</td>
-                        <td>
-                            <a href="{{ route('machines.edit', $machine->id) }}" class="btn btn-sm btn-info text-white">تعديل</a>
-                            <form action="{{ route('machines.destroy', $machine->id) }}" method="POST" class="d-inline">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من حذف الماكينة؟')">حذف</button>
-                            </form>
-                        </td>
-                    </tr>
-                    @endforeach
                 </tbody>
             </table>
         </div>

@@ -13,8 +13,10 @@ use App\Models\JournalEntry;
 use App\Models\JournalItem;
 use App\Models\Quotation;
 use App\Models\SalesInvoice;
+use App\Models\SalesPayment;
 use App\Models\Warehouse;
 use App\Services\ExcelImportService;
+use App\Services\InvoicePaymentRecordingService;
 use App\Services\ZatcaService;
 use App\Support\DefaultLedgerAccounts;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -27,6 +29,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use RuntimeException;
 
 class SalesInvoiceWebController extends Controller
 {
@@ -50,14 +53,22 @@ class SalesInvoiceWebController extends Controller
         }
         $statusFilter = $request->get('status');
         if ($statusFilter && $statusFilter !== 'جميع الحالات') {
+            $bal = '(sales_invoices.total - COALESCE(sales_invoices.paid_amount, 0))';
+            $effectiveDue = 'DATE(COALESCE(sales_invoices.due_date, CASE WHEN sales_invoices.payment_method = \'cash\' THEN sales_invoices.date ELSE DATE_ADD(sales_invoices.date, INTERVAL 30 DAY) END))';
             if ($statusFilter === 'مدفوعة') {
-                $query->where('payment_method', 'cash');
-            } elseif ($statusFilter === 'مستحق') {
-                $query->where('payment_method', 'credit')
-                    ->whereRaw('DATE_ADD(date, INTERVAL 30 DAY) >= CURDATE()');
+                $query->whereRaw("{$bal} <= 0.0001");
+            } elseif ($statusFilter === 'مسودة') {
+                $query->where('invoice_status', 'draft');
             } elseif ($statusFilter === 'متأخرة') {
-                $query->where('payment_method', 'credit')
-                    ->whereRaw('DATE_ADD(date, INTERVAL 30 DAY) < CURDATE()');
+                $query->whereRaw("{$bal} > 0.0001")
+                    ->whereRaw("{$effectiveDue} < CURDATE()");
+            } elseif ($statusFilter === 'مستحق') {
+                $query->whereRaw("{$bal} > 0.0001")
+                    ->whereRaw("{$effectiveDue} >= CURDATE()");
+            } elseif ($statusFilter === 'مدفوعة جزئياً') {
+                $query->whereRaw("{$bal} > 0.0001")
+                    ->whereRaw('COALESCE(sales_invoices.paid_amount, 0) > 0.0001')
+                    ->whereRaw("{$effectiveDue} >= CURDATE()");
             }
         }
         if ($request->filled('date_from')) {
@@ -72,10 +83,8 @@ class SalesInvoiceWebController extends Controller
             $csv = "\xEF\xBB\xBF";
             $csv .= "رقم الفاتورة,العميل,التاريخ,الإجمالي,الحالة\n";
             foreach ($rows as $inv) {
-                $isCash = $inv->payment_method === 'cash';
-                $dueDate = $isCash ? $inv->date : $inv->date->copy()->addDays(30);
-                $status = $isCash ? 'مدفوعة' : ($dueDate->isFuture() || $dueDate->isToday() ? 'مستحق' : 'متأخرة');
-                $csv .= '"SINV-'.$inv->id.'","'.str_replace('"', '""', $inv->customer?->name ?? '').'","'.($inv->date?->format('Y-m-d') ?? '').'",'.(float) $inv->total.',"'.$status."\n";
+                $row = $this->salesInvoiceListRow($inv);
+                $csv .= '"SINV-'.$inv->id.'","'.str_replace('"', '""', $inv->customer?->name ?? '').'","'.($inv->date?->format('Y-m-d') ?? '').'",'.(float) $inv->total.',"'.$row->status."\n";
             }
 
             return response($csv, 200, [
@@ -86,23 +95,7 @@ class SalesInvoiceWebController extends Controller
 
         $invoices = $query->paginate(20)->withQueryString();
 
-        $rows = $invoices->getCollection()->map(function ($inv) {
-            $isCash = $inv->payment_method === 'cash';
-            $dueDate = $isCash ? $inv->date : $inv->date->copy()->addDays(30);
-            $balance = $isCash ? 0 : (float) $inv->total;
-            $status = $isCash ? 'مدفوعة' : ($dueDate->isFuture() || $dueDate->isToday() ? 'مستحق' : 'متأخرة');
-
-            return (object) [
-                'id' => $inv->id,
-                'invoice_number' => 'SINV-'.$inv->id,
-                'customer_name' => $inv->customer?->name ?? '-',
-                'issue_date' => $inv->date?->format('Y-m-d'),
-                'due_date' => $dueDate->format('Y-m-d'),
-                'total' => (float) $inv->total,
-                'balance' => $balance,
-                'status' => $status,
-            ];
-        });
+        $rows = $invoices->getCollection()->map(fn (SalesInvoice $inv) => $this->salesInvoiceListRow($inv));
         $invoices->setCollection($rows);
 
         $allInvoices = SalesInvoice::with('customer')->get();
@@ -111,21 +104,24 @@ class SalesInvoiceWebController extends Controller
         $dueAmount = 0;
         $overdueAmount = 0;
         foreach ($allInvoices as $inv) {
-            $isCash = $inv->payment_method === 'cash';
-            if ($isCash) {
+            $row = $this->salesInvoiceListRow($inv);
+            if ($row->balance <= 0.0001) {
                 continue;
             }
-            $dueDate = $inv->date->copy()->addDays(30);
-            $amount = (float) $inv->total;
-            if ($dueDate->isFuture() || $dueDate->isToday()) {
-                $dueAmount += $amount;
-            } else {
-                $overdueAmount += $amount;
+            if ($row->status === 'متأخرة') {
+                $overdueAmount += $row->balance;
+            } elseif (in_array($row->status, ['مستحق', 'مدفوعة جزئياً'], true)) {
+                $dueAmount += $row->balance;
             }
         }
 
         $customers = Customer::where('is_active', true)->orderByRaw('COALESCE(name_ar, name)')->get();
-        $statuses = ['جميع الحالات', 'مدفوعة', 'مسودة', 'مستحق', 'متأخرة'];
+        $statuses = ['جميع الحالات', 'مدفوعة', 'مسودة', 'مستحق', 'متأخرة', 'مدفوعة جزئياً'];
+
+        $invoicePaymentMethodOptions = collect(SalesPayment::paymentMethodLabels())
+            ->map(fn (string $label, string $key) => ['value' => $key, 'label' => $label])
+            ->values()
+            ->all();
 
         return view('sales.invoices.index', [
             'invoices' => $invoices,
@@ -135,7 +131,92 @@ class SalesInvoiceWebController extends Controller
             'overdueAmount' => $overdueAmount,
             'customers' => $customers,
             'statuses' => $statuses,
+            'invoicePaymentMethodOptions' => $invoicePaymentMethodOptions,
         ]);
+    }
+
+    public function recordPayment(Request $request, SalesInvoice $invoice): RedirectResponse
+    {
+        $uid = (int) auth()->id();
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'date' => ['required', 'date'],
+            'payment_method' => ['required', 'in:cash,transfer,card'],
+            'reference' => ['nullable', 'string', 'max:50'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ], [
+            'amount.required' => 'أدخل مبلغ الدفعة.',
+            'payment_method.required' => 'اختر وسيلة الدفع.',
+        ]);
+
+        try {
+            app(InvoicePaymentRecordingService::class)->recordSalesInvoicePayment(
+                $invoice,
+                (float) $data['amount'],
+                $data['date'],
+                $data['payment_method'],
+                $uid,
+                $data['reference'] ?? null,
+                $data['notes'] ?? null,
+            );
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('sales.invoices.index')
+            ->with('success', 'تم تسجيل الدفعة وتحديث الفاتورة وإنشاء القيد المحاسبي بنجاح.');
+    }
+
+    /**
+     * @return object{
+     *     id:int,
+     *     invoice_number:string,
+     *     customer_name:string,
+     *     issue_date:?string,
+     *     due_date:string,
+     *     total:float,
+     *     balance:float,
+     *     status:string,
+     *     invoice_status:string,
+     *     record_payment_allowed:bool
+     * }
+     */
+    private function salesInvoiceListRow(SalesInvoice $inv): object
+    {
+        $total = (float) $inv->total;
+        $paid = (float) ($inv->paid_amount ?? 0);
+        $balance = max(0, $total - $paid);
+        $dueDate = $inv->due_date
+            ? $inv->due_date->copy()->startOfDay()
+            : ($inv->payment_method === 'cash'
+                ? $inv->date->copy()->startOfDay()
+                : $inv->date->copy()->addDays(30)->startOfDay());
+
+        if ((string) ($inv->invoice_status ?? '') === 'draft') {
+            $status = 'مسودة';
+        } elseif ($balance <= 0.0001) {
+            $status = 'مدفوعة';
+        } elseif ($dueDate->isPast()) {
+            $status = 'متأخرة';
+        } elseif ($paid > 0.0001) {
+            $status = 'مدفوعة جزئياً';
+        } else {
+            $status = 'مستحق';
+        }
+
+        return (object) [
+            'id' => $inv->id,
+            'invoice_number' => 'SINV-'.$inv->id,
+            'customer_name' => $inv->customer?->name ?? '-',
+            'issue_date' => $inv->date?->format('Y-m-d'),
+            'due_date' => $dueDate->format('Y-m-d'),
+            'total' => $total,
+            'balance' => $balance,
+            'status' => $status,
+            'invoice_status' => (string) ($inv->invoice_status ?? ''),
+            'record_payment_allowed' => (string) ($inv->invoice_status ?? '') !== 'draft' && $balance > 0.0001,
+        ];
     }
 
     public function create(Request $request): View

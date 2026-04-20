@@ -33,6 +33,7 @@ class Account extends Model
         'type',
         'parent_id',
         'opening_balance',
+        'current_balance',
         'is_bank',
         'is_active',
         'allow_direct_posting',
@@ -42,6 +43,7 @@ class Account extends Model
     {
         return [
             'opening_balance' => 'decimal:4',
+            'current_balance' => 'decimal:4',
             'is_bank' => 'boolean',
             'is_active' => 'boolean',
             'allow_direct_posting' => 'boolean',

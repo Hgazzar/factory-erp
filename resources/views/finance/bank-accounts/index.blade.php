@@ -107,11 +107,11 @@
                                         <x-info field="bank_status" />
                                     </span>
                                 </th>
-                                <th class="px-4 py-3 text-right">
-                                    <span class="inline-flex items-center gap-1">
-                                        <span>الإجراءات</span>
+                                <th scope="col" class="w-[1%] whitespace-nowrap px-4 py-3 text-center text-xs font-semibold text-gray-500">
+                                    <span class="inline-flex items-center justify-center gap-1">
                                         <x-info field="bank_account_actions" />
                                         <x-info field="bank_account_delete" />
+                                        الإجراءات
                                     </span>
                                 </th>
                             </tr>
@@ -138,23 +138,31 @@
                                             <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">غير نشط</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <div class="inline-flex items-center gap-1">
-                                            <a href="{{ route('finance.bank-accounts.edit', $account) }}" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600" title="تعديل بيانات الحساب">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.586a2 2 0 112.828 2.828L11.828 14.828a4 4 0 01-1.414.943l-3.029 1.01 1.01-3.029a4 4 0 01.943-1.414l8.586-8.586z" />
-                                                </svg>
+                                    <td class="px-4 py-3 text-center align-middle">
+                                        @php $bankAccMenuId = 'bank-account-actions-'.$account->id; @endphp
+                                        <x-erp-actions-dropdown :menu-id="$bankAccMenuId">
+                                            <a href="{{ route('finance.bank-accounts.edit', $account) }}"
+                                               class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
+                                               role="menuitem">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
+                                                </span>
+                                                <span class="flex-1 text-right font-medium leading-snug">تعديل الحساب البنكي</span>
                                             </a>
-                                            <form method="POST" action="{{ route('finance.bank-accounts.destroy', $account) }}" onsubmit="return confirm('هل أنت متأكد من حذف هذا الحساب؟ لا يمكن التراجع عن هذه الخطوة');" class="inline">
+                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            <form method="POST" action="{{ route('finance.bank-accounts.destroy', $account) }}" class="m-0" onsubmit="return confirm('هل أنت متأكد من حذف هذا الحساب؟ لا يمكن التراجع عن هذه الخطوة');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-white text-red-500 hover:bg-red-50 hover:text-red-600" title="حذف الحساب">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
-                                                    </svg>
+                                                <button type="submit"
+                                                        class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                                        role="menuitem">
+                                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                                    </span>
+                                                    <span class="flex-1 leading-snug">حذف الحساب</span>
                                                 </button>
                                             </form>
-                                        </div>
+                                        </x-erp-actions-dropdown>
                                     </td>
                                 </tr>
                             @endforeach

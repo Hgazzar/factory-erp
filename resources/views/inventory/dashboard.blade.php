@@ -154,6 +154,7 @@
         <div class="inv-topbar">
             <div class="inv-tabs">
                 <a href="{{ route('items.index') }}" class="inv-tab is-active">المنتجات</a>
+                <a href="{{ route('inventory.item-categories.index') }}" class="inv-tab">فئات المنتجات</a>
                 <a href="{{ route('warehouses.index') }}" class="inv-tab">المستودعات</a>
                 <a href="{{ route('inventory.stock-in.create') }}" class="inv-tab">إذن إضافة مخزني</a>
             </div>

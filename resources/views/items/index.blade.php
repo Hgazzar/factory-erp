@@ -152,7 +152,7 @@
                     <th>سعر البيع <x-info field="inventory.items_table_price" /></th>
                     <th>كمية المخزون <x-info field="inventory.items_table_stock" /></th>
                     <th>الحالة <x-info field="inventory.items_table_status" /></th>
-                    <th>الإجراءات <x-info field="inventory.items_table_actions" /></th>
+                    <th scope="col" class="text-center" style="width: 1%; white-space: nowrap;"><span class="inline-flex items-center justify-center gap-1"><x-info field="inventory.items_table_actions" /> الإجراءات</span></th>
                 </tr>
             </thead>
             <tbody>

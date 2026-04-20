@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\BankAccount;
+use App\Models\FixedAsset;
+use App\Models\FixedAssetCategory;
+use App\Models\CostCenter;
 use App\Models\JournalEntry;
 use App\Models\JournalItem;
-use App\Models\ExpenseCategory;
-use App\Models\FixedAsset;
-use App\Models\CostCenter;
 use App\Support\DefaultLedgerAccounts;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +24,7 @@ class FixedAssetController extends Controller
         $status = (string) $request->query('status', '');
 
         $assets = FixedAsset::query()
-            ->with(['categoryRef:id,name_ar,name_en', 'costCenter:id,name,code'])
+            ->with(['fixedAssetCategory:id,code,name_ar', 'costCenter:id,name,code'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($inner) use ($search) {
                     $inner->where('asset_code', 'like', '%' . $search . '%')
@@ -49,35 +49,25 @@ class FixedAssetController extends Controller
 
     public function show(FixedAsset $fixedAsset): View
     {
-        $fixedAsset->load(['categoryRef:id,code,name_ar,name_en', 'costCenter:id,code,name']);
+        $fixedAsset->load([
+            'fixedAssetCategory.ledgerAssetAccount:id,code,name_ar,name_en',
+            'fixedAssetCategory.ledgerDepreciationCostAccount:id,code,name_ar,name_en',
+            'fixedAssetCategory.ledgerAccumulatedDepreciationAccount:id,code,name_ar,name_en',
+            'costCenter:id,code,name',
+        ]);
 
         return view('finance.fixed-assets.show', ['asset' => $fixedAsset]);
     }
 
     public function create(): View
     {
-        $categories = ExpenseCategory::query()
-            ->where('status', 'active')
-            ->orderBy('code')
-            ->get(['id', 'code', 'name_ar', 'name_en']);
+        $categories = $this->fixedAssetCategoriesForSelect();
+        $categoryLedgerPreview = $this->categoryLedgerPreviewMap($categories);
 
         $costCenters = CostCenter::query()
             ->where('status', 'active')
             ->orderBy('code')
             ->get(['id', 'code', 'name']);
-
-        $ledgerAccounts = Account::query()
-            ->where('type', Account::TYPE_ASSET)
-            ->where(function ($q) {
-                $q->whereNotNull('parent_id')
-                    ->orWhere('allow_direct_posting', true);
-            })
-            ->where(function ($q) {
-                $q->where('is_active', true)
-                    ->orWhereNull('is_active');
-            })
-            ->orderBy('code')
-            ->get(['id', 'code', 'name_ar', 'name_en']);
 
         $bankAccounts = BankAccount::query()
             ->where('status', 'active')
@@ -86,20 +76,27 @@ class FixedAssetController extends Controller
             ->orderBy('account_number')
             ->get(['id', 'bank_name', 'account_number']);
 
-        return view('finance.fixed-assets.create', compact('categories', 'costCenters', 'ledgerAccounts', 'bankAccounts'));
+        return view('finance.fixed-assets.create', compact('categories', 'categoryLedgerPreview', 'costCenters', 'bankAccounts'));
     }
 
     public function edit(FixedAsset $fixedAsset): View
     {
-        $categories = ExpenseCategory::query()
+        $categories = FixedAssetCategory::query()
             ->where(function ($query) use ($fixedAsset) {
                 $query->where('status', 'active');
-                if ($fixedAsset->category_id) {
-                    $query->orWhere('id', $fixedAsset->category_id);
+                if ($fixedAsset->fixed_asset_category_id) {
+                    $query->orWhere('id', $fixedAsset->fixed_asset_category_id);
                 }
             })
+            ->with([
+                'ledgerAssetAccount:id,code,name_ar',
+                'ledgerDepreciationCostAccount:id,code,name_ar',
+                'ledgerAccumulatedDepreciationAccount:id,code,name_ar',
+            ])
             ->orderBy('code')
-            ->get(['id', 'code', 'name_ar', 'name_en']);
+            ->get();
+
+        $categoryLedgerPreview = $this->categoryLedgerPreviewMap($categories);
 
         $costCenters = CostCenter::query()
             ->where(function ($query) use ($fixedAsset) {
@@ -110,23 +107,6 @@ class FixedAssetController extends Controller
             })
             ->orderBy('code')
             ->get(['id', 'code', 'name']);
-
-        $ledgerAccounts = Account::query()
-            ->where('type', Account::TYPE_ASSET)
-            ->where(function ($q) use ($fixedAsset) {
-                $q->where(function ($inner) {
-                    $inner->whereNotNull('parent_id')
-                        ->orWhere('allow_direct_posting', true);
-                })->where(function ($inner) {
-                    $inner->where('is_active', true)
-                        ->orWhereNull('is_active');
-                });
-                if ($fixedAsset->ledger_account_id) {
-                    $q->orWhere('id', $fixedAsset->ledger_account_id);
-                }
-            })
-            ->orderBy('code')
-            ->get(['id', 'code', 'name_ar', 'name_en']);
 
         $bankAccounts = BankAccount::query()
             ->where(function ($q) use ($fixedAsset) {
@@ -144,8 +124,8 @@ class FixedAssetController extends Controller
 
         return view('finance.fixed-assets.create', [
             'categories' => $categories,
+            'categoryLedgerPreview' => $categoryLedgerPreview,
             'costCenters' => $costCenters,
-            'ledgerAccounts' => $ledgerAccounts,
             'bankAccounts' => $bankAccounts,
             'asset' => $fixedAsset,
         ]);
@@ -162,16 +142,18 @@ class FixedAssetController extends Controller
             'asset_code' => ['required', 'string', 'max:50', 'unique:fixed_assets,asset_code'],
             'name' => ['required', 'string', 'max:255'],
             'name_ar' => ['nullable', 'string', 'max:255'],
-            'category_id' => ['required', 'exists:expense_categories,id'],
+            'fixed_asset_category_id' => [
+                'required',
+                Rule::exists('fixed_asset_categories', 'id')->where(function ($q) use ($uid) {
+                    $q->where('user_id', $uid)->where('status', 'active');
+                }),
+            ],
             'cost_center_id' => ['required', Rule::exists('cost_centers', 'id')->where('user_id', $uid)],
             'location' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:3000'],
 
             'acquisition_date' => ['required', 'date'],
             'acquisition_cost' => ['required', 'numeric', 'min:0'],
-            'ledger_account_id' => ['required', Rule::exists('accounts', 'id')->where(function ($q) use ($uid) {
-                $q->where('user_id', $uid)->where('type', Account::TYPE_ASSET);
-            })],
             'payment_method' => ['required', 'in:cash,bank,card,check'],
             'bank_account_id' => [
                 Rule::requiredIf(fn () => in_array((string) $request->input('payment_method'), ['bank', 'check', 'card'], true)),
@@ -195,9 +177,21 @@ class FixedAssetController extends Controller
             'insurance_end_date' => ['nullable', 'date', 'after_or_equal:acquisition_date'],
         ]);
 
+        $category = FixedAssetCategory::query()
+            ->whereKey((int) $data['fixed_asset_category_id'])
+            ->with([
+                'ledgerAssetAccount:id',
+                'ledgerDepreciationCostAccount:id',
+                'ledgerAccumulatedDepreciationAccount:id',
+            ])
+            ->firstOrFail();
+
+        $this->assertCategoryLedgerComplete($category);
+
+        $data['ledger_account_id'] = (int) $category->ledger_asset_account_id;
         $data['book_value'] = (float) $data['acquisition_cost'];
         $data['status'] = 'in_use';
-        $data['category'] = ExpenseCategory::query()->whereKey($data['category_id'])->value('name_ar') ?? 'غير مصنف';
+        $data['category'] = $category->name_ar;
         $data['bank_account_id'] = in_array((string) $data['payment_method'], ['bank', 'check', 'card'], true)
             ? (int) ($data['bank_account_id'] ?? 0)
             : null;
@@ -224,16 +218,22 @@ class FixedAssetController extends Controller
             'asset_code' => ['required', 'string', 'max:50', 'unique:fixed_assets,asset_code,' . $fixedAsset->id],
             'name' => ['required', 'string', 'max:255'],
             'name_ar' => ['nullable', 'string', 'max:255'],
-            'category_id' => ['required', 'exists:expense_categories,id'],
+            'fixed_asset_category_id' => [
+                'required',
+                Rule::exists('fixed_asset_categories', 'id')->where(function ($q) use ($uid, $fixedAsset) {
+                    $q->where('user_id', $uid)
+                        ->where(function ($inner) use ($fixedAsset) {
+                            $inner->where('status', 'active')
+                                ->orWhere('id', (int) $fixedAsset->fixed_asset_category_id);
+                        });
+                }),
+            ],
             'cost_center_id' => ['required', Rule::exists('cost_centers', 'id')->where('user_id', $uid)],
             'location' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:3000'],
 
             'acquisition_date' => ['required', 'date'],
             'acquisition_cost' => ['required', 'numeric', 'min:0'],
-            'ledger_account_id' => ['required', Rule::exists('accounts', 'id')->where(function ($q) use ($uid) {
-                $q->where('user_id', $uid)->where('type', Account::TYPE_ASSET);
-            })],
             'payment_method' => ['required', 'in:cash,bank,card,check'],
             'bank_account_id' => [
                 Rule::requiredIf(fn () => in_array((string) $request->input('payment_method'), ['bank', 'check', 'card'], true)),
@@ -257,7 +257,19 @@ class FixedAssetController extends Controller
             'insurance_end_date' => ['nullable', 'date', 'after_or_equal:acquisition_date'],
         ]);
 
-        $data['category'] = ExpenseCategory::query()->whereKey($data['category_id'])->value('name_ar') ?? 'غير مصنف';
+        $category = FixedAssetCategory::query()
+            ->whereKey((int) $data['fixed_asset_category_id'])
+            ->with([
+                'ledgerAssetAccount:id',
+                'ledgerDepreciationCostAccount:id',
+                'ledgerAccumulatedDepreciationAccount:id',
+            ])
+            ->firstOrFail();
+
+        $this->assertCategoryLedgerComplete($category);
+
+        $data['ledger_account_id'] = (int) $category->ledger_asset_account_id;
+        $data['category'] = $category->name_ar;
         if (! isset($fixedAsset->book_value)) {
             $data['book_value'] = (float) $data['acquisition_cost'];
         }
@@ -267,6 +279,9 @@ class FixedAssetController extends Controller
 
         DB::transaction(function () use ($fixedAsset, $data, $uid): void {
             $fixedAsset->update($data);
+            if ($fixedAsset->source_payment_id) {
+                return;
+            }
             $entry = $this->createOrSyncAssetJournal($fixedAsset->fresh(), $uid);
             $fixedAsset->update(['journal_entry_id' => $entry?->id]);
         });
@@ -291,9 +306,64 @@ class FixedAssetController extends Controller
             ->with('success', 'تم حذف الأصل بنجاح.');
     }
 
+    private function assertCategoryLedgerComplete(FixedAssetCategory $category): void
+    {
+        if (
+            ! $category->ledger_asset_account_id
+            || ! $category->ledger_depreciation_cost_account_id
+            || ! $category->ledger_accumulated_depreciation_account_id
+        ) {
+            abort(422, 'فئة الأصل لا تحتوي على ربط كامل لحسابات الدليل.');
+        }
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, FixedAssetCategory>  $categories
+     * @return array<int, array{asset: string, dep_expense: string, acc_dep: string}>
+     */
+    private function categoryLedgerPreviewMap($categories): array
+    {
+        $map = [];
+        foreach ($categories as $c) {
+            $map[$c->id] = [
+                'asset' => $c->ledgerAssetAccount
+                    ? $c->ledgerAssetAccount->code.' — '.$c->ledgerAssetAccount->name_ar
+                    : '—',
+                'dep_expense' => $c->ledgerDepreciationCostAccount
+                    ? $c->ledgerDepreciationCostAccount->code.' — '.$c->ledgerDepreciationCostAccount->name_ar
+                    : '—',
+                'acc_dep' => $c->ledgerAccumulatedDepreciationAccount
+                    ? $c->ledgerAccumulatedDepreciationAccount->code.' — '.$c->ledgerAccumulatedDepreciationAccount->name_ar
+                    : '—',
+            ];
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, FixedAssetCategory>
+     */
+    private function fixedAssetCategoriesForSelect()
+    {
+        return FixedAssetCategory::query()
+            ->where('status', 'active')
+            ->whereNotNull('ledger_asset_account_id')
+            ->whereNotNull('ledger_depreciation_cost_account_id')
+            ->whereNotNull('ledger_accumulated_depreciation_account_id')
+            ->with([
+                'ledgerAssetAccount:id,code,name_ar',
+                'ledgerDepreciationCostAccount:id,code,name_ar',
+                'ledgerAccumulatedDepreciationAccount:id,code,name_ar',
+            ])
+            ->orderBy('code')
+            ->get();
+    }
+
     private function createOrSyncAssetJournal(FixedAsset $asset, int $userId): ?JournalEntry
     {
-        $debitAccountId = (int) ($asset->ledger_account_id ?? 0);
+        $category = $asset->fixedAssetCategory()->with('ledgerAssetAccount:id')->first();
+        $debitAccountId = (int) ($category?->ledger_asset_account_id ?? $asset->ledger_account_id ?? 0);
         if ($debitAccountId < 1) {
             return null;
         }

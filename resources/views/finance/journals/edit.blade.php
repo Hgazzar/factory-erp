@@ -44,10 +44,7 @@
         </div>
     </div>
 
-    <div
-        x-cloak
-        class="bg-white border border-gray-200 rounded-xl shadow-sm"
-    >
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm">
         <div class="flex items-center justify-between border-b border-gray-100 px-5 py-3">
             <h2 class="text-sm font-semibold text-gray-800">تعديل القيد</h2>
         </div>

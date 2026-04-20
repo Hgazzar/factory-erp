@@ -9,17 +9,17 @@
 @endsection
 
 @section('content')
-<div class="max-w-2xl">
+<div dir="rtl" class="max-w-4xl space-y-6">
     @if(session('success'))
         <div class="mb-4 p-4 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm">
             {{ session('success') }}
         </div>
     @endif
 
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h1 class="text-xl font-bold text-gray-900 mb-6">إعدادات المنشأة</h1>
+    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h1 class="mb-6 text-xl font-bold text-gray-900">إعدادات المنشأة</h1>
 
-        <form method="POST" action="{{ route('settings.company.update') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('settings.company.update') }}" enctype="multipart/form-data" class="space-y-8">
             @csrf
             @method('PUT')
 
@@ -76,6 +76,85 @@
                         <p class="mt-1 text-sm text-gray-500">اللوجو الحالي: <img src="{{ asset('storage/' . $setting->logo_url) }}" alt="Logo" class="h-10 inline-block align-middle ml-1"></p>
                     @endif
                     @error('logo_file')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
+
+            <div class="rounded-lg border border-gray-100 bg-gray-50/80 p-6 space-y-6">
+                <h2 class="text-lg font-semibold text-gray-900">الربط المحاسبي العام</h2>
+                <p class="text-sm text-gray-600">حسابات وسيطة تُستخدم في فواتير البيع والشراء والخصومات الافتراضية.</p>
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div class="md:col-span-2">
+                        <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <x-info field="settings.company_default_receivable_account" />
+                            الحساب الافتراضي للعملاء (ذمم مدينة)
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <x-searchable-select
+                            name="default_receivable_account_id"
+                            id="default_receivable_account_id"
+                            :options="$receivableOpts ?? []"
+                            :value="old('default_receivable_account_id', $setting->default_receivable_account_id)"
+                            :required="true"
+                            :error="$errors->has('default_receivable_account_id')"
+                            empty-label="اختر حساباً"
+                            placeholder="ابحث بالرمز أو الاسم..."
+                        />
+                        @error('default_receivable_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <x-info field="settings.company_default_payable_account" />
+                            الحساب الافتراضي للموردين (ذمم دائنة)
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <x-searchable-select
+                            name="default_payable_account_id"
+                            id="default_payable_account_id"
+                            :options="$payableOpts ?? []"
+                            :value="old('default_payable_account_id', $setting->default_payable_account_id)"
+                            :required="true"
+                            :error="$errors->has('default_payable_account_id')"
+                            empty-label="اختر حساباً"
+                            placeholder="ابحث بالرمز أو الاسم..."
+                        />
+                        @error('default_payable_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <x-info field="settings.company_purchase_discount_ledger_account" />
+                            حساب خصم المشتريات (مكتسب)
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <x-searchable-select
+                            name="purchase_discount_ledger_account_id"
+                            id="purchase_discount_ledger_account_id"
+                            :options="$purchaseDiscOpts ?? []"
+                            :value="old('purchase_discount_ledger_account_id', $setting->purchase_discount_ledger_account_id)"
+                            :required="true"
+                            :error="$errors->has('purchase_discount_ledger_account_id')"
+                            empty-label="اختر حساب مصروف"
+                            placeholder="ابحث بالرمز أو الاسم..."
+                        />
+                        @error('purchase_discount_ledger_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <x-info field="settings.company_sales_allowed_discount_ledger_account" />
+                            حساب خصم المبيعات (مسموح)
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <x-searchable-select
+                            name="sales_allowed_discount_ledger_account_id"
+                            id="sales_allowed_discount_ledger_account_id"
+                            :options="$salesDiscOpts ?? []"
+                            :value="old('sales_allowed_discount_ledger_account_id', $setting->sales_allowed_discount_ledger_account_id)"
+                            :required="true"
+                            :error="$errors->has('sales_allowed_discount_ledger_account_id')"
+                            empty-label="اختر حساب إيراد"
+                            placeholder="ابحث بالرمز أو الاسم..."
+                        />
+                        @error('sales_allowed_discount_ledger_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
                 </div>
             </div>
 

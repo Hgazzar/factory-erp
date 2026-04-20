@@ -22,16 +22,27 @@
         'value' => $center->id,
         'label' => trim((string) ($center->code ?? '').' - '.(string) ($center->name ?? '')),
     ])->all();
-    $fixedAssetLedgerOptions = collect($ledgerAccounts ?? [])->map(fn ($account) => [
-        'value' => $account->id,
-        'label' => trim((string) ($account->code ?? '').' - '.(string) ($account->name_ar ?? $account->name_en ?? '')),
-    ])->all();
     $fixedAssetBankOptions = collect($bankAccounts ?? [])->map(fn ($bank) => [
         'value' => $bank->id,
         'label' => trim((string) ($bank->bank_name ?? '').' - '.(string) ($bank->account_number ?? '')),
     ])->all();
 @endphp
-<div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
+<div
+    dir="rtl"
+    class="mx-auto w-full max-w-full space-y-6"
+    x-data="{
+        preview: @js($categoryLedgerPreview ?? []),
+        selectedId: @js(old('fixed_asset_category_id', isset($asset) ? $asset->fixed_asset_category_id : null)),
+        glLines() {
+            const id = this.selectedId === null || this.selectedId === '' ? null : Number(this.selectedId);
+            if (! id || ! this.preview[id]) {
+                return { asset: '—', dep_expense: '—', acc_dep: '—' };
+            }
+            return this.preview[id];
+        }
+    }"
+    @searchable-select-change="if ($event.detail.name === 'fixed_asset_category_id') { selectedId = $event.detail.value != null && $event.detail.value !== '' ? String($event.detail.value) : ''; }"
+>
     <header class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <h1 class="text-2xl font-bold text-gray-900">{{ isset($asset) ? 'تعديل أصل' : 'أصل جديد' }}</h1>
@@ -57,18 +68,38 @@
                     @error('asset_code')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">التصنيف <x-info field="asset_category" /> <span class="text-red-500">*</span></label>
+                    <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">فئة الأصل <x-info field="fixed_asset_category_select" /> <span class="text-red-500">*</span></label>
                     <x-searchable-select
-                        name="category_id"
-                        id="category_id"
+                        name="fixed_asset_category_id"
+                        id="fixed_asset_category_id"
                         :options="$fixedAssetCategoryOptions"
-                        :value="old('category_id', isset($asset) ? $asset->category_id : null)"
+                        :value="old('fixed_asset_category_id', isset($asset) ? $asset->fixed_asset_category_id : null)"
                         :required="true"
-                        :error="$errors->has('category_id')"
-                        empty-label="اختر التصنيف"
-                        placeholder="ابحث بالرمز أو اسم التصنيف..."
+                        :error="$errors->has('fixed_asset_category_id')"
+                        empty-label="اختر فئة الأصل"
+                        placeholder="ابحث بالرمز أو اسم الفئة..."
                     />
-                    @error('category_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    @error('fixed_asset_category_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div class="md:col-span-2 space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p class="text-sm font-semibold text-gray-900 inline-flex items-center gap-1">
+                        <span>حسابات الدليل للفئة (اطلاع)</span>
+                        <x-info field="fixed_asset_category_gl_preview" />
+                    </p>
+                    <ul class="grid grid-cols-1 gap-3 text-xs text-gray-700 md:grid-cols-3">
+                        <li class="rounded-lg border border-gray-100 bg-white p-3">
+                            <span class="mb-1 flex items-center gap-1 font-medium text-gray-600"><x-info field="fixed_asset_category_col_asset" /> الأصل</span>
+                            <span x-text="glLines().asset" class="block leading-relaxed"></span>
+                        </li>
+                        <li class="rounded-lg border border-gray-100 bg-white p-3">
+                            <span class="mb-1 flex items-center gap-1 font-medium text-gray-600"><x-info field="fixed_asset_category_col_dep_expense" /> مصروف الإهلاك</span>
+                            <span x-text="glLines().dep_expense" class="block leading-relaxed"></span>
+                        </li>
+                        <li class="rounded-lg border border-gray-100 bg-white p-3">
+                            <span class="mb-1 flex items-center gap-1 font-medium text-gray-600"><x-info field="fixed_asset_category_col_acc_dep" /> مجمع الإهلاك</span>
+                            <span x-text="glLines().acc_dep" class="block leading-relaxed"></span>
+                        </li>
+                    </ul>
                 </div>
                 <div>
                     <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">مركز التكلفة <x-info field="cost_center" /> <span class="text-red-500">*</span></label>
@@ -125,20 +156,6 @@
                         <input type="number" inputmode="decimal" min="0" step="any" name="acquisition_cost" value="{{ old('acquisition_cost', $asset->acquisition_cost ?? '') }}" required class="h-full flex-1 border-0 bg-white px-3 text-sm focus:outline-none focus:ring-0">
                     </div>
                     @error('acquisition_cost')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">حساب الأصل في الدليل <x-info field="fixed_asset_ledger_account" /> <span class="text-red-500">*</span></label>
-                    <x-searchable-select
-                        name="ledger_account_id"
-                        id="ledger_account_id"
-                        :options="$fixedAssetLedgerOptions"
-                        :value="old('ledger_account_id', isset($asset) ? $asset->ledger_account_id : null)"
-                        :required="true"
-                        :error="$errors->has('ledger_account_id')"
-                        empty-label="اختر حساب أصل"
-                        placeholder="ابحث بالرمز أو اسم الحساب..."
-                    />
-                    @error('ledger_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">طريقة الدفع <span class="text-red-500">*</span></label>
