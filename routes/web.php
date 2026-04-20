@@ -484,15 +484,3 @@ Route::get('/run-final-cleanup', function () {
     }
 });
 
-Route::get('/run-migrate', function () {
-    // زيادة وقت التنفيذ عشان الملفات كتير
-    set_time_limit(300); 
-
-    $output = '';
-    // تشغيل المايجريشن
-    $exitCode = Artisan::call('migrate', [
-        '--force' => true,
-    ]);
-
-    return "Code: $exitCode <br> Output: " . Artisan::output();
-});
