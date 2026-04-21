@@ -46,8 +46,6 @@ use App\Http\Controllers\PaymentMethodAccountController;
 use App\Http\Controllers\PaymentWebController;
 use App\Http\Controllers\ProcurementDashboardController;
 use App\Http\Controllers\ProductionEntryWebController;
-use App\Http\Controllers\ProductionLineWebController;
-use App\Http\Controllers\ProductionOrderWebController;
 use App\Http\Controllers\ProductionReportWebController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfitLossReportWebController;
@@ -227,18 +225,20 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::resource('price-lists', \App\Http\Controllers\PriceListController::class);
     });
 
-    // Production Line & Orders
-    Route::resource('production-lines', ProductionLineWebController::class);
+    // Legacy production module routes -> redirect to new manufacturing dashboard
+    Route::redirect('production-lines', 'manufacturing', 301)->name('production-lines.index');
+    Route::redirect('production-lines/create', 'manufacturing', 301)->name('production-lines.create');
+    Route::get('production-lines/{any}', fn () => redirect()->route('manufacturing.dashboard'))
+        ->where('any', '.*')
+        ->name('production-lines.legacy');
     Route::resource('machines', MachineWebController::class);
     Route::prefix('production-orders')->name('production-orders.')->group(function () {
-        Route::get('/', [ProductionOrderWebController::class, 'index'])->name('index');
-        Route::get('/create', [ProductionOrderWebController::class, 'create'])->name('create');
-        Route::get('/bom-suggestions/{item}', [ProductionOrderWebController::class, 'bomSuggestions'])->name('bom-suggestions');
-        Route::post('/', [ProductionOrderWebController::class, 'store'])->name('store');
-        Route::get('/{production_order}/ingredient-shortage', [ProductionOrderWebController::class, 'ingredientShortage'])->name('ingredient-shortage');
-        Route::post('/{production_order}/prefill-purchase', [ProductionOrderWebController::class, 'prefillPurchaseOrder'])->name('prefill-purchase');
-        Route::post('/{production_order}/complete', [ProductionOrderWebController::class, 'complete'])->name('complete');
-        Route::get('/{production_order}', [ProductionOrderWebController::class, 'show'])->name('show');
+        Route::get('/', fn () => redirect()->route('manufacturing.dashboard'))->name('index');
+        Route::get('{any?}', fn () => redirect()->route('manufacturing.dashboard'))
+            ->where('any', '.*')
+            ->name('legacy');
+        Route::post('{any?}', fn () => redirect()->route('manufacturing.dashboard'))
+            ->where('any', '.*');
     });
 
     Route::prefix('manufacturing')->name('manufacturing.')->group(function () {

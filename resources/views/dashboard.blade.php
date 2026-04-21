@@ -166,7 +166,7 @@
                 <div class="ufuq-card ufuq-card--quick text-center py-2">
                     <a href="{{ route('dashboard') }}" class="ufuq-card-stretch" aria-label="إحصائيات اليوم"></a>
                     <div class="ufuq-card-body">
-                        <small class="text-muted d-block">أوامر الإنتاج اليوم</small>
+                        <small class="text-muted d-block">أوامر العمل اليوم</small>
                         <span class="fw-bold">{{ $productionOrdersToday ?? 0 }}</span>
                     </div>
                 </div>
@@ -516,7 +516,7 @@
             {{-- 5. التصنيع --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-slate h-100 p-4">
-                    <a href="{{ route('operations.dashboard.index') }}" class="ufuq-card-stretch" aria-label="فتح وحدة التصنيع"></a>
+                    <a href="{{ route('manufacturing.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح وحدة التصنيع"></a>
                     <div class="ufuq-card-body">
                         <div class="ufuq-card-head">
                             <div class="ufuq-icon">
@@ -527,17 +527,13 @@
                                     <h6 class="ufuq-card-title">التصنيع</h6>
                                     <span class="ufuq-card-count">{{ isset($countProductionShifts) ? $countProductionShifts : '6+' }}</span>
                                 </div>
-                                <p class="ufuq-card-sub">أوامر الإنتاج والورديات</p>
+                                <p class="ufuq-card-sub">لوحة التصنيع وأوامر العمل</p>
                             </div>
                         </div>
                         <div class="ufuq-card-actions">
-                            <a href="{{ route('operations.dashboard.index') }}" class="ufuq-qbtn">أوامر</a>
-                            <a href="{{ route('operations.production-entry.create') }}" class="ufuq-qbtn">تشغيل</a>
-                            @if(auth()->user()->role === 'admin' || auth()->user()->role === 'supervisor')
-                            <a href="{{ route('operations.shifts.index') }}" class="ufuq-qbtn">ورديات</a>
-                            @else
-                            <a href="{{ route('operations.dashboard.index') }}" class="ufuq-qbtn">لوحة</a>
-                            @endif
+                            <a href="{{ route('manufacturing.dashboard') }}" class="ufuq-qbtn">لوحة</a>
+                            <a href="{{ route('manufacturing.runs.index') }}" class="ufuq-qbtn">أوامر العمل</a>
+                            <a href="{{ route('manufacturing.bom-lists.index') }}" class="ufuq-qbtn">قوائم المواد</a>
                         </div>
                     </div>
                 </div>

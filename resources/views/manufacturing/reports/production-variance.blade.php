@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'تقرير انحرافات الإنتاج - UFUQ ERP')
+@section('title', 'تقرير انحرافات التصنيع - UFUQ ERP')
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-blue-600">الرئيسية</a>
     <span class="mx-1 text-gray-400">›</span>
     <a href="{{ route('manufacturing.dashboard') }}" class="text-gray-500 hover:text-blue-600">التصنيع</a>
     <span class="mx-1 text-gray-400">›</span>
-    <span class="text-blue-900 font-semibold">تقرير انحرافات الإنتاج</span>
+    <span class="text-blue-900 font-semibold">تقرير انحرافات التصنيع</span>
 @endsection
 
 @section('content')
@@ -27,7 +27,7 @@
     <header class="flex flex-wrap items-start justify-between gap-6 border-b border-gray-100 pb-6">
         <div class="min-w-0 flex-1">
             <h1 class="inline-flex flex-wrap items-center gap-2 text-2xl font-bold text-gray-900">
-                تقرير انحرافات الإنتاج
+                تقرير انحرافات التصنيع
                 <x-info field="manufacturing.report_variance_intro" />
             </h1>
             <p class="mt-2 text-sm leading-relaxed text-gray-500">مقارنة الكميات والهدر والتكلفة المعيارية للمواد مع الترحيل الفعلي لكل أمر عمل.</p>
