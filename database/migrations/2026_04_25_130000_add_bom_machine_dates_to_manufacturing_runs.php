@@ -8,11 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('manufacturing_runs')) {
+            return;
+        }
+
         Schema::table('manufacturing_runs', function (Blueprint $table) {
-            $table->foreignId('bom_list_id')->nullable()->after('user_id')->constrained('bom_lists')->nullOnDelete();
-            $table->foreignId('machine_id')->nullable()->after('warehouse_id')->constrained('machines')->nullOnDelete();
-            $table->date('start_date')->nullable()->after('production_date');
-            $table->date('due_date')->nullable()->after('start_date');
+            if (! Schema::hasColumn('manufacturing_runs', 'bom_list_id')) {
+                $table->foreignId('bom_list_id')->nullable()->after('user_id')->constrained('bom_lists')->nullOnDelete();
+            }
+            if (! Schema::hasColumn('manufacturing_runs', 'machine_id')) {
+                $table->foreignId('machine_id')->nullable()->after('warehouse_id')->constrained('machines')->nullOnDelete();
+            }
+            if (! Schema::hasColumn('manufacturing_runs', 'start_date')) {
+                $table->date('start_date')->nullable()->after('production_date');
+            }
+            if (! Schema::hasColumn('manufacturing_runs', 'due_date')) {
+                $table->date('due_date')->nullable()->after('start_date');
+            }
         });
     }
 
