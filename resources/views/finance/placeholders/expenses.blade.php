@@ -94,11 +94,21 @@
         <form method="GET" action="{{ route('finance.expenses.index') }}" class="flex flex-wrap items-end gap-3">
             <div class="w-44">
                 <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="expense_index_filter_workflow_status" /> الحالة</label>
-                <select name="status" class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">الكل</option>
-                    <option value="posted" {{ ($status ?? '') === 'posted' ? 'selected' : '' }}>معتمد</option>
-                    <option value="draft" {{ ($status ?? '') === 'draft' ? 'selected' : '' }}>مسودة</option>
-                </select>
+                @php
+                    $phExpenseStatusOpts = [
+                        ['value' => '', 'label' => 'الكل'],
+                        ['value' => 'posted', 'label' => 'معتمد'],
+                        ['value' => 'draft', 'label' => 'مسودة'],
+                    ];
+                @endphp
+                <x-custom-select
+                    name="status"
+                    class="w-full"
+                    :options="$phExpenseStatusOpts"
+                    :selected="$status ?? ''"
+                    :empty-option="false"
+                    placeholder="الحالة..."
+                />
             </div>
             <div class="min-w-0 w-full max-w-[220px] shrink-0 sm:max-w-xs">
                 <label class="mb-1 block text-xs font-medium text-gray-600"><x-info field="finance.expense_index_filter_supplier" /> المورد</label>

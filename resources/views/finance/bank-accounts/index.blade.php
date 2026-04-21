@@ -58,11 +58,21 @@
                         <span>الحالة</span>
                         <x-info field="bank_status" />
                     </label>
-                    <select name="status" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">الكل</option>
-                        <option value="active" @selected($status === 'active')>نشط</option>
-                        <option value="inactive" @selected($status === 'inactive')>غير نشط</option>
-                    </select>
+                    @php
+                        $bankAccountStatusOpts = [
+                            ['value' => '', 'label' => 'الكل'],
+                            ['value' => 'active', 'label' => 'نشط'],
+                            ['value' => 'inactive', 'label' => 'غير نشط'],
+                        ];
+                    @endphp
+                    <x-custom-select
+                        name="status"
+                        class="w-full"
+                        :options="$bankAccountStatusOpts"
+                        :selected="$status"
+                        :empty-option="false"
+                        placeholder="الحالة..."
+                    />
                 </div>
             </form>
 

@@ -114,13 +114,23 @@
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="البحث في الحسابات..." class="h-9 w-full rounded-md border border-gray-200 text-sm pr-10 pl-3 focus:ring-blue-500 focus:border-blue-500" style="background-color: #f9fafb;">
                 </div>
                 <div class="shrink-0 w-40">
-                    <select name="type" class="h-9 w-full rounded-md border border-gray-200 text-sm focus:ring-blue-500 focus:border-blue-500" style="background-color: #f9fafb;">
-                        <option value="">الكل</option>
-                        <option value="asset" {{ request('type') === 'asset' ? 'selected' : '' }}>أصل</option>
-                        <option value="liability" {{ request('type') === 'liability' ? 'selected' : '' }}>خصم</option>
-                        <option value="expense" {{ request('type') === 'expense' ? 'selected' : '' }}>مصروف</option>
-                        <option value="revenue" {{ request('type') === 'revenue' ? 'selected' : '' }}>إيراد</option>
-                    </select>
+                    @php
+                        $accountTypeFilterOpts = [
+                            ['value' => '', 'label' => 'الكل'],
+                            ['value' => 'asset', 'label' => 'أصل'],
+                            ['value' => 'liability', 'label' => 'خصم'],
+                            ['value' => 'expense', 'label' => 'مصروف'],
+                            ['value' => 'revenue', 'label' => 'إيراد'],
+                        ];
+                    @endphp
+                    <x-custom-select
+                        name="type"
+                        class="w-full"
+                        :options="$accountTypeFilterOpts"
+                        :selected="request('type')"
+                        :empty-option="false"
+                        placeholder="نوع الحساب..."
+                    />
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" class="h-9 rounded-md border border-gray-200 px-3 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:ring-blue-500" style="background-color: #f9fafb;" data-tree="collapse">طي الكل</button>

@@ -13,6 +13,19 @@
 @endsection
 
 @section('content')
+@php
+    $accountCreateTypeOpts = [
+        ['value' => 'asset', 'label' => 'أصل'],
+        ['value' => 'liability', 'label' => 'خصم'],
+        ['value' => 'equity', 'label' => 'حقوق ملكية'],
+        ['value' => 'revenue', 'label' => 'إيراد'],
+        ['value' => 'expense', 'label' => 'مصروف'],
+    ];
+    $accountCreateParentOpts = collect($parentAccounts ?? collect())->map(fn ($p) => [
+        'value' => $p->id,
+        'label' => trim((string) ($p->code ?? '').' - '.(string) ($p->name_ar ?? '')),
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-4xl">
 
     <header class="flex w-full items-center gap-3 border-b border-gray-100 pb-4 mb-6">
@@ -42,42 +55,17 @@
                 {{-- الصف 1: نوع الحساب (يسار) — نفس الارتفاع والعرض --}}
                 <div class="space-y-1">
                     <label for="type" class="block text-sm font-bold text-gray-700">نوع الحساب <span class="text-red-500">*</span></label>
-                    <select id="type" name="type" required
-                        class="h-10 w-full rounded-md border border-gray-200 px-3 text-sm focus:ring-blue-500 focus:border-blue-500 @error('type') border-red-500 @enderror"
-                        style="background-color: #f9fafb;">
-                        <option value="">اختر نوع الحساب</option>
-                        <optgroup label="أصول">
-                            <option value="asset" {{ old('type') === 'asset' ? 'selected' : '' }}>أصول متداولة</option>
-                            <option value="asset">أصول ثابتة</option>
-                            <option value="asset">أصول أخرى</option>
-                            <option value="asset">حسابات بنكية</option>
-                            <option value="asset">عملاء (ذمم مدينة)</option>
-                            <option value="asset">مخزون</option>
-                        </optgroup>
-                        <optgroup label="الالتزامات">
-                            <option value="liability" {{ old('type') === 'liability' ? 'selected' : '' }}>التزامات متداولة</option>
-                            <option value="liability">التزامات طويلة الأجل</option>
-                            <option value="liability">موردون (ذمم دائنة)</option>
-                            <option value="liability">ضريبة مستحقة الدفع</option>
-                        </optgroup>
-                        <optgroup label="حقوق الملكية">
-                            <option value="equity" {{ old('type') === 'equity' ? 'selected' : '' }}>رأس المال / حقوق الملكية</option>
-                            <option value="equity">أرباح محتجزة</option>
-                        </optgroup>
-                        <optgroup label="إيرادات">
-                            <option value="revenue" {{ old('type') === 'revenue' ? 'selected' : '' }}>إيرادات المبيعات</option>
-                            <option value="revenue">إيرادات الخدمات</option>
-                            <option value="revenue">إيرادات أخرى</option>
-                        </optgroup>
-                        <optgroup label="مصروفات">
-                            <option value="expense" {{ old('type') === 'expense' ? 'selected' : '' }}>تكلفة البضاعة المباعة</option>
-                            <option value="expense">مصروفات تشغيل</option>
-                            <option value="expense">مصروف رواتب</option>
-                            <option value="expense">مصروف إيجار</option>
-                            <option value="expense">مصروف مرافق</option>
-                            <option value="expense">مصروفات أخرى</option>
-                        </optgroup>
-                    </select>
+                    <x-custom-select
+                        id="type"
+                        name="type"
+                        class="w-full"
+                        :options="$accountCreateTypeOpts"
+                        :selected="old('type')"
+                        :required="true"
+                        :error="$errors->has('type')"
+                        empty-label="اختر نوع الحساب"
+                        placeholder="ابحث عن نوع الحساب..."
+                    />
                     @error('type')
                         <p class="text-xs text-red-600">{{ $message }}</p>
                     @enderror
@@ -106,14 +94,16 @@
                 <div class="space-y-1">
                     <label for="parent_id" class="block text-sm font-bold text-gray-700">الحساب الرئيسي</label>
                     <p class="text-xs text-gray-500">اختر حساب رئيسي (اختياري)</p>
-                    <select id="parent_id" name="parent_id"
-                        class="mt-0.5 h-10 w-full rounded-md border border-gray-200 px-3 text-sm focus:ring-blue-500 focus:border-blue-500"
-                        style="background-color: #f9fafb;">
-                        <option value="">لا شيء</option>
-                        @foreach($parentAccounts as $p)
-                            <option value="{{ $p->id }}" {{ old('parent_id') == $p->id ? 'selected' : '' }}>{{ $p->code }} - {{ $p->name_ar }}</option>
-                        @endforeach
-                    </select>
+                    <x-custom-select
+                        id="parent_id"
+                        name="parent_id"
+                        class="mt-0.5 w-full"
+                        :options="$accountCreateParentOpts"
+                        :selected="old('parent_id')"
+                        :error="$errors->has('parent_id')"
+                        empty-label="لا شيء"
+                        placeholder="ابحث بالرمز أو اسم الحساب الرئيسي..."
+                    />
                     @error('parent_id')
                         <p class="text-xs text-red-600">{{ $message }}</p>
                     @enderror

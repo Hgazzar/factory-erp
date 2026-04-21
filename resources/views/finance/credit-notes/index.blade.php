@@ -59,12 +59,22 @@
                         <span>الحالة</span>
                         <x-info field="credit_status" />
                     </label>
-                    <select name="status" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">الكل</option>
-                        <option value="draft" @selected($status === 'draft')>مسودة</option>
-                        <option value="approved" @selected($status === 'approved')>معتمد</option>
-                        <option value="cancelled" @selected($status === 'cancelled')>ملغى</option>
-                    </select>
+                    @php
+                        $creditNoteStatusOpts = [
+                            ['value' => '', 'label' => 'الكل'],
+                            ['value' => 'draft', 'label' => 'مسودة'],
+                            ['value' => 'approved', 'label' => 'معتمد'],
+                            ['value' => 'cancelled', 'label' => 'ملغى'],
+                        ];
+                    @endphp
+                    <x-custom-select
+                        name="status"
+                        class="w-full"
+                        :options="$creditNoteStatusOpts"
+                        :selected="$status"
+                        :empty-option="false"
+                        placeholder="الحالة..."
+                    />
                 </div>
             </form>
 

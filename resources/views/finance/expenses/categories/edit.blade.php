@@ -13,6 +13,16 @@
 @endsection
 
 @section('content')
+@php
+    $expenseCatEditParentOpts = collect($parents ?? collect())->map(fn ($parent) => [
+        'value' => $parent->id,
+        'label' => $parent->code.' - '.$parent->name_ar,
+    ])->all();
+    $expenseCatEditStatusOpts = [
+        ['value' => 'active', 'label' => 'نشط'],
+        ['value' => 'inactive', 'label' => 'غير نشط'],
+    ];
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-4xl space-y-6">
     <header class="flex flex-wrap items-center justify-between gap-4">
         <h1 class="text-2xl font-bold text-gray-900">تعديل تصنيف مصروف</h1>
@@ -33,12 +43,15 @@
                 <label class="mb-1 block text-sm font-medium text-gray-700">
                     التصنيف الأب <x-info field="expense_category_col_parent" />
                 </label>
-                <select name="parent_id" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">بدون</option>
-                    @foreach($parents as $parent)
-                        <option value="{{ $parent->id }}" @selected((string) old('parent_id', $category->parent_id) === (string) $parent->id)>{{ $parent->code }} - {{ $parent->name_ar }}</option>
-                    @endforeach
-                </select>
+                <x-custom-select
+                    name="parent_id"
+                    class="w-full"
+                    :options="$expenseCatEditParentOpts"
+                    :selected="old('parent_id', $category->parent_id)"
+                    :error="$errors->has('parent_id')"
+                    empty-label="بدون"
+                    placeholder="ابحث في التصنيفات..."
+                />
                 @error('parent_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>
@@ -59,10 +72,15 @@
                 <label class="mb-1 block text-sm font-medium text-gray-700">
                     الحالة <span class="text-red-500">*</span> <x-info field="expense_category_col_status" />
                 </label>
-                <select name="status" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="active" @selected(old('status', $category->status) === 'active')>نشط</option>
-                    <option value="inactive" @selected(old('status', $category->status) === 'inactive')>غير نشط</option>
-                </select>
+                <x-custom-select
+                    name="status"
+                    class="w-full"
+                    :options="$expenseCatEditStatusOpts"
+                    :selected="old('status', $category->status)"
+                    :empty-option="false"
+                    placeholder="الحالة..."
+                    :error="$errors->has('status')"
+                />
                 @error('status')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div class="flex items-end">

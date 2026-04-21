@@ -37,10 +37,20 @@
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="البحث في القيود..." class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 text-sm pr-10 pl-3 focus:ring-blue-500">
                 </div>
                 <div class="shrink-0 w-40">
-                    <select name="type" class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 text-sm focus:ring-blue-500">
-                        <option value="">الكل</option>
-                        <option value="normal" {{ request('type') === 'normal' ? 'selected' : '' }}>قيد عادي</option>
-                    </select>
+                    @php
+                        $journalTypeFilterOpts = [
+                            ['value' => '', 'label' => 'الكل'],
+                            ['value' => 'normal', 'label' => 'قيد عادي'],
+                        ];
+                    @endphp
+                    <x-custom-select
+                        name="type"
+                        class="w-full"
+                        :options="$journalTypeFilterOpts"
+                        :selected="request('type')"
+                        :empty-option="false"
+                        placeholder="نوع القيد..."
+                    />
                 </div>
                 <div class="shrink-0">
                     <button type="submit" class="h-9 rounded-md border border-gray-200 bg-gray-50 px-4 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:ring-blue-500">بحث</button>

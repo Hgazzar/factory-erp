@@ -64,10 +64,22 @@
             </div>
             <div>
                 <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700"><x-info field="finance.tax_rate_col_active" /> الحالة <span class="text-red-500">*</span></label>
-                <select name="is_active" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="1" @selected(old('is_active', $taxRate->is_active ? '1' : '0') == '1' || old('is_active', $taxRate->is_active ? '1' : '0') === 1)>نشط</option>
-                    <option value="0" @selected(old('is_active', $taxRate->is_active ? '1' : '0') == '0' || old('is_active', $taxRate->is_active ? '1' : '0') === 0)>موقوف</option>
-                </select>
+                @php
+                    $taxActiveEditOpts = [
+                        ['value' => '1', 'label' => 'نشط'],
+                        ['value' => '0', 'label' => 'موقوف'],
+                    ];
+                    $taxActiveSelected = old('is_active', $taxRate->is_active ? '1' : '0');
+                @endphp
+                <x-custom-select
+                    name="is_active"
+                    class="w-full"
+                    :options="$taxActiveEditOpts"
+                    :selected="$taxActiveSelected"
+                    :empty-option="false"
+                    placeholder="الحالة..."
+                    :error="$errors->has('is_active')"
+                />
                 @error('is_active')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>

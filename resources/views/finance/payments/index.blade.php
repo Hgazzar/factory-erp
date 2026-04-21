@@ -43,11 +43,21 @@
         <form method="GET" action="{{ route('finance.payments.index') }}" class="flex flex-wrap items-end gap-3">
             <div class="w-36 shrink-0">
                 <label class="mb-1 block text-xs font-medium text-gray-600">النوع</label>
-                <select name="type" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">الكل</option>
-                    <option value="supplier" {{ request('type') === 'supplier' ? 'selected' : '' }}>مورد</option>
-                    <option value="expense" {{ request('type') === 'expense' ? 'selected' : '' }}>مصروف</option>
-                </select>
+                @php
+                    $paymentIndexTypeOpts = [
+                        ['value' => '', 'label' => 'الكل'],
+                        ['value' => 'supplier', 'label' => 'مورد'],
+                        ['value' => 'expense', 'label' => 'مصروف'],
+                    ];
+                @endphp
+                <x-custom-select
+                    name="type"
+                    class="w-full"
+                    :options="$paymentIndexTypeOpts"
+                    :selected="request('type')"
+                    :empty-option="false"
+                    placeholder="النوع..."
+                />
             </div>
             <div class="min-w-0 w-full max-w-[220px] shrink-0">
                 <label class="mb-1 block text-xs font-medium text-gray-600">المورد</label>

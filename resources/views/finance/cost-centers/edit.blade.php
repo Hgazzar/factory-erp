@@ -56,6 +56,12 @@
 @endpush
 
 @section('content')
+@php
+    $ccEditParentOpts = collect($parents ?? collect())->map(fn ($parent) => [
+        'value' => $parent->id,
+        'label' => $parent->code.' - '.$parent->name,
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-3xl space-y-6">
     <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h1 class="mb-5 flex items-center gap-2 text-2xl font-bold text-gray-900">تعديل مركز تكلفة <x-info field="cost_center" /></h1>
@@ -80,14 +86,14 @@
                     </div>
                     <div>
                         <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">مركز التكلفة الرئيسي <x-info field="parent_cost_center" /></label>
-                        <select name="parent_id" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                            <option value="">بدون رئيسي (مستوى جذري)</option>
-                            @foreach(($parents ?? collect()) as $parent)
-                                <option value="{{ $parent->id }}" @selected((string) old('parent_id', $center->parent_id) === (string) $parent->id)>
-                                    {{ $parent->code }} - {{ $parent->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <x-custom-select
+                            name="parent_id"
+                            class="w-full"
+                            :options="$ccEditParentOpts"
+                            :selected="old('parent_id', $center->parent_id)"
+                            empty-label="بدون رئيسي (مستوى جذري)"
+                            placeholder="ابحث برمز أو اسم المركز الرئيسي..."
+                        />
                     </div>
                 </div>
             </section>

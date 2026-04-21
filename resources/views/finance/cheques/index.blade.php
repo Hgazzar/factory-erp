@@ -61,7 +61,7 @@
                 </a>
             </div>
 
-            <form method="GET" action="{{ route('finance.cheques.index') }}" class="flex flex-1 flex-wrap items-center gap-2">
+            <form method="GET" action="{{ route('finance.cheques.index') }}" class="flex flex-1 flex-wrap items-center gap-2" x-data="{}" @custom-select-change.window="if ($event.detail?.name === 'status') $el.submit()">
                 <input type="hidden" name="type" value="{{ $type }}">
                 <label class="relative min-w-[280px] flex-1">
                     <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -72,13 +72,23 @@
                     <input type="search" name="search" value="{{ $search }}" placeholder="البحث في الشيكات"
                            class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 pr-9 pl-3 text-sm focus:border-blue-500 focus:ring-blue-500">
                 </label>
-                <select name="status" onchange="this.form.submit()" class="h-11 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">الكل</option>
-                    <option value="pending" @selected($status === 'pending')>قيد المتابعة</option>
-                    <option value="cleared" @selected($status === 'cleared')>تم التحصيل/الصرف</option>
-                    <option value="bounced" @selected($status === 'bounced')>مرتجع</option>
-                    <option value="cancelled" @selected($status === 'cancelled')>ملغي</option>
-                </select>
+                @php
+                    $chequeStatusFilterOpts = [
+                        ['value' => '', 'label' => 'الكل'],
+                        ['value' => 'pending', 'label' => 'قيد المتابعة'],
+                        ['value' => 'cleared', 'label' => 'تم التحصيل/الصرف'],
+                        ['value' => 'bounced', 'label' => 'مرتجع'],
+                        ['value' => 'cancelled', 'label' => 'ملغي'],
+                    ];
+                @endphp
+                <x-custom-select
+                    name="status"
+                    class="h-11 w-52 shrink-0"
+                    :options="$chequeStatusFilterOpts"
+                    :selected="$status"
+                    :empty-option="false"
+                    placeholder="الحالة..."
+                />
             </form>
         </div>
 

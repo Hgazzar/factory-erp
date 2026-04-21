@@ -94,11 +94,21 @@
                         <span>الحالة</span>
                         <x-info field="bank_reconciliation_filter" />
                     </label>
-                    <select name="status" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">جميع الحالات</option>
-                        <option value="draft" @selected($status === 'draft')>معلق</option>
-                        <option value="completed" @selected($status === 'completed')>تمت التسوية</option>
-                    </select>
+                    @php
+                        $brStatusOpts = [
+                            ['value' => '', 'label' => 'جميع الحالات'],
+                            ['value' => 'draft', 'label' => 'معلق'],
+                            ['value' => 'completed', 'label' => 'تمت التسوية'],
+                        ];
+                    @endphp
+                    <x-custom-select
+                        name="status"
+                        class="w-full"
+                        :options="$brStatusOpts"
+                        :selected="$status"
+                        :empty-option="false"
+                        placeholder="الحالة..."
+                    />
                 </div>
                 <div class="flex justify-end">
                     <button type="submit" class="h-10 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700">استعراض</button>

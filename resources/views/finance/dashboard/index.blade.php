@@ -62,6 +62,15 @@
         <h1 class="text-xl md:text-2xl font-bold text-gray-900">لوحة المحاسبة</h1>
     </header>
 
+    @php
+        $dashExpenseSupplierOpts = collect($expenseSuppliers ?? [])->map(fn ($s) => [
+            'value' => (string) $s->id,
+            'label' => (string) $s->localized_display_name,
+        ])->all();
+        $dashExpenseSupplierSelected = isset($expenseSupplierId) && $expenseSupplierId !== '' && $expenseSupplierId !== null
+            ? (string) $expenseSupplierId
+            : '';
+    @endphp
     <section class="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <form method="GET" action="{{ route('finance.dashboard') }}" class="flex flex-wrap items-end gap-3">
             <div class="min-w-[200px] flex-1 sm:max-w-xs">
@@ -69,12 +78,14 @@
                     تصفية مصروفات الرسم البياني
                     <x-info field="finance.finance_dashboard_expense_filters" />
                 </label>
-                <select name="expense_supplier_id" class="h-10 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">كل الموردين</option>
-                    @foreach($expenseSuppliers ?? [] as $s)
-                        <option value="{{ $s->id }}" {{ (int)($expenseSupplierId ?? 0) === (int)$s->id ? 'selected' : '' }}>{{ $s->localized_display_name }}</option>
-                    @endforeach
-                </select>
+                <x-custom-select
+                    name="expense_supplier_id"
+                    class="w-full"
+                    :options="$dashExpenseSupplierOpts"
+                    :selected="$dashExpenseSupplierSelected"
+                    empty-label="كل الموردين"
+                    placeholder="ابحث عن مورد..."
+                />
             </div>
             <div class="w-40">
                 <label class="mb-1 block text-xs font-medium text-gray-600">من تاريخ</label>

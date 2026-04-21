@@ -12,6 +12,11 @@ use InvalidArgumentException;
 
 class FinancialRecordingService
 {
+    public function __construct(
+        private readonly AccountingService $accounting,
+    ) {
+    }
+
     /**
      * ترحيل قيد متوازن (مدين = دائن).
      *
@@ -67,6 +72,8 @@ class FinancialRecordingService
                 'credit' => $credit,
             ]);
         }
+
+        $this->accounting->syncJournalEntryBalances((int) $entry->id);
 
         return $entry->fresh();
     }

@@ -26,6 +26,17 @@
         'value' => $bank->id,
         'label' => trim((string) ($bank->bank_name ?? '').' - '.(string) ($bank->account_number ?? '')),
     ])->all();
+    $faPaymentMethodOpts = [
+        ['value' => 'cash', 'label' => 'نقدًا'],
+        ['value' => 'bank', 'label' => 'تحويل بنكي'],
+        ['value' => 'card', 'label' => 'بطاقة'],
+        ['value' => 'check', 'label' => 'شيك'],
+    ];
+    $faDepreciationMethodOpts = [
+        ['value' => 'straightline', 'label' => 'القسط الثابت'],
+        ['value' => 'reducing_balance', 'label' => 'الرصيد المتناقص'],
+        ['value' => 'units_of_production', 'label' => 'وحدات الإنتاج'],
+    ];
 @endphp
 <div
     dir="rtl"
@@ -159,12 +170,16 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">طريقة الدفع <span class="text-red-500">*</span></label>
-                    <select id="payment_method" name="payment_method" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="cash" @selected(old('payment_method', $asset->payment_method ?? 'cash') === 'cash')>نقدًا</option>
-                        <option value="bank" @selected(old('payment_method', $asset->payment_method ?? '') === 'bank')>تحويل بنكي</option>
-                        <option value="card" @selected(old('payment_method', $asset->payment_method ?? '') === 'card')>بطاقة</option>
-                        <option value="check" @selected(old('payment_method', $asset->payment_method ?? '') === 'check')>شيك</option>
-                    </select>
+                    <x-custom-select
+                        id="payment_method"
+                        name="payment_method"
+                        class="w-full"
+                        :options="$faPaymentMethodOpts"
+                        :selected="old('payment_method', isset($asset) ? ($asset->payment_method ?? 'cash') : 'cash')"
+                        :empty-option="false"
+                        :error="$errors->has('payment_method')"
+                        placeholder="طريقة الدفع..."
+                    />
                     @error('payment_method')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -189,12 +204,15 @@
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
                     <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">طريقة الإهلاك <x-info field="depreciation_method" /></label>
-                    <select name="depreciation_method" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر الطريقة</option>
-                        <option value="straightline" @selected(old('depreciation_method', $asset->depreciation_method ?? '') === 'straightline')>القسط الثابت</option>
-                        <option value="reducing_balance" @selected(old('depreciation_method', $asset->depreciation_method ?? '') === 'reducing_balance')>الرصيد المتناقص</option>
-                        <option value="units_of_production" @selected(old('depreciation_method', $asset->depreciation_method ?? '') === 'units_of_production')>وحدات الإنتاج</option>
-                    </select>
+                    <x-custom-select
+                        name="depreciation_method"
+                        class="w-full"
+                        :options="$faDepreciationMethodOpts"
+                        :selected="old('depreciation_method', isset($asset) ? ($asset->depreciation_method ?? '') : '')"
+                        empty-label="اختر الطريقة"
+                        placeholder="ابحث عن طريقة الإهلاك..."
+                        :error="$errors->has('depreciation_method')"
+                    />
                     @error('depreciation_method')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>

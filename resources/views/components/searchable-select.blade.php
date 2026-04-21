@@ -18,6 +18,11 @@
 @php
     $selectedRaw = old($name, $value);
     $selectedStr = $selectedRaw === null || $selectedRaw === '' ? '' : (string) $selectedRaw;
+    $wireAttrs = $attributes->filter(fn ($v, $k) => is_string($k) && str_starts_with($k, 'wire:model'));
+    $outerAttrs = $attributes->except(array_keys($wireAttrs->getAttributes()));
+    if ($omitHidden) {
+        $outerAttrs = $outerAttrs->merge($wireAttrs->getAttributes());
+    }
     $normalized = [];
     foreach ($options as $row) {
         if (is_array($row)) {
@@ -45,7 +50,7 @@
 @endphp
 
 <div
-    {{ $attributes->class(['erp-searchable-select', 'relative', 'w-full']) }}
+    {{ $outerAttrs->class(['erp-searchable-select', 'relative', 'w-full']) }}
     x-data="{
         open: false,
         q: '',
@@ -82,10 +87,13 @@
         pick(v) {
             this.selected = v;
             this.close();
-            this.$dispatch('searchable-select-change', { name: @js($name), value: v });
+            const detail = { name: @js($name), value: v };
+            this.$dispatch('searchable-select-change', detail);
+            this.$dispatch('custom-select-change', detail);
             this.$nextTick(() => {
                 const h = this.$refs.hiddenInput;
                 if (h) {
+                    h.dispatchEvent(new Event('input', { bubbles: true }));
                     h.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             });
@@ -93,10 +101,13 @@
         clearSel() {
             this.selected = '';
             this.q = '';
-            this.$dispatch('searchable-select-change', { name: @js($name), value: '' });
+            const detail = { name: @js($name), value: '' };
+            this.$dispatch('searchable-select-change', detail);
+            this.$dispatch('custom-select-change', detail);
             this.$nextTick(() => {
                 const h = this.$refs.hiddenInput;
                 if (h) {
+                    h.dispatchEvent(new Event('input', { bubbles: true }));
                     h.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             });
@@ -138,6 +149,9 @@
             x-ref="hiddenInput"
             @if($required) required @endif
             x-bind:value="selected"
+            @if(! $omitHidden)
+                {{ $wireAttrs }}
+            @endif
         >
     @endunless
     <button
@@ -149,7 +163,7 @@
         :aria-expanded="open"
         aria-haspopup="listbox"
         :aria-controls="'{{ $id }}-listbox'"
-        class="flex h-10 w-full items-center justify-between gap-2 rounded-lg border bg-gray-50 px-3 text-right text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 {{ $borderClass }}"
+        class="flex h-10 w-full items-center justify-between gap-2 rounded-lg border bg-white px-3 text-right text-sm text-gray-900 shadow-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-0 {{ $borderClass }}"
     >
         <span class="min-w-0 flex-1 truncate font-normal" x-text="display()"></span>
         <svg class="h-4 w-4 shrink-0 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -167,14 +181,14 @@
         x-transition:leave="transition ease-in duration-75"
         x-transition:leave-start="opacity-100 scale-100"
         x-transition:leave-end="opacity-0 scale-95"
-        class="{{ $panelZ }} {{ $panelPositionClass }} @if(! $useFixed) w-full @endif overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg ring-1 ring-black/5"
-        :style="useFixed ? ('top:' + panelTop + 'px;left:' + panelLeft + 'px;width:' + Math.max(panelWidth, 160) + 'px;max-width:calc(100vw - 1rem)') : ''"
+        class="{{ $panelZ }} {{ $panelPositionClass }} @if(! $useFixed) w-full @endif flex max-h-[min(18rem,50vh)] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg ring-1 ring-black/5"
+        :style="useFixed ? ('top:' + panelTop + 'px;left:' + panelLeft + 'px;width:' + Math.max(panelWidth, 160) + 'px;max-width:calc(100vw - 1rem);max-height:min(18rem,50vh)') : ''"
         id="{{ $id }}-listbox"
         role="listbox"
         @click.stop
         @keydown.escape.prevent.stop="close()"
     >
-        <div class="border-b border-gray-100 px-2 pb-1.5 pt-1">
+        <div class="shrink-0 border-b border-gray-100 px-2 pb-1.5 pt-1">
             <input
                 type="search"
                 x-ref="q"
@@ -185,21 +199,23 @@
                 dir="rtl"
             >
         </div>
-        <ul class="max-h-[min(15rem,50vh)] overflow-y-auto overscroll-contain py-0.5 text-sm" role="presentation">
-            <template x-for="(row, idx) in filtered" :key="row.v + '-' + idx + '-' + row.l">
-                <li role="option" :aria-selected="String(selected) === String(row.v)">
-                    <button
-                        type="button"
-                        class="flex w-full items-center justify-between gap-2 px-3 py-2 text-right hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
-                        :class="String(selected) === String(row.v) ? 'bg-blue-50 font-semibold text-blue-900' : 'text-gray-800'"
-                        @click="pick(row.v)"
-                        x-text="row.l"
-                    ></button>
-                </li>
-            </template>
-        </ul>
+        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <ul class="py-0.5 text-sm" role="presentation">
+                <template x-for="(row, idx) in filtered" :key="row.v + '-' + idx + '-' + row.l">
+                    <li role="option" :aria-selected="String(selected) === String(row.v)">
+                        <button
+                            type="button"
+                            class="flex w-full items-center justify-between gap-2 px-3 py-2 text-right hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                            :class="String(selected) === String(row.v) ? 'bg-blue-50 font-semibold text-blue-900' : 'text-gray-800'"
+                            @click="pick(row.v)"
+                            x-text="row.l"
+                        ></button>
+                    </li>
+                </template>
+            </ul>
+        </div>
         @if($emptyOption)
-            <div class="flex justify-end border-t border-gray-100 px-2 py-1" x-show="selected !== '' && selected !== null">
+            <div class="shrink-0 flex justify-end border-t border-gray-100 px-2 py-1" x-show="selected !== '' && selected !== null">
                 <button type="button" class="text-xs font-medium text-gray-600 hover:text-blue-700" @click="clearSel()">مسح الاختيار</button>
             </div>
         @endif

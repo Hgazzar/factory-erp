@@ -16,6 +16,10 @@
 @php
     $assetOpts = collect($ledgerOptions['assets'] ?? [])->values()->all();
     $expenseOpts = collect($ledgerOptions['expenses'] ?? [])->values()->all();
+    $faCatStatusOpts = [
+        ['value' => 'active', 'label' => 'نشط'],
+        ['value' => 'inactive', 'label' => 'غير نشط'],
+    ];
 @endphp
 <div dir="rtl" class="mx-auto w-full max-w-4xl space-y-6">
     <header class="flex flex-wrap items-center justify-between gap-4">
@@ -35,10 +39,15 @@
             </div>
             <div>
                 <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700"><x-info field="fixed_asset_category_col_status" /> الحالة <span class="text-red-500">*</span></label>
-                <select name="status" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="active" @selected(old('status', 'active') === 'active')>نشط</option>
-                    <option value="inactive" @selected(old('status') === 'inactive')>غير نشط</option>
-                </select>
+                <x-custom-select
+                    name="status"
+                    class="w-full"
+                    :options="$faCatStatusOpts"
+                    :selected="old('status', 'active')"
+                    :empty-option="false"
+                    placeholder="الحالة..."
+                    :error="$errors->has('status')"
+                />
                 @error('status')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
             <div>

@@ -131,13 +131,25 @@
                         <span>العملة <span class="text-red-500">*</span></span>
                         <x-info field="currency" />
                     </label>
-                    <select id="currency" name="currency" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="SAR" @selected(old('currency', $account->currency) === 'SAR')>SAR</option>
-                        <option value="USD" @selected(old('currency', $account->currency) === 'USD')>USD</option>
-                        <option value="EUR" @selected(old('currency', $account->currency) === 'EUR')>EUR</option>
-                        <option value="AED" @selected(old('currency', $account->currency) === 'AED')>AED</option>
-                        <option value="EGP" @selected(old('currency', $account->currency) === 'EGP')>EGP</option>
-                    </select>
+                    @php
+                        $currencyOpts = [
+                            ['value' => 'SAR', 'label' => 'SAR'],
+                            ['value' => 'USD', 'label' => 'USD'],
+                            ['value' => 'EUR', 'label' => 'EUR'],
+                            ['value' => 'AED', 'label' => 'AED'],
+                            ['value' => 'EGP', 'label' => 'EGP'],
+                        ];
+                    @endphp
+                    <x-custom-select
+                        id="currency"
+                        name="currency"
+                        class="w-full"
+                        :options="$currencyOpts"
+                        :selected="old('currency', $account->currency)"
+                        :empty-option="false"
+                        placeholder="اختر العملة..."
+                        :error="$errors->has('currency')"
+                    />
                     @error('currency') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="space-y-2 md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-4">

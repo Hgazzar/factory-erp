@@ -42,7 +42,7 @@
         .module-sidebar-title { font-size: 1.125rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem 0; }
         .module-sidebar-back { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; color: #6b7280; text-decoration: none; font-size: 0.875rem; background: #f9fafb; border: 1px solid #e5e7eb; transition: background 0.15s, color 0.15s; }
         .module-sidebar-back:hover { background: #f3f4f6; color: #374151; }
-        .module-sidebar-search { margin-top: 1rem; padding: 0.5rem 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; background: #f9fafb; font-size: 0.875rem; width: 100%; }
+        .module-sidebar-search { margin-top: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; background: #f9fafb; font-size: 0.875rem; width: 100%; height: 2.5rem; box-sizing: border-box; line-height: 1.25; }
         .module-sidebar-search:focus { outline: none; border-color: #6366f1; background: #fff; }
         .module-nav { padding: 0.75rem; list-style: none; margin: 0; }
         .module-nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 0.5rem; color: #4b5563; text-decoration: none; font-size: 0.9375rem; transition: background 0.15s, color 0.15s; }
@@ -93,7 +93,14 @@
         #info-hint-popup.is-visible { display: block; }
         @media print {
             .sidebar, .erp-sidebar, .module-sidebar, .no-print, .form-filter { display: none !important; }
-            .main-content, .container-fluid { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            header.sticky.top-0 { display: none !important; }
+            html, body { height: auto !important; overflow: visible !important; }
+            .main-content, .container-fluid {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
         }
         /* Hide spinners on number inputs (fallback when Vite CSS not loaded) */
         input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
@@ -115,6 +122,7 @@
             ['label' => 'المبيعات', 'subtitle' => 'لوحة المبيعات', 'route' => 'sales.dashboard', 'iconBg' => 'rgba(46, 125, 50, 0.2)', 'iconColor' => '#2e7d32', 'icon' => '<path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5v12h-2V2h2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2z"/>'],
             ['label' => 'المشتريات', 'subtitle' => 'لوحة المشتريات', 'route' => 'purchases.dashboard', 'iconBg' => 'rgba(124, 58, 237, 0.2)', 'iconColor' => '#7c3aed', 'icon' => '<path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5z"/>'],
             ['label' => 'الإنتاج', 'subtitle' => 'أوامر الإنتاج', 'route' => 'production-orders.index', 'iconBg' => 'rgba(37, 99, 235, 0.15)', 'iconColor' => '#2563eb', 'icon' => '<path d="M6.079 11.9a1.5 1.5 0 0 0 1.21.578H7.5h.21a1.5 1.5 0 0 0 1.21-.578l2.51-3.18a1.5 1.5 0 0 0 .121-1.66L9.395 3.53a1.5 1.5 0 0 0-1.42-.98H6.025a1.5 1.5 0 0 0-1.42.98L3.258 7.06a1.5 1.5 0 0 0 .12 1.66l2.701 3.18z"/><path d="M2.5 14.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>'],
+            ['label' => 'التصنيع', 'subtitle' => 'لوحة التحكم', 'route' => 'manufacturing.dashboard', 'iconBg' => 'rgba(59, 130, 246, 0.18)', 'iconColor' => '#1d4ed8', 'icon' => '<path d="M8 1a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V1zm1 0v14h6V1H9zM2 3a1 1 0 0 1 1-1h3v14H3a1 1 0 0 1-1-1V3z"/>'],
             ['label' => 'الموارد البشرية', 'subtitle' => 'لوحة الموارد البشرية', 'route' => 'hr.dashboard', 'iconBg' => 'rgba(13, 148, 136, 0.18)', 'iconColor' => '#0d9488', 'icon' => '<path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/><path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>'],
         ];
     @endphp
@@ -157,7 +165,7 @@
 
             {{-- CENTER (Global Search) --}}
             <div class="hidden md:flex flex-1 max-w-md justify-center px-4">
-                <form action="{{ route('dashboard') }}" method="GET" class="w-72 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                <form action="{{ route('dashboard') }}" method="GET" class="flex h-9 w-72 max-w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3">
                     <svg class="w-4 h-4 text-gray-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input type="search" name="q" value="{{ request('q') }}" placeholder="ابحث عن عميل، فاتورة، صنف..." class="flex-1 text-sm outline-none bg-transparent border-0 p-0 placeholder-gray-400">
                 </form>
@@ -330,7 +338,7 @@
                 $currentModule = 'purchases';
             } elseif (request()->is('inventory*') || request()->is('items*') || request()->is('warehouses*')) {
                 $currentModule = 'inventory';
-            } elseif (request()->is('production-orders*')) {
+            } elseif (request()->is('production-orders*') || request()->is('manufacturing*')) {
                 $currentModule = 'production';
             } elseif (request()->is('finance*')) {
                 $currentModule = 'finance';
@@ -402,7 +410,10 @@
                 <a href="{{ route('inventory.movements.index') }}" class="module-nav-link {{ request()->routeIs('inventory.movements.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg> حركات المخزون</a>
                 <a href="{{ route('inventory.price-lists.index') }}" class="module-nav-link {{ request()->routeIs('inventory.price-lists.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm4.5 0a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg> قوائم الأسعار</a>
                 @elseif($currentModule === 'production')
-                <a href="{{ route('production-orders.index') }}" class="module-nav-link {{ request()->routeIs('production-orders.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M6.079 11.9a1.5 1.5 0 0 0 1.21.578H7.5h.21a1.5 1.5 0 0 0 1.21-.578l2.51-3.18a1.5 1.5 0 0 0 .121-1.66L9.395 3.53a1.5 1.5 0 0 0-1.42-.98H6.025a1.5 1.5 0 0 0-1.42.98L3.258 7.06a1.5 1.5 0 0 0 .12 1.66l2.701 3.18z"/><path d="M2.5 14.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg> أوامر الإنتاج</a>
+                <a href="{{ route('manufacturing.dashboard') }}" class="module-nav-link {{ request()->routeIs('manufacturing.dashboard') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13z"/><path d="M2 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 13v-3zm8-8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 10 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-3z"/></svg> لوحة التحكم</a>
+                <a href="{{ route('manufacturing.bom-lists.index') }}" class="module-nav-link {{ request()->routeIs('manufacturing.bom-lists.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113z"/><path d="M15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6z"/></svg> قوائم المواد</a>
+                <a href="{{ route('manufacturing.runs.index') }}" class="module-nav-link {{ request()->routeIs('manufacturing.runs.index', 'manufacturing.create', 'manufacturing.show', 'manufacturing.store', 'manufacturing.post', 'manufacturing.destroy') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg> أوامر العمل</a>
+                <a href="{{ route('manufacturing.reports.production-variance') }}" class="module-nav-link {{ request()->routeIs('manufacturing.reports.production-variance') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M4 11H2v3h2v-3zm5-3H7v6h2V8zm5-5h-2v11h2V3zm-5-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/></svg> انحرافات الإنتاج</a>
                 @elseif($currentModule === 'finance')
                 {{-- روابط قسم المحاسبة المالية (كما في mm.jpg) --}}
                 <a href="{{ route('finance.dashboard') }}" class="module-nav-link {{ request()->routeIs('finance.dashboard') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13z"/><path d="M2 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 13v-3zm8-8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 10 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-3z"/></svg> لوحة المحاسبة</a>
@@ -522,7 +533,10 @@
                 <a href="{{ route('inventory.movements.index') }}" class="module-nav-link d-block {{ request()->routeIs('inventory.movements.*') ? 'active' : '' }}">حركات المخزون</a>
                 <a href="{{ route('inventory.price-lists.index') }}" class="module-nav-link d-block {{ request()->routeIs('inventory.price-lists.*') ? 'active' : '' }}">قوائم الأسعار</a>
                 @elseif($currentModule === 'production')
-                <a href="{{ route('production-orders.index') }}" class="module-nav-link d-block {{ request()->routeIs('production-orders.*') ? 'active' : '' }}">أوامر الإنتاج</a>
+                <a href="{{ route('manufacturing.dashboard') }}" class="module-nav-link d-block {{ request()->routeIs('manufacturing.dashboard') ? 'active' : '' }}">لوحة التحكم</a>
+                <a href="{{ route('manufacturing.bom-lists.index') }}" class="module-nav-link d-block {{ request()->routeIs('manufacturing.bom-lists.*') ? 'active' : '' }}">قوائم المواد</a>
+                <a href="{{ route('manufacturing.runs.index') }}" class="module-nav-link d-block {{ request()->routeIs('manufacturing.runs.index', 'manufacturing.create', 'manufacturing.show', 'manufacturing.store', 'manufacturing.post', 'manufacturing.destroy') ? 'active' : '' }}">أوامر العمل</a>
+                <a href="{{ route('manufacturing.reports.production-variance') }}" class="module-nav-link d-block {{ request()->routeIs('manufacturing.reports.production-variance') ? 'active' : '' }}">انحرافات الإنتاج</a>
                 @elseif($currentModule === 'finance')
                 <a href="{{ route('finance.dashboard') }}" class="module-nav-link d-block {{ request()->routeIs('finance.dashboard') ? 'active' : '' }}">لوحة المحاسبة</a>
                 <a href="{{ route('finance.accounts.index') }}" class="module-nav-link d-block {{ request()->routeIs('finance.accounts.*') ? 'active' : '' }}">دليل الحسابات</a>

@@ -25,6 +25,11 @@ return [
     */
     'raw_materials_inventory_code' => env('ACCOUNT_RAW_MATERIALS', '1041'),
     'finished_goods_inventory_code' => env('ACCOUNT_FINISHED_GOODS', '1042'),
+    /**
+     * مجمع الإهلاك لقيد التصنيع (دائن). في دليل المشروع الافتراضي يطابق حساب «مجمع الإهلاك» (1510).
+     * يمكن تجاوزه عبر ACCOUNT_MACHINE_DEPR إن كانت منشأتك تستخدم كوداً آخر في جدول accounts.
+     */
+    'machine_depreciation_accumulated_code' => env('ACCOUNT_MACHINE_DEPR', '1510'),
     'cogs_code' => env('ACCOUNT_COGS', '5000'),
 
     /*

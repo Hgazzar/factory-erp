@@ -37,6 +37,8 @@ use App\Http\Controllers\ItemWebController;
 use App\Http\Controllers\JournalEntryWebController;
 use App\Http\Controllers\LedgerWebController;
 use App\Http\Controllers\MachineWebController;
+use App\Http\Controllers\BomListWebController;
+use App\Http\Controllers\ManufacturingWebController;
 use App\Http\Controllers\NotificationWebController;
 use App\Http\Controllers\OperationsDashboardController;
 use App\Http\Controllers\OperationsShiftController;
@@ -237,6 +239,23 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('/{production_order}/prefill-purchase', [ProductionOrderWebController::class, 'prefillPurchaseOrder'])->name('prefill-purchase');
         Route::post('/{production_order}/complete', [ProductionOrderWebController::class, 'complete'])->name('complete');
         Route::get('/{production_order}', [ProductionOrderWebController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('manufacturing')->name('manufacturing.')->group(function () {
+        Route::get('/', [ManufacturingWebController::class, 'dashboard'])->name('dashboard');
+        Route::get('runs', [ManufacturingWebController::class, 'index'])->name('runs.index');
+        Route::prefix('bom-lists')->name('bom-lists.')->group(function () {
+            Route::get('/', [BomListWebController::class, 'index'])->name('index');
+            Route::get('create', [BomListWebController::class, 'create'])->name('create');
+            Route::post('/', [BomListWebController::class, 'store'])->name('store');
+            Route::get('{bom_list}', [BomListWebController::class, 'show'])->name('show');
+        });
+        Route::get('create', [ManufacturingWebController::class, 'create'])->name('create');
+        Route::get('reports/production-variance', [ManufacturingWebController::class, 'productionVarianceReport'])->name('reports.production-variance');
+        Route::post('/', [ManufacturingWebController::class, 'store'])->name('store');
+        Route::post('{manufacturing_run}/post', [ManufacturingWebController::class, 'post'])->name('post');
+        Route::delete('{manufacturing_run}', [ManufacturingWebController::class, 'destroy'])->name('destroy');
+        Route::get('{manufacturing_run}', [ManufacturingWebController::class, 'show'])->name('show');
     });
 
     // Finance (Start of the module)

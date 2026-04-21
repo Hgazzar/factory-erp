@@ -56,6 +56,12 @@
 @endpush
 
 @section('content')
+@php
+    $ccParentOpts = collect($parents ?? collect())->map(fn ($parent) => [
+        'value' => $parent->id,
+        'label' => $parent->code.' - '.$parent->name,
+    ])->all();
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4">
@@ -88,14 +94,15 @@
                 </div>
                 <div>
                     <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">مركز التكلفة الرئيسي <x-info field="parent_cost_center" /></label>
-                    <select name="parent_id" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">بدون رئيسي (مستوى جذري)</option>
-                        @foreach(($parents ?? collect()) as $parent)
-                            <option value="{{ $parent->id }}" @selected((string) old('parent_id') === (string) $parent->id)>
-                                {{ $parent->code }} - {{ $parent->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-custom-select
+                        name="parent_id"
+                        class="w-full"
+                        :options="$ccParentOpts"
+                        :selected="old('parent_id')"
+                        :error="$errors->has('parent_id')"
+                        empty-label="بدون رئيسي (مستوى جذري)"
+                        placeholder="ابحث برمز أو اسم المركز الرئيسي..."
+                    />
                     @error('parent_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>

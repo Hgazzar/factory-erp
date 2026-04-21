@@ -14,7 +14,6 @@
 
 @section('content')
 @php
-    $selectedCategoryId = old('expense_category_id', $expense->expense_category_id);
     $expenseAccountOptions = collect($expenseAccounts ?? [])->map(fn ($a) => [
         'value' => data_get($a, 'id'),
         'label' => trim((string) data_get($a, 'code').' - '.(string) data_get($a, 'name_ar', data_get($a, 'name', ''))),
@@ -31,6 +30,16 @@
         'value' => data_get($b, 'id'),
         'label' => trim((string) data_get($b, 'bank_name').' — '.(string) data_get($b, 'account_number')),
     ])->filter(fn ($o) => (string) ($o['value'] ?? '') !== '')->values()->all();
+    $expenseEditCategoryOptions = collect($categories ?? collect())->map(fn ($c) => [
+        'value' => data_get($c, 'id'),
+        'label' => trim((string) data_get($c, 'code').' — '.(string) data_get($c, 'name_ar', data_get($c, 'name', ''))),
+    ])->filter(fn ($o) => (string) ($o['value'] ?? '') !== '')->values()->all();
+    $expenseEditPaymentMethodOpts = [
+        ['value' => 'cash', 'label' => 'نقدًا'],
+        ['value' => 'bank', 'label' => 'تحويل بنكي'],
+        ['value' => 'card', 'label' => 'بطاقة'],
+        ['value' => 'check', 'label' => 'شيك'],
+    ];
 @endphp
 <div dir="rtl" class="mx-auto w-full max-w-full">
     <header class="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4">
@@ -63,15 +72,16 @@
                     <label for="expense_category_id" class="block text-sm font-medium text-gray-700">
                         تصنيف المصروف <x-info field="expense_expense_category" />
                     </label>
-                    <select id="expense_category_id" name="expense_category_id" class="h-10 w-full rounded-lg border bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500 {{ $errors->has('expense_category_id') ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200' }}">
-                        <option value="">لا شيء</option>
-                        @forelse(($categories ?? collect()) as $category)
-                            <option value="{{ data_get($category, 'id') }}" @selected((string) $selectedCategoryId === (string) data_get($category, 'id'))>
-                                {{ data_get($category, 'code') }} — {{ data_get($category, 'name_ar', data_get($category, 'name', '')) }}
-                            </option>
-                        @empty
-                        @endforelse
-                    </select>
+                    <x-custom-select
+                        id="expense_category_id"
+                        name="expense_category_id"
+                        class="w-full"
+                        :options="$expenseEditCategoryOptions"
+                        :selected="old('expense_category_id', $expense->expense_category_id)"
+                        :error="$errors->has('expense_category_id')"
+                        empty-label="لا شيء"
+                        placeholder="ابحث في تصنيفات المصروف..."
+                    />
                     @error('expense_category_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
@@ -185,15 +195,19 @@
                 </div>
             </div>
 
-            <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3" x-data="{ pm: @js(old('payment_method', $expense->payment_method)) }">
+            <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3" x-data="{ pm: @js(old('payment_method', $expense->payment_method)) }" @custom-select-change="if ($event.detail && $event.detail.name === 'payment_method') pm = $event.detail.value || 'cash'">
                 <div class="space-y-1 md:col-span-1">
                     <label for="payment_method" class="block text-sm font-medium text-gray-700">طريقة الدفع <span class="text-red-500">*</span></label>
-                    <select id="payment_method" name="payment_method" x-model="pm" class="h-10 w-full rounded-lg border bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500 {{ $errors->has('payment_method') ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200' }}">
-                        <option value="cash">نقدًا</option>
-                        <option value="bank">تحويل بنكي</option>
-                        <option value="card">بطاقة</option>
-                        <option value="check">شيك</option>
-                    </select>
+                    <x-custom-select
+                        id="payment_method"
+                        name="payment_method"
+                        class="w-full"
+                        :options="$expenseEditPaymentMethodOpts"
+                        :selected="old('payment_method', $expense->payment_method)"
+                        :empty-option="false"
+                        :error="$errors->has('payment_method')"
+                        placeholder="طريقة الدفع..."
+                    />
                     @error('payment_method')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="space-y-1 md:col-span-2" x-show="['bank','check','card'].includes(pm)" x-cloak>

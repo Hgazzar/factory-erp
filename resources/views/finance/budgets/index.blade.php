@@ -57,24 +57,43 @@
                         <span>السنة المالية</span>
                         <x-info field="fiscal_year" />
                     </label>
-                    <select name="fiscal_year" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">كل السنوات</option>
-                        @foreach($fiscalYears as $year)
-                            <option value="{{ $year }}" @selected($fiscalYear !== null && (int) $fiscalYear === (int) $year)>{{ $year }}</option>
-                        @endforeach
-                    </select>
+                    @php
+                        $budgetFilterYearOpts = collect($fiscalYears)->map(fn ($year) => [
+                            'value' => (string) $year,
+                            'label' => (string) $year,
+                        ])->prepend(['value' => '', 'label' => 'كل السنوات'])->values()->all();
+                        $budgetFilterYearSelected = $fiscalYear !== null ? (string) $fiscalYear : '';
+                    @endphp
+                    <x-custom-select
+                        name="fiscal_year"
+                        class="w-full"
+                        :options="$budgetFilterYearOpts"
+                        :selected="$budgetFilterYearSelected"
+                        :empty-option="false"
+                        placeholder="السنة المالية..."
+                    />
                 </div>
                 <div class="space-y-1">
                     <label class="inline-flex items-center gap-1 text-xs font-medium text-gray-600">
                         <span>الحالات</span>
                         <x-info field="budget_status" />
                     </label>
-                    <select name="status" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">جميع الحالات</option>
-                        <option value="draft" @selected($status === 'draft')>مسودة</option>
-                        <option value="active" @selected($status === 'active')>نشطة</option>
-                        <option value="closed" @selected($status === 'closed')>مغلقة</option>
-                    </select>
+                    @php
+                        $budgetFilterStatusOpts = [
+                            ['value' => '', 'label' => 'جميع الحالات'],
+                            ['value' => 'draft', 'label' => 'مسودة'],
+                            ['value' => 'active', 'label' => 'نشطة'],
+                            ['value' => 'closed', 'label' => 'مغلقة'],
+                        ];
+                    @endphp
+                    <x-custom-select
+                        name="status"
+                        class="w-full"
+                        :options="$budgetFilterStatusOpts"
+                        :selected="$status"
+                        :empty-option="false"
+                        placeholder="الحالة..."
+                    />
                 </div>
                 <div class="space-y-1">
                     <label class="inline-flex items-center gap-1 text-xs font-medium text-gray-600">

@@ -18,6 +18,12 @@
         'value' => $supplier->id,
         'label' => trim((string) ($supplier->code ?? '').' - '.(string) ($supplier->name ?? '')),
     ])->all();
+    $debitNoteReasonTypeOpts = [
+        ['value' => 'مرتجع مشتريات', 'label' => 'مرتجع مشتريات'],
+        ['value' => 'خصم مورد', 'label' => 'خصم مورد'],
+        ['value' => 'تسوية سعر', 'label' => 'تسوية سعر'],
+        ['value' => 'أخرى', 'label' => 'أخرى'],
+    ];
 @endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
@@ -90,13 +96,17 @@
                         <span>نوع السبب <span class="text-red-500">*</span></span>
                         <x-info field="debit_note_reason_type" />
                     </label>
-                    <select id="reason_type" name="reason_type" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر نوع السبب</option>
-                        <option value="مرتجع مشتريات" @selected(old('reason_type') === 'مرتجع مشتريات')>مرتجع مشتريات</option>
-                        <option value="خصم مورد" @selected(old('reason_type') === 'خصم مورد')>خصم مورد</option>
-                        <option value="تسوية سعر" @selected(old('reason_type') === 'تسوية سعر')>تسوية سعر</option>
-                        <option value="أخرى" @selected(old('reason_type') === 'أخرى')>أخرى</option>
-                    </select>
+                    <x-custom-select
+                        id="reason_type"
+                        name="reason_type"
+                        class="w-full"
+                        :options="$debitNoteReasonTypeOpts"
+                        :selected="old('reason_type')"
+                        :required="true"
+                        :error="$errors->has('reason_type')"
+                        empty-label="اختر نوع السبب"
+                        placeholder="ابحث عن نوع السبب..."
+                    />
                     @error('reason_type') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="space-y-1">

@@ -22,6 +22,10 @@
         'value' => $a->id,
         'label' => trim((string) ($a->code ?? '').' — '.(string) ($a->name_ar ?? '')),
     ])->all();
+    $paymentTypeOpts = [
+        ['value' => 'supplier', 'label' => 'سند صرف مورد'],
+        ['value' => 'expense', 'label' => 'سند صرف مصروف'],
+    ];
 @endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4">
@@ -59,7 +63,11 @@
                 }
             }
          }"
-         @searchable-select-change="if ($event.detail.name === 'supplier_id') { supplierId = $event.detail.value != null && $event.detail.value !== '' ? String($event.detail.value) : ''; invoiceId = ''; loadInvoices(); }"
+         @custom-select-change.window="
+            if (!$event.detail) return;
+            if ($event.detail.name === 'supplier_id') { supplierId = $event.detail.value != null && $event.detail.value !== '' ? String($event.detail.value) : ''; invoiceId = ''; loadInvoices(); }
+            if ($event.detail.name === 'type') { type = $event.detail.value || 'supplier'; if (type !== 'supplier') invoiceId = ''; }
+         "
          x-init="if (type === 'supplier' && supplierId) { loadInvoices(); }">
         @if(session('error'))
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -73,11 +81,15 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
                 <div class="md:col-span-1 xl:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">نوع السند</label>
-                    <select name="type" x-model="type" @change="if (type !== 'supplier') { invoiceId = ''; }"
-                            class="h-10 w-full rounded-lg border px-3 text-sm focus:border-blue-500 focus:ring-blue-500 @error('type') border-red-500 @else border-gray-200 bg-gray-50 @enderror">
-                        <option value="supplier">سند صرف مورد</option>
-                        <option value="expense">سند صرف مصروف</option>
-                    </select>
+                    <x-custom-select
+                        name="type"
+                        class="w-full"
+                        :options="$paymentTypeOpts"
+                        :selected="old('type', 'supplier')"
+                        :empty-option="false"
+                        :error="$errors->has('type')"
+                        placeholder="نوع السند..."
+                    />
                     @error('type')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="md:col-span-1 xl:col-span-3" x-show="type === 'supplier'">

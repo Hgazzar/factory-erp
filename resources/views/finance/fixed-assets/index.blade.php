@@ -33,12 +33,22 @@
     <section class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <form method="GET" action="{{ route('finance.fixed-assets.index') }}" class="flex flex-wrap items-center gap-3">
             <div class="w-44">
-                <select name="status" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">الكل</option>
-                    <option value="in_use" @selected($status === 'in_use')>مستخدم</option>
-                    <option value="stopped" @selected($status === 'stopped')>متوقف</option>
-                    <option value="decommissioned" @selected($status === 'decommissioned')>خارج الخدمة</option>
-                </select>
+                @php
+                    $faIndexStatusOpts = [
+                        ['value' => '', 'label' => 'الكل'],
+                        ['value' => 'in_use', 'label' => 'مستخدم'],
+                        ['value' => 'stopped', 'label' => 'متوقف'],
+                        ['value' => 'decommissioned', 'label' => 'خارج الخدمة'],
+                    ];
+                @endphp
+                <x-custom-select
+                    name="status"
+                    class="w-full"
+                    :options="$faIndexStatusOpts"
+                    :selected="$status"
+                    :empty-option="false"
+                    placeholder="الحالة..."
+                />
             </div>
             <div class="relative min-w-[240px] flex-1">
                 <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">

@@ -22,12 +22,14 @@ class Machine extends Model
         'description',
         'status',
         'is_active',
+        'depreciation_rate_per_unit',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'depreciation_rate_per_unit' => 'decimal:4',
         ];
     }
 

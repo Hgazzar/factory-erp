@@ -17,6 +17,19 @@
 @endsection
 
 @section('content')
+@php
+    $outChequeBankOpts = [
+        ['value' => 'البنك الأهلي', 'label' => 'البنك الأهلي'],
+        ['value' => 'بنك الراجحي', 'label' => 'بنك الراجحي'],
+        ['value' => 'بنك الرياض', 'label' => 'بنك الرياض'],
+    ];
+    $outChequeBeneficiaryTypeOpts = [
+        ['value' => 'supplier', 'label' => 'المورد'],
+        ['value' => 'customer', 'label' => 'العميل'],
+        ['value' => 'other', 'label' => 'أخرى'],
+    ];
+    $outChequeCurrencyOpts = [['value' => 'SAR', 'label' => 'SAR']];
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <h1 class="text-4xl font-bold tracking-tight text-gray-900">{{ $isEdit ? 'تعديل شيك صادر' : 'إصدار شيك' }}</h1>
@@ -39,12 +52,15 @@
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div class="space-y-1">
                     <label for="bank_name" class="block text-sm font-medium text-gray-700">دفتر الشيكات <x-info field="cheque_bank" /> <span class="text-red-500">*</span></label>
-                    <select id="bank_name" name="bank_name" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر دفتر الشيكات</option>
-                        <option value="البنك الأهلي" @selected(old('bank_name', $cheque->bank_name ?? '') === 'البنك الأهلي')>البنك الأهلي</option>
-                        <option value="بنك الراجحي" @selected(old('bank_name', $cheque->bank_name ?? '') === 'بنك الراجحي')>بنك الراجحي</option>
-                        <option value="بنك الرياض" @selected(old('bank_name', $cheque->bank_name ?? '') === 'بنك الرياض')>بنك الرياض</option>
-                    </select>
+                    <x-custom-select
+                        id="bank_name"
+                        name="bank_name"
+                        class="w-full"
+                        :options="$outChequeBankOpts"
+                        :selected="old('bank_name', $cheque->bank_name ?? '')"
+                        empty-label="اختر دفتر الشيكات"
+                        placeholder="ابحث عن البنك..."
+                    />
                 </div>
                 <div class="space-y-1">
                     <label for="cheque_number" class="block text-sm font-medium text-gray-700">رقم الشيك</label>
@@ -52,11 +68,15 @@
                 </div>
                 <div class="space-y-1">
                     <label for="beneficiary_type" class="block text-sm font-medium text-gray-700">نوع المستفيد <span class="text-red-500">*</span></label>
-                    <select id="beneficiary_type" name="beneficiary_type" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="supplier" @selected(old('beneficiary_type', 'supplier') === 'supplier')>المورد</option>
-                        <option value="customer" @selected(old('beneficiary_type') === 'customer')>العميل</option>
-                        <option value="other" @selected(old('beneficiary_type') === 'other')>أخرى</option>
-                    </select>
+                    <x-custom-select
+                        id="beneficiary_type"
+                        name="beneficiary_type"
+                        class="w-full"
+                        :options="$outChequeBeneficiaryTypeOpts"
+                        :selected="old('beneficiary_type', 'supplier')"
+                        :empty-option="false"
+                        placeholder="نوع المستفيد..."
+                    />
                 </div>
                 <div class="space-y-1">
                     <label for="party_name" class="block text-sm font-medium text-gray-700">الموردين</label>
@@ -83,9 +103,15 @@
                 </div>
                 <div class="space-y-1">
                     <label for="currency" class="block text-sm font-medium text-gray-700">العملة <span class="text-red-500">*</span></label>
-                    <select id="currency" name="currency" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="SAR" selected>SAR</option>
-                    </select>
+                    <x-custom-select
+                        id="currency"
+                        name="currency"
+                        class="w-full"
+                        :options="$outChequeCurrencyOpts"
+                        selected="SAR"
+                        :empty-option="false"
+                        placeholder="العملة..."
+                    />
                 </div>
                 <div class="space-y-1">
                     <label for="issue_date" class="block text-sm font-medium text-gray-700">تاريخ الإصدار <span class="text-red-500">*</span></label>

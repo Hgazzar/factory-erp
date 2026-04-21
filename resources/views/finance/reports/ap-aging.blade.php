@@ -11,7 +11,7 @@
 @endsection
 
 @section('content')
-<div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
+<div dir="rtl" class="finance-aging-print-report mx-auto w-full max-w-full space-y-6">
     <section class="flex flex-wrap items-start justify-between gap-4 rounded-lg bg-white p-4 md:p-5">
         <div>
             <h1 class="text-3xl font-bold text-gray-900">أعمار الذمم الدائنة</h1>
@@ -114,10 +114,42 @@
         main.main-content {
             padding: 0 !important;
         }
-        td.font-semibold,
-        td.font-bold {
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+        .finance-aging-print-report {
+            max-width: 100% !important;
+        }
+        .finance-aging-print-report .overflow-x-auto {
+            overflow: visible !important;
+            max-width: 100% !important;
+        }
+        .finance-aging-print-report table {
+            min-width: 0 !important;
+            width: 100% !important;
+            table-layout: fixed;
+            font-size: 8.5pt;
+            border-collapse: collapse;
+        }
+        .finance-aging-print-report th,
+        .finance-aging-print-report td {
+            padding: 0.3rem 0.2rem !important;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .finance-aging-print-report th:nth-child(2),
+        .finance-aging-print-report td:nth-child(2) {
+            white-space: normal !important;
+        }
+        .finance-aging-print-report th:not(:nth-child(2)),
+        .finance-aging-print-report td:not(:nth-child(2)) {
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
+        }
+        .finance-aging-print-report .rounded-lg,
+        .finance-aging-print-report .rounded-xl {
+            box-shadow: none !important;
         }
     }
 </style>

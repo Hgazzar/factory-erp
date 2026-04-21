@@ -17,6 +17,15 @@
 @endsection
 
 @section('content')
+@php
+    $incomingPartyOpts = collect($customers ?? collect())->map(function ($customer) {
+        $customerName = data_get($customer, 'name_ar') ?: data_get($customer, 'name');
+        $optionValue = trim((string) (data_get($customer, 'code').' - '.$customerName), ' -');
+
+        return ['value' => $optionValue, 'label' => $optionValue];
+    })->filter(fn ($o) => $o['value'] !== '')->values()->all();
+    $incomingCurrencyOpts = [['value' => 'SAR', 'label' => 'SAR']];
+@endphp
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <header class="flex items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <h1 class="text-4xl font-bold tracking-tight text-gray-900">{{ $isEdit ? 'تعديل شيك وارد' : 'استلام شيك' }}</h1>
@@ -47,18 +56,15 @@
                 </div>
                 <div class="space-y-1">
                     <label for="party_name" class="block text-sm font-medium text-gray-700">العملاء <span class="text-red-500">*</span></label>
-                    <select id="party_name" name="party_name" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر العميل</option>
-                        @foreach(($customers ?? collect()) as $customer)
-                            @php
-                                $customerName = data_get($customer, 'name_ar') ?: data_get($customer, 'name');
-                                $optionValue = trim((string) (data_get($customer, 'code') . ' - ' . $customerName), ' -');
-                            @endphp
-                            <option value="{{ $optionValue }}" @selected(old('party_name', $cheque->party_name ?? '') === $optionValue)>
-                                {{ $optionValue }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <x-custom-select
+                        id="party_name"
+                        name="party_name"
+                        class="w-full"
+                        :options="$incomingPartyOpts"
+                        :selected="old('party_name', $cheque->party_name ?? '')"
+                        empty-label="اختر العميل"
+                        placeholder="ابحث عن العميل..."
+                    />
                 </div>
                 <div class="space-y-1">
                     <label for="drawer_name" class="block text-sm font-medium text-gray-700">اسم الساحب</label>
@@ -84,9 +90,15 @@
                 </div>
                 <div class="space-y-1">
                     <label for="currency_2" class="block text-sm font-medium text-gray-700">العملة <span class="text-red-500">*</span></label>
-                    <select id="currency_2" name="currency_2" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="SAR" selected>SAR</option>
-                    </select>
+                    <x-custom-select
+                        id="currency_2"
+                        name="currency_2"
+                        class="w-full"
+                        :options="$incomingCurrencyOpts"
+                        selected="SAR"
+                        :empty-option="false"
+                        placeholder="العملة..."
+                    />
                 </div>
                 <div class="space-y-1">
                     <label for="issue_date" class="block text-sm font-medium text-gray-700">تاريخ الإصدار <span class="text-red-500">*</span></label>
