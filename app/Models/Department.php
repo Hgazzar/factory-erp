@@ -15,8 +15,20 @@ class Department extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'name_en',
+        'description',
+        'code',
+        'parent_id',
         'manager_id',
+        'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -31,6 +43,16 @@ class Department extends Model
     public function manager(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'manager_id');
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
     }
 
     public function employees(): HasMany

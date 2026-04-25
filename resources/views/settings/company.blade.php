@@ -158,6 +158,69 @@
                 </div>
             </div>
 
+            <div id="payroll-accounts" class="rounded-lg border border-indigo-100 bg-indigo-50/40 p-6 space-y-6 scroll-mt-24">
+                <h2 class="text-lg font-semibold text-gray-900">الربط المحاسبي — مسير الرواتب</h2>
+                <p class="text-sm text-gray-600">يُستخدَم تلقائياً عند اعتماد المسير (إثبات الاستحقاق) وعند دفع الرواتب (صرف فعلي).</p>
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div class="md:col-span-2">
+                        <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <x-info field="settings.company_payroll_wage_expense_account" />
+                            حساب مصروف الأجور (يُسجَّل عند الاعتماد)
+                            <span class="text-amber-600 text-xs" title="مطلوب قبل اعتماد مسير بصافي &gt; 0">موصى به</span>
+                        </label>
+                        <x-searchable-select
+                            name="payroll_wage_expense_account_id"
+                            id="payroll_wage_expense_account_id"
+                            :options="$payrollExpenseOpts ?? []"
+                            :value="old('payroll_wage_expense_account_id', $setting->payroll_wage_expense_account_id)"
+                            :required="false"
+                            :error="$errors->has('payroll_wage_expense_account_id')"
+                            :emptyOption="true"
+                            empty-label="اختر حساب مصروف"
+                            placeholder="ابحث بالرمز أو الاسم..."
+                        />
+                        @error('payroll_wage_expense_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <x-info field="settings.company_payroll_wages_payable_account" />
+                            حساب الأجور المستحقة (التزم حتى الدفع)
+                            <span class="text-amber-600 text-xs" title="مطلوب لاعتماد مسير بصافي &gt; 0">موصى به</span>
+                        </label>
+                        <x-searchable-select
+                            name="payroll_wages_payable_account_id"
+                            id="payroll_wages_payable_account_id"
+                            :options="$payrollPayableOpts ?? []"
+                            :value="old('payroll_wages_payable_account_id', $setting->payroll_wages_payable_account_id)"
+                            :required="false"
+                            :error="$errors->has('payroll_wages_payable_account_id')"
+                            :emptyOption="true"
+                            empty-label="اختر حساب خصوم"
+                            placeholder="ابحث بالرمز أو الاسم..."
+                        />
+                        @error('payroll_wages_payable_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1 flex items-center gap-1 text-sm font-medium text-gray-700">
+                            <x-info field="settings.company_payroll_default_payment_account" />
+                            الحساب الافتراضي للصرف (خزينة/بنك) — اقتراح عند دفع الرواتب
+                        </label>
+                        <x-searchable-select
+                            name="payroll_default_payment_account_id"
+                            id="payroll_default_payment_account_id"
+                            :options="$payrollCashOpts ?? []"
+                            :value="old('payroll_default_payment_account_id', $setting->payroll_default_payment_account_id)"
+                            :required="false"
+                            :error="$errors->has('payroll_default_payment_account_id')"
+                            :emptyOption="true"
+                            empty-label="— اختر (اختياري) —"
+                            placeholder="ابحث بالرمز أو الاسم..."
+                        />
+                        @error('payroll_default_payment_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-6 flex gap-2">
                 <button type="submit" class="px-4 py-2.5 rounded-lg text-white text-sm font-medium" style="background: #2563eb;">حفظ</button>
                 <a href="{{ route('dashboard') }}" class="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50">إلغاء</a>

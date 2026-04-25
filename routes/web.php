@@ -9,6 +9,7 @@ use App\Http\Controllers\AttachmentWebController;
 use App\Http\Controllers\AuditLogWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
+use App\Http\Controllers\BomListWebController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\ChequeController;
 use App\Http\Controllers\CommissionRuleWebController;
@@ -28,7 +29,11 @@ use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FixedAssetCategoryController;
 use App\Http\Controllers\FixedAssetController;
+use App\Http\Controllers\HRAttendanceImportController;
+use App\Http\Controllers\HRAttendanceWebController;
 use App\Http\Controllers\HRDashboardController;
+use App\Http\Controllers\HRLeaveRequestController;
+use App\Http\Controllers\HROvertimeWebController;
 use App\Http\Controllers\InstallmentWebController;
 use App\Http\Controllers\InventoryDashboardController;
 use App\Http\Controllers\ItemBomController;
@@ -37,13 +42,14 @@ use App\Http\Controllers\ItemWebController;
 use App\Http\Controllers\JournalEntryWebController;
 use App\Http\Controllers\LedgerWebController;
 use App\Http\Controllers\MachineWebController;
-use App\Http\Controllers\BomListWebController;
 use App\Http\Controllers\ManufacturingWebController;
 use App\Http\Controllers\NotificationWebController;
 use App\Http\Controllers\OperationsDashboardController;
 use App\Http\Controllers\OperationsShiftController;
 use App\Http\Controllers\PaymentMethodAccountController;
 use App\Http\Controllers\PaymentWebController;
+use App\Http\Controllers\PayrollItemController;
+use App\Http\Controllers\PayrollWebController;
 use App\Http\Controllers\ProcurementDashboardController;
 use App\Http\Controllers\ProductionEntryWebController;
 use App\Http\Controllers\ProductionReportWebController;
@@ -175,6 +181,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::middleware('can:manage_payroll')->prefix('hr')->name('hr.')->group(function () {
+        Route::get('payrolls/payslips', [PayrollWebController::class, 'payslips'])->name('payrolls.payslips');
+        Route::get('payrolls', [PayrollWebController::class, 'index'])->name('payrolls.index');
+        Route::get('payrolls/create', [PayrollWebController::class, 'create'])->name('payrolls.create');
+        Route::post('payrolls', [PayrollWebController::class, 'store'])->name('payrolls.store');
+        Route::get('payrolls/{payroll}', [PayrollWebController::class, 'show'])->name('payrolls.show');
+        Route::get('payrolls/{payroll}/slips/{slip}/payslip', [PayrollItemController::class, 'payslip'])->name('payroll-slips.payslip');
+        Route::post('payrolls/{payroll}/approve', [PayrollWebController::class, 'approve'])->name('payrolls.approve');
+        Route::post('payrolls/{payroll}/pay', [PayrollWebController::class, 'pay'])->name('payrolls.pay');
+
+        Route::get('overtime/create', [HROvertimeWebController::class, 'create'])->name('overtime.create');
+        Route::get('overtime', [HROvertimeWebController::class, 'index'])->name('overtime');
+        Route::post('overtime', [HROvertimeWebController::class, 'store'])->name('overtime.store');
+        Route::post('overtime/{overtimeRequest}/approve', [HROvertimeWebController::class, 'approve'])->name('overtime.approve');
+        Route::post('overtime/{overtimeRequest}/reject', [HROvertimeWebController::class, 'reject'])->name('overtime.reject');
+    });
 });
 
 /*
@@ -335,8 +358,21 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::prefix('hr')->name('hr.')->group(function () {
         Route::redirect('/', '/hr/dashboard');
         Route::get('dashboard', [HRDashboardController::class, 'index'])->name('dashboard');
+        Route::get('attendance', [HRAttendanceWebController::class, 'index'])->name('attendance');
+        Route::get('attendance/import', fn () => redirect()->route('hr.attendance', ['open_import' => 1]))->name('attendance.import');
+        Route::get('attendance/import/template', [HRAttendanceImportController::class, 'downloadTemplate'])->name('attendance.import.template');
+        Route::post('attendance/import/preview', [HRAttendanceImportController::class, 'preview'])->name('attendance.import.preview');
+        Route::post('attendance/import/execute', [HRAttendanceImportController::class, 'execute'])->name('attendance.import.execute');
+        Route::get('leave-requests/create', [HRLeaveRequestController::class, 'create'])->name('leave-requests.create');
+        Route::get('leave-requests', [HRLeaveRequestController::class, 'index'])->name('leave-requests');
+        Route::post('leave-requests', [HRLeaveRequestController::class, 'store'])->name('leave-requests.store');
+        Route::post('leave-requests/{leave}/approve', [HRLeaveRequestController::class, 'approve'])->name('leave-requests.approve');
+        Route::post('leave-requests/{leave}/reject', [HRLeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+        Route::view('salaries', 'hr.salaries')->name('salaries');
         Route::resource('departments', DepartmentWebController::class)->except(['show']);
-        Route::resource('employees', EmployeeWebController::class)->except(['show']);
+        Route::get('employees/import', [EmployeeWebController::class, 'import'])->name('employees.import');
+        Route::get('employees/export', [EmployeeWebController::class, 'export'])->name('employees.export');
+        Route::resource('employees', EmployeeWebController::class);
     });
 
     // المشتريات (Purchases)
@@ -513,4 +549,3 @@ Route::get('/run-final-cleanup', function () {
         return '❌ Error: '.$e->getMessage();
     }
 });
-

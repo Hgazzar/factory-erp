@@ -13,6 +13,8 @@
     'fixedPanel' => false,
     /** عند true: لا يُصدَر input مخفي؛ ضع حقلاً مخفياً في الأب مع x-model (نماذج Alpine متداخلة) */
     'omitHidden' => false,
+    /** عند false: إخفاء حقل البحث داخل اللوحة (قوائم قصيرة مثل الحالة) */
+    'searchable' => true,
 ])
 
 @php
@@ -188,17 +190,19 @@
         @click.stop
         @keydown.escape.prevent.stop="close()"
     >
-        <div class="shrink-0 border-b border-gray-100 px-2 pb-1.5 pt-1">
-            <input
-                type="search"
-                x-ref="q"
-                x-model="q"
-                :placeholder="placeholder"
-                autocomplete="off"
-                class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                dir="rtl"
-            >
-        </div>
+        @if($searchable)
+            <div class="shrink-0 border-b border-gray-100 px-2 pb-1.5 pt-1">
+                <input
+                    type="search"
+                    x-ref="q"
+                    x-model="q"
+                    :placeholder="placeholder"
+                    autocomplete="off"
+                    class="h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    dir="rtl"
+                >
+            </div>
+        @endif
         <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <ul class="py-0.5 text-sm" role="presentation">
                 <template x-for="(row, idx) in filtered" :key="row.v + '-' + idx + '-' + row.l">

@@ -78,4 +78,9 @@ class CostCenter extends Model
     {
         return $this->hasMany(self::class, 'parent_id')->orderBy('code');
     }
+
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'cost_center_id');
+    }
 }

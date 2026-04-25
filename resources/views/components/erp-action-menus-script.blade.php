@@ -18,11 +18,30 @@
         menu.style.position = 'fixed';
         menu.style.zIndex = '9999';
         var w = menu.offsetWidth || 0;
-        var left = rect.right + gap;
-        if (left + w > window.innerWidth - pad) {
-            left = window.innerWidth - pad - w;
+        if (w < 8) w = 220;
+        var isRtl = window.getComputedStyle(document.documentElement).direction === 'rtl'
+            || window.getComputedStyle(document.body).direction === 'rtl';
+        var left;
+        if (isRtl) {
+            left = rect.left - gap - w;
+            if (left < pad) {
+                left = rect.right + gap;
+            }
+            if (left + w > window.innerWidth - pad) {
+                left = window.innerWidth - pad - w;
+            }
+            if (left < pad) {
+                left = pad;
+            }
+        } else {
+            left = rect.right + gap;
+            if (left + w > window.innerWidth - pad) {
+                left = window.innerWidth - pad - w;
+            }
+            if (left < pad) {
+                left = pad;
+            }
         }
-        if (left < pad) left = pad;
         menu.style.left = left + 'px';
         menu.style.right = 'auto';
 

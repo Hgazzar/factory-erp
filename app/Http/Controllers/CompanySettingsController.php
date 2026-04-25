@@ -38,13 +38,31 @@ class CompanySettingsController extends Controller
             $uid,
             (int) ($setting->sales_allowed_discount_ledger_account_id ?? 0)
         );
+        $payrollExpenseOpts = $this->mergeAccountOption(
+            AccountingLedgerOptions::expenseAccountsForUser($uid),
+            $uid,
+            (int) ($setting->payroll_wage_expense_account_id ?? 0)
+        );
+        $payrollPayableOpts = $this->mergeAccountOption(
+            AccountingLedgerOptions::liabilityLeafAccountsForUser($uid),
+            $uid,
+            (int) ($setting->payroll_wages_payable_account_id ?? 0)
+        );
+        $payrollCashOpts = $this->mergeAccountOption(
+            AccountingLedgerOptions::cashEquivalentAssetAccountsForUser($uid),
+            $uid,
+            (int) ($setting->payroll_default_payment_account_id ?? 0)
+        );
 
         return view('settings.company', compact(
             'setting',
             'receivableOpts',
             'payableOpts',
             'purchaseDiscOpts',
-            'salesDiscOpts'
+            'salesDiscOpts',
+            'payrollExpenseOpts',
+            'payrollPayableOpts',
+            'payrollCashOpts'
         ));
     }
 
@@ -55,6 +73,8 @@ class CompanySettingsController extends Controller
         $payIds = collect(AccountingLedgerOptions::payableLiabilityAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
         $expIds = collect(AccountingLedgerOptions::expenseAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
         $revIds = collect(AccountingLedgerOptions::revenueLeafAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
+        $liabIds = collect(AccountingLedgerOptions::liabilityLeafAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
+        $cashIds = collect(AccountingLedgerOptions::cashEquivalentAssetAccountsForUser($uid))->pluck('value')->map(fn ($v) => (int) $v)->all();
 
         $data = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
@@ -64,6 +84,9 @@ class CompanySettingsController extends Controller
             'default_payable_account_id' => ['required', 'integer', Rule::in($payIds)],
             'purchase_discount_ledger_account_id' => ['required', 'integer', Rule::in($expIds)],
             'sales_allowed_discount_ledger_account_id' => ['required', 'integer', Rule::in($revIds)],
+            'payroll_wage_expense_account_id' => ['nullable', 'integer', Rule::in($expIds)],
+            'payroll_wages_payable_account_id' => ['nullable', 'integer', Rule::in($liabIds)],
+            'payroll_default_payment_account_id' => ['nullable', 'integer', Rule::in($cashIds)],
             'commercial_register' => ['nullable', 'string', 'max:100'],
             'address' => ['nullable', 'string', 'max:500'],
             'logo_url' => ['nullable', 'string', 'max:500'],
@@ -82,6 +105,15 @@ class CompanySettingsController extends Controller
         $setting->default_payable_account_id = (int) $data['default_payable_account_id'];
         $setting->purchase_discount_ledger_account_id = (int) $data['purchase_discount_ledger_account_id'];
         $setting->sales_allowed_discount_ledger_account_id = (int) $data['sales_allowed_discount_ledger_account_id'];
+        $setting->payroll_wage_expense_account_id = ! empty($data['payroll_wage_expense_account_id'])
+            ? (int) $data['payroll_wage_expense_account_id']
+            : null;
+        $setting->payroll_wages_payable_account_id = ! empty($data['payroll_wages_payable_account_id'])
+            ? (int) $data['payroll_wages_payable_account_id']
+            : null;
+        $setting->payroll_default_payment_account_id = ! empty($data['payroll_default_payment_account_id'])
+            ? (int) $data['payroll_default_payment_account_id']
+            : null;
         $setting->commercial_register = $data['commercial_register'] ?? null;
         $setting->address = $data['address'] ?? null;
 

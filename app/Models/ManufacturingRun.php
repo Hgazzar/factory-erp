@@ -18,6 +18,7 @@ class ManufacturingRun extends Model
 
     protected $fillable = [
         'user_id',
+        'employee_id',
         'bom_list_id',
         'reference',
         'status',
@@ -52,6 +53,14 @@ class ManufacturingRun extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    /**
+     * الموظف المسؤول عن الوردية أو تشغيل أمر الإنتاج (اختياري).
+     */
+    public function responsibleEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'employee_id');
     }
 
     public function bomList(): BelongsTo

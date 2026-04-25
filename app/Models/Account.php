@@ -98,6 +98,14 @@ class Account extends Model
     }
 
     /**
+     * موظفون يشيرون إلى هذا الحساب كحساب أجور/مستحقات في الموارد البشرية.
+     */
+    public function employeesForPayroll(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'ledger_account_id');
+    }
+
+    /**
      * Arabic breadcrumb for selects (root › … › leaf), using an in-memory id map.
      */
     public function filterHierarchyLabel(Collection $accountsById): string

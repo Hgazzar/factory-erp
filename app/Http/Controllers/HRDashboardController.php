@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Leave;
+use App\Models\OvertimeRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
@@ -44,7 +46,11 @@ class HRDashboardController extends Controller
 
         $metrics = [
             'present_today' => 0,
-            'on_leave_today' => 0,
+            'on_leave_today' => Leave::query()
+                ->where('status', Leave::STATUS_APPROVED)
+                ->whereDate('start_date', '<=', today()->toDateString())
+                ->whereDate('end_date', '>=', today()->toDateString())
+                ->count(),
             'new_hires_month' => Employee::query()
                 ->where('status', 'active')
                 ->where(function ($q) {
@@ -60,7 +66,9 @@ class HRDashboardController extends Controller
                 })
                 ->count(),
             'absent_today' => 0,
-            'pending_overtime' => 0,
+            'pending_overtime' => OvertimeRequest::query()
+                ->where('status', OvertimeRequest::STATUS_NEW)
+                ->count(),
         ];
 
         $attendanceTrendLabels = [];
