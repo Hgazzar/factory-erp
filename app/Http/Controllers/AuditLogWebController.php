@@ -9,7 +9,7 @@ class AuditLogWebController extends Controller
 {
     public function index(): View
     {
-        $logs = AuditLog::with(['actor', 'targetUser'])
+        $logs = AuditLog::with(['actor', 'targetUser', 'subject'])
             ->when((int) auth()->id() !== 1, fn ($q) => $q->where('actor_id', auth()->id()))
             ->orderByDesc('logged_at')
             ->orderByDesc('id')

@@ -13,6 +13,7 @@ class ProductionLog extends Model
     protected $fillable = [
         'production_shift_id',
         'item_id',
+        'warehouse_id',
         'quantity',
         'rejected_quantity',
         'scrap_reason',
@@ -29,6 +30,7 @@ class ProductionLog extends Model
             'rejected_quantity' => 'decimal:4',
             'logged_at' => 'datetime',
             'downtime_lost_hours' => 'decimal:2',
+            'inventory_synced_at' => 'datetime',
         ];
     }
 
@@ -40,6 +42,11 @@ class ProductionLog extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
     }
 }
 

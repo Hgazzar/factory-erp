@@ -599,7 +599,7 @@
             {{-- 8. نقاط البيع --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-red h-100 p-4">
-                    <a href="{{ route('dashboard') }}" class="ufuq-card-stretch" aria-label="وحدة نقاط البيع"></a>
+                    <a href="{{ route('pos.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح لوحة نقاط البيع"></a>
                     <div class="ufuq-card-body">
                         <div class="ufuq-card-head">
                             <div class="ufuq-icon">
@@ -612,6 +612,10 @@
                                 </div>
                                 <p class="ufuq-card-sub">نقاط البيع والمبيعات</p>
                             </div>
+                        </div>
+                        <div class="ufuq-card-actions">
+                            <a href="{{ route('pos.dashboard') }}" class="ufuq-qbtn">لوحة</a>
+                            <a href="{{ route('pos.receipts.index') }}" class="ufuq-qbtn">إيصالات</a>
                         </div>
                     </div>
                 </div>

@@ -74,7 +74,7 @@ class StockMovement extends Model
             return null;
         }
 
-        return $ref->transfer_number ?? $ref->adjustment_number ?? $ref->audit_number ?? null;
+        return $ref->transfer_number ?? $ref->adjustment_number ?? $ref->audit_number ?? $ref->receipt_number ?? null;
     }
 
     /** رابط فتح المستند الأصلي */
@@ -97,6 +97,9 @@ class StockMovement extends Model
             $order = $ref->serviceOrder;
 
             return $order ? route('services.orders.show', $order) : null;
+        }
+        if ($ref instanceof PosSale) {
+            return route('pos.sales.show', $ref);
         }
 
         return null;

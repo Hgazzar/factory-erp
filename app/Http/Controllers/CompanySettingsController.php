@@ -79,6 +79,7 @@ class CompanySettingsController extends Controller
         $data = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
             'tax_number' => ['nullable', 'string', 'max:100'],
+            'currency_code' => ['nullable', 'string', 'max:10'],
             'default_vat_percent' => ['required', 'numeric', 'min:0', 'max:100'],
             'default_receivable_account_id' => ['required', 'integer', Rule::in($recvIds)],
             'default_payable_account_id' => ['required', 'integer', Rule::in($payIds)],
@@ -100,6 +101,12 @@ class CompanySettingsController extends Controller
 
         $setting->name = $data['name'] ?? null;
         $setting->tax_number = $data['tax_number'] ?? null;
+        if (array_key_exists('currency_code', $data)) {
+            $raw = trim((string) ($data['currency_code'] ?? ''));
+            $setting->currency_code = $raw !== ''
+                ? mb_strtoupper(mb_substr($raw, 0, 10))
+                : 'SAR';
+        }
         $setting->default_vat_percent = (float) $data['default_vat_percent'];
         $setting->default_receivable_account_id = (int) $data['default_receivable_account_id'];
         $setting->default_payable_account_id = (int) $data['default_payable_account_id'];

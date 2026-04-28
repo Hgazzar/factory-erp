@@ -23,6 +23,7 @@ class CompanySetting extends Model
         'commercial_register',
         'address',
         'logo_url',
+        'currency_code',
     ];
 
     protected $casts = [
@@ -40,5 +41,16 @@ class CompanySetting extends Model
         }
 
         return (float) config('accounting.default_vat_percent', 15);
+    }
+
+    /**
+     * رمز العملة للعرض (مثل SAR، USD). افتراضياً SAR إذا لم يُحفظ في الجدول بعد الترحيل.
+     */
+    public static function resolvedCurrencyCode(): string
+    {
+        $row = static::query()->first();
+        $code = $row !== null ? trim((string) ($row->currency_code ?? '')) : '';
+
+        return $code !== '' ? mb_strtoupper($code) : 'SAR';
     }
 }

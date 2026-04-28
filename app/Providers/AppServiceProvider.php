@@ -50,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         View::share('defaultVatPercent', CompanySetting::resolvedDefaultVatPercent());
+        View::share('erpCurrencyCode', CompanySetting::resolvedCurrencyCode());
         View::share('erpMoneyDecimals', (int) config('accounting.display_money_decimal_places', 2));
         View::share('erpQtyDecimals', (int) config('accounting.display_quantity_decimal_places', 2));
     }

@@ -47,6 +47,9 @@ use App\Http\Controllers\NotificationWebController;
 use App\Http\Controllers\OperationsDashboardController;
 use App\Http\Controllers\OperationsShiftController;
 use App\Http\Controllers\PaymentMethodAccountController;
+use App\Http\Controllers\PosDashboardController;
+use App\Http\Controllers\PosSaleWebController;
+use App\Http\Controllers\PosSessionWebController;
 use App\Http\Controllers\PaymentWebController;
 use App\Http\Controllers\PayrollItemController;
 use App\Http\Controllers\PayrollWebController;
@@ -181,6 +184,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // نقاط البيع — خارج تقييد role:admin حتى يفتح الكاشير/المشرف الواجهة (البيانات مقيّدة بالمستأجر في النماذج).
+    Route::prefix('pos')->name('pos.')->group(function () {
+        Route::get('dashboard', [PosDashboardController::class, 'index'])->name('dashboard');
+        Route::post('sessions', [PosSessionWebController::class, 'store'])->name('sessions.store');
+        Route::get('receipts', [PosSaleWebController::class, 'index'])->name('receipts.index');
+        Route::post('sales', [PosSaleWebController::class, 'store'])->name('sales.store');
+        Route::get('sales/{pos_sale}', [PosSaleWebController::class, 'show'])->name('sales.show');
+    });
 
     Route::middleware('can:manage_payroll')->prefix('hr')->name('hr.')->group(function () {
         Route::get('payrolls/payslips', [PayrollWebController::class, 'payslips'])->name('payrolls.payslips');

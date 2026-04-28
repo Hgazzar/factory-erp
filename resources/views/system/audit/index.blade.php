@@ -21,6 +21,7 @@
                         <th>المستهدف</th>
                         <th style="width: 140px;">الدور السابق</th>
                         <th style="width: 140px;">الدور الجديد</th>
+                        <th>بيانات إضافية</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -37,10 +38,18 @@
                             </td>
                             <td>{{ $log->old_role ?? '-' }}</td>
                             <td>{{ $log->new_role ?? '-' }}</td>
+                            <td class="small text-break" style="max-width: 280px;">
+                                @if($log->meta)
+                                    <span class="text-muted">{{ $log->action }}</span>
+                                    <div class="mt-1 font-monospace" dir="ltr">{{ json_encode($log->meta, JSON_UNESCAPED_UNICODE) }}</div>
+                                @else
+                                    —
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
+                            <td colspan="6" class="text-center text-muted py-4">
                                 لا توجد عمليات مسجلة حتى الآن.
                             </td>
                         </tr>
