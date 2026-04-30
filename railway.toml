@@ -5,5 +5,5 @@
 #
 # startCommand: تجنّب php -S -t public فقط لأن مسارات Livewire ليست ملفات ثابتة.
 [deploy]
-preDeployCommand = "php artisan migrate --force && php artisan optimize:clear && php artisan system:set-super-admins"
+preDeployCommand = "bash -lc \"if command -v npm >/dev/null 2>&1; then npm ci && npm run build; fi && php artisan migrate --force && php artisan optimize:clear && php artisan system:set-super-admins\""
 startCommand = "bash -lc \"exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\""

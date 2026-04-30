@@ -18,7 +18,9 @@ class PosDashboardController extends Controller
     public function index(Request $request): View|RedirectResponse
     {
         $user = auth()->user();
-        if ($user && ! $user->isAdminOrSuperAdmin() && ! PosDevice::query()->exists()) {
+        $uid = (int) auth()->id();
+
+        if ($user && ! $user->isAdminOrSuperAdmin() && ! PosDevice::query()->where('user_id', $uid)->exists()) {
             return redirect()
                 ->route('dashboard')
                 ->with('error', 'لا يوجد جهاز نقطة بيع مُعرّف لحسابك حالياً. يُرجى مراجعة الإدارة لتجهيز الجهاز.');
@@ -29,23 +31,24 @@ class PosDashboardController extends Controller
         $start = Carbon::parse($day)->startOfDay();
         $end = Carbon::parse($day)->endOfDay();
 
-        $uid = (int) auth()->id();
-
         $todaySalesTotal = (float) PosSale::query()
+            ->where('user_id', $uid)
             ->completed()
             ->whereBetween('created_at', [$start, $end])
             ->sum('total_price');
 
         $todayTransactionsCount = (int) PosSale::query()
+            ->where('user_id', $uid)
             ->completed()
             ->whereBetween('created_at', [$start, $end])
             ->count();
 
-        $activeDevicesCount = PosDevice::query()->active()->count();
-        $devicesTotalCount = PosDevice::query()->count();
-        $openSessionsCount = PosSession::query()->open()->count();
+        $activeDevicesCount = PosDevice::query()->where('user_id', $uid)->active()->count();
+        $devicesTotalCount = PosDevice::query()->where('user_id', $uid)->count();
+        $openSessionsCount = PosSession::query()->where('user_id', $uid)->open()->count();
 
         $salesForDay = PosSale::query()
+            ->where('user_id', $uid)
             ->completed()
             ->whereBetween('created_at', [$start, $end])
             ->get(['created_at', 'total_price']);
@@ -57,6 +60,7 @@ class PosDashboardController extends Controller
         }
 
         $paymentTotals = PosSale::query()
+            ->where('user_id', $uid)
             ->completed()
             ->whereBetween('created_at', [$start, $end])
             ->selectRaw('payment_method, SUM(total_price) as total')
@@ -66,6 +70,7 @@ class PosDashboardController extends Controller
         $paymentChart = $paymentTotals->map(fn ($v) => round((float) $v, 2))->toArray();
 
         $recentSales = PosSale::query()
+            ->where('user_id', $uid)
             ->with(['posDevice'])
             ->completed()
             ->whereBetween('created_at', [$start, $end])
@@ -100,6 +105,7 @@ class PosDashboardController extends Controller
         });
 
         $devices = PosDevice::query()
+            ->where('user_id', $uid)
             ->with(['warehouse'])
             ->orderBy('name')
             ->get()

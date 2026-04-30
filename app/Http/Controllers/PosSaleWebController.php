@@ -23,7 +23,9 @@ class PosSaleWebController extends Controller
 {
     public function index(Request $request): View
     {
+        $uid = (int) auth()->id();
         $sales = PosSale::query()
+            ->where('user_id', $uid)
             ->with(['posDevice'])
             ->completed()
             ->latest()
@@ -38,6 +40,7 @@ class PosSaleWebController extends Controller
         PosCostingService $costing,
         PosAccountingService $accounting,
     ): RedirectResponse {
+        $uid = (int) auth()->id();
         $validated = $request->validate([
             'pos_device_id' => ['required', 'exists:pos_devices,id'],
             'pos_session_id' => ['nullable', 'exists:pos_sessions,id'],
@@ -48,7 +51,9 @@ class PosSaleWebController extends Controller
             'lines.*.unit_price' => ['required', 'numeric', 'gte:0'],
         ]);
 
-        $device = PosDevice::query()->findOrFail($validated['pos_device_id']);
+        $device = PosDevice::query()
+            ->where('user_id', $uid)
+            ->findOrFail((int) $validated['pos_device_id']);
 
         if (! $device->warehouse_id) {
             return back()->withErrors([
@@ -64,7 +69,9 @@ class PosSaleWebController extends Controller
 
         $session = null;
         if (! empty($validated['pos_session_id'])) {
-            $session = PosSession::query()->findOrFail($validated['pos_session_id']);
+            $session = PosSession::query()
+                ->where('user_id', $uid)
+                ->findOrFail((int) $validated['pos_session_id']);
             if ($session->pos_device_id !== $device->id || $session->status !== PosSession::STATUS_OPEN) {
                 return back()->withErrors([
                     'pos_session_id' => 'الجلسة غير صالحة أو غير مفتوحة لهذا الجهاز.',
@@ -83,6 +90,11 @@ class PosSaleWebController extends Controller
         try {
             foreach ($qtyByItemId as $itemId => $needQty) {
                 $item = Item::query()->findOrFail($itemId);
+                if ((int) $item->user_id !== $uid) {
+                    return back()->withErrors([
+                        'stock' => 'تعذّر إتمام العملية: يوجد صنف غير تابع لحسابك.',
+                    ])->withInput();
+                }
                 $unitCostByItemId[$itemId] = $costing->unitCostForFinishedGoodSale($item);
 
                 $pivot = ItemWarehouse::query()
@@ -116,10 +128,10 @@ class PosSaleWebController extends Controller
             $sale = DB::transaction(function () use ($validated, $device, $session, $inventory, $accounting, $unitCostByItemId, $total) {
                 /** @var PosSale $sale */
                 $sale = PosSale::create([
-                    'user_id' => auth()->id(),
+                    'user_id' => $uid,
                     'pos_device_id' => $device->id,
                     'pos_session_id' => $session?->id,
-                    'receipt_number' => PosSale::nextReceiptNumber((int) auth()->id()),
+                    'receipt_number' => PosSale::nextReceiptNumber($uid),
                     'total_price' => round($total, 4),
                     'payment_method' => $validated['payment_method'],
                     'status' => PosSale::STATUS_COMPLETED,
@@ -179,6 +191,8 @@ class PosSaleWebController extends Controller
 
     public function show(PosSale $posSale): View
     {
+        abort_if((int) $posSale->user_id !== (int) auth()->id(), 403);
+
         $posSale->load(['lines.item', 'posDevice.warehouse', 'posSession', 'journalEntry']);
 
         return view('pos.sales.show', compact('posSale'));

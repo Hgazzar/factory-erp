@@ -190,6 +190,8 @@ Route::middleware(['auth'])->group(function () {
     // نقاط البيع — خارج تقييد role:admin حتى يفتح الكاشير/المشرف الواجهة (البيانات مقيّدة بالمستأجر في النماذج).
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('dashboard', [PosDashboardController::class, 'index'])->name('dashboard');
+        Route::get('cashier', [PosSaleWebController::class, 'index'])->name('cashier');
+        Route::get('sessions', [PosSessionWebController::class, 'index'])->name('sessions.index');
         Route::middleware('role:admin')->group(function () {
             Route::get('devices', [PosDeviceWebController::class, 'index'])->name('devices.index');
             Route::post('devices', [PosDeviceWebController::class, 'store'])->name('devices.store');

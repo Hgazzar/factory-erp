@@ -39,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
 
         if (config('app.env') === 'production' || env('FORCE_HTTPS', false)) {
             URL::forceScheme('https');
+            $appUrl = trim((string) config('app.url'));
+            if ($appUrl !== '') {
+                URL::forceRootUrl(rtrim($appUrl, '/'));
+            }
         }
 
         ProductionRecord::observe(ProductionRecordObserver::class);

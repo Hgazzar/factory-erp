@@ -61,11 +61,11 @@
                 </div>
                 <nav class="module-nav flex flex-col gap-1">
                     <a class="module-nav-link {{ request()->routeIs('pos.dashboard') ? 'active' : '' }}" href="{{ route('pos.dashboard') }}">لوحة نقاط البيع</a>
-                    <span class="module-nav-link disabled" aria-disabled="true">الكاشير</span>
+                    <a class="module-nav-link {{ request()->routeIs('pos.cashier') ? 'active' : '' }}" href="{{ route('pos.cashier') }}">الكاشير</a>
                     @if(auth()->user()?->isAdminOrSuperAdmin())
                         <a class="module-nav-link {{ request()->routeIs('pos.devices.*') ? 'active' : '' }}" href="{{ route('pos.devices.index') }}">الأجهزة</a>
                     @endif
-                    <span class="module-nav-link disabled" aria-disabled="true">الجلسات</span>
+                    <a class="module-nav-link {{ request()->routeIs('pos.sessions.*') ? 'active' : '' }}" href="{{ route('pos.sessions.index') }}">الجلسات</a>
                     <a class="module-nav-link {{ request()->routeIs('pos.receipts.*') ? 'active' : '' }}" href="{{ route('pos.receipts.index') }}">الإيصالات</a>
                 </nav>
             </aside>
