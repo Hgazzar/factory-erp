@@ -12,7 +12,8 @@ class AuditLogWebController extends Controller
     {
         $uid = (int) auth()->id();
         $viewer = auth()->user();
-        $systemWideAudit = $uid === 1 || ErpRoles::isSuperAdmin($viewer);
+        // أي من يصل لهذا المسار هو أدمن محاسبة (أو سوبر أدمن)؛ يعرض السجل الكامل لجميع الحركات، لا نشاط الجلسة الحالية فقط.
+        $systemWideAudit = $uid === 1 || ErpRoles::hasFinanceAdminPanelAccess($viewer);
 
         // لا نحمّل subject (morph) — غير مستخدم في الواجهة وقد يتعارض مع نطاق الحسابات المحذوفة
         $logs = AuditLog::with(['actor', 'targetUser'])
