@@ -36,7 +36,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2 justify-end">
             <a href="{{ route('sales.orders.show', $deliveryOrder->sales_order_id) }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50">أمر البيع</a>
-            @if(auth()->user()->role === 'admin')
+            @if(auth()->user()->isAdminOrSuperAdmin())
                 <a href="{{ route('services.orders.create', ['delivery_order_id' => $deliveryOrder->id]) }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-sky-200 bg-sky-50 text-sky-900 text-sm font-medium hover:bg-sky-100">إنشاء طلب خدمة</a>
             @endif
             @if($deliveryOrder->status === 'pending')

@@ -39,7 +39,7 @@
                     <a href="{{ route('sales.orders.delivery-orders.create', $salesOrder->id) }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium shadow-sm" style="background: #2563eb;">إنشاء أمر توريد</a>
                 </div>
             @endif
-            @if(auth()->user()->role === 'admin')
+            @if(auth()->user()->isAdminOrSuperAdmin())
                 <a href="{{ route('services.orders.create', ['sales_order_id' => $salesOrder->id]) }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-sky-200 bg-sky-50 text-sky-900 text-sm font-medium hover:bg-sky-100">إنشاء طلب خدمة</a>
             @endif
         </div>

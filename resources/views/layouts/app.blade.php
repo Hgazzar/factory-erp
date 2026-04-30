@@ -235,10 +235,10 @@
                 <a href="{{ route('hr.overtime') }}" class="module-nav-link {{ request()->routeIs('hr.overtime*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 5.5a.5.5 0 0 0-1 0v2.793L6.354 6.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 8.293V5.5z"/><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H2z"/></svg> الوقت الإضافي</a>
                 @endcan
                 @elseif($currentModule === 'services')
-                @if(auth()->user()->is_technician || auth()->user()->role === 'admin')
+                @if(auth()->user()->is_technician || auth()->user()->isAdminOrSuperAdmin())
                 <a href="{{ route('services.technician.index') }}" class="module-nav-link {{ request()->routeIs('services.technician.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg> مهام الفني</a>
                 @endif
-                @if(auth()->user()->role === 'admin')
+                @if(auth()->user()->isAdminOrSuperAdmin())
                 <a href="{{ route('services.dashboard') }}" class="module-nav-link {{ request()->routeIs('services.dashboard') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13z"/><path d="M2 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 13v-3zm8-8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 10 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-3z"/></svg> لوحة الخدمات</a>
                 <a href="{{ route('services.orders.index') }}" class="module-nav-link {{ request()->routeIs('services.orders.index', 'services.orders.show', 'services.orders.store', 'services.orders.assign', 'services.orders.parts.store', 'services.orders.complete', 'services.orders.cancel') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg> طلبات الخدمة</a>
                 <a href="{{ route('services.orders.create') }}" class="module-nav-link {{ request()->routeIs('services.orders.create') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8z"/></svg> طلب جديد</a>
@@ -365,10 +365,10 @@
                 <a href="{{ route('hr.overtime') }}" class="module-nav-link d-block {{ request()->routeIs('hr.overtime*') ? 'active' : '' }}">الوقت الإضافي</a>
                 @endcan
                 @elseif($currentModule === 'services')
-                @if(auth()->user()->is_technician || auth()->user()->role === 'admin')
+                @if(auth()->user()->is_technician || auth()->user()->isAdminOrSuperAdmin())
                 <a href="{{ route('services.technician.index') }}" class="module-nav-link d-block {{ request()->routeIs('services.technician.*') ? 'active' : '' }}">مهام الفني</a>
                 @endif
-                @if(auth()->user()->role === 'admin')
+                @if(auth()->user()->isAdminOrSuperAdmin())
                 <a href="{{ route('services.dashboard') }}" class="module-nav-link d-block {{ request()->routeIs('services.dashboard') ? 'active' : '' }}">لوحة الخدمات</a>
                 <a href="{{ route('services.orders.index') }}" class="module-nav-link d-block {{ request()->routeIs('services.orders.*') ? 'active' : '' }}">طلبات الخدمة</a>
                 <a href="{{ route('services.orders.create') }}" class="module-nav-link d-block {{ request()->routeIs('services.orders.create') ? 'active' : '' }}">طلب جديد</a>

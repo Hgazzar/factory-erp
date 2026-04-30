@@ -63,7 +63,7 @@ class ServiceOrderWebController extends Controller
         $technicians = User::query()
             ->where(function ($query) {
                 $query->where('is_technician', true)
-                    ->orWhere('role', 'admin');
+                    ->orWhereIn('role', ['admin', 'super_admin']);
             })
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
@@ -161,7 +161,7 @@ class ServiceOrderWebController extends Controller
         $technicians = User::query()
             ->where(function ($query) {
                 $query->where('is_technician', true)
-                    ->orWhere('role', 'admin');
+                    ->orWhereIn('role', ['admin', 'super_admin']);
             })
             ->orderBy('name')
             ->get(['id', 'name', 'email']);

@@ -15,7 +15,7 @@ class EnsureUserIsTechnicianOrAdmin
     {
         $user = $request->user();
 
-        if (! $user || (! $user->is_technician && $user->role !== 'admin')) {
+        if (! $user || (! $user->is_technician && ! $user->isAdminOrSuperAdmin())) {
             abort(403, 'هذه الصفحة مخصصة للفنيين.');
         }
 

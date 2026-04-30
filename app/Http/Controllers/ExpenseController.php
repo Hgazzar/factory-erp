@@ -1015,12 +1015,12 @@ class ExpenseController extends Controller
     private function userCanApproveExpense(?Authenticatable $user): bool
     {
         return $user instanceof User
-            && in_array($user->role, ['admin', 'supervisor'], true);
+            && ($user->role === 'supervisor' || ErpRoles::hasFinanceAdminPanelAccess($user));
     }
 
     private function userIsExpenseSuperAdmin(?Authenticatable $user): bool
     {
-        return $user instanceof User && $user->role === 'admin';
+        return $user instanceof User && ErpRoles::hasFinanceAdminPanelAccess($user);
     }
 
     private function createFixedAssetFromCapexExpense(Payment $expense, Account $assetAccount, int $journalEntryId): ?FixedAsset

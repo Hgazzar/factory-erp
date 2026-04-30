@@ -31,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::define('manage_payroll', function (User $user): bool {
-            return in_array($user->role, ['admin', 'supervisor'], true);
+            return $user->isAdminOrSuperAdmin() || $user->role === 'supervisor';
         });
 
         Notifications::alignment(Alignment::Center);

@@ -221,7 +221,7 @@
                             $lineTotal = (float) $expense->amount + $tax;
                             $posted = ($expense->status ?? '') === 'posted' || $expense->journal_entry_id;
                             $u = auth()->user();
-                            $isManagerOrAdmin = $u && in_array($u->role, ['admin', 'supervisor'], true);
+                            $isManagerOrAdmin = $u && ($u->isAdminOrSuperAdmin() || $u->role === 'supervisor');
                         @endphp
                         <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50">
                             <td class="px-3 py-3 text-right text-gray-700 whitespace-nowrap">{{ $expense->expense_number ?? ('EXP-'.str_pad((string) $expense->id, 5, '0', STR_PAD_LEFT)) }}</td>

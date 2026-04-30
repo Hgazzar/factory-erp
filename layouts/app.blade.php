@@ -129,7 +129,7 @@
                         </li>
                     </ul>
 
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="mb-2 nav-section-title">البيانات الأساسية</div>
                         <ul class="nav flex-column mb-3">
                             <li class="nav-item mb-1">
@@ -219,7 +219,7 @@
 
                     <div class="mb-2 nav-section-title">العمليات اليومية</div>
                     <ul class="nav flex-column mb-3">
-                        @if(auth()->user()->role === 'admin' || auth()->user()->role === 'supervisor')
+                        @if(auth()->user()->isAdminOrSuperAdmin() || auth()->user()->role === 'supervisor')
                             <li class="nav-item mb-1">
                                 <a class="nav-link {{ request()->routeIs('operations.shifts.*') ? 'active' : '' }}"
                                    href="{{ route('operations.shifts.index') }}">
@@ -227,7 +227,7 @@
                                 </a>
                             </li>
                         @endif
-                        @if(in_array(auth()->user()->role, ['admin', 'supervisor', 'worker']))
+                        @if(auth()->user()->isAdminOrSuperAdmin() || in_array(auth()->user()->role, ['supervisor', 'worker'], true))
                             <li class="nav-item mb-1">
                                 <a class="nav-link {{ request()->routeIs('operations.production-entry.*') ? 'active' : '' }}"
                                    href="{{ route('operations.production-entry.create') }}">
@@ -235,7 +235,7 @@
                                 </a>
                             </li>
                         @endif
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                             <li class="nav-item mb-1">
                                 <a class="nav-link {{ request()->routeIs('purchases.invoices.*') ? 'active' : '' }}"
                                    href="{{ route('purchases.invoices.index') }}">
@@ -254,7 +254,7 @@
                     {{-- Modules (تحضير للـ HR + Finance) --}}
                     <div class="mb-2 nav-section-title">المالية</div>
                     <ul class="nav flex-column mb-3">
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                             <li class="nav-item mb-1">
                                 <a class="nav-link {{ request()->routeIs('finance.accounts.*') ? 'active' : '' }}"
                                    href="{{ route('finance.accounts.index') }}">
@@ -296,7 +296,7 @@
 
                     <div class="mb-2 nav-section-title">الموارد البشرية</div>
                     <ul class="nav flex-column">
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                             <li class="nav-item mb-1">
                                 <a class="nav-link {{ request()->routeIs('hr.employees.*') ? 'active' : '' }}"
                                    href="{{ route('hr.employees.index') }}">
@@ -308,7 +308,7 @@
 
                     <div class="mb-2 nav-section-title">التقارير</div>
                     <ul class="nav flex-column mb-3">
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                             <li class="nav-item mb-1">
                                 <a class="nav-link {{ request()->routeIs('reports.statement.*') ? 'active' : '' }}"
                                    href="{{ route('reports.statement.index') }}">
@@ -338,7 +338,7 @@
 
                     <div class="mb-2 nav-section-title">السجلات والـ Audit</div>
                     <ul class="nav flex-column">
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                             <li class="nav-item mb-1">
                                 <a class="nav-link {{ request()->routeIs('system.audit.*') ? 'active' : '' }}"
                                    href="{{ route('system.audit.index') }}">

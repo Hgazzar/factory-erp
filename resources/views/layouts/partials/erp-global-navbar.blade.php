@@ -161,7 +161,7 @@
                             <li>
                                 <a href="{{ route('profile.edit') }}" class="dropdown-item rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">الملف الشخصي</a>
                             </li>
-                            @if(auth()->user()->role === 'admin')
+                            @if(auth()->user()->isAdminOrSuperAdmin())
                                 <li>
                                     <a href="{{ route('settings.company.edit') }}" class="dropdown-item rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">إعدادات المنشأة</a>
                                 </li>

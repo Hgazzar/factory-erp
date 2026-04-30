@@ -88,7 +88,7 @@
                     <ul class="list-unstyled mb-0">
                         @foreach($searchResults['items'] as $item)
                         <li class="mb-1">
-                            @if(auth()->user()->role === 'admin')
+                            @if(auth()->user()->isAdminOrSuperAdmin())
                             <a href="{{ route('items.edit', $item) }}" class="ufuq-link">{{ $item->name_ar ?? $item->name_en ?? $item->code }}</a>
                             @else
                             <span class="text-muted">{{ $item->name_ar ?? $item->name_en ?? $item->code }}</span>
@@ -114,7 +114,7 @@
                     <ul class="list-unstyled mb-0">
                         @foreach($searchResults['warehouses'] as $wh)
                         <li class="mb-1">
-                            @if(auth()->user()->role === 'admin')
+                            @if(auth()->user()->isAdminOrSuperAdmin())
                             <a href="{{ route('warehouses.edit', $wh) }}" class="ufuq-link">{{ $wh->name_ar ?? $wh->name_en ?? $wh->code }}</a>
                             @else
                             <span class="text-muted">{{ $wh->name_ar ?? $wh->name_en ?? $wh->code }}</span>
@@ -224,7 +224,7 @@
         </div>
         @endif
 
-        @if(auth()->user()->role === 'admin' && isset($serviceOpenCount))
+        @if(auth()->user()->isAdminOrSuperAdmin() && isset($serviceOpenCount))
         <div class="row g-3 mb-4 flex-row d-flex flex-wrap" dir="rtl">
             <div class="col-6 col-md-4">
                 <a href="{{ route('services.orders.index') }}" class="text-decoration-none text-dark">
@@ -269,7 +269,7 @@
         @endif
         @endif
 
-        @if(auth()->user()->is_technician && auth()->user()->role !== 'admin')
+        @if(auth()->user()->is_technician && ! auth()->user()->isAdminOrSuperAdmin())
         <div class="row g-3 mb-4" dir="rtl">
             <div class="col-12 col-md-6">
                 <a href="{{ route('services.technician.index') }}" class="text-decoration-none text-dark">
@@ -338,7 +338,7 @@
             {{-- 1. المشتريات --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-violet h-100 p-4">
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->isAdminOrSuperAdmin())
                     <a href="{{ route('purchases.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح وحدة المشتريات"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="وحدة المشتريات"></a>
@@ -356,7 +356,7 @@
                                 <p class="ufuq-card-sub">الموردون والفواتير وطلبات الشراء</p>
                             </div>
                         </div>
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
                             <a href="{{ route('purchases.suppliers.index') }}" class="ufuq-qbtn">الموردون</a>
                             <a href="{{ route('purchases.invoices.index') }}" class="ufuq-qbtn">فواتير</a>
@@ -369,7 +369,7 @@
             {{-- 2. المخزون --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-amber h-100 p-4">
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->isAdminOrSuperAdmin())
                     <a href="{{ route('inventory.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح وحدة المخزون"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="وحدة المخزون"></a>
@@ -387,7 +387,7 @@
                                 <p class="ufuq-card-sub">المنتجات والمستودعات والحركات</p>
                             </div>
                         </div>
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
                             <a href="{{ route('inventory.dashboard') }}" class="ufuq-qbtn">لوحة</a>
                             <a href="{{ route('items.index') }}" class="ufuq-qbtn">منتجات</a>
@@ -400,7 +400,7 @@
             {{-- 3. المحاسبة --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-blue h-100 p-4">
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->isAdminOrSuperAdmin())
                     <a href="{{ route('finance.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح وحدة المحاسبة"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="وحدة المحاسبة"></a>
@@ -418,7 +418,7 @@
                                 <p class="ufuq-card-sub">الحسابات والقيود والتقارير</p>
                             </div>
                         </div>
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
                             <a href="{{ route('finance.dashboard') }}" class="ufuq-qbtn">لوحة</a>
                             <a href="{{ route('finance.accounts.index') }}" class="ufuq-qbtn">دليل</a>
@@ -431,7 +431,7 @@
             {{-- 4. المبيعات --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-emerald h-100 p-4">
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->isAdminOrSuperAdmin())
                     <a href="{{ route('sales.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح وحدة المبيعات"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="وحدة المبيعات"></a>
@@ -449,7 +449,7 @@
                                 <p class="ufuq-card-sub">إدارة الفواتير والعملاء</p>
                             </div>
                         </div>
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
                             <a href="{{ route('sales.dashboard') }}" class="ufuq-qbtn">لوحة</a>
                             <a href="{{ route('sales.customers.index') }}" class="ufuq-qbtn">عملاء</a>
@@ -460,7 +460,7 @@
                 </div>
             </div>
             {{-- 4b. الخدمات والصيانة --}}
-            @if(auth()->user()->role === 'admin')
+            @if(auth()->user()->isAdminOrSuperAdmin())
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-blue h-100 p-4">
                     <a href="{{ route('services.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح وحدة الخدمات والصيانة"></a>
@@ -541,7 +541,7 @@
             {{-- 6. الموارد البشرية --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-orange h-100 p-4">
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->isAdminOrSuperAdmin())
                     <a href="{{ route('hr.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح وحدة الموارد البشرية"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="وحدة الموارد البشرية"></a>
@@ -559,7 +559,7 @@
                                 <p class="ufuq-card-sub">الموظفون والأقسام</p>
                             </div>
                         </div>
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
                             <a href="{{ route('hr.dashboard') }}" class="ufuq-qbtn">موظفين</a>
                         </div>
@@ -570,7 +570,7 @@
             {{-- 7. إدارة العملاء --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-indigo h-100 p-4">
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->isAdminOrSuperAdmin())
                     <a href="{{ route('sales.customers.index') }}" class="ufuq-card-stretch" aria-label="فتح إدارة العملاء"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="إدارة العملاء"></a>
@@ -588,7 +588,7 @@
                                 <p class="ufuq-card-sub">العملاء والعقود والمتابعة</p>
                             </div>
                         </div>
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
                             <a href="{{ route('sales.customers.index') }}" class="ufuq-qbtn">عملاء</a>
                         </div>
@@ -623,7 +623,7 @@
             {{-- 9. التقارير --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-violet h-100 p-4">
-                    @if(auth()->user()->role === 'admin')
+                    @if(auth()->user()->isAdminOrSuperAdmin())
                     <a href="{{ route('reports.statement.index') }}" class="ufuq-card-stretch" aria-label="فتح وحدة التقارير"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="وحدة التقارير"></a>
@@ -641,7 +641,7 @@
                                 <p class="ufuq-card-sub">المالية والمبيعات والضرائب</p>
                             </div>
                         </div>
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
                             <a href="{{ route('reports.statement.index') }}" class="ufuq-qbtn">ميزان</a>
                             <a href="{{ route('finance.reports.profit-loss') }}" class="ufuq-qbtn">أرباح</a>

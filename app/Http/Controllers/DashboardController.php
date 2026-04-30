@@ -158,7 +158,7 @@ class DashboardController extends Controller
         $serviceUrgentCount = 0;
         $serviceWarrantyExpiringCount = 0;
         $technicianMyOpenServiceCount = 0;
-        if ($request->user()?->role === 'admin') {
+        if ($request->user()?->isAdminOrSuperAdmin()) {
             $serviceTenant = function ($q) use ($systemWide, $viewerId) {
                 if (! $systemWide && $viewerId !== 0) {
                     $q->whereHas('customer', fn ($c) => $c->where('user_id', $viewerId));
@@ -191,7 +191,7 @@ class DashboardController extends Controller
                 ->whereDate('warranty_end', '<=', $today->copy()->addDays(30)->toDateString())
                 ->count());
         }
-        if ($request->user()?->is_technician && $request->user()?->role !== 'admin') {
+        if ($request->user()?->is_technician && ! $request->user()?->isAdminOrSuperAdmin()) {
             $technicianMyOpenServiceCount = self::safeInt(fn () => ServiceOrder::query()
                 ->where('assigned_technician_id', $request->user()->id)
                 ->whereNotIn('status', [ServiceOrder::STATUS_COMPLETED, ServiceOrder::STATUS_CANCELLED])

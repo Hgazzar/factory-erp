@@ -18,7 +18,7 @@ class PosDashboardController extends Controller
     public function index(Request $request): View|RedirectResponse
     {
         $user = auth()->user();
-        if ($user && $user->role !== 'admin' && ! PosDevice::query()->exists()) {
+        if ($user && ! $user->isAdminOrSuperAdmin() && ! PosDevice::query()->exists()) {
             return redirect()
                 ->route('dashboard')
                 ->with('error', 'لا يوجد جهاز نقطة بيع مُعرّف لحسابك حالياً. يُرجى مراجعة الإدارة لتجهيز الجهاز.');

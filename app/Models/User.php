@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\ErpRoles;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -53,5 +55,13 @@ class User extends Authenticatable
     public function employee(): HasOne
     {
         return $this->hasOne(Employee::class, 'linked_user_id');
+    }
+
+    /**
+     * نفس امتيازات مسارات وميزات «أدمن الويب» (يتطابق مع middleware role:admin).
+     */
+    public function isAdminOrSuperAdmin(): bool
+    {
+        return ErpRoles::hasFinanceAdminPanelAccess($this);
     }
 }

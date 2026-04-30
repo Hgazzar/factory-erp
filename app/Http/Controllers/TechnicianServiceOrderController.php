@@ -28,7 +28,7 @@ class TechnicianServiceOrderController extends Controller
     public function update(Request $request, ServiceOrder $order): RedirectResponse
     {
         $user = $request->user();
-        if ((int) $order->assigned_technician_id !== (int) $user->id && $user->role !== 'admin') {
+        if ((int) $order->assigned_technician_id !== (int) $user->id && ! $user->isAdminOrSuperAdmin()) {
             abort(403);
         }
 

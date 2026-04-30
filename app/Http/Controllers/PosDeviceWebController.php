@@ -14,7 +14,7 @@ class PosDeviceWebController extends Controller
 {
     public function index(Request $request): View
     {
-        if (auth()->user()?->role !== 'admin') {
+        if (! auth()->user()?->isAdminOrSuperAdmin()) {
             abort(403);
         }
 
@@ -55,7 +55,7 @@ class PosDeviceWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        if (auth()->user()?->role !== 'admin') {
+        if (! auth()->user()?->isAdminOrSuperAdmin()) {
             abort(403);
         }
 
