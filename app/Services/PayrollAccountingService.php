@@ -24,7 +24,7 @@ final class PayrollAccountingService
             return null;
         }
 
-        $setting = CompanySetting::query()->first();
+        $setting = CompanySetting::forTenant($uid);
         $expenseId = (int) ($setting?->payroll_wage_expense_account_id ?? 0);
         $payableId = (int) ($setting?->payroll_wages_payable_account_id ?? 0);
         if ($expenseId < 1 || $payableId < 1) {
@@ -93,7 +93,7 @@ final class PayrollAccountingService
             throw new RuntimeException('يُرجى اختيار حساب الصرف (خزينة أو بنك) لدفع الرواتب.');
         }
 
-        $setting = CompanySetting::query()->first();
+        $setting = CompanySetting::forTenant($uid);
         $payableId = (int) ($setting?->payroll_wages_payable_account_id ?? 0);
         if ($payableId < 1) {
             throw new RuntimeException('يُرجى ضبط حساب «الأجور المستحقة» في إعدادات الربط المحاسبي للرواتب.');

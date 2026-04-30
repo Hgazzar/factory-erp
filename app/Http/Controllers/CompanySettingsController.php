@@ -17,7 +17,7 @@ class CompanySettingsController extends Controller
     public function edit(): View
     {
         $uid = (int) auth()->id();
-        $setting = CompanySetting::first() ?? new CompanySetting;
+        $setting = CompanySetting::firstOrNew(['user_id' => $uid]);
 
         $receivableOpts = $this->mergeAccountOption(
             AccountingLedgerOptions::receivableAssetAccountsForUser($uid),
@@ -101,10 +101,7 @@ class CompanySettingsController extends Controller
             'logo_file' => ['nullable', 'image', 'max:2048'],
         ]);
 
-        $setting = CompanySetting::first();
-        if (! $setting) {
-            $setting = new CompanySetting;
-        }
+        $setting = CompanySetting::firstOrNew(['user_id' => $uid]);
 
         $setting->name = $data['name'] ?? null;
         $setting->tax_number = $data['tax_number'] ?? null;

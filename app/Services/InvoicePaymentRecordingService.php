@@ -231,7 +231,7 @@ final class InvoicePaymentRecordingService
 
     public function resolveDefaultPayableAccount(int $userId): Account
     {
-        $cs = CompanySetting::query()->first();
+        $cs = CompanySetting::forTenant($userId);
         if ($cs && $cs->default_payable_account_id) {
             $acc = Account::withoutGlobalScopes()
                 ->where('user_id', $userId)
@@ -247,7 +247,7 @@ final class InvoicePaymentRecordingService
 
     public function resolveDefaultReceivableAccount(int $userId): Account
     {
-        $cs = CompanySetting::query()->first();
+        $cs = CompanySetting::forTenant($userId);
         if ($cs && $cs->default_receivable_account_id) {
             $acc = Account::withoutGlobalScopes()
                 ->where('user_id', $userId)

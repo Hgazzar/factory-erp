@@ -343,7 +343,7 @@ class SalesQuotationWebController extends Controller
     public function print(Quotation $quotation): View
     {
         $quotation->load(['customer', 'items.item']);
-        $company = CompanySetting::first();
+        $company = CompanySetting::forTenant((int) $quotation->user_id);
 
         return view('sales.quotations.print', compact('quotation', 'company'));
     }
@@ -351,7 +351,7 @@ class SalesQuotationWebController extends Controller
     public function pdf(Quotation $quotation): Response
     {
         $quotation->load(['customer', 'items.item']);
-        $company = CompanySetting::query()->first();
+        $company = CompanySetting::forTenant((int) $quotation->user_id);
 
         $logoDataUri = null;
         if ($company?->logo_url && str_starts_with((string) $company->logo_url, 'company/')) {

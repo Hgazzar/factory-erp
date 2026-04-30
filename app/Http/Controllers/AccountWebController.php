@@ -581,6 +581,7 @@ class AccountWebController extends Controller
         }
 
         if (CompanySetting::query()
+            ->where('user_id', $account->user_id)
             ->where(function ($q) use ($account) {
                 $q->where('default_receivable_account_id', $account->id)
                     ->orWhere('default_payable_account_id', $account->id)

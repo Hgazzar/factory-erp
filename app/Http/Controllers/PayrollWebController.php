@@ -73,7 +73,7 @@ class PayrollWebController extends Controller
             ])->values()->all()
         );
 
-        $setting = CompanySetting::query()->first();
+        $setting = CompanySetting::forTenant($uid);
         $payrollExpenseOk = (int) ($setting?->payroll_wage_expense_account_id ?? 0) > 0;
         $payrollPayableOk = (int) ($setting?->payroll_wages_payable_account_id ?? 0) > 0;
         $accountingLinksReady = $payrollExpenseOk && $payrollPayableOk;
@@ -184,9 +184,9 @@ class PayrollWebController extends Controller
 
         $uid = (int) auth()->id();
         $paymentAccountOptions = AccountingLedgerOptions::cashEquivalentAssetAccountsForUser($uid);
-        $defaultPaymentAccountId = CompanySetting::query()->value('payroll_default_payment_account_id');
+        $defaultPaymentAccountId = CompanySetting::forTenant($uid)?->payroll_default_payment_account_id;
 
-        $setting = CompanySetting::query()->first();
+        $setting = CompanySetting::forTenant($uid);
         $payrollExpenseOk = (int) ($setting?->payroll_wage_expense_account_id ?? 0) > 0;
         $payrollPayableOk = (int) ($setting?->payroll_wages_payable_account_id ?? 0) > 0;
         $accountingLinksReady = $payrollExpenseOk && $payrollPayableOk;

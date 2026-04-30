@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CompanySetting extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'name',
         'tax_number',
         'default_vat_percent',
@@ -30,14 +32,34 @@ class CompanySetting extends Model
         'default_vat_percent' => 'float',
     ];
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * إعدادات المنشأة لمستأجر واحد (مستخدم ERP الرئيسي).
+     */
+    public static function forTenant(int $userId): ?self
+    {
+        if ($userId < 1) {
+            return null;
+        }
+
+        return static::query()->where('user_id', $userId)->first();
+    }
+
     /**
      * نسبة الضريبة الافتراضية للواجهات والنماذج: إعداد المنشأة ثم config ثم 15٪.
      */
-    public static function resolvedDefaultVatPercent(): float
+    public static function resolvedDefaultVatPercent(?int $userId = null): float
     {
-        $row = static::query()->first();
-        if ($row !== null && $row->default_vat_percent !== null) {
-            return (float) $row->default_vat_percent;
+        $uid = $userId ?? (auth()->check() ? (int) auth()->id() : null);
+        if ($uid !== null && $uid > 0) {
+            $row = static::forTenant($uid);
+            if ($row !== null && $row->default_vat_percent !== null) {
+                return (float) $row->default_vat_percent;
+            }
         }
 
         return (float) config('accounting.default_vat_percent', 15);
@@ -46,11 +68,17 @@ class CompanySetting extends Model
     /**
      * رمز العملة للعرض (مثل SAR، USD). افتراضياً SAR إذا لم يُحفظ في الجدول بعد الترحيل.
      */
-    public static function resolvedCurrencyCode(): string
+    public static function resolvedCurrencyCode(?int $userId = null): string
     {
-        $row = static::query()->first();
-        $code = $row !== null ? trim((string) ($row->currency_code ?? '')) : '';
+        $uid = $userId ?? (auth()->check() ? (int) auth()->id() : null);
+        if ($uid !== null && $uid > 0) {
+            $row = static::forTenant($uid);
+            $code = $row !== null ? trim((string) ($row->currency_code ?? '')) : '';
+            if ($code !== '') {
+                return mb_strtoupper($code);
+            }
+        }
 
-        return $code !== '' ? mb_strtoupper($code) : 'SAR';
+        return 'SAR';
     }
 }

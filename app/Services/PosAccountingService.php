@@ -53,7 +53,7 @@ final class PosAccountingService
                 throw new InvalidArgumentException('تكلفة البضاعة المباعة غير صالحة؛ تحقق من تكلفة الأصناف.');
             }
 
-            $pct = CompanySetting::resolvedDefaultVatPercent();
+            $pct = CompanySetting::resolvedDefaultVatPercent((int) $locked->user_id);
             $netRev = $totalRev;
             $vatAmt = 0.0;
             if ($pct > 0.00001) {

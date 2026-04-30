@@ -867,7 +867,7 @@ class SalesInvoiceWebController extends Controller
     public function print(SalesInvoice $invoice): View
     {
         $invoice->load(['customer', 'items.item']);
-        $company = CompanySetting::first();
+        $company = CompanySetting::forTenant((int) $invoice->user_id);
 
         return view('sales.invoices.print', compact('invoice', 'company'));
     }
@@ -906,7 +906,7 @@ class SalesInvoiceWebController extends Controller
                 $setting,
                 $nextIcv,
                 $pih,
-                CompanySetting::query()->first(),
+                CompanySetting::forTenant((int) $invoice->user_id),
             );
 
             $invoice->forceFill([

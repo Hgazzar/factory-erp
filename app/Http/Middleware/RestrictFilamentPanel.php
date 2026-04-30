@@ -11,10 +11,6 @@ class RestrictFilamentPanel
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! FilamentAccess::panelIsConfigured()) {
-            abort(404);
-        }
-
         if (! $request->user()) {
             abort(404);
         }

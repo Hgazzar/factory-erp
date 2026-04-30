@@ -131,6 +131,6 @@ class PosDashboardController extends Controller
 
     private function formatMoneyWithCurrency(float $amount): string
     {
-        return CompanySetting::resolvedCurrencyCode().' '.number_format($amount, 2, '.', ',');
+        return CompanySetting::resolvedCurrencyCode(auth()->check() ? (int) auth()->id() : null).' '.number_format($amount, 2, '.', ',');
     }
 }

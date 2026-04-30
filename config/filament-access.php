@@ -4,13 +4,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Filament /admin panel — allowed user IDs
+    | Filament /admin panel — allowed user IDs (اختياري)
     |--------------------------------------------------------------------------
     |
-    | Comma-separated user IDs that may access the Filament panel at /admin.
-    | Everyone else receives 404 (guests) or redirect/404 (logged-in), so the
-    | panel stays hidden from clients. Log in via the main app first, then
-    | open /admin in the browser (no menu link is shown).
+    | بالإضافة لهذه القائمة، أي مستخدم دوره admin أو super_admin يُسمح له بالدخول
+    | (انظر App\Support\FilamentAccess::userMayAccessPanel).
+    |
+    | Comma-separated user IDs لمن يصل للوحة من غير الأدمن (مثل مشرف معيّن).
+    | الضيوف يتلقون 404؛ يُفضَّل الدخول من التطبيق الرئيسي ثم فتح /admin.
     |
     | Example: FILAMENT_ALLOWED_USER_IDS=1
     |

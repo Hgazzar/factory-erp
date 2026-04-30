@@ -15,6 +15,9 @@ class FilamentAccess
         return config('filament-access.allowed_user_ids', []);
     }
 
+    /**
+     * هل تم ضبط قائمة IDs صريحة (اختيارية — الأدمن وسوبر الأدمن يمرّون عبر userMayAccessPanel حتى بدونها).
+     */
     public static function panelIsConfigured(): bool
     {
         return self::allowedUserIds() !== [];
@@ -26,6 +29,13 @@ class FilamentAccess
             return false;
         }
 
-        return in_array((int) $user->id, self::allowedUserIds(), true);
+        // نفس امتياز لوحة ERP (admin | super_admin)
+        if (ErpRoles::hasFinanceAdminPanelAccess($user)) {
+            return true;
+        }
+
+        $ids = self::allowedUserIds();
+
+        return $ids !== [] && in_array((int) $user->id, $ids, true);
     }
 }

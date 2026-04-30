@@ -54,7 +54,9 @@ class ZatcaService
         ?CompanySetting $company = null,
     ): EinvoiceSetting {
         $setting ??= EinvoiceSetting::get();
-        $company ??= CompanySetting::query()->first();
+        $company ??= auth()->check()
+            ? CompanySetting::forTenant((int) auth()->id())
+            : CompanySetting::query()->orderBy('id')->first();
 
         $uid = $this->normalizeZatcaOrganizationIdentifier(
             $setting->zatca_tax_number ?: $company?->tax_number,
@@ -415,7 +417,7 @@ class ZatcaService
             throw new InvalidArgumentException('يجب ضبط الرقم الضريبي للبائع (zatca_tax_number) في إعدادات الفوترة الإلكترونية.');
         }
 
-        $company ??= CompanySetting::query()->first();
+        $company ??= CompanySetting::forTenant((int) $invoice->user_id);
         $sellerName = $einvoice->zatca_seller_name
             ?: ($company?->name ?? 'Seller');
         $crn = $company?->commercial_register ?: '0000000000';

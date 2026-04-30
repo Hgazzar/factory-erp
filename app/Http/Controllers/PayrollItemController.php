@@ -28,7 +28,7 @@ class PayrollItemController extends Controller
 
         $slip->load(['employee.department', 'items', 'payrollCycle']);
 
-        $company = CompanySetting::query()->first();
+        $company = CompanySetting::forTenant((int) $payroll->user_id);
         $logoDataUri = null;
         if ($company?->logo_url && str_starts_with((string) $company->logo_url, 'company/')) {
             if (Storage::disk('public')->exists($company->logo_url)) {

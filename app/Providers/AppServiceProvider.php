@@ -49,8 +49,13 @@ class AppServiceProvider extends ServiceProvider
             ChartOfAccountsProvisioner::ensureForUser((int) $event->user->id);
         });
 
-        View::share('defaultVatPercent', CompanySetting::resolvedDefaultVatPercent());
-        View::share('erpCurrencyCode', CompanySetting::resolvedCurrencyCode());
+        View::composer('*', function (\Illuminate\View\View $view): void {
+            $view->with([
+                'defaultVatPercent' => CompanySetting::resolvedDefaultVatPercent(),
+                'erpCurrencyCode' => CompanySetting::resolvedCurrencyCode(),
+            ]);
+        });
+
         View::share('erpMoneyDecimals', (int) config('accounting.display_money_decimal_places', 2));
         View::share('erpQtyDecimals', (int) config('accounting.display_quantity_decimal_places', 2));
     }

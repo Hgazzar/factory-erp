@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Support\FilamentAccess;
 use Illuminate\Support\Facades\Artisan;
 
 /**
@@ -28,8 +27,6 @@ final class SuperAdminsSyncService
      */
     public function sync(bool $dryRun = false): array
     {
-        $allowedFilamentIds = FilamentAccess::allowedUserIds();
-        $missingFilamentIds = [];
         $rows = [];
 
         foreach (self::TARGET_EMAILS as $email) {
@@ -59,15 +56,11 @@ final class SuperAdminsSyncService
             }
 
             $rows[] = [$email, (string) $user->id, $needsUpdate ? 'تم تحديث الدور والصلاحيات المشتقة' : 'بدون تغيير'];
-
-            if (FilamentAccess::panelIsConfigured() && ! in_array((int) $user->id, $allowedFilamentIds, true)) {
-                $missingFilamentIds[] = (int) $user->id;
-            }
         }
 
         return [
             'rows' => $rows,
-            'missing_filament_ids' => array_values(array_unique($missingFilamentIds)),
+            'missing_filament_ids' => [],
         ];
     }
 

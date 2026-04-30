@@ -748,7 +748,7 @@ class ExpenseController extends Controller
         }
 
         $this->loadExpensePresentationRelations($expense);
-        $company = CompanySetting::query()->first();
+        $company = CompanySetting::forTenant((int) $expense->user_id);
 
         return view('finance.expenses.print', compact('expense', 'company'));
     }
@@ -764,7 +764,7 @@ class ExpenseController extends Controller
         }
 
         $this->loadExpensePresentationRelations($expense);
-        $company = CompanySetting::query()->first();
+        $company = CompanySetting::forTenant((int) $expense->user_id);
 
         $logoDataUri = null;
         if ($company?->logo_url && str_starts_with((string) $company->logo_url, 'company/')) {
