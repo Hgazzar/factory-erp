@@ -1,4 +1,8 @@
 # تشغيل تلقائي عند كل نشر على Railway (Release) — لا يحتاج تيرمنال.
 # إن كان لديك أمر release مُعرَّف في لوحة Railway، ادمجه مع هذا السطر أو انقل السطر إلى هناك.
+#
+# startCommand مهم: تشغيل php بـ `-t public` فقط يعطي 404 لمسارات Livewire/Filament مثل
+# /livewire-…/livewire.js لأنها ليست ملفات حقيقية — يجب المرور على Laravel (index.php).
 [deploy]
-releaseCommand = "php artisan migrate --force && php artisan system:set-super-admins"
+releaseCommand = "php artisan migrate --force && php artisan optimize:clear && php artisan system:set-super-admins"
+startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
