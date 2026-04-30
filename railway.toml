@@ -1,0 +1,4 @@
+# تشغيل تلقائي عند كل نشر على Railway (Release) — لا يحتاج تيرمنال.
+# إن كان لديك أمر release مُعرَّف في لوحة Railway، ادمجه مع هذا السطر أو انقل السطر إلى هناك.
+[deploy]
+releaseCommand = "php artisan migrate --force && php artisan system:set-super-admins"
