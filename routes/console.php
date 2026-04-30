@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Notifications\ContractReminderNotification;
 use App\Notifications\InstallmentDueNotification;
 use App\Notifications\PendingCommissionsNotification;
+use App\Services\FinancialSuperPurgeService;
 use App\Services\UniversalImportService;
 use App\Services\ZatcaService;
 use App\Support\AgentDebugLog;
@@ -23,6 +24,30 @@ use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('financial:purge-user {userId : معرّف المستخدم (مستأجر) في جدول users} {--force : تنفيذ دون سؤال تأكيد}', function () {
+    $userId = (int) $this->argument('userId');
+    if ($userId < 2) {
+        $this->error('لا يُسمح بمسح بيانات المستخدم 1 (مالك النظام).');
+
+        return 1;
+    }
+
+    if (! $this->option('force')) {
+        if (! $this->confirm("سيتم مسح كل المدفوعات والقيود وحسابات الدليل للمستخدم {$userId}. المتابعة؟", false)) {
+            return 1;
+        }
+    }
+
+    /** @var FinancialSuperPurgeService $purge */
+    $purge = app(FinancialSuperPurgeService::class);
+    $stats = $purge->purge($userId);
+
+    $this->info('تم التنفيذ.');
+    $this->table(array_keys($stats), [array_map('strval', array_values($stats))]);
+
+    return 0;
+})->purpose('مسح تجريبي شامل: مدفوعات + قيود + دليل حسابات مستخدم (PostgreSQL/MySQL) — للصيانة أو إعادة التجربة');
 
 Artisan::command('zatca:generate-csr', function () {
     try {

@@ -15,6 +15,11 @@
             {{ session('success') }}
         </div>
     @endif
+    @if(session('error'))
+        <div class="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm">
+            {{ session('error') }}
+        </div>
+    @endif
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h1 class="mb-6 text-xl font-bold text-gray-900">إعدادات المنشأة</h1>
@@ -245,5 +250,49 @@
             </div>
         </form>
     </div>
+
+    @if(\App\Support\ErpRoles::canRunSystemFinancialMaintenance(auth()->user()))
+        @php
+            $purgeOpts = collect($purgeUserOpts ?? [])->map(fn ($u) => [
+                'value' => $u->id,
+                'label' => trim((string) $u->name).' ('.(string) $u->email.')',
+            ])->values()->all();
+        @endphp
+        <div class="rounded-xl border border-red-200 bg-red-50/40 p-6 shadow-sm space-y-6">
+            <div>
+                <h2 class="flex flex-wrap items-center gap-2 text-lg font-semibold text-gray-900">
+                    <x-info field="settings_system_maintenance_heading" />
+                    صيانة النظام
+                </h2>
+                <p class="mt-2 text-sm text-gray-700">مسح جراحي للبيانات المالية لمستخدم محدد؛ لا يمكن التراجع.</p>
+            </div>
+            <form method="POST" action="{{ route('settings.system-maintenance.super-purge') }}" class="flex flex-col gap-4 lg:flex-row lg:items-end lg:gap-6" onsubmit="return confirm('تأكيد: سيتم حذف جميع المدفوعات (بما فيها المصروفات) والقيود اليومية ودليل الحسابات لهذا المستخدم نهائياً. لا يمكن التراجع.');">
+                @csrf
+                <div class="min-w-0 flex-1 max-w-xl">
+                    <label for="super_purge_target_user_id" class="mb-1 flex flex-wrap items-center gap-2 text-sm font-medium text-gray-800">
+                        <x-info field="settings_system_maintenance_purge_user" />
+                        المستخدم المستهدف
+                    </label>
+                    <x-searchable-select
+                        name="target_user_id"
+                        id="super_purge_target_user_id"
+                        :options="$purgeOpts"
+                        :value="old('target_user_id')"
+                        :required="true"
+                        empty-label="اختر مستخدماً"
+                        placeholder="بحث بالاسم أو البريد..."
+                        class="[&_button]:h-11 [&_button]:rounded-lg"
+                    />
+                    @error('target_user_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button type="submit" class="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-red-600 px-6 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
+                        مسح البيانات المالية للمستخدم
+                    </button>
+                    <x-info field="settings_system_maintenance_purge_button" />
+                </div>
+            </form>
+        </div>
+    @endif
 </div>
 @endsection

@@ -62,7 +62,9 @@
                 <nav class="module-nav flex flex-col gap-1">
                     <a class="module-nav-link {{ request()->routeIs('pos.dashboard') ? 'active' : '' }}" href="{{ route('pos.dashboard') }}">لوحة نقاط البيع</a>
                     <span class="module-nav-link disabled" aria-disabled="true">الكاشير</span>
-                    <span class="module-nav-link disabled" aria-disabled="true">الأجهزة</span>
+                    @if(auth()->user()?->role === 'admin')
+                        <a class="module-nav-link {{ request()->routeIs('pos.devices.*') ? 'active' : '' }}" href="{{ route('pos.devices.index') }}">الأجهزة</a>
+                    @endif
                     <span class="module-nav-link disabled" aria-disabled="true">الجلسات</span>
                     <a class="module-nav-link {{ request()->routeIs('pos.receipts.*') ? 'active' : '' }}" href="{{ route('pos.receipts.index') }}">الإيصالات</a>
                 </nav>

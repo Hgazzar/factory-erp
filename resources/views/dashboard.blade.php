@@ -654,7 +654,7 @@
             {{-- 10. التدقيق --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-slate h-100 p-4">
-                    @if(auth()->user()->role === 'admin')
+                    @if(\App\Support\ErpRoles::hasFinanceAdminPanelAccess(auth()->user()))
                     <a href="{{ route('system.audit.index') }}" class="ufuq-card-stretch" aria-label="فتح وحدة التدقيق"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="وحدة التدقيق"></a>
@@ -672,7 +672,7 @@
                                 <p class="ufuq-card-sub">سجل العمليات والنشاط</p>
                             </div>
                         </div>
-                        @if(auth()->user()->role === 'admin')
+                        @if(\App\Support\ErpRoles::hasFinanceAdminPanelAccess(auth()->user()))
                         <div class="ufuq-card-actions">
                             <a href="{{ route('system.audit.index') }}" class="ufuq-qbtn">سجل</a>
                         </div>
@@ -739,7 +739,7 @@
                         </div>
                         <div class="ufuq-card-actions">
                             <a href="{{ route('profile.edit') }}" class="ufuq-qbtn">ملف شخصي</a>
-                            @if(auth()->user()->role === 'admin')
+                            @if(\App\Support\ErpRoles::hasFinanceAdminPanelAccess(auth()->user()))
                             <a href="{{ route('system.audit.index') }}" class="ufuq-qbtn">سجل النشاط</a>
                             @endif
                         </div>

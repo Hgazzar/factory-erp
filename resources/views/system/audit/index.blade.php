@@ -39,11 +39,9 @@
                             <td>{{ $log->old_role ?? '-' }}</td>
                             <td>{{ $log->new_role ?? '-' }}</td>
                             <td class="small text-break" style="max-width: 280px;">
-                                @if($log->meta)
-                                    <span class="text-muted">{{ $log->action }}</span>
+                                <span class="text-muted">{{ $log->action }}</span>
+                                @if(is_array($log->meta) && count($log->meta) > 0)
                                     <div class="mt-1 font-monospace" dir="ltr">{{ json_encode($log->meta, JSON_UNESCAPED_UNICODE) }}</div>
-                                @else
-                                    —
                                 @endif
                             </td>
                         </tr>

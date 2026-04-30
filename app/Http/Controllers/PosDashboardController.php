@@ -9,13 +9,21 @@ use App\Models\PosSale;
 use App\Models\PosSaleLine;
 use App\Models\PosSession;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PosDashboardController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
+        $user = auth()->user();
+        if ($user && $user->role !== 'admin' && ! PosDevice::query()->exists()) {
+            return redirect()
+                ->route('dashboard')
+                ->with('error', 'لا يوجد جهاز نقطة بيع مُعرّف لحسابك حالياً. يُرجى مراجعة الإدارة لتجهيز الجهاز.');
+        }
+
         $day = $request->date('date') ?: now()->toDateString();
 
         $start = Carbon::parse($day)->startOfDay();

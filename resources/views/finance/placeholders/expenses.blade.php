@@ -64,8 +64,31 @@
                 استيراد
             </button>
             <a href="{{ route('finance.expenses.create') }}" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">+ مصروف جديد</a>
+            @if(! empty($canBulkDeleteAllExpenses))
+                <button type="button"
+                        class="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-800 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        data-bs-toggle="modal"
+                        data-bs-target="#expensesBulkDeleteModal"
+                        @disabled(($expenseSummary['count'] ?? 0) < 1)>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    مسح الكل (حسب الفلاتر)
+                </button>
+            @endif
         </div>
     </header>
+
+    @if(session('success'))
+        <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+            {{ session('error') }}
+        </div>
+    @endif
 
     @if (session('import_result'))
         <x-import-summary :result="session('import_result')" />
@@ -225,7 +248,11 @@
                                     $expenseMenuId = 'expense-actions-'.$expense->id;
                                     $showPdf = $posted;
                                     $showApprove = ! $posted && $isManagerOrAdmin;
-                                    $showEditDelete = ! $posted;
+                                    $showEditDraft = ! $posted;
+                                    $showDeleteDraft = ! $posted && \App\Support\ErpRoles::canDeleteExpenseDraft($u);
+                                    $showBackToDraftApproved = $posted && \App\Support\ErpRoles::canRevertApprovedExpenseToDraft($u);
+                                    $showHardDeleteApproved = $posted && \App\Support\ErpRoles::canHardDeleteApprovedExpense($u);
+                                    $showAnyDelete = $showDeleteDraft || $showHardDeleteApproved;
                                 @endphp
                                 <div class="relative inline-flex items-center justify-center">
                                     <button type="button"
@@ -261,8 +288,26 @@
                                                 </div>
                                             </div>
                                         @endif
-                                        @if($showPdf && ($showApprove || $showEditDelete))
+                                        @if($showPdf && ($showApprove || $showEditDraft || $showBackToDraftApproved || $showAnyDelete))
                                             <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                        @endif
+                                        @if($showBackToDraftApproved)
+                                            <div class="flex w-full min-w-0 items-stretch" role="menuitem">
+                                                <form method="POST" action="{{ route('finance.expenses.back-to-draft', $expense) }}" class="m-0 flex min-w-0 flex-1">
+                                                    @csrf
+                                                    <button type="submit"
+                                                            class="erp-menu-item flex w-full min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-amber-900 transition hover:bg-amber-50"
+                                                            onclick="if (window.closeErpActionMenus) window.closeErpActionMenus();">
+                                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 2.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/><path d="M8 5H6v4l3 2 .001-6z"/></svg>
+                                                        </span>
+                                                        <span class="min-w-0 flex-1 font-medium leading-snug">إرجاع إلى مسودة</span>
+                                                    </button>
+                                                </form>
+                                                <div class="flex shrink-0 items-center ps-1 pe-2">
+                                                    <x-info field="expense_action_back_to_draft" />
+                                                </div>
+                                            </div>
                                         @endif
                                         @if($showApprove)
                                             <form method="POST" action="{{ route('finance.expenses.approve', $expense) }}" class="m-0">
@@ -277,10 +322,10 @@
                                                 </button>
                                             </form>
                                         @endif
-                                        @if($showApprove && $showEditDelete)
+                                        @if($showApprove && $showEditDraft)
                                             <div class="mx-2 my-2 border-t border-gray-100"></div>
                                         @endif
-                                        @if($showEditDelete)
+                                        @if($showEditDraft)
                                             <a href="{{ route('finance.expenses.edit', $expense) }}"
                                                class="erp-menu-item flex items-center gap-3 px-3 py-2.5 text-sm text-gray-800 transition hover:bg-gray-50"
                                                role="menuitem">
@@ -289,49 +334,27 @@
                                                 </span>
                                                 <span class="flex-1 text-right font-medium leading-snug">تعديل</span>
                                             </a>
-                                            <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                        @endif
+                                        @if($showAnyDelete)
+                                            @if($showApprove || $showEditDraft || $showBackToDraftApproved)
+                                                <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                            @endif
                                             <button type="button"
                                                     data-bs-toggle="modal"
-                                                    data-bs-target="#deleteExpenseModal-{{ $expense->id }}"
-                                                    class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                                    data-bs-target="#deleteExpenseModalShared"
+                                                    data-delete-url="{{ route('finance.expenses.destroy', $expense) }}"
+                                                    data-hard-delete="{{ $showHardDeleteApproved ? '1' : '0' }}"
+                                                    data-expense-label="{{ e($expense->expense_number ?? ('#'.$expense->id)) }}"
+                                                    class="erp-menu-item erp-expense-delete-trigger flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
                                                     role="menuitem">
                                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
                                                 </span>
-                                                <span class="flex-1 leading-snug">حذف</span>
+                                                <span class="flex-1 leading-snug">{{ $showHardDeleteApproved ? 'حذف نهائي' : 'حذف' }}</span>
                                             </button>
                                         @endif
                                     </div>
                                 </div>
-                                @if($showEditDelete)
-                                    <div class="modal fade" id="deleteExpenseModal-{{ $expense->id }}" tabindex="-1" aria-hidden="true" dir="rtl">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content rounded-lg">
-                                                    <div class="modal-header border-b border-gray-200">
-                                                        <h5 class="modal-title text-base font-semibold text-gray-900">تأكيد الحذف</h5>
-                                                        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p class="text-sm leading-6 text-gray-700">
-                                                            @if(! $posted)
-                                                                هل أنت متأكد من حذف مسودة المصروف رقم <span class="font-semibold">{{ $expense->expense_number ?? ('#'.$expense->id) }}</span>؟
-                                                            @else
-                                                                هل أنت متأكد من حذف المصروف المعتمد رقم <span class="font-semibold">{{ $expense->expense_number ?? ('#'.$expense->id) }}</span> والقيد المحاسبي المرتبط؟
-                                                            @endif
-                                                        </p>
-                                                    </div>
-                                                    <div class="modal-footer flex items-center justify-between gap-3 border-t border-gray-200">
-                                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                                        <form action="{{ route('finance.expenses.destroy', $expense) }}" method="POST">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endif
                             </td>
                         </tr>
                     @empty
@@ -348,6 +371,82 @@
             </div>
         @endif
     </section>
+
+    {{-- مودال حذف واحد خارج الجدول (المودال داخل <td> يكسر DOM وقد يخفي زر التأكيد) --}}
+    <div class="modal fade" id="deleteExpenseModalShared" tabindex="-1" aria-labelledby="deleteExpenseModalSharedTitle" aria-hidden="true" dir="rtl">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-lg">
+                <div class="modal-header border-b border-gray-200">
+                    <h5 class="modal-title text-base font-semibold text-gray-900" id="deleteExpenseModalSharedTitle">تأكيد الحذف</h5>
+                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0 text-sm leading-6 text-gray-700" id="deleteExpenseModalSharedBody"></p>
+                </div>
+                <div class="modal-footer d-flex flex-wrap align-items-center justify-content-between gap-3 border-t border-gray-200">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <form id="deleteExpenseModalSharedForm" method="POST" action="#" class="m-0">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger" id="deleteExpenseModalSharedSubmit">تأكيد الحذف</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if(! empty($canBulkDeleteAllExpenses))
+        <div class="modal fade" id="expensesBulkDeleteModal" tabindex="-1" aria-labelledby="expensesBulkDeleteModalTitle" aria-hidden="true" dir="rtl">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content rounded-lg border border-red-100">
+                    <div class="modal-header border-b border-red-100 bg-red-50/50">
+                        <h5 class="modal-title text-base font-bold text-red-900" id="expensesBulkDeleteModalTitle">مسح جميع المصروفات المطابقة للفلاتر</h5>
+                        <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                    </div>
+                    <form method="POST" action="{{ route('finance.expenses.destroy-all-matching') }}" id="expensesBulkDeleteForm">
+                        @csrf
+                        <input type="hidden" name="search" value="{{ $search ?? '' }}">
+                        <input type="hidden" name="status" value="{{ $status ?? '' }}">
+                        <input type="hidden" name="supplier_id" value="{{ $supplierId ?? '' }}">
+                        <input type="hidden" name="expense_account_id" value="{{ $expenseAccountId ?? '' }}">
+                        <input type="hidden" name="cost_center_id" value="{{ $costCenterId ?? '' }}">
+                        <input type="hidden" name="date_from" value="{{ $dateFrom ?? '' }}">
+                        <input type="hidden" name="date_to" value="{{ $dateTo ?? '' }}">
+                        <div class="modal-body space-y-4 text-sm text-gray-800">
+                            <p class="leading-relaxed">
+                                سيتم <strong class="text-red-800">حذف نهائي</strong> لعدد
+                                <strong class="tabular-nums text-gray-900">{{ number_format((int) ($expenseSummary['count'] ?? 0)) }}</strong>
+                                مصروف يطابق نفس فلاتر البحث والملخص أعلاه (وليس صفحة الجدول الحالية فقط).
+                            </p>
+                            <p class="text-xs text-red-800">
+                                <x-info field="expense_action_delete_all_matching" />
+                            </p>
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+                                <p class="mb-1 font-medium text-gray-700">الفلاتر المرسلة:</p>
+                                <ul class="mb-0 list-disc space-y-0.5 pr-5">
+                                    <li>الحالة: {{ $status === 'posted' ? 'معتمد' : ($status === 'draft' ? 'مسودة' : 'الكل') }}</li>
+                                    <li>البحث: {{ ($search ?? '') !== '' ? $search : '—' }}</li>
+                                </ul>
+                            </div>
+                            <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3">
+                                <input type="checkbox" name="confirm_bulk_delete" id="expenses_bulk_delete_confirm" value="1" class="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                                <label for="expenses_bulk_delete_confirm" class="cursor-pointer text-sm leading-relaxed text-gray-800">
+                                    <span class="inline-flex flex-wrap items-center gap-1">
+                                        <x-info field="expense_bulk_delete_confirm_checkbox" />
+                                        <span>أفهم أن الحذف لا يمكن التراجع عنه.</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer flex flex-wrap items-center justify-between gap-3 border-t border-gray-200">
+                            <button type="button" class="btn btn-outline-secondary rounded-lg" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-danger rounded-lg">تنفيذ مسح الكل</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="modal fade" id="expensesImportModal" tabindex="-1" aria-hidden="true" dir="rtl">
         <div class="modal-dialog modal-dialog-centered">
@@ -373,3 +472,54 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    function escapeHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    var modalEl = document.getElementById('deleteExpenseModalShared');
+    if (!modalEl || !(window.bootstrap && window.bootstrap.Modal)) {
+        return;
+    }
+
+    modalEl.addEventListener('show.bs.modal', function (event) {
+        var btn = event.relatedTarget;
+        if (!btn || !btn.getAttribute('data-delete-url')) {
+            return;
+        }
+        var url = btn.getAttribute('data-delete-url');
+        var hard = btn.getAttribute('data-hard-delete') === '1';
+        var label = btn.getAttribute('data-expense-label') || '';
+
+        var form = document.getElementById('deleteExpenseModalSharedForm');
+        var titleEl = document.getElementById('deleteExpenseModalSharedTitle');
+        var bodyEl = document.getElementById('deleteExpenseModalSharedBody');
+        var submitEl = document.getElementById('deleteExpenseModalSharedSubmit');
+
+        if (form) form.setAttribute('action', url);
+        if (titleEl) titleEl.textContent = hard ? 'تأكيد الحذف النهائي' : 'تأكيد الحذف';
+        if (submitEl) submitEl.textContent = hard ? 'حذف نهائي' : 'تأكيد الحذف';
+
+        if (bodyEl) {
+            if (hard) {
+                bodyEl.innerHTML = 'هل أنت متأكد من <strong>الحذف النهائي</strong> للمصروف المعتمد رقم <span class="font-semibold">' + escapeHtml(label) + '</span> وسند القيد المرتبط؟ لا يمكن التراجع.';
+            } else {
+                bodyEl.innerHTML = 'هل أنت متأكد من حذف مسودة المصروف رقم <span class="font-semibold">' + escapeHtml(label) + '</span>؟';
+            }
+        }
+
+        if (window.closeErpActionMenus) window.closeErpActionMenus();
+    });
+
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        var form = document.getElementById('deleteExpenseModalSharedForm');
+        if (form) form.setAttribute('action', '#');
+    });
+})();
+</script>
+@endpush

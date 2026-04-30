@@ -7,6 +7,7 @@ use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\CompanySetting;
 use App\Models\CostCenter;
+use App\Models\AuditLog;
 use App\Models\ExpenseCategory;
 use App\Models\FixedAsset;
 use App\Models\FixedAssetCategory;
@@ -16,6 +17,7 @@ use App\Models\Payment;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\UniversalImportService;
+use App\Support\ErpRoles;
 use App\Support\DefaultLedgerAccounts;
 use App\Support\ErpFilamentNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -104,20 +106,28 @@ class ExpenseController extends Controller
         $dateFrom = $request->query('date_from');
         $dateTo = $request->query('date_to');
 
-        if ($supplierId && ! Supplier::query()->whereKey($supplierId)->exists()) {
+        $isSysOwner = (int) auth()->id() === 1;
+
+        if ($supplierId && ! ($isSysOwner
+            ? Supplier::withoutGlobalScopes()->whereKey($supplierId)->exists()
+            : Supplier::query()->whereKey($supplierId)->exists())) {
             $supplierId = null;
         }
-        if ($expenseAccountId && ! Account::query()->whereKey($expenseAccountId)->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])->exists()) {
+        if ($expenseAccountId && ! ($isSysOwner
+            ? Account::withoutGlobalScopes()->whereKey($expenseAccountId)->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])->exists()
+            : Account::query()->whereKey($expenseAccountId)->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])->exists())) {
             $expenseAccountId = null;
         }
-        if ($costCenterId && ! CostCenter::query()->whereKey($costCenterId)->exists()) {
+        if ($costCenterId && ! ($isSysOwner
+            ? CostCenter::withoutGlobalScopes()->whereKey($costCenterId)->exists()
+            : CostCenter::query()->whereKey($costCenterId)->exists())) {
             $costCenterId = null;
         }
 
         $baseQuery = $this->expensesIndexBaseQuery($search, $status, $supplierId, $expenseAccountId, $costCenterId, $dateFrom, $dateTo);
 
         $expenses = (clone $baseQuery)
-            ->with(['expenseAccount', 'expenseCategory', 'supplier'])
+            ->with($this->expenseIndexRelations())
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->paginate(15)
@@ -137,7 +147,7 @@ class ExpenseController extends Controller
             'sum_grand' => (float) ($statsRow->sum_grand ?? 0),
         ];
 
-        $suppliers = Supplier::query()
+        $suppliers = ($isSysOwner ? Supplier::withoutGlobalScopes() : Supplier::query())
             ->where(function ($query) {
                 $query->where('is_active', true)
                     ->orWhereNull('is_active');
@@ -145,7 +155,7 @@ class ExpenseController extends Controller
             ->orderBy('name')
             ->get(['id', 'code', 'name', 'name_ar']);
 
-        $filterExpenseAccounts = Account::query()
+        $filterExpenseAccounts = ($isSysOwner ? Account::withoutGlobalScopes() : Account::query())
             ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->where(function ($query) {
                 $query->whereNotNull('parent_id')
@@ -158,7 +168,7 @@ class ExpenseController extends Controller
             ->orderBy('code')
             ->get(['id', 'code', 'name_ar', 'name_en']);
 
-        $filterCostCenters = CostCenter::query()
+        $filterCostCenters = ($isSysOwner ? CostCenter::withoutGlobalScopes() : CostCenter::query())
             ->where('status', 'active')
             ->orderBy('code')
             ->get(['id', 'code', 'name']);
@@ -176,7 +186,47 @@ class ExpenseController extends Controller
             'suppliers',
             'filterExpenseAccounts',
             'filterCostCenters'
-        ));
+        ))->with('canBulkDeleteAllExpenses', ErpRoles::canBulkDeleteAllExpensesMatchingFilters($request->user()));
+    }
+
+    /**
+     * حساب المستأجر الفعلي لسند المصروف (للمستخدم 1 يُستخدم مالك السند وليس الجلسة فقط).
+     */
+    private function ledgerUserIdForExpense(Payment $expense): int
+    {
+        return (int) auth()->id() === 1 ? (int) $expense->user_id : (int) auth()->id();
+    }
+
+    /**
+     * @return array<string|\Closure>
+     */
+    private function expenseIndexRelations(): array
+    {
+        if ((int) auth()->id() !== 1) {
+            return ['expenseAccount', 'expenseCategory', 'supplier'];
+        }
+
+        return [
+            'expenseAccount' => fn ($q) => $q->withoutGlobalScopes(),
+            'expenseCategory' => fn ($q) => $q->withoutGlobalScopes(),
+            'supplier' => fn ($q) => $q->withoutGlobalScopes(),
+        ];
+    }
+
+    private function loadExpensePresentationRelations(Payment $expense): void
+    {
+        if ((int) auth()->id() !== 1) {
+            $expense->load(['expenseAccount', 'expenseCategory', 'supplier', 'attachments']);
+
+            return;
+        }
+
+        $expense->load([
+            'attachments',
+            'expenseAccount' => fn ($q) => $q->withoutGlobalScopes(),
+            'expenseCategory' => fn ($q) => $q->withoutGlobalScopes(),
+            'supplier' => fn ($q) => $q->withoutGlobalScopes(),
+        ]);
     }
 
     /**
@@ -185,20 +235,31 @@ class ExpenseController extends Controller
      */
     private function expensesIndexBaseQuery(string $search, string $status, ?int $supplierId, ?int $expenseAccountId, ?int $costCenterId, $dateFrom, $dateTo): Builder
     {
-        return Payment::query()
-            ->where('type', 'expense')
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($inner) use ($search) {
+        $ownerSeesAll = (int) auth()->id() === 1;
+
+        $base = $ownerSeesAll
+            ? Payment::withoutGlobalScopes()->where('type', 'expense')
+            : Payment::query()->where('type', 'expense');
+
+        return $base
+            ->when($search !== '', function ($query) use ($search, $ownerSeesAll) {
+                $query->where(function ($inner) use ($search, $ownerSeesAll) {
                     $inner->where('reference', 'like', '%'.$search.'%')
                         ->orWhere('expense_number', 'like', '%'.$search.'%')
                         ->orWhere('notes', 'like', '%'.$search.'%')
                         ->orWhere('id', 'like', '%'.$search.'%')
-                        ->orWhereHas('expenseAccount', function ($accountQuery) use ($search) {
+                        ->orWhereHas('expenseAccount', function ($accountQuery) use ($search, $ownerSeesAll) {
+                            if ($ownerSeesAll) {
+                                $accountQuery->withoutGlobalScopes();
+                            }
                             $accountQuery->where('code', 'like', '%'.$search.'%')
                                 ->orWhere('name_ar', 'like', '%'.$search.'%')
                                 ->orWhere('name_en', 'like', '%'.$search.'%');
                         })
-                        ->orWhereHas('supplier', function ($supplierQuery) use ($search) {
+                        ->orWhereHas('supplier', function ($supplierQuery) use ($search, $ownerSeesAll) {
+                            if ($ownerSeesAll) {
+                                $supplierQuery->withoutGlobalScopes();
+                            }
                             $supplierQuery->where('name', 'like', '%'.$search.'%')
                                 ->orWhere('name_ar', 'like', '%'.$search.'%')
                                 ->orWhere('code', 'like', '%'.$search.'%');
@@ -401,7 +462,10 @@ class ExpenseController extends Controller
                 ->with('error', 'لا يمكن تعديل مصروف معتمد إلا من قبل مسؤول النظام.');
         }
 
-        $expenseAccounts = Account::query()
+        $ledgerUid = $this->ledgerUserIdForExpense($expense);
+
+        $expenseAccounts = Account::withoutGlobalScopes()
+            ->where('user_id', $ledgerUid)
             ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->where(function ($query) use ($expense) {
                 $query->where(function ($q) {
@@ -420,7 +484,8 @@ class ExpenseController extends Controller
             ->orderBy('code')
             ->get(['id', 'code', 'name_ar', 'name_en']);
 
-        $categories = ExpenseCategory::query()
+        $categories = ExpenseCategory::withoutGlobalScopes()
+            ->where('user_id', $ledgerUid)
             ->where(function ($query) use ($expense) {
                 $query->where('status', 'active');
                 if ($expense->expense_category_id) {
@@ -430,7 +495,8 @@ class ExpenseController extends Controller
             ->orderBy('code')
             ->get(['id', 'code', 'name_ar', 'name_en']);
 
-        $costCenters = CostCenter::query()
+        $costCenters = CostCenter::withoutGlobalScopes()
+            ->where('user_id', $ledgerUid)
             ->where(function ($query) use ($expense) {
                 $query->where('status', 'active');
                 if ($expense->cost_center_id) {
@@ -440,7 +506,8 @@ class ExpenseController extends Controller
             ->orderBy('code')
             ->get(['id', 'code', 'name']);
 
-        $suppliers = Supplier::query()
+        $suppliers = Supplier::withoutGlobalScopes()
+            ->where('user_id', $ledgerUid)
             ->where(function ($query) {
                 $query->where('is_active', true)
                     ->orWhereNull('is_active');
@@ -450,7 +517,8 @@ class ExpenseController extends Controller
 
         $expense->load(['attachments']);
 
-        $bankAccounts = BankAccount::query()
+        $bankAccounts = BankAccount::withoutGlobalScopes()
+            ->where('user_id', $ledgerUid)
             ->where('status', 'active')
             ->whereNotNull('ledger_account_id')
             ->orderBy('bank_name')
@@ -474,7 +542,8 @@ class ExpenseController extends Controller
                 ->withErrors(['expense' => 'لا يمكن تعديل مصروف معتمد إلا من قبل مسؤول النظام.']);
         }
 
-        $uid = (int) ($user?->id ?? auth()->id() ?? 1);
+        $ledgerUid = $this->ledgerUserIdForExpense($expense);
+        $uid = $ledgerUid;
         if (! in_array((string) $request->input('payment_method'), ['bank', 'check', 'card'], true)) {
             $request->merge(['bank_account_id' => null]);
         }
@@ -517,7 +586,8 @@ class ExpenseController extends Controller
             'supplier_id.exists' => 'المورد غير صالح.',
         ]);
 
-        $expenseAccount = Account::query()
+        $expenseAccount = Account::withoutGlobalScopes()
+            ->where('user_id', $ledgerUid)
             ->where('id', $data['account_id'])
             ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->first();
@@ -580,7 +650,10 @@ class ExpenseController extends Controller
             return back()->with('error', 'هذا المصروف معتمد مسبقاً.');
         }
 
-        $expenseAccount = Account::query()
+        $ledgerUid = $this->ledgerUserIdForExpense($expense);
+
+        $expenseAccount = Account::withoutGlobalScopes()
+            ->where('user_id', $ledgerUid)
             ->where('id', $expense->expense_account_id)
             ->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])
             ->first();
@@ -615,13 +688,66 @@ class ExpenseController extends Controller
             ->with('success', 'تم اعتماد المصروف وترحيله إلى الأستاذ.');
     }
 
+    public function backToDraft(Request $request, Payment $expense): RedirectResponse
+    {
+        if ($expense->type !== 'expense') {
+            abort(404);
+        }
+
+        if (! ErpRoles::canRevertApprovedExpenseToDraft($request->user())) {
+            abort(403);
+        }
+
+        if (! $this->expenseIsPosted($expense)) {
+            return redirect()
+                ->route('finance.expenses.index')
+                ->with('error', 'المصروف ليس معتمداً.');
+        }
+
+        $journalEntryIdWas = $expense->journal_entry_id ? (int) $expense->journal_entry_id : null;
+
+        DB::transaction(function () use ($expense, $journalEntryIdWas): void {
+            if ($expense->fixed_asset_id) {
+                FixedAsset::query()
+                    ->whereKey((int) $expense->fixed_asset_id)
+                    ->where('source_payment_id', $expense->id)
+                    ->delete();
+            }
+
+            if ($journalEntryIdWas) {
+                JournalItem::withoutGlobalScopes()->where('journal_entry_id', $journalEntryIdWas)->delete();
+                JournalEntry::withoutGlobalScopes()->whereKey($journalEntryIdWas)->delete();
+            }
+
+            $expense->update([
+                'journal_entry_id' => null,
+                'status' => 'draft',
+                'fixed_asset_id' => null,
+            ]);
+
+            AuditLog::logFinancialControl(
+                'expense_back_to_draft',
+                (int) $expense->user_id,
+                Payment::class,
+                (int) $expense->id,
+                [
+                    'journal_entry_id_was' => $journalEntryIdWas,
+                ]
+            );
+        });
+
+        return redirect()
+            ->route('finance.expenses.index')
+            ->with('success', 'تم إعادة المصروف إلى مسودة وحذف القيد المحاسبي المرتبط.');
+    }
+
     public function print(Payment $expense): View
     {
         if ($expense->type !== 'expense') {
             abort(404);
         }
 
-        $expense->load(['expenseAccount', 'expenseCategory', 'supplier', 'attachments']);
+        $this->loadExpensePresentationRelations($expense);
         $company = CompanySetting::query()->first();
 
         return view('finance.expenses.print', compact('expense', 'company'));
@@ -637,7 +763,7 @@ class ExpenseController extends Controller
             abort(403, 'عرض PDF متاح للمصروفات المعتمدة فقط.');
         }
 
-        $expense->load(['expenseAccount', 'expenseCategory', 'supplier', 'attachments']);
+        $this->loadExpensePresentationRelations($expense);
         $company = CompanySetting::query()->first();
 
         $logoDataUri = null;
@@ -703,25 +829,170 @@ class ExpenseController extends Controller
             abort(404);
         }
 
-        $user = $request->user();
         $posted = $this->expenseIsPosted($expense);
 
-        if ($posted && ! $this->userIsExpenseSuperAdmin($user)) {
+        if ($posted && ! ErpRoles::canHardDeleteApprovedExpense($request->user())) {
+            abort(403);
+        }
+
+        if (! $posted && ! ErpRoles::canDeleteExpenseDraft($request->user())) {
             abort(403);
         }
 
         DB::transaction(function () use ($expense): void {
-            if ($expense->journal_entry_id) {
-                $entryId = (int) $expense->journal_entry_id;
-                JournalItem::query()->where('journal_entry_id', $entryId)->delete();
-                JournalEntry::query()->whereKey($entryId)->delete();
-            }
-            $expense->delete();
+            $this->performExpenseDeletionWithAudit($expense, true);
         });
 
         return redirect()
             ->route('finance.expenses.index')
-            ->with('success', $posted ? 'تم حذف المصروف المعتمد والقيد المرتبط.' : 'تم حذف مسودة المصروف.');
+            ->with('success', $posted ? 'تم الحذف النهائي للمصروف المعتمد والقيد المرتبط.' : 'تم حذف مسودة المصروف.');
+    }
+
+    /**
+     * حذف جميع المصروفات المطابقة لنفس فلاتر القائمة الحالية — سوبر أدمن فقط.
+     */
+    public function destroyAllMatchingFilters(Request $request): RedirectResponse
+    {
+        if (! ErpRoles::canBulkDeleteAllExpensesMatchingFilters($request->user())) {
+            abort(403);
+        }
+
+        $request->validate([
+            'confirm_bulk_delete' => ['accepted'],
+        ], [], [
+            'confirm_bulk_delete' => 'تأكيد المسح الجماعي',
+        ]);
+
+        $search = trim((string) $request->input('search', ''));
+        $status = (string) $request->input('status', '');
+        if ($status === 'unposted') {
+            $status = 'draft';
+        }
+        $supplierId = $request->filled('supplier_id') ? (int) $request->input('supplier_id') : null;
+        $expenseAccountId = $request->filled('expense_account_id') ? (int) $request->input('expense_account_id') : null;
+        $costCenterId = $request->filled('cost_center_id') ? (int) $request->input('cost_center_id') : null;
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        $isSysOwner = (int) auth()->id() === 1;
+        if ($supplierId && ! ($isSysOwner
+            ? Supplier::withoutGlobalScopes()->whereKey($supplierId)->exists()
+            : Supplier::query()->whereKey($supplierId)->exists())) {
+            $supplierId = null;
+        }
+        if ($expenseAccountId && ! ($isSysOwner
+            ? Account::withoutGlobalScopes()->whereKey($expenseAccountId)->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])->exists()
+            : Account::query()->whereKey($expenseAccountId)->whereIn('type', [Account::TYPE_EXPENSE, Account::TYPE_ASSET])->exists())) {
+            $expenseAccountId = null;
+        }
+        if ($costCenterId && ! ($isSysOwner
+            ? CostCenter::withoutGlobalScopes()->whereKey($costCenterId)->exists()
+            : CostCenter::query()->whereKey($costCenterId)->exists())) {
+            $costCenterId = null;
+        }
+
+        $baseQuery = $this->expensesIndexBaseQuery($search, $status, $supplierId, $expenseAccountId, $costCenterId, $dateFrom, $dateTo);
+        $total = (clone $baseQuery)->count();
+
+        if ($total === 0) {
+            return redirect()
+                ->route('finance.expenses.index', $request->only(['search', 'status', 'supplier_id', 'expense_account_id', 'cost_center_id', 'date_from', 'date_to']))
+                ->with('error', 'لا توجد مصروفات مطابقة للفلاتر الحالية.');
+        }
+
+        $deleted = 0;
+        $filterSnapshot = $request->only(['search', 'status', 'supplier_id', 'expense_account_id', 'cost_center_id', 'date_from', 'date_to']);
+
+        DB::transaction(function () use ($baseQuery, &$deleted, $request, $total, $filterSnapshot): void {
+            while (true) {
+                $batch = (clone $baseQuery)->orderBy('id')->limit(80)->get();
+                if ($batch->isEmpty()) {
+                    break;
+                }
+                foreach ($batch as $expense) {
+                    if ($expense->type !== 'expense') {
+                        continue;
+                    }
+                    $this->performExpenseDeletionWithAudit($expense, false);
+                    $deleted++;
+                }
+            }
+
+            AuditLog::logFinancialControl(
+                'expenses_bulk_delete_super',
+                (int) $request->user()->id,
+                null,
+                null,
+                [
+                    'description' => 'مسح جماعي للمصروفات (سوبر أدمن): '.$deleted.' سنداً من أصل '.$total.' مطابق للفلاتر.',
+                    'deleted_count' => $deleted,
+                    'expected_count' => $total,
+                    'filters' => $filterSnapshot,
+                ]
+            );
+        });
+
+        return redirect()
+            ->route('finance.expenses.index', $request->only(['search', 'status', 'supplier_id', 'expense_account_id', 'cost_center_id', 'date_from', 'date_to']))
+            ->with('success', 'تم حذف '.$deleted.' مصروفاً مطابقاً للفلاتر الحالية.');
+    }
+
+    /**
+     * حذف السند من DB مع القيد؛ التدقيق لكل سند اختياري (يُعطّل في المسح الجماعي ثم يُسجَّل ملخص واحد).
+     */
+    private function performExpenseDeletionWithAudit(Payment $expense, bool $withPerRecordAudit): void
+    {
+        $posted = $this->expenseIsPosted($expense);
+        $paymentId = (int) $expense->id;
+        $tenantUid = (int) $expense->user_id;
+        $journalEntryIdWas = $expense->journal_entry_id ? (int) $expense->journal_entry_id : null;
+        $amount = (float) ($expense->amount ?? 0);
+        $taxAmount = (float) ($expense->tax_amount ?? 0);
+        $totalAmount = (float) ($expense->total_amount ?? ($amount + $taxAmount));
+        $expenseNumber = $expense->expense_number;
+
+        if ($withPerRecordAudit) {
+            if ($posted) {
+                AuditLog::logFinancialControl(
+                    'expense_hard_delete',
+                    $tenantUid,
+                    Payment::class,
+                    $paymentId,
+                    [
+                        'description' => 'قام السوبر أدمن بحذف المصروف رقم '.$paymentId.' نهائياً مع كافة قيوده المالية.',
+                        'original_user_id' => $tenantUid,
+                        'amount' => $amount,
+                        'tax_amount' => $taxAmount,
+                        'total_amount' => $totalAmount,
+                        'expense_number' => $expenseNumber,
+                        'journal_entry_id_was' => $journalEntryIdWas,
+                    ]
+                );
+            } else {
+                AuditLog::logFinancialControl(
+                    'expense_delete_draft',
+                    $tenantUid,
+                    Payment::class,
+                    $paymentId,
+                    [
+                        'description' => 'حذف مسودة مصروف رقم '.$paymentId,
+                        'original_user_id' => $tenantUid,
+                        'amount' => $amount,
+                        'tax_amount' => $taxAmount,
+                        'total_amount' => $totalAmount,
+                        'expense_number' => $expenseNumber,
+                        'posted' => false,
+                    ]
+                );
+            }
+        }
+
+        if ($journalEntryIdWas) {
+            JournalItem::withoutGlobalScopes()->where('journal_entry_id', $journalEntryIdWas)->delete();
+            JournalEntry::withoutGlobalScopes()->whereKey($journalEntryIdWas)->delete();
+        }
+
+        $expense->delete();
     }
 
     private function expenseIsPosted(Payment $expense): bool
@@ -802,22 +1073,30 @@ class ExpenseController extends Controller
      */
     private function resolveExpenseCreditAccount(Payment $expense): Account
     {
+        $ledgerUid = $this->ledgerUserIdForExpense($expense);
         $method = (string) ($expense->payment_method ?? 'cash');
+
         if ($method === 'cash') {
-            return DefaultLedgerAccounts::paymentSourceAsset('cash');
+            return DefaultLedgerAccounts::paymentSourceAssetForTenant('cash', $ledgerUid);
         }
 
         if (in_array($method, ['bank', 'check', 'card'], true) && $expense->bank_account_id) {
-            $ba = BankAccount::query()->whereKey($expense->bank_account_id)->first();
+            $ba = BankAccount::withoutGlobalScopes()
+                ->where('user_id', $ledgerUid)
+                ->whereKey($expense->bank_account_id)
+                ->first();
             if ($ba && $ba->ledger_account_id) {
-                $acc = Account::query()->whereKey($ba->ledger_account_id)->first();
+                $acc = Account::withoutGlobalScopes()
+                    ->where('user_id', $ledgerUid)
+                    ->whereKey($ba->ledger_account_id)
+                    ->first();
                 if ($acc) {
                     return $acc;
                 }
             }
         }
 
-        return DefaultLedgerAccounts::paymentSourceAsset($method);
+        return DefaultLedgerAccounts::paymentSourceAssetForTenant('bank', $ledgerUid);
     }
 
     private function createExpenseJournalEntry(Payment $expense, Account $expenseAccount, float $totalAmount, int $userId): JournalEntry
@@ -827,7 +1106,7 @@ class ExpenseController extends Controller
             ? mb_substr((string) $expense->notes, 0, 500)
             : ('مصروف #'.($expense->reference ?? 'بدون مرجع'));
 
-        $entry = JournalEntry::query()->create([
+        $entry = JournalEntry::withoutGlobalScopes()->create([
             'user_id' => $userId,
             'date' => $expense->date,
             'reference' => 'EXP',
@@ -835,7 +1114,7 @@ class ExpenseController extends Controller
             'total' => $totalAmount,
         ]);
 
-        JournalItem::query()->create([
+        JournalItem::withoutGlobalScopes()->create([
             'journal_entry_id' => $entry->id,
             'account_id' => $expenseAccount->id,
             'description' => 'تحميل مصروف',
@@ -843,7 +1122,7 @@ class ExpenseController extends Controller
             'credit' => 0,
         ]);
 
-        JournalItem::query()->create([
+        JournalItem::withoutGlobalScopes()->create([
             'journal_entry_id' => $entry->id,
             'account_id' => $creditAccount->id,
             'description' => 'دفع مصروف',
@@ -861,7 +1140,7 @@ class ExpenseController extends Controller
             return;
         }
 
-        $entry = JournalEntry::query()->find($entryId);
+        $entry = JournalEntry::withoutGlobalScopes()->find($entryId);
         if (! $entry) {
             return;
         }
@@ -871,7 +1150,7 @@ class ExpenseController extends Controller
             ? mb_substr((string) $expense->notes, 0, 500)
             : ('مصروف #'.($expense->reference ?? 'بدون مرجع'));
 
-        JournalItem::query()->where('journal_entry_id', $entry->id)->delete();
+        JournalItem::withoutGlobalScopes()->where('journal_entry_id', $entry->id)->delete();
 
         $entry->update([
             'date' => $expense->date,
@@ -879,7 +1158,7 @@ class ExpenseController extends Controller
             'total' => $totalAmount,
         ]);
 
-        JournalItem::query()->create([
+        JournalItem::withoutGlobalScopes()->create([
             'journal_entry_id' => $entry->id,
             'account_id' => $expenseAccount->id,
             'description' => 'تحميل مصروف',
@@ -887,7 +1166,7 @@ class ExpenseController extends Controller
             'credit' => 0,
         ]);
 
-        JournalItem::query()->create([
+        JournalItem::withoutGlobalScopes()->create([
             'journal_entry_id' => $entry->id,
             'account_id' => $creditAccount->id,
             'description' => 'دفع مصروف',

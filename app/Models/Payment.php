@@ -17,6 +17,34 @@ class Payment extends Model
     use HasFactory;
     use ResolvesRouteBindingForTenant;
 
+    /**
+     * يتيح لمستخدم النظام الأساسي (id = 1) فتح سندات المصروف لأي مستأجر؛ الباقون مقيدون بمالك السند.
+     *
+     * @param  mixed  $value
+     */
+    public function resolveRouteBinding($value, $field = null): ?Payment
+    {
+        $field = $field ?: $this->getRouteKeyName();
+
+        $model = static::withoutGlobalScopes()
+            ->where($field, $value)
+            ->first();
+
+        if (! $model) {
+            abort(404);
+        }
+
+        if (! auth()->check()) {
+            abort(403);
+        }
+
+        if ((int) auth()->id() !== 1 && (int) $model->user_id !== (int) auth()->id()) {
+            abort(403);
+        }
+
+        return $model;
+    }
+
     protected $fillable = [
         'user_id',
         'supplier_id',

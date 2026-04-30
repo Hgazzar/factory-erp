@@ -21,8 +21,8 @@ class CheckRole
             abort(403);
         }
 
-        // If user is admin, allow everything
-        if ($user->role === 'admin') {
+        // أدمن أو سوبر أدمن يصلان لوحدات المحاسبة المسمّاة role:admin
+        if ($user->role === 'admin' || $user->role === 'super_admin') {
             return $next($request);
         }
 

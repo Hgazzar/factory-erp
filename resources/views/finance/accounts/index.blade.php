@@ -159,7 +159,7 @@
                 </thead>
                 <tbody>
                     @forelse($rootAccounts as $account)
-                        @include('finance.accounts._row', ['account' => $account, 'level' => 0])
+                        @include('finance.accounts._row', ['account' => $account, 'level' => 0, 'journalLineSet' => $journalLineSet ?? []])
                     @empty
                         <tr>
                             <td colspan="8" class="px-4 py-8 text-center text-sm text-gray-500">لا توجد حسابات. تأكد من وجود حسابات جذر (parent_id فارغ) أو شغّل Seeder الخاص بشجرة الحسابات.</td>
@@ -232,6 +232,38 @@
         </div>
     </div>
 
+    {{-- تأكيد تطهير الحساب (سوبر أدمن — إزالة القيود ثم الحذف) — id للارتباط والاختبار: #purgeAccountModal --}}
+    <div class="modal fade" id="purgeAccountModal" tabindex="-1" aria-labelledby="purgeAccountModalLabel" aria-hidden="true" dir="rtl">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-2xl border border-gray-200">
+                <div class="modal-header border-bottom border-gray-100">
+                    <h5 class="modal-title text-base font-bold text-gray-900" id="purgeAccountModalLabel">تأكيد تطهير الحساب</h5>
+                    <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body text-sm text-gray-700">
+                    <p>
+                        سيتم حذف جميع القيود المحاسبية التي تمس الحساب <strong id="coa-purge-name-display" class="text-gray-900"></strong>
+                        وتُعاد المصروفات المرتبطة إلى مسودة عند الحاجة، ثم يُحذف الحساب نهائياً.
+                    </p>
+                    <p class="mb-0 text-xs font-medium text-red-700">لا يمكن التراجع؛ تأكد قبل المتابعة.</p>
+                </div>
+                <div class="modal-footer border-top border-gray-100 d-flex flex-row flex-nowrap align-items-center justify-content-start gap-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-lg shrink-0" data-bs-dismiss="modal">إلغاء</button>
+                    <form id="coa-purge-form" method="POST" action="#" class="m-0 d-inline-flex shrink-0 align-items-center" data-base-url="{{ rtrim(url('/finance/accounts'), '/') }}" data-purge-suffix="/purge">
+                        @csrf
+                        @if (request()->filled('search'))
+                            <input type="hidden" name="search" value="{{ request('search') }}">
+                        @endif
+                        @if (request()->filled('type'))
+                            <input type="hidden" name="type" value="{{ request('type') }}">
+                        @endif
+                        <button type="submit" class="btn btn-danger rounded-lg shrink-0">تأكيد التطهير</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- تأكيد حذف الحساب (Bootstrap) --}}
     <div class="modal fade" id="coaDeleteModal" tabindex="-1" aria-labelledby="coaDeleteModalLabel" aria-hidden="true" dir="rtl">
         <div class="modal-dialog modal-dialog-centered">
@@ -276,49 +308,79 @@
             }
         }
 
-        function coaOpenEditModal(detail) {
+        function coaBtnDisplayName(btn) {
+            if (!btn || !btn.getAttribute) return '';
+            var n = btn.getAttribute('data-coa-name') || '';
+            var c = btn.getAttribute('data-coa-code') || '';
+            var id = btn.getAttribute('data-coa-id') || '';
+            return (String(n || c).trim()) || ('#' + id);
+        }
+
+        function coaOpenEditModal(btn) {
             var form = document.getElementById('coa-edit-form');
-            if (!form) return;
-            var base = form.getAttribute('data-base-url') || '';
-            form.setAttribute('action', base + '/' + detail.id);
+            if (!form || !btn) return;
+            var url = btn.getAttribute('data-update-url');
+            if (!url) {
+                var base = form.getAttribute('data-base-url') || '';
+                var id = btn.getAttribute('data-coa-id');
+                if (base && id) url = base + '/' + id;
+            }
+            if (url) form.setAttribute('action', url);
             var codeEl = document.getElementById('coa-edit-code');
             var nameEl = document.getElementById('coa-edit-name');
-            if (codeEl) codeEl.value = detail.code || '';
-            if (nameEl) nameEl.value = detail.name_ar || '';
+            if (codeEl) codeEl.value = btn.getAttribute('data-coa-code') || '';
+            if (nameEl) nameEl.value = btn.getAttribute('data-coa-name') || '';
             bsModalShow(document.getElementById('coaEditModal'));
         }
 
-        function coaOpenDeleteModal(detail) {
+        function coaOpenDeleteModal(btn) {
             var form = document.getElementById('coa-delete-form');
-            if (!form) return;
-            var base = form.getAttribute('data-base-url') || '';
-            form.setAttribute('action', base + '/' + detail.id);
-            var nameDisp = document.getElementById('coa-delete-name-display');
-            if (nameDisp) {
-                nameDisp.textContent = (detail.name_ar || detail.code || '').trim() || ('#' + detail.id);
+            if (!form || !btn) return;
+            var url = btn.getAttribute('data-delete-url');
+            if (!url) {
+                var base = form.getAttribute('data-base-url') || '';
+                var id = btn.getAttribute('data-coa-id');
+                if (base && id) url = base + '/' + id;
             }
+            if (!url) return;
+            form.setAttribute('action', url);
+            var nameDisp = document.getElementById('coa-delete-name-display');
+            if (nameDisp) nameDisp.textContent = coaBtnDisplayName(btn);
             bsModalShow(document.getElementById('coaDeleteModal'));
         }
 
+        function coaOpenPurgeModal(btn) {
+            var form = document.getElementById('coa-purge-form');
+            if (!form || !btn) return;
+            var url = btn.getAttribute('data-purge-url');
+            if (!url) {
+                var base = form.getAttribute('data-base-url') || '';
+                var suf = form.getAttribute('data-purge-suffix') || '/purge';
+                var id = btn.getAttribute('data-coa-id');
+                if (base && id) url = base + '/' + id + suf;
+            }
+            if (!url) return;
+            form.setAttribute('action', url);
+            var nameDisp = document.getElementById('coa-purge-name-display');
+            if (nameDisp) nameDisp.textContent = coaBtnDisplayName(btn);
+            bsModalShow(document.getElementById('purgeAccountModal'));
+        }
+
         window.__coaQuickEdit = function (btn) {
-            var id = parseInt(btn.getAttribute('data-coa-id'), 10);
-            if (!id) return;
-            coaOpenEditModal({
-                id: id,
-                code: btn.getAttribute('data-coa-code') || '',
-                name_ar: btn.getAttribute('data-coa-name') || '',
-            });
+            if (!btn) return;
+            coaOpenEditModal(btn);
             if (window.closeErpActionMenus) window.closeErpActionMenus();
         };
 
         window.__coaQuickDelete = function (btn) {
-            var id = parseInt(btn.getAttribute('data-coa-id'), 10);
-            if (!id) return;
-            coaOpenDeleteModal({
-                id: id,
-                code: btn.getAttribute('data-coa-code') || '',
-                name_ar: btn.getAttribute('data-coa-name') || '',
-            });
+            if (!btn) return;
+            coaOpenDeleteModal(btn);
+            if (window.closeErpActionMenus) window.closeErpActionMenus();
+        };
+
+        window.__coaQuickPurge = function (btn) {
+            if (!btn) return;
+            coaOpenPurgeModal(btn);
             if (window.closeErpActionMenus) window.closeErpActionMenus();
         };
 })();

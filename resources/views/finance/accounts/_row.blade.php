@@ -15,6 +15,20 @@
     $balance = (float) (data_get($balancesByAccount ?? [], $account->id, $account->opening_balance));
     $debit = $balance > 0 ? $balance : 0;
     $credit = $balance < 0 ? abs($balance) : 0;
+
+    $journalLineSet = $journalLineSet ?? [];
+    $hasJournalLines = isset($journalLineSet[$account->id]);
+    $hasChildren = $account->relationLoaded('childrenRecursive')
+        ? $account->childrenRecursive->isNotEmpty()
+        : ($account->relationLoaded('children')
+            ? $account->children->isNotEmpty()
+            : $account->children()->exists());
+    $canLedgerDeleteEmpty = \App\Support\ErpRoles::canDeleteExpenseDraft(auth()->user());
+    $canSuperPurge = \App\Support\ErpRoles::isSuperAdmin(auth()->user());
+    // حذف عادي: ورقة بلا قيود وبلا فروع — المسار الخادمي يرفض غير ذلك
+    $showDeleteNormal = $canLedgerDeleteEmpty && ! $hasJournalLines && ! $hasChildren;
+    // تطهير (سوبر أدمن): أي حالة لا يُقبل فيها الحذف العادي (قيود، فروع، أو أدمن ليس له حذف نهائي)
+    $showPurgeAccount = $canSuperPurge && ! $showDeleteNormal;
 @endphp
 
 <tr class="border-b border-gray-100 hover:bg-gray-50/80">
@@ -78,24 +92,51 @@
                         data-coa-id="{{ $account->id }}"
                         data-coa-code="{{ e($account->code) }}"
                         data-coa-name="{{ e($account->name_ar ?? '') }}"
+                        data-update-url="{{ route('finance.accounts.update', $account) }}"
                         onclick="if(window.__coaQuickEdit){window.__coaQuickEdit(this);} return false;">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
                     </span>
                     <span class="flex-1 text-right font-medium leading-snug">تعديل الحساب</span>
                 </button>
-                <button type="button"
-                        class="erp-menu-item coa-action-delete flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
-                        role="menuitem"
-                        data-coa-id="{{ $account->id }}"
-                        data-coa-code="{{ e($account->code) }}"
-                        data-coa-name="{{ e($account->name_ar ?? '') }}"
-                        onclick="if(window.__coaQuickDelete){window.__coaQuickDelete(this);} return false;">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
-                    </span>
-                    <span class="flex-1 leading-snug">حذف الحساب</span>
-                </button>
+                @if($showDeleteNormal)
+                    <div class="flex w-full min-w-0 items-stretch" role="menuitem">
+                        <button type="button"
+                                class="erp-menu-item coa-action-delete flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50"
+                                data-coa-id="{{ $account->id }}"
+                                data-coa-code="{{ e($account->code) }}"
+                                data-coa-name="{{ e($account->name_ar ?? '') }}"
+                                data-delete-url="{{ route('finance.accounts.destroy', $account) }}"
+                                onclick="if(window.__coaQuickDelete){window.__coaQuickDelete(this);} return false;">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                            </span>
+                            <span class="min-w-0 flex-1 leading-snug">حذف الحساب</span>
+                        </button>
+                        <div class="flex shrink-0 items-center ps-1 pe-2">
+                            <x-info field="finance_account_action_delete" />
+                        </div>
+                    </div>
+                @endif
+                @if($showPurgeAccount)
+                    <div class="flex w-full min-w-0 items-stretch" role="menuitem">
+                        <button type="button"
+                                class="erp-menu-item coa-action-purge flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-amber-900 transition hover:bg-amber-50"
+                                data-coa-id="{{ $account->id }}"
+                                data-coa-code="{{ e($account->code) }}"
+                                data-coa-name="{{ e($account->name_ar ?? '') }}"
+                                data-purge-url="{{ route('finance.accounts.purge', $account) }}"
+                                onclick="if(window.__coaQuickPurge){window.__coaQuickPurge(this);} return false;">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+                            </span>
+                            <span class="min-w-0 flex-1 leading-snug">تطهير الحساب</span>
+                        </button>
+                        <div class="flex shrink-0 items-center ps-1 pe-2">
+                            <x-info field="finance_account_action_purge" />
+                        </div>
+                    </div>
+                @endif
                 <div class="mx-2 my-2 border-t border-gray-100"></div>
                 <button type="button"
                         class="erp-menu-item account-copy-btn flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm text-gray-800 transition hover:bg-gray-50"
@@ -120,6 +161,6 @@
     </td>
 </tr>
 
-@foreach($account->children as $child)
-    @include('finance.accounts._row', ['account' => $child, 'level' => $level + 1])
+@foreach($account->childrenRecursive as $child)
+    @include('finance.accounts._row', ['account' => $child, 'level' => $level + 1, 'journalLineSet' => $journalLineSet])
 @endforeach

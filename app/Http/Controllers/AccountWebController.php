@@ -3,21 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\AuditLog;
 use App\Models\BankAccount;
 use App\Models\CompanySetting;
+use App\Models\FixedAsset;
 use App\Models\FixedAssetCategory;
 use App\Models\ItemCategory;
+use App\Models\JournalEntry;
 use App\Models\JournalItem;
+use App\Models\Payment;
 use App\Models\PaymentMethodAccount;
 use App\Models\TaxRate;
 use App\Services\UniversalImportService;
+use App\Support\DefaultLedgerAccounts;
 use App\Support\ErpFilamentNotification;
+use App\Support\ErpRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use RuntimeException;
 
 class AccountWebController extends Controller
 {
@@ -146,10 +153,388 @@ class AccountWebController extends Controller
 
     public function destroy(Request $request, Account $account): RedirectResponse
     {
-        if ($account->children()->exists()) {
+        if (! ErpRoles::canDeleteExpenseDraft($request->user())) {
+            abort(403);
+        }
+
+        $blocked = $this->accountStructuralDeletionBlocked($account);
+        if ($blocked !== null) {
+            $msg = $blocked;
+            if (ErpRoles::isSuperAdmin($request->user())) {
+                $msg .= ' كسوبر أدمن يمكنك استخدام «تطهير الحساب» لإعادة توجيه الربط ثم الإكمال.';
+            }
+
             return redirect()
                 ->route('finance.accounts.index', $request->only(['search', 'type']))
-                ->with('error', 'لا يمكن حذف هذا الحساب لوجود حسابات فرعية أو حركات مالية مرتبطة به.');
+                ->with('error', $msg);
+        }
+
+        if (JournalItem::query()->where('account_id', $account->id)->exists()) {
+            if (ErpRoles::isSuperAdmin($request->user())) {
+                return redirect()
+                    ->route('finance.accounts.index', $request->only(['search', 'type']))
+                    ->with('error', 'لا يمكن حذف الحساب طالما توجد قيود؛ استخدم «تطهير الحساب» لإزالة القيود المتعلقة ثم الحذف النهائي.');
+            }
+
+            return redirect()
+                ->route('finance.accounts.index', $request->only(['search', 'type']))
+                ->with('error', 'لا يمكن حذف هذا الحساب لوجود حركات مالية مسجّلة عليه.');
+        }
+
+        DB::transaction(function () use ($account): void {
+            $ownerId = (int) $account->user_id;
+            $accountPk = (int) $account->id;
+            $code = (string) ($account->code ?? '');
+            $nameAr = (string) ($account->name_ar ?? '');
+
+            AuditLog::logFinancialControl(
+                'account_delete',
+                $ownerId,
+                Account::class,
+                $accountPk,
+                [
+                    'description' => 'حذف حساب من دليل الحسابات: '.$code.($nameAr !== '' ? ' — '.$nameAr : ''),
+                    'original_user_id' => $ownerId,
+                    'code' => $code,
+                    'name_ar' => $nameAr !== '' ? $nameAr : null,
+                    'account_type' => $account->type,
+                ]
+            );
+
+            $account->delete();
+        });
+
+        return redirect()
+            ->route('finance.accounts.index', $request->only(['search', 'type']))
+            ->with('success', 'تم حذف الحساب بنجاح.');
+    }
+
+    /**
+     * إزالة القيود التي تمس الحساب (والفروع تحته) ثم الحذف — سوبر أدمن فقط.
+     * يُعالَج الشجر من الأسفل: تطهير كل ورقة ثم الأب، حتى لا يعوق شرط «حسابات فرعية» التطهير الجذري.
+     */
+    public function purge(Request $request, Account $account): RedirectResponse
+    {
+        if (! ErpRoles::isSuperAdmin($request->user())) {
+            abort(403);
+        }
+
+        try {
+            DB::transaction(function () use ($account): void {
+                $this->purgeAccountSubtree($account);
+            });
+        } catch (RuntimeException $e) {
+            return redirect()
+                ->route('finance.accounts.index', $request->only(['search', 'type']))
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('finance.accounts.index', $request->only(['search', 'type']))
+            ->with('success', 'تم تطهير الحساب وجميع الحسابات الفرعية التابعة له وحذفها بعد إزالة القيود المرتبطة.');
+    }
+
+    /**
+     * تطهير وحذف الشجرة التحتية: الأبناء أولاً ثم الجذر الحالي.
+     */
+    private function purgeAccountSubtree(Account $account): void
+    {
+        $children = Account::query()
+            ->where('parent_id', $account->id)
+            ->orderBy('code')
+            ->get();
+
+        foreach ($children as $child) {
+            $this->purgeAccountSubtree($child);
+        }
+
+        $fresh = Account::query()->whereKey($account->id)->first();
+        if (! $fresh) {
+            return;
+        }
+
+        $this->reassignPaymentMethodsAwayFromPurgedAccount($fresh);
+        $this->reassignBankAccountsAwayFromPurgedAccount($fresh);
+        $this->reassignFixedAssetCategoriesAwayFromPurgedAccount($fresh);
+        $this->nullFixedAssetsLedgerPointingToPurgedAccount($fresh);
+
+        $blocked = $this->accountStructuralDeletionBlocked($fresh);
+        if ($blocked !== null) {
+            throw new RuntimeException($blocked);
+        }
+
+        $this->purgeLeafAccountRemoveJournalsAndDelete($fresh);
+    }
+
+    /**
+     * تطهير قيود حساب ورقة (بعد التأكد أنه لا يبقى له أبناء) ثم حذف السجل.
+     */
+    private function purgeLeafAccountRemoveJournalsAndDelete(Account $account): void
+    {
+        $tenantUid = (int) $account->user_id;
+        $accountPk = (int) $account->id;
+        $accountCode = (string) ($account->code ?? '');
+
+        $entryIds = JournalItem::query()
+            ->where('account_id', $account->id)
+            ->pluck('journal_entry_id')
+            ->unique()
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($entryIds !== []) {
+            $payments = Payment::withoutGlobalScopes()
+                ->where('user_id', $tenantUid)
+                ->where('type', 'expense')
+                ->whereIn('journal_entry_id', $entryIds)
+                ->get();
+
+            foreach ($payments as $expense) {
+                if ($expense->fixed_asset_id) {
+                    FixedAsset::query()
+                        ->whereKey((int) $expense->fixed_asset_id)
+                        ->where('source_payment_id', $expense->id)
+                        ->delete();
+                }
+            }
+
+            Payment::withoutGlobalScopes()
+                ->where('user_id', $tenantUid)
+                ->where('type', 'expense')
+                ->whereIn('journal_entry_id', $entryIds)
+                ->update([
+                    'journal_entry_id' => null,
+                    'status' => 'draft',
+                    'fixed_asset_id' => null,
+                ]);
+
+            JournalEntry::withoutGlobalScopes()
+                ->where('user_id', $tenantUid)
+                ->whereIn('id', $entryIds)
+                ->delete();
+        }
+
+        AuditLog::logFinancialControl(
+            'account_purge_and_delete',
+            $tenantUid,
+            Account::class,
+            $accountPk,
+            [
+                'description' => 'تطهير وحذف حساب من الدليل: '.$accountCode.' (إزالة '.count($entryIds).' قيد/قيود)',
+                'original_user_id' => $tenantUid,
+                'account_code' => $accountCode,
+                'name_ar' => $account->name_ar,
+                'account_type' => $account->type,
+                'journal_entries_removed' => count($entryIds),
+            ]
+        );
+
+        $account->delete();
+    }
+
+    /**
+     * أثناء التطهير فقط: تحريك ربط وسائل الدفع عن الحساب المراد حذفه حتى لا يمنع FK التطهير.
+     */
+    private function reassignPaymentMethodsAwayFromPurgedAccount(Account $account): void
+    {
+        $uid = (int) $account->user_id;
+        $excludeId = (int) $account->id;
+
+        $methodLabels = [
+            PaymentMethodAccount::KEY_CASH => 'نقدي',
+            PaymentMethodAccount::KEY_TRANSFER => 'تحويل بنكي',
+            PaymentMethodAccount::KEY_CARD => 'بطاقة / شبكة',
+        ];
+
+        $rows = PaymentMethodAccount::withoutGlobalScopes()
+            ->where('user_id', $uid)
+            ->where('ledger_account_id', $excludeId)
+            ->get();
+
+        foreach ($rows as $row) {
+            $fallback = $this->fallbackLedgerAccountForPaymentMethodAfterPurge($uid, (string) $row->method_key, $excludeId);
+            if ($fallback === null) {
+                $label = $methodLabels[(string) $row->method_key] ?? (string) $row->method_key;
+                throw new RuntimeException(
+                    'تعذّر إكمال التطهير: وسيلة الدفع «'.$label.'» تشير إلى هذا الحساب ولا يوجد حساب بديل صالح في الدليل. عدّل «ربط وسائل الدفع بالحسابات» ثم أعد المحاولة.'
+                );
+            }
+
+            PaymentMethodAccount::withoutGlobalScopes()
+                ->whereKey($row->id)
+                ->update(['ledger_account_id' => $fallback]);
+        }
+    }
+
+    private function fallbackLedgerAccountForPaymentMethodAfterPurge(int $userId, string $methodKey, int $excludingAccountId): ?int
+    {
+        $preferredCode = \in_array($methodKey, [PaymentMethodAccount::KEY_TRANSFER, PaymentMethodAccount::KEY_CARD], true)
+            ? '1020'
+            : '1010';
+
+        $preferredId = Account::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('code', $preferredCode)
+            ->value('id');
+
+        if ($preferredId && (int) $preferredId !== $excludingAccountId) {
+            return (int) $preferredId;
+        }
+
+        return Account::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('type', Account::TYPE_ASSET)
+            ->whereKeyNot($excludingAccountId)
+            ->orderBy('code')
+            ->value('id');
+    }
+
+    /**
+     * أثناء التطهير: نقل ربط الحسابات البنكية عن حساب الدليل المحذوف حتى لا يمنع القيد FK والتحقق الهيكلي.
+     */
+    private function reassignBankAccountsAwayFromPurgedAccount(Account $account): void
+    {
+        $uid = (int) $account->user_id;
+        $excludeId = (int) $account->id;
+
+        $rows = BankAccount::withoutGlobalScopes()
+            ->where('user_id', $uid)
+            ->where('ledger_account_id', $excludeId)
+            ->get();
+
+        foreach ($rows as $row) {
+            $fallback = $this->fallbackLedgerAccountForBankAfterPurge($uid, $excludeId);
+            if ($fallback === null) {
+                throw new RuntimeException(
+                    'تعذّر إكمال التطهير: حساب بنكي يشير إلى هذا الحساب في الدليل ولا يوجد حساب بديل صالح. عدّل ربط الحساب البنكي من الإعدادات أو أضف حساباً بديلاً ثم أعد المحاولة.'
+                );
+            }
+
+            BankAccount::withoutGlobalScopes()
+                ->whereKey($row->id)
+                ->update(['ledger_account_id' => $fallback]);
+        }
+    }
+
+    private function fallbackLedgerAccountForBankAfterPurge(int $userId, int $excludingAccountId): ?int
+    {
+        $preferredId = Account::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('code', '1020')
+            ->value('id');
+
+        if ($preferredId && (int) $preferredId !== $excludingAccountId) {
+            return (int) $preferredId;
+        }
+
+        return Account::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('type', Account::TYPE_ASSET)
+            ->whereKeyNot($excludingAccountId)
+            ->orderBy('code')
+            ->value('id');
+    }
+
+    /**
+     * أثناء التطهير: استبدال مراجع دليل الحساب في فئات الأصول الثابتة قبل الحذف (restrictOnDelete على الأعمدة الثلاثة).
+     */
+    private function reassignFixedAssetCategoriesAwayFromPurgedAccount(Account $account): void
+    {
+        $uid = (int) $account->user_id;
+        $excludeId = (int) $account->id;
+
+        $cats = FixedAssetCategory::withoutGlobalScopes()
+            ->where('user_id', $uid)
+            ->where(function ($q) use ($excludeId) {
+                $q->where('ledger_asset_account_id', $excludeId)
+                    ->orWhere('ledger_depreciation_cost_account_id', $excludeId)
+                    ->orWhere('ledger_accumulated_depreciation_account_id', $excludeId);
+            })
+            ->get();
+
+        foreach ($cats as $cat) {
+            $updates = [];
+
+            if ((int) $cat->ledger_asset_account_id === $excludeId) {
+                $fb = $this->fallbackLedgerForFixedAssetCategory($uid, $excludeId, 'asset');
+                if ($fb === null) {
+                    throw new RuntimeException(
+                        'تعذّر إكمال التطهير: فئة أصول ثابتة تستخدم هذا الحساب كحساب أصل ولا يوجد حساب أصول بديل. أضف حساباً بديلاً ثم أعد المحاولة.'
+                    );
+                }
+                $updates['ledger_asset_account_id'] = $fb;
+            }
+
+            if ((int) $cat->ledger_depreciation_cost_account_id === $excludeId) {
+                $fb = $this->fallbackLedgerForFixedAssetCategory($uid, $excludeId, 'depreciation_expense');
+                if ($fb === null) {
+                    throw new RuntimeException(
+                        'تعذّر إكمال التطهير: فئة أصول ثابتة تستخدم هذا الحساب كمصروف إهلاك ولا يوجد حساب مصروف بديل. أضف حساباً بديلاً ثم أعد المحاولة.'
+                    );
+                }
+                $updates['ledger_depreciation_cost_account_id'] = $fb;
+            }
+
+            if ((int) $cat->ledger_accumulated_depreciation_account_id === $excludeId) {
+                $fb = $this->fallbackLedgerForFixedAssetCategory($uid, $excludeId, 'accumulated_depreciation');
+                if ($fb === null) {
+                    throw new RuntimeException(
+                        'تعذّر إكمال التطهير: فئة أصول ثابتة تستخدم هذا الحساب كمجمع إهلاك ولا يوجد حساب أصول بديل. أضف حساباً بديلاً ثم أعد المحاولة.'
+                    );
+                }
+                $updates['ledger_accumulated_depreciation_account_id'] = $fb;
+            }
+
+            if ($updates !== []) {
+                FixedAssetCategory::withoutGlobalScopes()
+                    ->whereKey($cat->id)
+                    ->update($updates);
+            }
+        }
+    }
+
+    /** أي أصول ثابتة ما زالت تشير إلى حساب الدليل المحذوف تُفرَّغ المرجع (nullable FK). */
+    private function nullFixedAssetsLedgerPointingToPurgedAccount(Account $account): void
+    {
+        FixedAsset::query()
+            ->where('ledger_account_id', $account->id)
+            ->update(['ledger_account_id' => null]);
+    }
+
+    /**
+     * @param  'asset'|'depreciation_expense'|'accumulated_depreciation'  $kind
+     */
+    private function fallbackLedgerForFixedAssetCategory(int $userId, int $excludingAccountId, string $kind): ?int
+    {
+        $preferred = match ($kind) {
+            'asset' => DefaultLedgerAccounts::fixedAssetPostingAccount($userId),
+            'depreciation_expense' => DefaultLedgerAccounts::depreciationExpenseAccount($userId),
+            'accumulated_depreciation' => DefaultLedgerAccounts::accumulatedDepreciationAccount($userId),
+        };
+
+        if ((int) $preferred->id !== $excludingAccountId) {
+            return (int) $preferred->id;
+        }
+
+        $accountType = \in_array($kind, ['asset', 'accumulated_depreciation'], true)
+            ? Account::TYPE_ASSET
+            : Account::TYPE_EXPENSE;
+
+        $fallbackId = Account::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('type', $accountType)
+            ->whereKeyNot($excludingAccountId)
+            ->orderBy('code')
+            ->value('id');
+
+        return $fallbackId !== null ? (int) $fallbackId : null;
+    }
+
+    private function accountStructuralDeletionBlocked(Account $account): ?string
+    {
+        if ($account->children()->exists()) {
+            return 'لا يمكن حذف هذا الحساب لوجود حسابات فرعية.';
         }
 
         if (BankAccount::withoutGlobalScopes()
@@ -157,9 +542,7 @@ class AccountWebController extends Controller
             ->where('user_id', $account->user_id)
             ->where('status', 'active')
             ->exists()) {
-            return redirect()
-                ->route('finance.accounts.index', $request->only(['search', 'type']))
-                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بحساب بنكي نشط.');
+            return 'لا يمكن حذف هذا الحساب لأنه مرتبط بحساب بنكي نشط.';
         }
 
         if (FixedAssetCategory::withoutGlobalScopes()
@@ -170,27 +553,21 @@ class AccountWebController extends Controller
                     ->orWhere('ledger_accumulated_depreciation_account_id', $account->id);
             })
             ->exists()) {
-            return redirect()
-                ->route('finance.accounts.index', $request->only(['search', 'type']))
-                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بفئة أصول ثابتة.');
+            return 'لا يمكن حذف هذا الحساب لأنه مرتبط بفئة أصول ثابتة.';
         }
 
         if (TaxRate::withoutGlobalScopes()
             ->where('user_id', $account->user_id)
             ->where('ledger_account_id', $account->id)
             ->exists()) {
-            return redirect()
-                ->route('finance.accounts.index', $request->only(['search', 'type']))
-                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بضريبة في إعدادات الضرائب.');
+            return 'لا يمكن حذف هذا الحساب لأنه مرتبط بضريبة في إعدادات الضرائب.';
         }
 
         if (PaymentMethodAccount::withoutGlobalScopes()
             ->where('user_id', $account->user_id)
             ->where('ledger_account_id', $account->id)
             ->exists()) {
-            return redirect()
-                ->route('finance.accounts.index', $request->only(['search', 'type']))
-                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بوسيلة دفع.');
+            return 'لا يمكن حذف هذا الحساب لأنه مرتبط بوسيلة دفع.';
         }
 
         if (ItemCategory::query()
@@ -200,9 +577,7 @@ class AccountWebController extends Controller
                     ->orWhere('cogs_account_id', $account->id);
             })
             ->exists()) {
-            return redirect()
-                ->route('finance.accounts.index', $request->only(['search', 'type']))
-                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مرتبط بفئة منتجات.');
+            return 'لا يمكن حذف هذا الحساب لأنه مرتبط بفئة منتجات.';
         }
 
         if (CompanySetting::query()
@@ -213,22 +588,10 @@ class AccountWebController extends Controller
                     ->orWhere('sales_allowed_discount_ledger_account_id', $account->id);
             })
             ->exists()) {
-            return redirect()
-                ->route('finance.accounts.index', $request->only(['search', 'type']))
-                ->with('error', 'لا يمكن حذف هذا الحساب لأنه مستخدم في إعدادات المنشأة العامة.');
+            return 'لا يمكن حذف هذا الحساب لأنه مستخدم في إعدادات المنشأة العامة.';
         }
 
-        if (JournalItem::query()->where('account_id', $account->id)->exists()) {
-            return redirect()
-                ->route('finance.accounts.index', $request->only(['search', 'type']))
-                ->with('error', 'لا يمكن حذف هذا الحساب لوجود حسابات فرعية أو حركات مالية مرتبطة به.');
-        }
-
-        $account->delete();
-
-        return redirect()
-            ->route('finance.accounts.index', $request->only(['search', 'type']))
-            ->with('success', 'تم حذف الحساب بنجاح.');
+        return null;
     }
 
     public function toggleActive(Account $account): RedirectResponse
@@ -338,6 +701,19 @@ class AccountWebController extends Controller
         $totalCredit = $sumCredit;
         $difference = $totalDebit - $totalCredit;
 
+        $journalLineSet = [];
+        if ($accountIds !== []) {
+            foreach (
+                JournalItem::query()
+                    ->whereIn('account_id', $accountIds)
+                    ->distinct()
+                    ->pluck('account_id')
+                    ->all() as $jid
+            ) {
+                $journalLineSet[(int) $jid] = true;
+            }
+        }
+
         return view('finance.accounts.index', [
             'rootAccounts' => $rootAccounts,
             'totalAccountsCount' => $totalAccountsCount,
@@ -345,6 +721,7 @@ class AccountWebController extends Controller
             'totalCredit' => $totalCredit,
             'difference' => $difference,
             'balancesByAccount' => $balancesByAccount,
+            'journalLineSet' => $journalLineSet,
         ]);
     }
 }

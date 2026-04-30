@@ -48,6 +48,7 @@ use App\Http\Controllers\OperationsDashboardController;
 use App\Http\Controllers\OperationsShiftController;
 use App\Http\Controllers\PaymentMethodAccountController;
 use App\Http\Controllers\PosDashboardController;
+use App\Http\Controllers\PosDeviceWebController;
 use App\Http\Controllers\PosSaleWebController;
 use App\Http\Controllers\PosSessionWebController;
 use App\Http\Controllers\PaymentWebController;
@@ -76,6 +77,7 @@ use App\Http\Controllers\ServicesDashboardController;
 use App\Http\Controllers\StatementReportWebController;
 use App\Http\Controllers\StockInController;
 use App\Http\Controllers\SupplierWebController;
+use App\Http\Controllers\SystemMaintenanceController;
 use App\Http\Controllers\TaxRateController;
 use App\Http\Controllers\TaxReportWebController;
 use App\Http\Controllers\TechnicianServiceOrderController;
@@ -188,6 +190,10 @@ Route::middleware(['auth'])->group(function () {
     // نقاط البيع — خارج تقييد role:admin حتى يفتح الكاشير/المشرف الواجهة (البيانات مقيّدة بالمستأجر في النماذج).
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('dashboard', [PosDashboardController::class, 'index'])->name('dashboard');
+        Route::middleware('role:admin')->group(function () {
+            Route::get('devices', [PosDeviceWebController::class, 'index'])->name('devices.index');
+            Route::post('devices', [PosDeviceWebController::class, 'store'])->name('devices.store');
+        });
         Route::post('sessions', [PosSessionWebController::class, 'store'])->name('sessions.store');
         Route::get('receipts', [PosSaleWebController::class, 'index'])->name('receipts.index');
         Route::post('sales', [PosSaleWebController::class, 'store'])->name('sales.store');
@@ -304,6 +310,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('accounts', [AccountWebController::class, 'store'])->name('accounts.store');
         Route::put('accounts/{account}', [AccountWebController::class, 'update'])->name('accounts.update');
         Route::delete('accounts/{account}', [AccountWebController::class, 'destroy'])->name('accounts.destroy');
+        Route::post('accounts/{account}/purge', [AccountWebController::class, 'purge'])->name('accounts.purge');
         Route::patch('accounts/{account}/toggle-active', [AccountWebController::class, 'toggleActive'])->name('accounts.toggle-active');
         // القيود والدفاتر
         Route::resource('journals', JournalEntryWebController::class);
@@ -327,8 +334,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('expenses/{expense}/print', [ExpenseController::class, 'print'])->name('expenses.print');
         Route::get('expenses/{expense}/pdf', [ExpenseController::class, 'pdf'])->name('expenses.pdf');
         Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+        Route::post('expenses/{expense}/back-to-draft', [ExpenseController::class, 'backToDraft'])->name('expenses.back-to-draft');
         Route::get('expenses/import/template', [ExpenseController::class, 'importTemplate'])->name('expenses.import-template');
         Route::post('expenses/import', [ExpenseController::class, 'import'])->name('expenses.import');
+        Route::post('expenses/destroy-all-matching', [ExpenseController::class, 'destroyAllMatchingFilters'])->name('expenses.destroy-all-matching');
         // يجب تسجيله قبل resource('expenses') وإلا يُفسَّر «categories» كمعرّف مصروف ويُستدعى show غير الموجود
         Route::resource('expenses/categories', ExpenseCategoryController::class)->names('expenses.categories');
         Route::resource('expenses', ExpenseController::class);
@@ -494,6 +503,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // إعدادات المنشأة والسجلات
     Route::get('settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
     Route::put('settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
+    Route::post('settings/system-maintenance/super-purge', [SystemMaintenanceController::class, 'superPurge'])->name('settings.system-maintenance.super-purge');
     Route::get('system/audit-log', [AuditLogWebController::class, 'index'])->name('system.audit.index');
 
     Route::get('reports/profit-loss', fn () => redirect()->route('finance.reports.profit-loss'));

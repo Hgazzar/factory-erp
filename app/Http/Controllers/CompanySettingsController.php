@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\CompanySetting;
+use App\Models\User;
 use App\Support\AccountingLedgerOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,6 +55,11 @@ class CompanySettingsController extends Controller
             (int) ($setting->payroll_default_payment_account_id ?? 0)
         );
 
+        $purgeUserOpts = [];
+        if ($uid === 1) {
+            $purgeUserOpts = User::query()->orderBy('name')->get(['id', 'name', 'email']);
+        }
+
         return view('settings.company', compact(
             'setting',
             'receivableOpts',
@@ -62,7 +68,8 @@ class CompanySettingsController extends Controller
             'salesDiscOpts',
             'payrollExpenseOpts',
             'payrollPayableOpts',
-            'payrollCashOpts'
+            'payrollCashOpts',
+            'purgeUserOpts'
         ));
     }
 

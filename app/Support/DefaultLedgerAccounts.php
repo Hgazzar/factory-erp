@@ -383,4 +383,54 @@ final class DefaultLedgerAccounts
             ? self::cashOnHand()
             : self::bankMain();
     }
+
+    /**
+     * مصدر الدفع الافتراضي لمالك دليل محدد (مثلاً عندما يعرض المستخدم 1 مصروف مستخدم آخر).
+     */
+    public static function paymentSourceAssetForTenant(string $paymentMethod, int $tenantUserId): Account
+    {
+        return $paymentMethod === 'cash'
+            ? self::cashOnHandForTenant($tenantUserId)
+            : self::bankMainForTenant($tenantUserId);
+    }
+
+    private static function ensureCurrentAssetsGroupForTenant(int $tenantUserId): Account
+    {
+        return self::firstOrCreateAccount(self::CODE_CURRENT_ASSETS, [
+            'name_ar' => 'الأصول المتداولة',
+            'name_en' => 'Current Assets',
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => null,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $tenantUserId);
+    }
+
+    private static function cashOnHandForTenant(int $tenantUserId): Account
+    {
+        $pid = self::ensureCurrentAssetsGroupForTenant($tenantUserId)->id;
+
+        return self::firstOrCreateAccount(self::CODE_CASH, [
+            'name_ar' => 'صندوق النقدية',
+            'name_en' => 'Cash on Hand',
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => $pid,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $tenantUserId);
+    }
+
+    private static function bankMainForTenant(int $tenantUserId): Account
+    {
+        $pid = self::ensureCurrentAssetsGroupForTenant($tenantUserId)->id;
+
+        return self::firstOrCreateAccount(self::CODE_BANK, [
+            'name_ar' => 'البنك - الحساب الرئيسي',
+            'name_en' => 'Bank - Main Account',
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => $pid,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $tenantUserId);
+    }
 }
