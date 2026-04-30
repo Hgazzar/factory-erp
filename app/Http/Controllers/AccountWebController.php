@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\AuditLog;
+use App\Models\AuditTrail;
 use App\Models\BankAccount;
 use App\Models\CompanySetting;
 use App\Models\FixedAsset;
@@ -201,6 +202,12 @@ class AccountWebController extends Controller
                 ]
             );
 
+            AuditTrail::log('delete', 'accounts', $accountPk, [
+                'code' => $code,
+                'name_ar' => $nameAr !== '' ? $nameAr : null,
+                'type' => $account->type,
+            ], null);
+
             $account->delete();
         });
 
@@ -329,6 +336,13 @@ class AccountWebController extends Controller
                 'journal_entries_removed' => count($entryIds),
             ]
         );
+
+        AuditTrail::log('delete', 'accounts', $accountPk, [
+            'code' => $accountCode,
+            'name_ar' => $account->name_ar,
+            'type' => $account->type,
+            'purge_journal_entries_removed' => count($entryIds),
+        ], null);
 
         $account->delete();
     }

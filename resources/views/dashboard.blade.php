@@ -750,7 +750,29 @@
         </div>
         <div class="tab-pane fade" id="dash-pane-activity" role="tabpanel" tabindex="0">
             <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm" dir="rtl">
-                <h2 class="h6 fw-bold text-dark mb-3">آخر العمليات</h2>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                    <h2 class="h6 fw-bold text-dark mb-0">آخر العمليات</h2>
+                    @if(isset($managedActivityUsers) && $managedActivityUsers->isNotEmpty())
+                        <form method="GET" action="{{ route('dashboard') }}" class="d-flex flex-wrap align-items-center gap-2">
+                            @if(request()->filled('q'))
+                                <input type="hidden" name="q" value="{{ request('q') }}">
+                            @endif
+                            <label for="activity_scope" class="small text-muted mb-0">
+                                نطاق العرض
+                                <x-info field="activity_log" />
+                            </label>
+                            <select id="activity_scope" name="activity_scope" class="form-select form-select-sm rounded-lg" onchange="this.form.submit()">
+                                <option value="all" @selected(($activityScope ?? 'all') === 'all')>الكل</option>
+                                <option value="mine" @selected(($activityScope ?? '') === 'mine')>أنا فقط</option>
+                                @foreach($managedActivityUsers as $userOption)
+                                    <option value="user:{{ $userOption->id }}" @selected(($activityScope ?? '') === ('user:'.$userOption->id))>
+                                        {{ $userOption->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </form>
+                    @endif
+                </div>
                 @if(isset($recentActivity) && $recentActivity->isNotEmpty())
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0 text-end">
@@ -784,6 +806,7 @@
                                             'delivery_orders' => 'أمر توريد',
                                             'purchase_invoices' => 'فاتورة مشتريات',
                                             'service_orders' => 'طلب خدمة',
+                                            'accounts' => 'حساب محاسبي',
                                         ];
                                     @endphp
                                     {{ $tableLabels[$row->table_name] ?? $row->table_name }}

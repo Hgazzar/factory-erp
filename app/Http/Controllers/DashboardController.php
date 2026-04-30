@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\AuditTrail;
+use App\Models\Employee;
 use App\Models\InstalledAsset;
 use App\Models\Item;
 use App\Models\JournalEntry;
@@ -15,7 +16,9 @@ use App\Models\Receipt;
 use App\Models\SalesPayment;
 use App\Models\ServiceOrder;
 use App\Models\Unit;
+use App\Models\User;
 use App\Models\Warehouse;
+use App\Support\ErpRoles;
 use App\Support\LedgerAccountBalance;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -27,8 +30,10 @@ class DashboardController extends Controller
     public function index(Request $request): View
     {
         $today = Carbon::today();
+        $viewer = $request->user();
         $viewerId = (int) ($request->user()?->id ?? 0);
         $systemWide = $viewerId === 1;
+        $isSuperAdmin = ErpRoles::isSuperAdmin($viewer);
         $tenantUserId = (int) ($request->user()?->employee?->user_id ?? $viewerId);
 
         $productionForTenant = static function ($query) use ($systemWide, $tenantUserId, $viewerId): void {
@@ -317,10 +322,46 @@ class DashboardController extends Controller
             );
         }
 
-        $recentActivity = self::safeCollection(function () use ($viewerId) {
+        $managedUsers = collect();
+        $managedUserIds = [];
+        $activityScope = $isSuperAdmin ? (string) $request->query('activity_scope', 'all') : 'mine';
+        $recentActivityUserIds = [$viewerId];
+        if ($isSuperAdmin && $viewerId > 0) {
+            $managedUserIds = Employee::withoutGlobalScopes()
+                ->where('user_id', $viewerId)
+                ->whereNotNull('linked_user_id')
+                ->pluck('linked_user_id')
+                ->map(static fn ($id): int => (int) $id)
+                ->filter(static fn (int $id): bool => $id > 0)
+                ->unique()
+                ->values()
+                ->all();
+
+            $managedUsers = User::query()
+                ->whereIn('id', $managedUserIds)
+                ->orderBy('name')
+                ->get(['id', 'name']);
+
+            if ($activityScope === 'mine') {
+                $recentActivityUserIds = [$viewerId];
+            } elseif (\str_starts_with($activityScope, 'user:')) {
+                $selectedUserId = (int) \substr($activityScope, 5);
+                $recentActivityUserIds = \in_array($selectedUserId, $managedUserIds, true)
+                    ? [$selectedUserId]
+                    : array_values(array_unique(array_merge([$viewerId], $managedUserIds)));
+                if (! \in_array($selectedUserId, $managedUserIds, true)) {
+                    $activityScope = 'all';
+                }
+            } else {
+                $activityScope = 'all';
+                $recentActivityUserIds = array_values(array_unique(array_merge([$viewerId], $managedUserIds)));
+            }
+        }
+
+        $recentActivity = self::safeCollection(function () use ($recentActivityUserIds) {
             return AuditTrail::query()
                 ->whereNotIn('table_name', ['journal_entries', 'journal_items'])
-                ->where('user_id', $viewerId)
+                ->whereIn('user_id', $recentActivityUserIds)
                 ->with('user:id,name')
                 ->latest()
                 ->limit(10)
@@ -331,6 +372,8 @@ class DashboardController extends Controller
             'searchQuery' => $searchQuery,
             'searchResults' => $searchResults,
             'recentActivity' => $recentActivity,
+            'activityScope' => $activityScope,
+            'managedActivityUsers' => $managedUsers,
         ]));
     }
 
