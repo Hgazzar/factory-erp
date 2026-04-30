@@ -1,8 +1,9 @@
-# تشغيل تلقائي عند كل نشر على Railway (Release) — لا يحتاج تيرمنال.
-# إن كان لديك أمر release مُعرَّف في لوحة Railway، ادمجه مع هذا السطر أو انقل السطر إلى هناك.
+# إعدادات Railway (انظر: https://docs.railway.com/reference/config-as-code)
 #
-# startCommand مهم: تشغيل php بـ `-t public` فقط يعطي 404 لمسارات Livewire/Filament مثل
-# /livewire-…/livewire.js لأنها ليست ملفات حقيقية — يجب المرور على Laravel (index.php).
+# مهم: المفتاح الصحيح لأوامر ما قبل التشغيل هو preDeployCommand وليس releaseCommand
+# (releaseCommand غير موجود في railway.schema.json → قد يُتجاهل الميجرشن/المزامنة).
+#
+# startCommand: تجنّب php -S -t public فقط لأن مسارات Livewire ليست ملفات ثابتة.
 [deploy]
-releaseCommand = "php artisan migrate --force && php artisan optimize:clear && php artisan system:set-super-admins"
-startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
+preDeployCommand = "php artisan migrate --force && php artisan optimize:clear && php artisan system:set-super-admins"
+startCommand = "bash -lc \"exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\""
