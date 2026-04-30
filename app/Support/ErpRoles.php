@@ -75,11 +75,11 @@ final class ErpRoles
     }
 
     /**
-     * إرجاع مصروف معتمد إلى مسودة: الأدمن العادي فقط (لا السوبر أدمن حسب السياسة).
+     * إرجاع مصروف معتمد إلى مسودة: الأدمن أو السوبر أدمن.
      */
     public static function canRevertApprovedExpenseToDraft(?Authenticatable $user): bool
     {
-        return self::isStandardAdmin($user);
+        return self::hasFinanceAdminPanelAccess($user) || self::isSuperAdmin($user);
     }
 
     /**
