@@ -274,6 +274,13 @@ class SalesInvoiceWebController extends Controller
             }
         }
 
+        if ($initialCustomerId === null && $request->filled('customer_id')) {
+            $cid = (int) $request->input('customer_id');
+            if (Customer::where('user_id', (int) auth()->id())->whereKey($cid)->exists()) {
+                $initialCustomerId = $cid;
+            }
+        }
+
         return view('sales.invoices.create', [
             'customers' => $customers,
             'warehouse' => $warehouse,

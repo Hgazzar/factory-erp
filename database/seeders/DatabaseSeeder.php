@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             ExpenseCategorySeeder::class,
             FixedAssetSeeder::class,
             CostCenterSeeder::class,
+            LoyaltyProgramsSeeder::class,
         ]);
     }
 }

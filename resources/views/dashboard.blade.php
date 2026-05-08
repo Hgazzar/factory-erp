@@ -446,13 +446,13 @@
                                     <h6 class="ufuq-card-title">المبيعات</h6>
                                     <span class="ufuq-card-count">{{ isset($countCustomers) ? $countCustomers : '6+' }}</span>
                                 </div>
-                                <p class="ufuq-card-sub">إدارة الفواتير والعملاء</p>
+                                <p class="ufuq-card-sub">الفواتير وبطاقة العميل للمستندات المالية</p>
                             </div>
                         </div>
                         @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
                             <a href="{{ route('sales.dashboard') }}" class="ufuq-qbtn">لوحة</a>
-                            <a href="{{ route('sales.customers.index') }}" class="ufuq-qbtn">عملاء</a>
+                            <a href="{{ route('sales.customers.index') }}" class="ufuq-qbtn">عملاء البيع</a>
                             <a href="{{ route('sales.invoices.index') }}" class="ufuq-qbtn">فواتير</a>
                         </div>
                         @endif
@@ -567,11 +567,11 @@
                     </div>
                 </div>
             </div>
-            {{-- 7. إدارة العملاء --}}
+            {{-- 7. إدارة العملاء (CRM — علاقة العميل، وليست عملاء المبيعات التشغيلية) --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-indigo h-100 p-4">
                     @if(auth()->user()->isAdminOrSuperAdmin())
-                    <a href="{{ route('sales.customers.index') }}" class="ufuq-card-stretch" aria-label="فتح إدارة العملاء"></a>
+                    <a href="{{ route('crm.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح لوحة إدارة العملاء CRM"></a>
                     @else
                     <a href="#" class="ufuq-card-stretch" aria-label="إدارة العملاء"></a>
                     @endif
@@ -585,12 +585,13 @@
                                     <h6 class="ufuq-card-title">إدارة العملاء</h6>
                                     <span class="ufuq-card-count">5+</span>
                                 </div>
-                                <p class="ufuq-card-sub">العملاء والعقود والمتابعة</p>
+                                <p class="ufuq-card-sub">CRM: مراحل العميل والمتابعة والمواعيد</p>
                             </div>
                         </div>
                         @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
-                            <a href="{{ route('sales.customers.index') }}" class="ufuq-qbtn">عملاء</a>
+                            <a href="{{ route('crm.dashboard') }}" class="ufuq-qbtn">لوحة CRM</a>
+                            <a href="{{ route('crm.customers.index') }}" class="ufuq-qbtn">العملاء</a>
                         </div>
                         @endif
                     </div>

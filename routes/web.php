@@ -18,6 +18,13 @@ use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\ContractWebController;
 use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\CreditNoteController;
+use App\Http\Controllers\CrmAppointmentWebController;
+use App\Http\Controllers\CrmCustomerWebController;
+use App\Http\Controllers\CrmDashboardController;
+use App\Http\Controllers\CrmLoyaltyWebController;
+use App\Http\Controllers\CrmMembershipWebController;
+use App\Http\Controllers\CrmOpportunityWebController;
+use App\Http\Controllers\CrmSegmentWebController;
 use App\Http\Controllers\CustomerWebController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DebitNoteController;
@@ -243,6 +250,45 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::delete('attachments/{attachment}', [AttachmentWebController::class, 'destroy'])->name('attachments.destroy');
 
+    // إدارة العملاء (CRM) — role:admin يشمل admin و super_admin
+    Route::prefix('crm')->name('crm.')->group(function () {
+        Route::get('dashboard', [CrmDashboardController::class, 'index'])->name('dashboard');
+        Route::get('customers', [CrmCustomerWebController::class, 'index'])->name('customers.index');
+        Route::get('customers/new', [CrmCustomerWebController::class, 'createNewCustomer'])->name('customers.new');
+        Route::post('customers/new', [CrmCustomerWebController::class, 'storeNewCustomer'])->name('customers.store-new');
+        Route::get('customers/create', [CrmCustomerWebController::class, 'createLead'])->name('customers.create');
+        Route::post('customers/lead', [CrmCustomerWebController::class, 'storeLead'])->name('customers.lead.store');
+        Route::get('customers/{customer}', [CrmCustomerWebController::class, 'show'])->name('customers.show');
+        Route::post('customers', [CrmCustomerWebController::class, 'store'])->name('customers.store');
+        Route::post('customers/{customer}/actions/appointment', [CrmCustomerWebController::class, 'storeQuickAppointment'])->name('customers.actions.appointment');
+        Route::post('customers/{customer}/actions/call', [CrmCustomerWebController::class, 'storeCallLog'])->name('customers.actions.call');
+        Route::get('appointments', [CrmAppointmentWebController::class, 'index'])->name('appointments.index');
+        Route::get('appointments/create', [CrmAppointmentWebController::class, 'create'])->name('appointments.create');
+        Route::post('appointments', [CrmAppointmentWebController::class, 'store'])->name('appointments.store');
+        Route::get('activities/create', [CrmAppointmentWebController::class, 'createActivity'])->name('activities.create');
+        Route::post('activities', [CrmAppointmentWebController::class, 'storeActivity'])->name('activities.store');
+        Route::get('opportunities/pipeline', [CrmOpportunityWebController::class, 'pipeline'])->name('opportunities.pipeline');
+        Route::get('opportunities/create', [CrmOpportunityWebController::class, 'create'])->name('opportunities.create');
+        Route::post('opportunities', [CrmOpportunityWebController::class, 'store'])->name('opportunities.store');
+        Route::get('opportunities/{opportunity}', [CrmOpportunityWebController::class, 'show'])->whereNumber('opportunity')->name('opportunities.show');
+        Route::get('opportunities/{opportunity}/edit', [CrmOpportunityWebController::class, 'edit'])->whereNumber('opportunity')->name('opportunities.edit');
+        Route::put('opportunities/{opportunity}', [CrmOpportunityWebController::class, 'update'])->whereNumber('opportunity')->name('opportunities.update');
+        Route::get('opportunities', [CrmOpportunityWebController::class, 'index'])->name('opportunities.index');
+        Route::get('segments', [CrmSegmentWebController::class, 'index'])->name('segments.index');
+        Route::get('segments/create', [CrmSegmentWebController::class, 'create'])->name('segments.create');
+        Route::post('segments', [CrmSegmentWebController::class, 'store'])->name('segments.store');
+        Route::post('segments/{segment}/refresh-members', [CrmSegmentWebController::class, 'refreshMembers'])->name('segments.refresh-members');
+        Route::get('loyalty', [CrmLoyaltyWebController::class, 'index'])->name('loyalty.index');
+        Route::get('loyalty/create', [CrmLoyaltyWebController::class, 'create'])->name('loyalty.create');
+        Route::post('loyalty', [CrmLoyaltyWebController::class, 'store'])->name('loyalty.store');
+        Route::get('loyalty/accounts', [CrmLoyaltyWebController::class, 'accounts'])->name('loyalty.accounts.index');
+        Route::get('memberships', [CrmMembershipWebController::class, 'index'])->name('memberships.index');
+        Route::get('memberships/create', [CrmMembershipWebController::class, 'create'])->name('memberships.create');
+        Route::post('memberships', [CrmMembershipWebController::class, 'store'])->name('memberships.store');
+        Route::get('activities', [CrmAppointmentWebController::class, 'activities'])->name('activities.index');
+        Route::view('settings', 'crm.settings-placeholder')->name('settings.index');
+    });
+
     // Inventory & Items
     Route::get('api/products/search', [ProductSearchController::class, 'search'])->name('api.products.search');
     Route::get('items/{item}', [ItemWebController::class, 'show'])->whereNumber('item')->name('items.show');
@@ -435,6 +481,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/', [SalesDashboardController::class, 'index'])->name('dashboard');
         Route::get('customers/import/template', [CustomerWebController::class, 'importTemplate'])->name('customers.import-template');
         Route::post('customers/import', [CustomerWebController::class, 'import'])->name('customers.import');
+        Route::post('customers/{customer}/loyalty-enroll', [CustomerWebController::class, 'enrollLoyaltyProgram'])->name('customers.loyalty-enroll');
         Route::resource('customers', CustomerWebController::class);
         Route::get('invoices/import/template', [SalesInvoiceWebController::class, 'importTemplate'])->name('invoices.import-template');
         Route::post('invoices/import', [SalesInvoiceWebController::class, 'import'])->name('invoices.import');
