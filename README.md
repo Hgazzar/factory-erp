@@ -1,11 +1,18 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Factory ERP
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+نظام ERP (Laravel) للمحاسبة والمخزون والإنتاج والمبيعات ونقطة البيع.
+
+## الاختبارات وCI
+
+[![PHPUnit (ERP core)](https://github.com/Hgazzar/factory-erp/actions/workflows/phpunit.yml/badge.svg)](https://github.com/Hgazzar/factory-erp/actions/workflows/phpunit.yml)
+
+```bash
+composer install
+./vendor/bin/phpunit tests/Unit tests/Feature/Production tests/Feature/Delivery
+```
+
+- **قاعدة الفريق:** أي إصلاح مالي/مخزني يبدأ باختبار ثم الكود — التفاصيل في [CONTRIBUTING.md](CONTRIBUTING.md).
+- **CI:** يعمل تلقائياً على PR إلى `main` / `master` / `develop` (انظر `.github/workflows/phpunit.yml`).
 
 ## About Laravel
 
@@ -44,7 +51,7 @@ We would like to extend our thanks to the following sponsors for funding Laravel
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+راجع [CONTRIBUTING.md](CONTRIBUTING.md) لقواعد المساهمة في Factory ERP (اختبارات، واجهة، CI).
 
 ## Code of Conduct
 
