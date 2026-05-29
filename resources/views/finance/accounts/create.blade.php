@@ -118,6 +118,19 @@
             </div>
         </div>
 
+        <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-gray-900 mb-4">الأرصدة</h2>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="space-y-1">
+                    <label class="block text-sm font-bold text-gray-700">الرصيد الحالي <x-info field="finance.account_current_balance" /></label>
+                    <input type="text" readonly value="SAR 0.0000"
+                        class="h-10 w-full cursor-not-allowed rounded-md border border-gray-200 px-3 text-sm tabular-nums text-gray-600"
+                        style="background-color: #f3f4f6;">
+                    <p class="text-xs text-gray-500">يُحدَّث تلقائياً عند ترحيل القيود المحاسبية.</p>
+                </div>
+            </div>
+        </div>
+
         {{-- إعدادات الحساب — سويتشات on/off مع السويتش يمين والنص شمال --}}
         <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <h2 class="text-sm font-bold text-gray-900 mb-4">إعدادات الحساب</h2>

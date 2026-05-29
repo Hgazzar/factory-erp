@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\InventoryAccountingService;
+use App\Services\InventoryService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,6 +25,8 @@ class ProductionOrder extends Model
         'status',
         'start_date',
         'end_date',
+        'raw_materials_warehouse_id',
+        'finished_goods_warehouse_id',
         'journal_entry_id',
     ];
 
@@ -45,13 +48,23 @@ class ProductionOrder extends Model
         return $this->hasMany(ProductionOrderIngredient::class);
     }
 
+    public function rawMaterialsWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'raw_materials_warehouse_id');
+    }
+
+    public function finishedGoodsWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'finished_goods_warehouse_id');
+    }
+
     public function journalEntry(): BelongsTo
     {
         return $this->belongsTo(JournalEntry::class);
     }
 
     /**
-     * إتمام الإنتاج: خصم الخامات وإضافة المنتج التام إلى current_stock داخل معاملة واحدة.
+     * إتمام الإنتاج: صرف خامات من مستودع محدد، إدخال منتج تام لمستودع محدد، وقيد محاسبي.
      *
      * @param  array<int, string|float|int>  $producedByLineId  مفاتيحها id لسجل production_items والقيمة الكمية المنتَجة
      */
@@ -67,6 +80,12 @@ class ProductionOrder extends Model
 
             if (! in_array($order->status, [self::STATUS_PENDING, self::STATUS_IN_PROGRESS], true)) {
                 throw new RuntimeException('يمكن إتمام الإنتاج فقط لأمر في حالة «معلق» أو «قيد التنفيذ».');
+            }
+
+            $rmWarehouseId = (int) ($order->raw_materials_warehouse_id ?? 0);
+            $fgWarehouseId = (int) ($order->finished_goods_warehouse_id ?? 0);
+            if ($rmWarehouseId < 1 || $fgWarehouseId < 1) {
+                throw new RuntimeException('يجب تحديد مستودع الخامات ومستودع المنتج التام على أمر الإنتاج قبل الإتمام.');
             }
 
             $prodLines = ProductionOrderItem::query()
@@ -97,10 +116,11 @@ class ProductionOrder extends Model
                 throw new RuntimeException('لا توجد مواد خام مسجلة على أمر الإنتاج.');
             }
 
+            $inventory = app(InventoryService::class);
             $materialsValue = 0.0;
 
             foreach ($ingredientRows as $row) {
-                $item = Item::query()->whereKey($row->item_id)->lockForUpdate()->firstOrFail();
+                $item = Item::query()->whereKey($row->item_id)->firstOrFail();
 
                 if ($item->type !== Item::TYPE_RAW_MATERIAL) {
                     throw new RuntimeException(
@@ -109,27 +129,17 @@ class ProductionOrder extends Model
                 }
 
                 $need = (float) $row->quantity_to_consume;
-                $current = (float) ($item->current_stock ?? 0);
                 $unitCost = (float) ($item->cost ?? 0);
                 $materialsValue += $need * $unitCost;
 
-                if ($current + 0.0000001 < $need) {
-                    throw new RuntimeException(
-                        sprintf(
-                            'رصيد المادة الخام «%s» غير كافٍ (المتاح: %s، المطلوب للاستهلاك: %s).',
-                            $item->code,
-                            rtrim(rtrim(number_format($current, 4, '.', ''), '0'), '.') ?: '0',
-                            rtrim(rtrim(number_format($need, 4, '.', ''), '0'), '.') ?: '0'
-                        )
-                    );
-                }
-
-                $item->current_stock = $current - $need;
-                $item->save();
+                $inventory->consumeForProductionOrder($item, $rmWarehouseId, $need, $order);
             }
 
+            $materialsValue = round($materialsValue, 4);
+            $totalProduced = (float) $prodLines->sum(fn (ProductionOrderItem $line) => (float) $line->produced_quantity);
+
             foreach ($prodLines as $line) {
-                $item = Item::query()->whereKey($line->item_id)->lockForUpdate()->firstOrFail();
+                $item = Item::query()->whereKey($line->item_id)->firstOrFail();
 
                 if ($item->type !== Item::TYPE_FINISHED_GOOD) {
                     throw new RuntimeException(
@@ -138,14 +148,17 @@ class ProductionOrder extends Model
                 }
 
                 $add = (float) $line->produced_quantity;
-                $item->current_stock = (float) ($item->current_stock ?? 0) + $add;
-                $item->save();
+                $share = $totalProduced > 0 ? ($add / $totalProduced) : 0.0;
+                $lineMaterials = round($materialsValue * $share, 4);
+                $unitBatchCost = $add > 0 ? round($lineMaterials / $add, 4) : 0.0;
+
+                $inventory->receiveProductionOrderOutput($item, $fgWarehouseId, $add, $order, $unitBatchCost);
             }
 
             $journalEntry = null;
             if ($materialsValue > 0) {
                 $journalEntry = app(InventoryAccountingService::class)
-                    ->createProductionCompletionEntry($order, round($materialsValue, 4));
+                    ->createProductionCompletionEntry($order, $materialsValue);
             }
 
             $order->journal_entry_id = $journalEntry?->id;
@@ -160,6 +173,8 @@ class ProductionOrder extends Model
                 'status' => self::STATUS_COMPLETED,
                 'production_number' => $order->production_number,
                 'journal_entry_id' => $order->journal_entry_id,
+                'raw_materials_warehouse_id' => $rmWarehouseId,
+                'finished_goods_warehouse_id' => $fgWarehouseId,
             ]);
         });
 

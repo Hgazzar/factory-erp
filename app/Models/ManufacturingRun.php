@@ -4,12 +4,15 @@ namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ManufacturingRun extends Model
 {
+    /** @use HasFactory<\Database\Factories\ManufacturingRunFactory> */
+    use HasFactory;
     use ResolvesRouteBindingForTenant;
 
     public const STATUS_DRAFT = 'draft';

@@ -12,7 +12,7 @@
         default => $account->type ?? '—',
     };
 
-    $balance = (float) (data_get($balancesByAccount ?? [], $account->id, $account->opening_balance));
+    $balance = (float) (data_get($balancesByAccount ?? [], $account->id, $account->current_balance ?? $account->opening_balance));
     $debit = $balance > 0 ? $balance : 0;
     $credit = $balance < 0 ? abs($balance) : 0;
 
@@ -92,6 +92,7 @@
                         data-coa-id="{{ $account->id }}"
                         data-coa-code="{{ e($account->code) }}"
                         data-coa-name="{{ e($account->name_ar ?? '') }}"
+                        data-coa-current-balance="SAR {{ erp_money($balance) }}"
                         data-update-url="{{ route('finance.accounts.update', $account) }}"
                         onclick="if(window.__coaQuickEdit){window.__coaQuickEdit(this);} return false;">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">

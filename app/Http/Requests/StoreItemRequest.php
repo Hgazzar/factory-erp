@@ -39,7 +39,6 @@ class StoreItemRequest extends FormRequest
                 Rule::exists('warehouses', 'id')->where('user_id', $userId),
             ],
             'type' => ['required', 'in:'.implode(',', Item::typeValues())],
-            'cost' => ['nullable', 'numeric', 'min:0'],
             'selling_price' => ['nullable', 'numeric', 'min:0'],
             'initial_quantity' => ['nullable', 'numeric', 'min:0'],
             'attachments' => ['nullable', 'array', 'max:20'],

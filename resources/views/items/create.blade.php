@@ -149,9 +149,11 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">سعر التكلفة <x-info field="inventory.item_cost_price" /></label>
-                        <input type="number" inputmode="decimal" name="cost" class="form-control @error('cost') is-invalid @enderror" value="{{ old('cost') }}" min="0" step="any" placeholder="0.00">
-                        @error('cost')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <label class="form-label">التكلفة (متوسط مرجح) <x-info field="inventory.item_cost_price" /></label>
+                        <input type="text" readonly value="SAR 0.0000"
+                            class="form-control cursor-not-allowed bg-light text-muted tabular-nums"
+                            title="يُحدَّث تلقائياً بعد أول حركة مخزون">
+                        <p class="form-text text-muted mb-0">تُحسب تلقائياً عند إذن الإضافة أو التصنيع — لا إدخال يدوي.</p>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">سعر البيع <x-info field="inventory.item_sale_price" /></label>

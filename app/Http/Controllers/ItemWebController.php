@@ -192,7 +192,7 @@ class ItemWebController extends Controller
                 'user_id' => $uid,
                 'barcode' => $request->filled('barcode') ? $request->string('barcode')->toString() : null,
                 'min_stock' => $validated['min_stock'] ?? 0,
-                'cost' => $validated['cost'] ?? 0,
+                'cost' => 0,
                 'selling_price' => $validated['selling_price'] ?? null,
                 'is_active' => $request->boolean('is_active'),
             ]));
@@ -241,7 +241,6 @@ class ItemWebController extends Controller
                 'unit_id' => $data['unit_id'],
                 'type' => $data['type'],
                 'min_stock' => $data['min_stock'] ?? 0,
-                'cost' => $data['cost'] ?? 0,
                 'supplier' => $data['supplier'] ?? null,
                 'material_type' => $data['material_type'] ?? null,
                 'description' => $data['description'] ?? null,

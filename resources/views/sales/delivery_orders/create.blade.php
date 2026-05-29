@@ -37,6 +37,23 @@
                 <input type="date" name="delivery_date" value="{{ old('delivery_date', now()->format('Y-m-d')) }}" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm text-right focus:ring-2 focus:ring-indigo-500">
                 @error('delivery_date')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <span class="inline-flex items-center gap-1">مستودع التوريد <x-info field="sales.delivery_warehouse" /></span>
+                </label>
+                <x-custom-select
+                    name="warehouse_id"
+                    id="delivery_warehouse_id"
+                    :options="$warehouseOptions"
+                    :value="old('warehouse_id', '')"
+                    :required="true"
+                    :error="$errors->has('warehouse_id')"
+                    :empty-option="true"
+                    empty-label="— اختر مستودع التوريد —"
+                    placeholder="ابحث باسم المستودع أو الكود..."
+                />
+                @error('warehouse_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+            </div>
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">ملاحظات <x-info field="sales.delivery_notes" /></label>
                 <textarea name="notes" rows="2" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm text-right focus:ring-2 focus:ring-indigo-500" placeholder="اختياري">{{ old('notes') }}</textarea>

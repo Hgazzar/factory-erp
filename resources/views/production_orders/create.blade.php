@@ -36,6 +36,40 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <span class="inline-flex items-center gap-1">مستودع الخامات <x-info field="production.raw_materials_warehouse" /></span>
+                </label>
+                <x-custom-select
+                    name="raw_materials_warehouse_id"
+                    id="raw_materials_warehouse_id"
+                    :options="$warehouseOptions"
+                    :value="old('raw_materials_warehouse_id', '')"
+                    :required="true"
+                    :error="$errors->has('raw_materials_warehouse_id')"
+                    :empty-option="true"
+                    empty-label="— اختر مستودع الخامات —"
+                    placeholder="ابحث باسم المستودع أو الكود..."
+                />
+                @error('raw_materials_warehouse_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <span class="inline-flex items-center gap-1">مستودع المنتج التام <x-info field="production.finished_goods_warehouse" /></span>
+                </label>
+                <x-custom-select
+                    name="finished_goods_warehouse_id"
+                    id="finished_goods_warehouse_id"
+                    :options="$warehouseOptions"
+                    :value="old('finished_goods_warehouse_id', '')"
+                    :required="true"
+                    :error="$errors->has('finished_goods_warehouse_id')"
+                    :empty-option="true"
+                    empty-label="— اختر مستودع المنتج التام —"
+                    placeholder="ابحث باسم المستودع أو الكود..."
+                />
+                @error('finished_goods_warehouse_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
                     <span class="inline-flex items-center gap-1">المنتج التام <x-info field="production.finished_item" /></span>
                 </label>
                 <select name="finished_item_id" id="finished_item_select" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm text-right focus:ring-2 focus:ring-indigo-500" required>

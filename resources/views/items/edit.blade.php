@@ -114,9 +114,12 @@
                     @error('min_stock')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="mb-1.5 block text-sm font-semibold text-gray-800">التكلفة <x-info field="inventory.item_cost_price" /></label>
-                    <input type="number" inputmode="decimal" name="cost" value="{{ old('cost', $item->cost) }}" min="0" step="any" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm tabular-nums @error('cost') border-red-500 ring-1 ring-red-200 @enderror">
-                    @error('cost')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    <label class="mb-1.5 block text-sm font-semibold text-gray-800">التكلفة (متوسط مرجح) <x-info field="inventory.item_cost_price" /></label>
+                    <input type="text" readonly
+                        value="SAR {{ number_format((float) ($item->cost ?? 0), 4) }}"
+                        class="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm tabular-nums text-gray-700"
+                        title="يُحدَّث تلقائياً من حركات المخزون (WAC)">
+                    <p class="mt-1 text-xs text-gray-500">لا يمكن تعديل التكلفة يدوياً؛ تُحسب من الإضافة والتصنيع.</p>
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">المورد</label>

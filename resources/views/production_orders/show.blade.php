@@ -65,6 +65,14 @@
                 <span class="text-gray-500 inline-flex items-center gap-1">تاريخ النهاية <x-info field="production.end_date" /></span>
                 <span class="font-medium text-gray-900">{{ $productionOrder->end_date?->format('Y-m-d') ?? '—' }}</span>
             </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500 inline-flex items-center gap-1">مستودع الخامات <x-info field="production.raw_materials_warehouse" /></span>
+                <span class="font-medium text-gray-900">{{ $productionOrder->rawMaterialsWarehouse ? $productionOrder->rawMaterialsWarehouse->code.' — '.$productionOrder->rawMaterialsWarehouse->name_ar : '—' }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500 inline-flex items-center gap-1">مستودع المنتج التام <x-info field="production.finished_goods_warehouse" /></span>
+                <span class="font-medium text-gray-900">{{ $productionOrder->finishedGoodsWarehouse ? $productionOrder->finishedGoodsWarehouse->code.' — '.$productionOrder->finishedGoodsWarehouse->name_ar : '—' }}</span>
+            </div>
         </div>
     </div>
 

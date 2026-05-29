@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DeliveryOrder;
 use App\Models\DeliveryOrderItem;
 use App\Models\SalesOrder;
+use App\Models\Warehouse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,9 +54,20 @@ class DeliveryOrderWebController extends Controller
                 ->with('error', 'لا توجد كميات متبقية للتوريد على هذا الأمر.');
         }
 
+        $warehouseOptions = Warehouse::query()
+            ->orderBy('name_ar')
+            ->get(['id', 'code', 'name_ar'])
+            ->map(fn (Warehouse $w) => [
+                'value' => (string) $w->id,
+                'label' => $w->code.' — '.$w->name_ar,
+            ])
+            ->values()
+            ->all();
+
         return view('sales.delivery_orders.create', [
             'salesOrder' => $salesOrder,
             'lines' => $lines,
+            'warehouseOptions' => $warehouseOptions,
         ]);
     }
 
@@ -70,6 +82,7 @@ class DeliveryOrderWebController extends Controller
         $salesOrder->load('items');
 
         $validated = $request->validate([
+            'warehouse_id' => ['required', 'integer', 'exists:warehouses,id'],
             'delivery_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1'],
@@ -119,6 +132,7 @@ class DeliveryOrderWebController extends Controller
                 $delivery = DeliveryOrder::create([
                     'user_id' => (int) $salesOrder->user_id,
                     'sales_order_id' => $salesOrder->id,
+                    'warehouse_id' => (int) $validated['warehouse_id'],
                     'delivery_number' => 'TMP-'.Str::uuid()->toString(),
                     'status' => DeliveryOrder::STATUS_PENDING,
                     'delivery_date' => $validated['delivery_date'] ?? null,
@@ -152,6 +166,7 @@ class DeliveryOrderWebController extends Controller
     {
         $deliveryOrder->load([
             'salesOrder.customer',
+            'warehouse:id,code,name_ar',
             'items.salesOrderItem',
             'items.item:id,code,name_ar,type,current_stock',
         ]);

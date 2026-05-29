@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\DeliveryOrder;
 use App\Models\Item;
+use App\Models\JournalEntry;
 use App\Models\ProductionOrder;
 
 class InventoryAccountingService

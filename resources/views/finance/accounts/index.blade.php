@@ -222,6 +222,12 @@
                             <input id="coa-edit-name" name="name_ar" type="text" required maxlength="255"
                                    class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
+                        <div>
+                            <label for="coa-edit-current-balance" class="mb-1 block text-sm font-medium text-gray-700">الرصيد الحالي <x-info field="finance.account_current_balance" /></label>
+                            <input id="coa-edit-current-balance" type="text" readonly
+                                   class="h-10 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-3 text-sm tabular-nums text-gray-700">
+                            <p class="mt-1 text-xs text-gray-500">للعرض فقط — يُحدَّث من القيود المحاسبية.</p>
+                        </div>
                     </div>
                     <div class="modal-footer border-top border-gray-100 flex-wrap gap-2">
                         <button type="button" class="btn btn-light rounded-lg" data-bs-dismiss="modal">إلغاء</button>
@@ -328,8 +334,10 @@
             if (url) form.setAttribute('action', url);
             var codeEl = document.getElementById('coa-edit-code');
             var nameEl = document.getElementById('coa-edit-name');
+            var balanceEl = document.getElementById('coa-edit-current-balance');
             if (codeEl) codeEl.value = btn.getAttribute('data-coa-code') || '';
             if (nameEl) nameEl.value = btn.getAttribute('data-coa-name') || '';
+            if (balanceEl) balanceEl.value = btn.getAttribute('data-coa-current-balance') || 'SAR 0.00';
             bsModalShow(document.getElementById('coaEditModal'));
         }
 

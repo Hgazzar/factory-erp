@@ -7,6 +7,7 @@ use App\Models\Item;
 use App\Models\ProductionOrder;
 use App\Models\ProductionOrderIngredient;
 use App\Models\ProductionOrderItem;
+use App\Models\Warehouse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,22 @@ class ProductionOrderWebController extends Controller
 
         $bomSuggestionsBaseUrl = url('/production-orders/bom-suggestions');
 
-        return view('production_orders.create', compact('finishedGoods', 'rawMaterials', 'bomSuggestionsBaseUrl'));
+        $warehouseOptions = Warehouse::query()
+            ->orderBy('name_ar')
+            ->get(['id', 'code', 'name_ar'])
+            ->map(fn (Warehouse $w) => [
+                'value' => (string) $w->id,
+                'label' => $w->code.' — '.$w->name_ar,
+            ])
+            ->values()
+            ->all();
+
+        return view('production_orders.create', compact(
+            'finishedGoods',
+            'rawMaterials',
+            'bomSuggestionsBaseUrl',
+            'warehouseOptions',
+        ));
     }
 
     /**
@@ -80,6 +96,8 @@ class ProductionOrderWebController extends Controller
     {
         $validated = $request->validate([
             'start_date' => ['nullable', 'date'],
+            'raw_materials_warehouse_id' => ['required', 'integer', 'exists:warehouses,id'],
+            'finished_goods_warehouse_id' => ['required', 'integer', 'exists:warehouses,id'],
             'finished_item_id' => ['required', 'integer', 'exists:items,id'],
             'planned_quantity' => ['required', 'numeric', 'min:0.0001'],
             'ingredients' => ['required', 'array', 'min:1'],
@@ -114,6 +132,8 @@ class ProductionOrderWebController extends Controller
                     'status' => ProductionOrder::STATUS_PENDING,
                     'start_date' => $validated['start_date'] ?? null,
                     'end_date' => null,
+                    'raw_materials_warehouse_id' => (int) $validated['raw_materials_warehouse_id'],
+                    'finished_goods_warehouse_id' => (int) $validated['finished_goods_warehouse_id'],
                 ]);
 
                 $order->production_number = sprintf('PO-%s-%06d', now()->format('Y'), $order->id);
@@ -158,6 +178,8 @@ class ProductionOrderWebController extends Controller
         $productionOrder->load([
             'productionItems.item:id,code,name_ar,type,current_stock',
             'ingredients.item:id,code,name_ar,type,current_stock',
+            'rawMaterialsWarehouse:id,code,name_ar',
+            'finishedGoodsWarehouse:id,code,name_ar',
         ]);
 
         return view('production_orders.show', compact('productionOrder'));

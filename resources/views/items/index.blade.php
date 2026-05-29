@@ -149,6 +149,7 @@
                     <th>الرمز <x-info field="inventory.items_table_code" /></th>
                     <th>اسم المنتج <x-info field="inventory.items_table_name" /></th>
                     <th>التصنيف <x-info field="inventory.items_table_category" /></th>
+                    <th>تكلفة الوحدة (WAC) <x-info field="inventory.items_table_cost" /></th>
                     <th>سعر البيع <x-info field="inventory.items_table_price" /></th>
                     <th>كمية المخزون <x-info field="inventory.items_table_stock" /></th>
                     <th>الحالة <x-info field="inventory.items_table_status" /></th>
@@ -183,7 +184,8 @@
                             </div>
                         </td>
                         <td>{{ $typeLabel }}</td>
-                        <td>SAR {{ number_format((float) data_get($item, 'selling_price', $item->cost ?? 0), 2) }}</td>
+                        <td class="tabular-nums">SAR {{ number_format((float) ($item->cost ?? 0), 2) }}</td>
+                        <td class="tabular-nums">SAR {{ number_format((float) ($item->selling_price ?? 0), 2) }}</td>
                         <td>{{ number_format($totalStock, 2) }}</td>
                         <td><span class="status-badge {{ $statusClass }}">{{ $statusText }}</span></td>
                         <td class="text-center align-middle">

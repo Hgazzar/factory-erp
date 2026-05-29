@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToAuthenticatedUserScope;
 use App\Services\InventoryAccountingService;
+use App\Services\InventoryService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,6 +25,7 @@ class DeliveryOrder extends Model
     protected $fillable = [
         'user_id',
         'sales_order_id',
+        'warehouse_id',
         'delivery_number',
         'status',
         'delivery_date',
@@ -53,6 +55,11 @@ class DeliveryOrder extends Model
         return $this->belongsTo(SalesOrder::class);
     }
 
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(DeliveryOrderItem::class);
@@ -64,7 +71,7 @@ class DeliveryOrder extends Model
     }
 
     /**
-     * تأكيد التسليم: خصم من current_stock للأصناف من نوع منتج تام أو مادة خام فقط (تُتجاهل الخدمات).
+     * تأكيد التسليم: خصم من مخزن محدد للأصناف القابلة للتخزين وتسجيل COGS.
      */
     public function markAsDelivered(): void
     {
@@ -78,36 +85,27 @@ class DeliveryOrder extends Model
                 throw new RuntimeException('يمكن تأكيد التسليم فقط لأمر توريد في حالة «قيد الانتظار».');
             }
 
+            $warehouseId = (int) ($delivery->warehouse_id ?? 0);
+            if ($warehouseId < 1) {
+                throw new RuntimeException('يجب تحديد مستودع التوريد على أمر التوريد قبل التأكيد.');
+            }
+
             $statusBefore = $delivery->status;
 
             $lines = $delivery->items()->with('item:id,code,name_ar,type,current_stock,cost')->get();
-            $split = app(InventoryAccountingService::class)->summarizeDeliveryLinesForCost($lines);
+            $inventory = app(InventoryService::class);
 
             foreach ($lines as $line) {
-                $item = Item::query()->whereKey($line->item_id)->lockForUpdate()->firstOrFail();
-
-                if (! in_array($item->type, [Item::TYPE_RAW_MATERIAL, Item::TYPE_FINISHED_GOOD], true)) {
+                $item = $line->item;
+                if (! $item || ! in_array($item->type, [Item::TYPE_RAW_MATERIAL, Item::TYPE_FINISHED_GOOD], true)) {
                     continue;
                 }
 
-                $current = (float) ($item->current_stock ?? 0);
                 $need = (float) $line->quantity;
-
-                if ($current + 0.0000001 < $need) {
-                    throw new RuntimeException(
-                        sprintf(
-                            'رصيد الصنف «%s» غير كافٍ للتسليم (المتاح: %s، المطلوب: %s).',
-                            $item->code,
-                            rtrim(rtrim(number_format($current, 4, '.', ''), '0'), '.') ?: '0',
-                            rtrim(rtrim(number_format($need, 4, '.', ''), '0'), '.') ?: '0'
-                        )
-                    );
-                }
-
-                $item->current_stock = $current - $need;
-                $item->save();
+                $inventory->stockOutForDeliveryOrder($item, $warehouseId, $need, $delivery);
             }
 
+            $split = app(InventoryAccountingService::class)->summarizeDeliveryLinesForCost($lines);
             $journalEntry = app(InventoryAccountingService::class)->createDeliveryCostEntry($delivery, $split);
 
             $delivery->journal_entry_id = $journalEntry?->id;
@@ -126,6 +124,7 @@ class DeliveryOrder extends Model
                 'status' => self::STATUS_DELIVERED,
                 'delivery_number' => $delivery->delivery_number,
                 'journal_entry_id' => $delivery->journal_entry_id,
+                'warehouse_id' => $warehouseId,
             ]);
         });
 

@@ -111,6 +111,7 @@ class AccountWebController extends Controller
         $data['user_id'] = $uid;
         $data['code'] = Account::generateNextNumericCodeForUser($uid, $parentId);
         $data['opening_balance'] = (float) ($data['opening_balance'] ?? 0);
+        $data['current_balance'] = $data['opening_balance'];
         $data['is_bank'] = $request->boolean('is_bank');
         $data['is_active'] = $request->boolean('is_active');
 

@@ -63,6 +63,7 @@ use App\Http\Controllers\PayrollItemController;
 use App\Http\Controllers\PayrollWebController;
 use App\Http\Controllers\ProcurementDashboardController;
 use App\Http\Controllers\ProductionEntryWebController;
+use App\Http\Controllers\ProductionOrderWebController;
 use App\Http\Controllers\ProductionReportWebController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfitLossReportWebController;
@@ -322,12 +323,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('production-lines.legacy');
     Route::resource('machines', MachineWebController::class);
     Route::prefix('production-orders')->name('production-orders.')->group(function () {
-        Route::get('/', fn () => redirect()->route('manufacturing.dashboard'))->name('index');
-        Route::get('{any?}', fn () => redirect()->route('manufacturing.dashboard'))
-            ->where('any', '.*')
-            ->name('legacy');
-        Route::post('{any?}', fn () => redirect()->route('manufacturing.dashboard'))
-            ->where('any', '.*');
+        Route::get('/', [ProductionOrderWebController::class, 'index'])->name('index');
+        Route::get('create', [ProductionOrderWebController::class, 'create'])->name('create');
+        Route::post('/', [ProductionOrderWebController::class, 'store'])->name('store');
+        Route::get('items/{item}/bom-suggestions', [ProductionOrderWebController::class, 'bomSuggestions'])->name('bom-suggestions');
+        Route::get('{production_order}/ingredient-shortage', [ProductionOrderWebController::class, 'ingredientShortage'])->name('ingredient-shortage');
+        Route::post('{production_order}/prefill-purchase', [ProductionOrderWebController::class, 'prefillPurchaseOrder'])->name('prefill-purchase');
+        Route::post('{production_order}/complete', [ProductionOrderWebController::class, 'complete'])->name('complete');
+        Route::get('{production_order}', [ProductionOrderWebController::class, 'show'])->name('show');
     });
 
     Route::prefix('manufacturing')->name('manufacturing.')->group(function () {

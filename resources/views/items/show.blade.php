@@ -42,6 +42,8 @@
                 <div class="col-md-4"><span class="text-muted">وحدة القياس</span><div>{{ $item->unit?->name_ar ?? '—' }}</div></div>
                 <div class="col-md-6"><span class="text-muted">الاسم بالإنجليزي</span><div>{{ $item->name_en ?? '—' }}</div></div>
                 <div class="col-md-6"><span class="text-muted">الحالة</span><div>{{ $item->is_active ? 'نشط' : 'غير نشط' }}</div></div>
+                <div class="col-md-4"><span class="text-muted">تكلفة الوحدة (WAC) <x-info field="inventory.item_cost_price" /></span><div class="fw-semibold tabular-nums">SAR {{ number_format((float) ($item->cost ?? 0), 4) }}</div></div>
+                <div class="col-md-4"><span class="text-muted">سعر البيع</span><div class="tabular-nums">SAR {{ number_format((float) ($item->selling_price ?? 0), 2) }}</div></div>
             </div>
         </div>
     </div>
