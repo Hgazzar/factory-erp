@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,11 +20,13 @@ class Attendance extends Model
     protected $fillable = [
         'user_id',
         'employee_id',
+        'shift_id',
         'work_date',
         'check_in_at',
         'check_out_at',
         'status',
         'minutes_late',
+        'minutes_early_departure',
         'work_hours',
         'deduction_amount',
         'notes',
@@ -32,7 +34,7 @@ class Attendance extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
 
         static::creating(function (Attendance $attendance): void {
             if ($attendance->user_id === null && $attendance->employee_id) {
@@ -52,6 +54,7 @@ class Attendance extends Model
             'work_hours' => 'decimal:2',
             'deduction_amount' => 'decimal:2',
             'minutes_late' => 'integer',
+            'minutes_early_departure' => 'integer',
         ];
     }
 
@@ -63,6 +66,11 @@ class Attendance extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
     }
 
     public function logs(): HasMany

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'أمر بيع SO-' . $salesOrder->id . ' - MIRADA ERP')
+@section('title', 'أمر بيع SO-' . $salesOrder->id . ' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -42,6 +42,7 @@
             @if(auth()->user()->isAdminOrSuperAdmin())
                 <a href="{{ route('services.orders.create', ['sales_order_id' => $salesOrder->id]) }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-sky-200 bg-sky-50 text-sky-900 text-sm font-medium hover:bg-sky-100">إنشاء طلب خدمة</a>
             @endif
+            <a href="{{ route('sales.invoices.create', ['sales_order_id' => $salesOrder->id]) }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium shadow-sm" style="background: #059669;">فاتورة مبيعات من الأمر</a>
         </div>
     </div>
 
@@ -62,29 +63,9 @@
             <a href="{{ route('finance.journals.edit', ['journal' => $salesOrder->accountingJournalEntry]) }}" class="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-medium text-indigo-800 hover:bg-indigo-50">فتح القيد</a>
         </div>
     @elseif($pending)
-        <div class="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 class="mb-3 text-base font-semibold text-gray-900">الإكمال المحاسبي</h2>
-            <p class="mb-4 text-sm text-gray-600 flex flex-wrap items-center gap-2">
-                <x-info field="sales.order_complete_accounting" />
-                <span>بعد الترحيل تُحدَّث الحالة إلى «مكتمل» ويُنشأ قيد المبيعات وتكلفة البضاعة عند توفر تكلفة للأصناف.</span>
-            </p>
-            <form method="POST" action="{{ route('sales.orders.complete-accounting', $salesOrder) }}" class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
-                @csrf
-                <div class="space-y-2">
-                    <span class="block text-sm font-medium text-gray-700">طريقة التسوية <span class="text-red-500">*</span></span>
-                    <div class="flex flex-wrap gap-4 text-sm">
-                        <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                            <input type="radio" name="settlement" value="receivable" class="text-indigo-600" checked>
-                            <span class="inline-flex items-center gap-1"><x-info field="sales.order_settlement_receivable" /> ذمم مدينة (آجل)</span>
-                        </label>
-                        <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                            <input type="radio" name="settlement" value="cash" class="text-indigo-600">
-                            <span class="inline-flex items-center gap-1"><x-info field="sales.order_settlement_cash" /> نقدي (خزينة)</span>
-                        </label>
-                    </div>
-                </div>
-                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">ترحيل وإكمال</button>
-            </form>
+        <div class="mb-6 rounded-xl border border-emerald-100 bg-emerald-50/80 px-4 py-4 text-sm text-emerald-900">
+            <p class="font-medium mb-1">المخزون والقيود من فاتورة المبيعات فقط</p>
+            <p class="text-emerald-800">استخدم «فاتورة مبيعات من الأمر» أعلاه — لا يُخصم المخزون ولا يُنشأ قيد من أمر البيع مباشرة.</p>
         </div>
     @endif
 

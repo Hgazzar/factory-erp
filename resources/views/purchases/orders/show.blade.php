@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'عرض أمر شراء - MIRADA ERP')
+@section('title', 'عرض أمر شراء - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -31,15 +31,9 @@
         <div class="flex flex-wrap items-center gap-2">
             @if($order->status === 'معلق')
                 <a href="{{ route('purchases.orders.edit', $order) }}" class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium">تعديل</a>
-                @if(! $order->journal_entry_id)
-                    <form method="POST" action="{{ route('purchases.orders.complete-receipt', $order) }}" class="inline" onsubmit="return confirm('تأكيد تسجيل الاستلام المحاسبي؟ سيتم إنشاء قيد (مدين مخزون / دائن ذمم دائنة) وتغيير حالة الأمر إلى «مستلم».');">
-                        @csrf
-                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 text-sm font-medium">
-                            <x-info field="procurement.purchase_order_complete_receipt" />
-                            <span>تسجيل استلام وترحيل محاسبي</span>
-                        </button>
-                    </form>
-                @endif
+                <a href="{{ route('purchases.invoices.create', ['purchase_order_id' => $order->id]) }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 text-sm font-medium">
+                    فاتورة مشتريات من الأمر
+                </a>
             @endif
             @if($order->journal_entry_id && $order->receiptJournalEntry)
                 <a href="{{ route('finance.journals.edit', ['journal' => $order->receiptJournalEntry]) }}" class="inline-flex items-center px-4 py-2 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-900 hover:bg-indigo-100 text-sm font-medium">قيد الاستلام</a>

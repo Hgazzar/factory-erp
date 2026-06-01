@@ -8,6 +8,7 @@ use App\Models\JournalEntry;
 use App\Models\JournalItem;
 use App\Models\PurchaseOrder;
 use App\Models\SalesOrder;
+use App\Support\DefaultLedgerAccounts;
 use InvalidArgumentException;
 
 class FinancialRecordingService
@@ -271,6 +272,88 @@ class FinancialRecordingService
             $desc,
             $lines,
             (int) (auth()->id() ?? $uid)
+        );
+    }
+
+    /**
+     * قيد إنتاج لحظي (Production Entry): مدين تام/هالك، دائن مخزون خامات.
+     * لا يُنشأ قيد بدون مستودع — لضمان التزامن مع حركة المخزون.
+     */
+    public function recordProductionEntry(
+        int $tenantUserId,
+        int $actingUserId,
+        string $date,
+        string $reference,
+        string $description,
+        float $goodValue,
+        float $scrapValue,
+        string $itemCode = '',
+        ?int $warehouseId = null,
+    ): ?JournalEntry {
+        if ($warehouseId === null || $warehouseId < 1) {
+            return null;
+        }
+
+        $goodValue = round(max(0, $goodValue), 4);
+        $scrapValue = round(max(0, $scrapValue), 4);
+        $totalValue = round($goodValue + $scrapValue, 4);
+
+        if ($totalValue <= 0) {
+            return null;
+        }
+
+        DefaultLedgerAccounts::provisionProductionEntryLedger($tenantUserId);
+
+        $inventoryAccountId = $this->accountIdForUser(
+            $tenantUserId,
+            (string) config('accounting.raw_materials_inventory_code')
+        );
+        $finishedGoodsAccountId = $this->accountIdForUser(
+            $tenantUserId,
+            (string) config('accounting.finished_goods_inventory_code')
+        );
+        $scrapAccountId = $this->accountIdForUser($tenantUserId, DefaultLedgerAccounts::CODE_SCRAP_EXPENSE);
+
+        if (! $inventoryAccountId || ! $finishedGoodsAccountId || ! $scrapAccountId) {
+            throw new InvalidArgumentException('تعذّر تجهيز حسابات قيد الإنتاج لدليل هذا المستأجر.');
+        }
+
+        $itemLabel = $itemCode !== '' ? $itemCode : 'صنف';
+
+        $lines = [];
+
+        if ($goodValue > 0) {
+            $lines[] = [
+                'account_id' => $finishedGoodsAccountId,
+                'debit' => $goodValue,
+                'credit' => 0,
+                'description' => 'إنتاج تام — '.$itemLabel,
+            ];
+        }
+
+        if ($scrapValue > 0) {
+            $lines[] = [
+                'account_id' => $scrapAccountId,
+                'debit' => $scrapValue,
+                'credit' => 0,
+                'description' => 'هالك إنتاج — '.$itemLabel,
+            ];
+        }
+
+        $lines[] = [
+            'account_id' => $inventoryAccountId,
+            'debit' => 0,
+            'credit' => $totalValue,
+            'description' => 'صرف خامات — '.$itemLabel,
+        ];
+
+        return $this->recordBalancedJournal(
+            $tenantUserId,
+            $date,
+            $reference,
+            $description,
+            $lines,
+            $actingUserId,
         );
     }
 

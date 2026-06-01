@@ -13,6 +13,14 @@ return new class extends Migration
             $table->dropForeign(['item_id']);
         });
         $driver = Schema::getConnection()->getDriverName();
+        if ($driver === 'sqlite') {
+            // SQLite لا يدعم MODIFY؛ إعادة ربط FK فقط (العمود يبقى NOT NULL في الاختبارات).
+            Schema::table('sales_invoice_items', function (Blueprint $table) {
+                $table->foreign('item_id')->references('id')->on('items')->nullOnDelete();
+            });
+
+            return;
+        }
         if ($driver === 'pgsql') {
             DB::statement('ALTER TABLE sales_invoice_items ALTER COLUMN item_id DROP NOT NULL');
         } else {
@@ -29,6 +37,13 @@ return new class extends Migration
             $table->dropForeign(['item_id']);
         });
         $driver = Schema::getConnection()->getDriverName();
+        if ($driver === 'sqlite') {
+            Schema::table('sales_invoice_items', function (Blueprint $table) {
+                $table->foreign('item_id')->references('id')->on('items')->cascadeOnDelete();
+            });
+
+            return;
+        }
         if ($driver === 'pgsql') {
             DB::statement('ALTER TABLE sales_invoice_items ALTER COLUMN item_id SET NOT NULL');
         } else {

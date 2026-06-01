@@ -269,6 +269,7 @@ class InventoryService
             $lockedItem->save();
 
             StockMovement::query()->create([
+                'user_id' => (int) $lockedItem->user_id,
                 'warehouse_id' => $warehouseId,
                 'item_id' => $lockedItem->id,
                 'quantity' => -$quantity,

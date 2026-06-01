@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +15,9 @@ class SalesPayment extends Model
     use ResolvesRouteBindingForTenant;
 
     public const METHOD_CASH = 'cash';
+
     public const METHOD_TRANSFER = 'transfer';
+
     public const METHOD_CARD = 'card';
 
     protected $fillable = [
@@ -32,7 +34,7 @@ class SalesPayment extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
 
         static::creating(function (SalesPayment $model): void {
             if (! $model->user_id && $model->customer_id) {

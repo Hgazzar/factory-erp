@@ -17,3 +17,22 @@ if (! function_exists('erp_qty')) {
         return ErpFormat::qty($value);
     }
 }
+
+if (! function_exists('niche_label')) {
+    /**
+     * مسمى ديناميكي حسب نيش المستأجر الحالي.
+     */
+    function niche_label(string $termKey, ?string $fallback = null): string
+    {
+        return app(\App\Services\Tenant\NicheLexiconService::class)
+            ->label($termKey, null, $fallback);
+    }
+}
+
+if (! function_exists('niche_module_label')) {
+    function niche_module_label(string $moduleKey): string
+    {
+        return app(\App\Services\Tenant\NicheLexiconService::class)
+            ->moduleLabel($moduleKey);
+    }
+}

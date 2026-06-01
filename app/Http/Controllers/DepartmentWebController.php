@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Department;
 use App\Models\Employee;
 use Illuminate\Http\RedirectResponse;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class DepartmentWebController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View
     {
         $filterStatus = $request->query('status', 'active');
@@ -55,12 +58,12 @@ class DepartmentWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
-        $data = $request->validate($this->departmentRules($uid));
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate($this->departmentRules($tenantUserId));
         $data['code'] = isset($data['code']) && $data['code'] !== '' ? trim((string) $data['code']) : null;
         $data['name_en'] = isset($data['name_en']) && trim((string) $data['name_en']) !== '' ? trim((string) $data['name_en']) : null;
         $data['description'] = isset($data['description']) && trim((string) $data['description']) !== '' ? trim((string) $data['description']) : null;
-        $data['user_id'] = $uid;
+        $data['user_id'] = $tenantUserId;
         $data['is_active'] = $request->boolean('is_active', true);
 
         Department::query()->create($data);
@@ -92,8 +95,8 @@ class DepartmentWebController extends Controller
 
     public function update(Request $request, Department $department): RedirectResponse
     {
-        $uid = (int) auth()->id();
-        $data = $request->validate($this->departmentRules($uid, $department));
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate($this->departmentRules($tenantUserId, $department));
         $data['code'] = isset($data['code']) && $data['code'] !== '' ? trim((string) $data['code']) : null;
         $data['name_en'] = isset($data['name_en']) && trim((string) $data['name_en']) !== '' ? trim((string) $data['name_en']) : null;
         $data['description'] = isset($data['description']) && trim((string) $data['description']) !== '' ? trim((string) $data['description']) : null;

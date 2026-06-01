@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', (isset($editOrderModel) ? 'تعديل أمر شراء' : 'أمر شراء جديد') . ' - MIRADA ERP')
+@section('title', (isset($editOrderModel) ? 'تعديل أمر شراء' : 'أمر شراء جديد') . ' - '.config('app.name'))
 
 @php($isEdit = isset($editOrderModel))
 @section('breadcrumb')

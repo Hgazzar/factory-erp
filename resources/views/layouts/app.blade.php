@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'MIRADA ERP')</title>
+    <title>@yield('title', config('app.name'))</title>
 
     <!-- Bootstrap 5 RTL for legacy content -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
@@ -127,7 +127,7 @@
                 $currentModule = 'purchases';
             } elseif (request()->is('inventory*') || request()->is('items*') || request()->is('warehouses*')) {
                 $currentModule = 'inventory';
-            } elseif (request()->is('production-orders*') || request()->is('manufacturing*')) {
+            } elseif (request()->is('manufacturing*')) {
                 $currentModule = 'manufacturing';
             } elseif (request()->is('finance*')) {
                 $currentModule = 'finance';
@@ -186,6 +186,7 @@
                 <a href="{{ route('purchases.orders.index') }}" class="module-nav-link {{ request()->routeIs('purchases.orders.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5z"/></svg> أوامر الشراء</a>
                 <a href="{{ route('purchases.receive-notes.index') }}" class="module-nav-link {{ request()->routeIs('purchases.receive-notes.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg> سندات الاستلام</a>
                 <a href="{{ route('purchases.invoices.index') }}" class="module-nav-link {{ request()->routeIs('purchases.invoices.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg> فواتير الموردين</a>
+                <a href="{{ route('purchases.payments.index') }}" class="module-nav-link {{ request()->routeIs('purchases.payments.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.471c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718H4z"/></svg> مدفوعات الموردين</a>
                 <a href="{{ route('purchases.returns.index') }}" class="module-nav-link {{ request()->routeIs('purchases.returns.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg> مرتجعات المشتريات</a>
                 <a href="{{ route('purchases.reports.index') }}" class="module-nav-link {{ request()->routeIs('purchases.reports.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13z"/><path d="M2.5 4a.5.5 0 0 1 .5-.5h2A.5.5 0 0 1 5.5 4v8a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V4zm4 2a.5.5 0 0 1 .5-.5h2A.5.5 0 0 1 9.5 6v6a.5.5 0 0 1-.5.5H7a.5.5 0 0 1-.5-.5V6zm4-3a.5.5 0 0 1 .5-.5h2A.5.5 0 0 1 13.5 3v9a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V3z"/></svg> تقارير المشتريات</a>
                 @elseif($currentModule === 'inventory')
@@ -200,6 +201,7 @@
                 <a href="{{ route('inventory.price-lists.index') }}" class="module-nav-link {{ request()->routeIs('inventory.price-lists.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm4.5 0a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg> قوائم الأسعار</a>
                 @elseif($currentModule === 'manufacturing')
                 <a href="{{ route('manufacturing.dashboard') }}" class="module-nav-link {{ request()->routeIs('manufacturing.dashboard') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13z"/><path d="M2 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 13v-3zm8-8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 10 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-3z"/></svg> لوحة التحكم</a>
+                <a href="{{ route('items.index') }}" class="module-nav-link {{ request()->routeIs('items.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113z"/><path d="M15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6z"/></svg> الأصناف</a>
                 <a href="{{ route('manufacturing.bom-lists.index') }}" class="module-nav-link {{ request()->routeIs('manufacturing.bom-lists.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113z"/><path d="M15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6z"/></svg> قوائم المواد</a>
                 <a href="{{ route('manufacturing.runs.index') }}" class="module-nav-link {{ request()->routeIs('manufacturing.runs.index', 'manufacturing.create', 'manufacturing.show', 'manufacturing.store', 'manufacturing.post', 'manufacturing.destroy') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/></svg> أوامر العمل</a>
                 <a href="{{ route('manufacturing.reports.production-variance') }}" class="module-nav-link {{ request()->routeIs('manufacturing.reports.production-variance') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M4 11H2v3h2v-3zm5-3H7v6h2V8zm5-5h-2v11h2V3zm-5-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/></svg> انحرافات التصنيع</a>
@@ -224,6 +226,7 @@
                 <a href="{{ route('finance.reports.profit-loss') }}" class="module-nav-link {{ request()->routeIs('finance.reports.profit-loss') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/></svg> الأرباح والخسائر</a>
                 @elseif($currentModule === 'hr')
                 <a href="{{ route('hr.dashboard') }}" class="module-nav-link {{ request()->routeIs('hr.dashboard') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13z"/><path d="M2 2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 2 13v-3zm8-8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3A.5.5 0 0 1 10 5V2zm0 8a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-3z"/></svg> لوحة تحكم الموارد البشرية</a>
+                <a href="{{ route('hr.shifts.index') }}" class="module-nav-link {{ request()->routeIs('hr.shifts.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg> الورديات</a>
                 <a href="{{ route('hr.departments.index') }}" class="module-nav-link {{ request()->routeIs('hr.departments.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M6 1H1v14h5V1zm7 0H8v14h5V1z"/></svg> الأقسام</a>
                 <a href="{{ route('hr.employees.index') }}" class="module-nav-link {{ request()->routeIs('hr.employees.*') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg> الموظفون</a>
                 <a href="{{ route('hr.attendance') }}" class="module-nav-link {{ request()->routeIs('hr.attendance') ? 'active' : '' }}"><svg class="module-nav-icon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg> الحضور</a>
@@ -246,6 +249,7 @@
                 @endif
             </nav>
             <div class="module-sidebar-footer">
+                <span class="d-block mb-1 text-gray-400">{{ config('app.name') }}</span>
                 <a href="#"><span>طي</span> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg></a>
             </div>
         </aside>
@@ -318,7 +322,8 @@
                 <a href="{{ route('purchases.orders.index') }}" class="module-nav-link d-block {{ request()->routeIs('purchases.orders.*') ? 'active' : '' }}">أوامر الشراء</a>
                 <a href="{{ route('purchases.receive-notes.index') }}" class="module-nav-link d-block">سندات الاستلام</a>
                 <a href="{{ route('purchases.invoices.index') }}" class="module-nav-link d-block {{ request()->routeIs('purchases.invoices.*') ? 'active' : '' }}">فواتير الموردين</a>
-                <a href="{{ route('purchases.returns.index') }}" class="module-nav-link d-block {{ request()->routeIs('purchases.returns.*') ? 'active' : '' }}">مرتجعات المشتريات</a>
+                <a href="{{ route('purchases.payments.index') }}" class="module-nav-link d-block {{ request()->routeIs('purchases.payments.*') ? 'active' : '' }}">مدفوعات الموردين</a>
+                <a href="{{ route('purchases.returns.index') }}" class="module-nav-link d-block {{ request()->routeIs('purchases.returns.*') ? 'active' : '' }}">مرتجعات الموردين</a>
                 <a href="{{ route('purchases.reports.index') }}" class="module-nav-link d-block {{ request()->routeIs('purchases.reports.*') ? 'active' : '' }}">تقارير المشتريات</a>
                 @elseif($currentModule === 'inventory')
                 <a href="{{ route('inventory.dashboard') }}" class="module-nav-link d-block {{ request()->routeIs('inventory.dashboard') ? 'active' : '' }}">لوحة المخزون</a>
@@ -331,6 +336,7 @@
                 <a href="{{ route('inventory.price-lists.index') }}" class="module-nav-link d-block {{ request()->routeIs('inventory.price-lists.*') ? 'active' : '' }}">قوائم الأسعار</a>
                 @elseif($currentModule === 'manufacturing')
                 <a href="{{ route('manufacturing.dashboard') }}" class="module-nav-link d-block {{ request()->routeIs('manufacturing.dashboard') ? 'active' : '' }}">لوحة التحكم</a>
+                <a href="{{ route('items.index') }}" class="module-nav-link d-block {{ request()->routeIs('items.*') ? 'active' : '' }}">الأصناف</a>
                 <a href="{{ route('manufacturing.bom-lists.index') }}" class="module-nav-link d-block {{ request()->routeIs('manufacturing.bom-lists.*') ? 'active' : '' }}">قوائم المواد</a>
                 <a href="{{ route('manufacturing.runs.index') }}" class="module-nav-link d-block {{ request()->routeIs('manufacturing.runs.index', 'manufacturing.create', 'manufacturing.show', 'manufacturing.store', 'manufacturing.post', 'manufacturing.destroy') ? 'active' : '' }}">أوامر العمل</a>
                 <a href="{{ route('manufacturing.reports.production-variance') }}" class="module-nav-link d-block {{ request()->routeIs('manufacturing.reports.production-variance') ? 'active' : '' }}">انحرافات التصنيع</a>
@@ -354,6 +360,7 @@
                 <a href="{{ route('finance.reports.profit-loss') }}" class="module-nav-link d-block {{ request()->routeIs('finance.reports.profit-loss') ? 'active' : '' }}">الأرباح والخسائر</a>
                 @elseif($currentModule === 'hr')
                 <a href="{{ route('hr.dashboard') }}" class="module-nav-link d-block {{ request()->routeIs('hr.dashboard') ? 'active' : '' }}">لوحة تحكم الموارد البشرية</a>
+                <a href="{{ route('hr.shifts.index') }}" class="module-nav-link d-block {{ request()->routeIs('hr.shifts.*') ? 'active' : '' }}">الورديات</a>
                 <a href="{{ route('hr.departments.index') }}" class="module-nav-link d-block {{ request()->routeIs('hr.departments.*') ? 'active' : '' }}">الأقسام</a>
                 <a href="{{ route('hr.employees.index') }}" class="module-nav-link d-block {{ request()->routeIs('hr.employees.*') ? 'active' : '' }}">الموظفون</a>
                 <a href="{{ route('hr.attendance') }}" class="module-nav-link d-block {{ request()->routeIs('hr.attendance') ? 'active' : '' }}">الحضور</a>

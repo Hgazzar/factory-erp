@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'لوحة التحكم - MIRADA ERP')
+@section('title', 'لوحة التحكم - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-indigo-900 font-semibold">الرئيسية</a>
@@ -60,6 +60,52 @@
                 </div>
             @endif
         </div>
+
+        @if(!empty($tenantPackage['niche_name']) && auth()->user()?->isAdminOrSuperAdmin())
+        <div class="ufuq-card mb-4 p-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);">
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                <div>
+                    <h2 class="h5 fw-bold text-dark mb-1 d-inline-flex align-items-center gap-2">
+                        باقة عملك: {{ $tenantPackage['niche_name'] }}
+                        <x-info field="dashboard.tenant_package" />
+                    </h2>
+                    <p class="text-muted small mb-2">الموديولات والمزايا المفعّلة لحسابك — مخصّصة لنشاط {{ $tenantPackage['niche_key'] ?? 'ERP' }}</p>
+                    @if(!empty($tenantPackage['modules']))
+                        <div class="d-flex flex-wrap gap-1 mb-2">
+                            @foreach($tenantPackage['modules'] as $mod)
+                                <span class="badge rounded-pill bg-white text-dark border px-2 py-1">{{ $mod['label'] }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                    @if(!empty($tenantPackage['premium_features']))
+                        <div class="d-flex flex-wrap gap-1 align-items-center">
+                            <span class="small text-muted me-1">مزايا بريميوم:</span>
+                            @foreach($tenantPackage['premium_features'] as $feat)
+                                <span class="badge rounded-pill bg-amber-100 text-amber-900 border border-amber-200 px-2 py-1">{{ $feat['name_ar'] }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+                @if(!empty($tenantPackage['quick_links']))
+                <div class="flex-grow-1" style="min-width: 220px; max-width: 420px;">
+                    <p class="small fw-semibold text-muted mb-2 d-inline-flex align-items-center gap-1">
+                        روابط سريعة
+                        <x-info field="dashboard.tenant_quick_links" />
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach($tenantPackage['quick_links'] as $link)
+                            @if(\Illuminate\Support\Facades\Route::has($link['route']))
+                            <a href="{{ route($link['route']) }}"
+                               class="btn btn-sm btn-light border shadow-sm text-dark"
+                               title="{{ $link['hint'] }}">{{ $link['label'] }}</a>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+        @endif
 
         <ul class="nav nav-tabs nav-fill border-0 gap-2 mb-4" role="tablist" dir="rtl">
             <li class="nav-item" role="presentation">
@@ -527,13 +573,13 @@
                                     <h6 class="ufuq-card-title">التصنيع</h6>
                                     <span class="ufuq-card-count">{{ isset($countProductionShifts) ? $countProductionShifts : '6+' }}</span>
                                 </div>
-                                <p class="ufuq-card-sub">لوحة التصنيع وأوامر العمل</p>
+                                <p class="ufuq-card-sub">أصناف ← قوائم مواد ← أوامر العمل ← ترحيل</p>
                             </div>
                         </div>
                         <div class="ufuq-card-actions">
-                            <a href="{{ route('manufacturing.dashboard') }}" class="ufuq-qbtn">لوحة</a>
-                            <a href="{{ route('manufacturing.runs.index') }}" class="ufuq-qbtn">أوامر العمل</a>
+                            <a href="{{ route('items.index') }}" class="ufuq-qbtn">أصناف</a>
                             <a href="{{ route('manufacturing.bom-lists.index') }}" class="ufuq-qbtn">قوائم المواد</a>
+                            <a href="{{ route('manufacturing.runs.index') }}" class="ufuq-qbtn">أوامر العمل</a>
                         </div>
                     </div>
                 </div>
@@ -675,6 +721,7 @@
                         </div>
                         @if(\App\Support\ErpRoles::hasFinanceAdminPanelAccess(auth()->user()))
                         <div class="ufuq-card-actions">
+                            <a href="{{ route('admin.dashboard') }}" class="ufuq-qbtn">لوحة الأدمن</a>
                             <a href="{{ route('system.audit.index') }}" class="ufuq-qbtn">سجل</a>
                         </div>
                         @endif

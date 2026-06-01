@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'طلبات الخدمة - MIRADA ERP')
+@section('title', 'طلبات الخدمة - '.config('app.name'))
 
 @section('content')
 <div class="max-w-full" dir="rtl">

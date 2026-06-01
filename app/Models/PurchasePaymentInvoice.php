@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,7 +22,7 @@ class PurchasePaymentInvoice extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
 
         static::creating(function (PurchasePaymentInvoice $model): void {
             if (! $model->user_id && $model->payment_id) {

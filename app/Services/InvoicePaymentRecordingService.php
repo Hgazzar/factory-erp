@@ -148,7 +148,7 @@ final class InvoicePaymentRecordingService
             /** @var SalesInvoice $invoice */
             $invoice = SalesInvoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
 
-            if ($invoice->invoice_status === 'draft') {
+            if ($invoice->status === SalesInvoice::STATUS_DRAFT || (string) ($invoice->invoice_status ?? '') === 'draft') {
                 throw new RuntimeException('لا يمكن تسجيل دفعة على فاتورة مسودة.');
             }
 
@@ -216,6 +216,9 @@ final class InvoicePaymentRecordingService
 
             $oldPaid = (float) ($invoice->paid_amount ?? 0);
             $invoice->increment('paid_amount', $amount);
+            $invoice->refresh();
+            $invoice->refreshPaymentStatus();
+            $invoice->save();
             Installment::distributePaymentToInvoice($invoice->id, $amount);
 
             AuditTrail::log('update', 'sales_invoices', $invoice->id, [

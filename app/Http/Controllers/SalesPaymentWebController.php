@@ -2,26 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Account;
 use App\Models\Customer;
-use App\Models\JournalEntry;
-use App\Models\JournalItem;
-use App\Models\PaymentMethodAccount;
 use App\Models\SalesInvoice;
 use App\Models\SalesPayment;
-use App\Models\Installment;
-use App\Models\SalesPaymentInvoice;
-use App\Services\InvoicePaymentRecordingService;
-use App\Support\DefaultLedgerAccounts;
+use App\Services\Sales\SalesReceiptService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use RuntimeException;
 
 class SalesPaymentWebController extends Controller
 {
+    public function __construct(
+        private readonly SalesReceiptService $receiptService,
+    ) {}
     public function index(Request $request): View|\Illuminate\Http\Response
     {
         $query = SalesPayment::with(['customer', 'creator'])
@@ -75,7 +71,7 @@ class SalesPaymentWebController extends Controller
 
         $totalPayments = SalesPayment::count();
         $totalAmount = (float) SalesPayment::sum('amount');
-        $allocatedAmount = (float) SalesPaymentInvoice::sum('amount_allocated');
+        $allocatedAmount = (float) \App\Models\SalesPaymentInvoice::sum('amount_allocated');
         $unallocatedAmount = $totalAmount - $allocatedAmount;
 
         $customers = Customer::where('is_active', true)->orderBy('name')->get();
@@ -124,7 +120,6 @@ class SalesPaymentWebController extends Controller
             'allocations.*.amount' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $user = $request->user();
         $amount = (float) $data['amount'];
         $allocations = collect($data['allocations'] ?? [])
             ->filter(fn ($a) => (float) ($a['amount'] ?? 0) > 0)
@@ -139,85 +134,20 @@ class SalesPaymentWebController extends Controller
             return back()->withInput()->with('error', 'مجموع المبالغ المخصصة لا يمكن أن يتجاوز مبلغ الدفعة.');
         }
 
-        DB::transaction(function () use ($data, $amount, $allocations, $user, $uid) {
-            PaymentMethodAccount::ensureDefaultsForUser($uid);
-            $ledgerId = PaymentMethodAccount::ledgerAccountIdForMethod($uid, $data['payment_method']);
-            $debitAccount = $ledgerId
-                ? Account::withoutGlobalScopes()->where('user_id', $uid)->whereKey($ledgerId)->first()
-                : null;
-            if (! $debitAccount) {
-                $debitAccount = $data['payment_method'] === 'cash'
-                    ? DefaultLedgerAccounts::cashOnHand()
-                    : DefaultLedgerAccounts::bankMain();
-            }
+        $customer = Customer::query()->whereKey($data['customer_id'])->firstOrFail();
 
-            $customersAccount = app(InvoicePaymentRecordingService::class)->resolveDefaultReceivableAccount($uid);
-
-            $entry = JournalEntry::create([
-                'user_id' => $uid,
-                'date' => $data['date'],
-                'reference' => 'PAY-CUST',
-                'description' => 'دفعة من العميل #' . $data['customer_id'],
-                'total' => $amount,
-            ]);
-
-            $debitDescription = match ($data['payment_method']) {
-                'cash' => 'تحصيل نقدي من العميل',
-                'transfer' => 'تحصيل بنكي من العميل',
-                'card' => 'تحصيل شبكة/بطاقة من العميل',
-                default => 'تحصيل من العميل',
-            };
-
-            JournalItem::create([
-                'journal_entry_id' => $entry->id,
-                'account_id' => $debitAccount->id,
-                'description' => $debitDescription,
-                'debit' => $amount,
-                'credit' => 0,
-            ]);
-
-            JournalItem::create([
-                'journal_entry_id' => $entry->id,
-                'account_id' => $customersAccount->id,
-                'description' => 'تسوية رصيد العميل',
-                'debit' => 0,
-                'credit' => $amount,
-            ]);
-
-            $payment = SalesPayment::create([
-                'user_id' => $uid,
-                'customer_id' => $data['customer_id'],
-                'date' => $data['date'],
-                'payment_method' => $data['payment_method'],
+        try {
+            $this->receiptService->recordWithAllocations($uid, $customer, [
                 'amount' => $amount,
+                'payment_method' => $data['payment_method'],
+                'date' => $data['date'],
                 'reference' => $data['reference'] ?? null,
                 'notes' => $data['notes'] ?? null,
-                'journal_entry_id' => $entry->id,
-                'created_by' => $user->id,
+                'allocations' => $allocations->all(),
             ]);
-
-            foreach ($allocations as $allocation) {
-                $invoice = SalesInvoice::findOrFail($allocation['invoice_id']);
-                if ($invoice->customer_id != $data['customer_id']) {
-                    continue;
-                }
-                $allocAmount = $allocation['amount'];
-                $balance = (float) $invoice->total - (float) $invoice->paid_amount;
-                $allocAmount = min($allocAmount, $balance);
-                if ($allocAmount <= 0) {
-                    continue;
-                }
-
-                SalesPaymentInvoice::create([
-                    'sales_payment_id' => $payment->id,
-                    'sales_invoice_id' => $invoice->id,
-                    'amount_allocated' => $allocAmount,
-                ]);
-
-                $invoice->increment('paid_amount', $allocAmount);
-                Installment::distributePaymentToInvoice($invoice->id, $allocAmount);
-            }
-        });
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         return redirect()
             ->route('sales.payments.index')

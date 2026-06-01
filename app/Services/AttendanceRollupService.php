@@ -1,14 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\Attendance;
 use App\Models\AttendanceLog;
 use App\Models\Employee;
+use App\Services\Hr\ShiftScheduleResolver;
 use Carbon\Carbon;
 
 final class AttendanceRollupService
 {
+    public function __construct(
+        private readonly ShiftScheduleResolver $shiftSchedule,
+    ) {}
+
     /**
      * يجمع ختمات attendance_logs ليوم وموظف محددين إلى صف واحد في attendances (أقدم = حضور، أحدث = انصراف).
      */
@@ -35,25 +42,34 @@ final class AttendanceRollupService
         $checkIn = $logs->first()->logged_at;
         $checkOut = $logs->last()->logged_at;
 
-        $tz = config('app.timezone');
-        $scheduled = Carbon::parse($workDate.' '.config('attendance.scheduled_start'), $tz);
-        $deadline = $scheduled->copy()->addMinutes((int) config('attendance.grace_minutes'));
-
-        if ($checkIn->lessThanOrEqualTo($deadline)) {
-            $status = Attendance::STATUS_PRESENT;
-            $minutesLate = 0;
-        } else {
-            $status = Attendance::STATUS_LATE;
-            $minutesLate = max(0, (int) round($scheduled->diffInMinutes($checkIn)));
-        }
-
-        $workHours = round(max(0, $checkIn->floatDiffInHours($checkOut)), 2);
-
         $employee = Employee::withoutGlobalScopes()
             ->where('user_id', $userId)
             ->find($employeeId);
 
-        $deductionAmount = $this->computeLateDeductionAmount($employee, $status, $minutesLate);
+        $schedule = $this->shiftSchedule->forEmployee(
+            $employee ?? new Employee(['user_id' => $userId]),
+            $workDate
+        );
+
+        $checkInDeadline = $schedule->scheduledStart->copy()->addMinutes($schedule->graceMinutes);
+
+        if ($checkIn->lessThanOrEqualTo($checkInDeadline)) {
+            $status = Attendance::STATUS_PRESENT;
+            $minutesLate = 0;
+        } else {
+            $status = Attendance::STATUS_LATE;
+            $minutesLate = max(0, (int) round($schedule->scheduledStart->diffInMinutes($checkIn)));
+        }
+
+        $earliestAllowedOut = $schedule->scheduledEnd->copy()->subMinutes($schedule->graceMinutes);
+        $minutesEarly = 0;
+        if ($checkOut->lessThan($earliestAllowedOut)) {
+            $minutesEarly = max(0, (int) round($checkOut->diffInMinutes($schedule->scheduledEnd)));
+        }
+
+        $workHours = round(max(0, $checkIn->floatDiffInHours($checkOut)), 2);
+
+        $deductionAmount = $this->computeAttendanceDeduction($employee, $status, $minutesLate, $minutesEarly);
 
         Attendance::withoutGlobalScopes()->updateOrCreate(
             [
@@ -62,22 +78,25 @@ final class AttendanceRollupService
                 'work_date' => $workDate,
             ],
             [
+                'shift_id' => $schedule->shiftId,
                 'check_in_at' => $checkIn,
                 'check_out_at' => $checkOut,
                 'status' => $status,
                 'minutes_late' => $minutesLate,
+                'minutes_early_departure' => $minutesEarly,
                 'work_hours' => $workHours,
                 'deduction_amount' => $deductionAmount,
             ]
         );
     }
 
-    /**
-     * قيمة الساعة = الراتب الأساسي ÷ 30 ÷ 8 | الخصم = (دقائق التأخير / 60) × قيمة الساعة.
-     */
-    private function computeLateDeductionAmount(?Employee $employee, string $status, int $minutesLate): ?string
-    {
-        if ($employee === null || $status !== Attendance::STATUS_LATE || $minutesLate <= 0) {
+    private function computeAttendanceDeduction(
+        ?Employee $employee,
+        string $status,
+        int $minutesLate,
+        int $minutesEarly,
+    ): ?string {
+        if ($employee === null || ($minutesLate <= 0 && $minutesEarly <= 0)) {
             return $this->decimalString(0.0);
         }
 
@@ -85,14 +104,27 @@ final class AttendanceRollupService
             return null;
         }
 
+        $policy = $employee->attendance_policy ?? Employee::ATTENDANCE_POLICY_NONE;
+        $base = (float) $employee->base_salary;
         $dMonth = max(1, (int) config('attendance.days_per_month_for_payroll', 30));
         $hDay = max(1, (int) config('attendance.hours_per_work_day', 8));
-        $base = (float) $employee->base_salary;
         $hourly = $base / $dMonth / $hDay;
-        $lateHours = $minutesLate / 60.0;
-        $amount = round($hourly * $lateHours, 2);
 
-        return $this->decimalString($amount);
+        if ($policy === Employee::ATTENDANCE_POLICY_DAY_FOR_DAY) {
+            return $this->decimalString(round($base / $dMonth, 2));
+        }
+
+        if ($policy === Employee::ATTENDANCE_POLICY_HOUR_FOR_HOUR) {
+            $hours = ($minutesLate + $minutesEarly) / 60.0;
+
+            return $this->decimalString(round($hourly * $hours, 2));
+        }
+
+        if ($status === Attendance::STATUS_LATE && $minutesLate > 0) {
+            return $this->decimalString(round($hourly * ($minutesLate / 60.0), 2));
+        }
+
+        return $this->decimalString(0.0);
     }
 
     private function decimalString(float $value): string

@@ -186,6 +186,6 @@ class DeliveryOrderWebController extends Controller
 
         return redirect()
             ->route('sales.delivery-orders.show', $deliveryOrder->id)
-            ->with('success', 'تم تأكيد التسليم وتحديث رصيد الأصناف (حسب نوع الصنف).');
+            ->with('success', 'تم تأكيد التسليم. خصم المخزون يتم عند ترحيل فاتورة المبيعات المرتبطة.');
     }
 }

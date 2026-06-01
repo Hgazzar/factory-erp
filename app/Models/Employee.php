@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +33,7 @@ class Employee extends Model
         'user_id',
         'linked_user_id',
         'department_id',
+        'shift_id',
         'cost_center_id',
         'ledger_account_id',
         'code',
@@ -64,6 +65,8 @@ class Employee extends Model
         'emergency_contact_phone',
         'emergency_contact_relation',
         'status',
+        'clinic_role',
+        'clinic_specialty_id',
         'base_salary',
         'salary_type',
         'fixed_insurance_deduction',
@@ -86,7 +89,7 @@ class Employee extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
     }
 
     /**
@@ -182,6 +185,11 @@ class Employee extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
     }
 
     /**

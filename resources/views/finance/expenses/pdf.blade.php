@@ -138,7 +138,7 @@
                 <div class="logo-title">
                     <div class="logo-title-row">
                         <div class="logo-title-cell">
-                            <p class="company-name">{{ PdfArabic::glyphs($company?->name ?? 'MIRADA ERP') }}</p>
+                            <p class="company-name">{{ PdfArabic::glyphs($company?->name ?? config('app.name')) }}</p>
                             <p class="tax-line">
                                 {{ PdfArabic::glyphs('الرقم الضريبي:') }}
                                 {{ $company && $company->tax_number ? $company->tax_number : '—' }}

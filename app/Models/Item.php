@@ -36,6 +36,11 @@ class Item extends Model
         ];
     }
 
+    public static function isStockableType(?string $type): bool
+    {
+        return in_array($type, [self::TYPE_RAW_MATERIAL, self::TYPE_FINISHED_GOOD], true);
+    }
+
     protected $fillable = [
         'user_id',
         'code',

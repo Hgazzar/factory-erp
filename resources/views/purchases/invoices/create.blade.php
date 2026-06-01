@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'فاتورة مشتريات جديدة - MIRADA ERP')
+@section('title', 'فاتورة مشتريات جديدة - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -44,6 +44,12 @@
     @endif
     <form method="POST" action="{{ route('purchases.invoices.store') }}" id="purchase-invoice-form">
         @csrf
+        @if(!empty($fromPurchaseOrderId))
+            <input type="hidden" name="purchase_order_id" value="{{ $fromPurchaseOrderId }}">
+            <input type="hidden" name="posting_source" value="order">
+        @else
+            <input type="hidden" name="posting_source" value="{{ $postingSource ?? 'direct' }}">
+        @endif
 
         {{-- تفاصيل الفاتورة --}}
         <div class="inv-card p-5 mb-6">

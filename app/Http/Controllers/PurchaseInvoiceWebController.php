@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\DefaultLedgerAccounts;
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Item;
-use App\Models\ItemWarehouse;
-use App\Models\JournalEntry;
-use App\Models\JournalItem;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceItem;
+use App\Models\PurchaseOrder;
+use App\Models\SalesPayment;
 use App\Models\Supplier;
 use App\Models\Warehouse;
-use App\Models\SalesPayment;
 use App\Services\ExcelImportService;
-use App\Services\InvoicePaymentRecordingService;
+use App\Services\Purchasing\PurchaseInvoicePostingService;
+use App\Services\Purchasing\SupplierPaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -24,6 +23,13 @@ use RuntimeException;
 
 class PurchaseInvoiceWebController extends Controller
 {
+    use ResolvesOperationsTenant;
+
+    public function __construct(
+        private readonly PurchaseInvoicePostingService $postingService,
+        private readonly SupplierPaymentService $supplierPayments,
+    ) {}
+
     public function index(Request $request): View|Response
     {
         $query = PurchaseInvoice::with(['supplier', 'warehouse'])
@@ -43,7 +49,7 @@ class PurchaseInvoiceWebController extends Controller
 
         if ($request->get('export') === 'csv') {
             $rows = $query->limit(5000)->get();
-            $csv = "\xEF\xBB\xBF"; // UTF-8 BOM
+            $csv = "\xEF\xBB\xBF";
             $csv .= "رقم الفاتورة,المورد,التاريخ,الاستحقاق,الإجمالي,المدفوع,الرصيد\n";
             foreach ($rows as $inv) {
                 $balance = max(0, (float) $inv->total - (float) $inv->paid_amount);
@@ -100,7 +106,7 @@ class PurchaseInvoiceWebController extends Controller
 
     public function recordPayment(Request $request, PurchaseInvoice $invoice): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $tenantUserId = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'date' => ['required', 'date'],
@@ -112,14 +118,13 @@ class PurchaseInvoiceWebController extends Controller
         ]);
 
         try {
-            app(InvoicePaymentRecordingService::class)->recordPurchaseInvoicePayment(
-                $invoice,
-                (float) $data['amount'],
-                $data['date'],
-                $data['payment_method'],
-                $uid,
-                $data['reference'] ?? null,
-            );
+            $this->supplierPayments->record($tenantUserId, $invoice->supplier, [
+                'amount' => (float) $data['amount'],
+                'date' => $data['date'],
+                'payment_method' => $data['payment_method'],
+                'reference' => $data['reference'] ?? null,
+                'purchase_invoice_id' => $invoice->id,
+            ]);
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -129,21 +134,54 @@ class PurchaseInvoiceWebController extends Controller
             ->with('success', 'تم تسجيل الدفعة وإنشاء القيد المحاسبي بنجاح.');
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();
         $warehouses = Warehouse::active()->orderBy('name_ar')->get();
         $items = Item::active()->orderBy('code')->get();
 
-        return view('purchases.invoices.create', compact('suppliers', 'warehouses', 'items'));
+        $fromPurchaseOrderId = null;
+        $postingSource = PurchaseInvoice::POSTING_SOURCE_DIRECT;
+        $initialSupplierId = null;
+        $initialLines = null;
+
+        $poId = $request->integer('purchase_order_id');
+        if ($poId > 0) {
+            $po = PurchaseOrder::with(['supplier', 'items.item'])->find($poId);
+            if ($po) {
+                $fromPurchaseOrderId = $po->id;
+                $postingSource = PurchaseInvoice::POSTING_SOURCE_ORDER;
+                $initialSupplierId = $po->supplier_id;
+                $initialLines = $po->items->map(fn ($row) => [
+                    'item_id' => $row->item_id,
+                    'quantity' => (float) $row->quantity,
+                    'unit_price' => (float) $row->unit_price,
+                    'discount' => 0,
+                    'vat_percent' => 15,
+                ])->toArray();
+            }
+        }
+
+        return view('purchases.invoices.create', compact(
+            'suppliers',
+            'warehouses',
+            'items',
+            'fromPurchaseOrderId',
+            'postingSource',
+            'initialSupplierId',
+            'initialLines',
+        ));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+
         $data = $request->validate([
-            'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('user_id', $uid)],
-            'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('user_id', $uid)],
+            'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('user_id', $tenantUserId)],
+            'purchase_order_id' => ['nullable', Rule::exists('purchase_orders', 'id')->where('user_id', $tenantUserId)],
+            'posting_source' => ['nullable', 'in:order,direct'],
+            'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('user_id', $tenantUserId)],
             'supplier_invoice_number' => ['nullable', 'string', 'max:100'],
             'reference' => ['nullable', 'string', 'max:50'],
             'date' => ['required', 'date'],
@@ -152,7 +190,7 @@ class PurchaseInvoiceWebController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
             'internal_notes' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1'],
-            'lines.*.item_id' => ['required', Rule::exists('items', 'id')->where('user_id', $uid)],
+            'lines.*.item_id' => ['required', Rule::exists('items', 'id')->where('user_id', $tenantUserId)],
             'lines.*.description' => ['nullable', 'string', 'max:500'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
@@ -165,134 +203,36 @@ class PurchaseInvoiceWebController extends Controller
             'lines.required' => 'يجب إضافة بند واحد على الأقل.',
         ]);
 
-        $lines = collect($data['lines'])
-            ->map(function ($line) {
-                $qty = (float) $line['quantity'];
-                $price = (float) $line['unit_price'];
-                $discount = (float) ($line['discount'] ?? 0);
-                $vatPercent = (float) ($line['vat_percent'] ?? 15);
-                $lineNet = $qty * $price - $discount;
-                $lineVat = $lineNet * $vatPercent / 100;
-                $lineTotal = $lineNet + $lineVat;
-
-                return [
-                    'item_id' => (int) $line['item_id'],
-                    'description' => $line['description'] ?? null,
-                    'quantity' => $qty,
-                    'unit_price' => $price,
-                    'discount' => $discount,
-                    'vat_percent' => $vatPercent,
-                    'line_total' => $lineTotal,
-                ];
-            })
-            ->filter(fn ($l) => $l['quantity'] > 0)
-            ->values();
-
-        if ($lines->isEmpty()) {
+        $lines = $this->postingService->normalizeLines($data['lines']);
+        if ($lines === []) {
             return back()->withInput()->with('error', 'يجب إضافة على الأقل بند واحد بقيمة صحيحة.');
         }
 
-        $subtotal = $lines->sum(fn ($l) => $l['quantity'] * $l['unit_price']);
-        $totalDiscount = $lines->sum('discount');
-        $netAfterDiscount = $subtotal - $totalDiscount;
-        $vatAmount = $lines->sum(fn ($l) => ($l['quantity'] * $l['unit_price'] - $l['discount']) * ($l['vat_percent'] / 100));
-        $grandTotal = $netAfterDiscount + $vatAmount;
-        $avgVatRate = $netAfterDiscount > 0 ? ($vatAmount / $netAfterDiscount * 100) : 0;
+        try {
+            $postingSource = ! empty($data['purchase_order_id'])
+                ? PurchaseInvoice::POSTING_SOURCE_ORDER
+                : ($data['posting_source'] ?? PurchaseInvoice::POSTING_SOURCE_DIRECT);
 
-        DB::transaction(function () use ($data, $lines, $vatAmount, $avgVatRate, $grandTotal) {
-            $invoice = PurchaseInvoice::create([
-                'user_id' => (int) auth()->id(),
-                'supplier_id' => $data['supplier_id'],
-                'warehouse_id' => $data['warehouse_id'],
+            $this->postingService->createAndPost($tenantUserId, [
+                'supplier_id' => (int) $data['supplier_id'],
+                'purchase_order_id' => $data['purchase_order_id'] ?? null,
+                'posting_source' => $postingSource,
+                'warehouse_id' => (int) $data['warehouse_id'],
                 'date' => $data['date'],
                 'due_date' => $data['due_date'],
                 'reference' => $data['reference'] ?? null,
                 'supplier_invoice_number' => $data['supplier_invoice_number'] ?? null,
                 'currency' => $data['currency'] ?? 'SAR',
-                'vat_rate' => $avgVatRate,
-                'vat_amount' => $vatAmount,
-                'total' => $grandTotal,
                 'notes' => $data['notes'] ?? null,
                 'internal_notes' => $data['internal_notes'] ?? null,
-            ]);
-
-            foreach ($lines as $line) {
-                $invoice->items()->create($line);
-
-                // تحديث المخزون في المخزن المحدد
-                $pivot = ItemWarehouse::firstOrCreate(
-                    [
-                        'user_id' => (int) auth()->id(),
-                        'item_id' => $line['item_id'],
-                        'warehouse_id' => $data['warehouse_id'],
-                    ],
-                    [
-                        'quantity' => 0,
-                        'reserved_quantity' => 0,
-                    ]
-                );
-                $pivot->quantity = $pivot->quantity + $line['quantity'];
-                $pivot->save();
-
-                // يمكن تحديث تكلفة الصنف بالتكلفة الأخيرة
-                $item = Item::find($line['item_id']);
-                if ($item) {
-                    $item->cost = $line['unit_price'];
-                    $item->save();
-                }
-            }
-
-            // قيد محاسبي: مخزون (1200) + ضريبة (2030) / ذمم دائنة (2010)
-            $inventoryAccount = DefaultLedgerAccounts::inventoryReceipts();
-            $suppliersAccount = DefaultLedgerAccounts::accountsPayable();
-            $vatAccount = DefaultLedgerAccounts::vatPayable();
-
-            $entry = JournalEntry::create([
-                'user_id' => (int) auth()->id(),
-                'date' => $data['date'],
-                'reference' => 'PINV-'.$invoice->id,
-                'description' => 'فاتورة شراء خامات للمورد #'.$data['supplier_id'],
-                'total' => $grandTotal,
-            ]);
-
-            $netTotal = $grandTotal - $vatAmount;
-
-            // مدين: المخزون (صافي بدون ضريبة)
-            JournalItem::create([
-                'journal_entry_id' => $entry->id,
-                'account_id' => $inventoryAccount->id,
-                'description' => 'زيادة مخزون خامات',
-                'debit' => $netTotal,
-                'credit' => 0,
-            ]);
-
-            // مدين: حساب ضريبة القيمة المضافة (إن وجد)
-            if ($vatAmount > 0) {
-                JournalItem::create([
-                    'journal_entry_id' => $entry->id,
-                    'account_id' => $vatAccount->id,
-                    'description' => 'ضريبة قيمة مضافة على المشتريات',
-                    'debit' => $vatAmount,
-                    'credit' => 0,
-                ]);
-            }
-
-            // دائن: الموردين (إجمالي الفاتورة)
-            JournalItem::create([
-                'journal_entry_id' => $entry->id,
-                'account_id' => $suppliersAccount->id,
-                'description' => 'التزام تجاه الموردين',
-                'debit' => 0,
-                'credit' => $grandTotal,
-            ]);
-
-            $invoice->journal_entry_id = $entry->id;
-            $invoice->save();
-        });
+            ], $lines);
+        } catch (RuntimeException|\InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         return redirect()
             ->route('purchases.invoices.index')
-            ->with('success', 'تم حفظ فاتورة الشراء وإنشاء القيد المحاسبي وتحديث المخزون بنجاح.');
+            ->with('success', 'تم حفظ فاتورة الشراء وترحيلها: تحديث المخزون ومتوسط التكلفة والقيد المحاسبي.');
     }
 
     public function importTemplate(): Response
@@ -322,16 +262,20 @@ class PurchaseInvoiceWebController extends Controller
 
     public function import(Request $request, ExcelImportService $importService): RedirectResponse
     {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+
         $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
         ]);
 
         try {
-            $summary = DB::transaction(function () use ($request, $importService) {
+            $invoiceIdsToPost = [];
+
+            $summary = DB::transaction(function () use ($request, $importService, $tenantUserId, &$invoiceIdsToPost) {
                 return $importService->importSimple(
                     $request->file('file'),
                     ['reference', 'supplier_code', 'warehouse_code', 'date', 'item_code', 'quantity', 'unit_price'],
-                    function (array $row, int $line) {
+                    function (array $row, int $line) use ($tenantUserId, &$invoiceIdsToPost) {
                         $reference = $row['reference'] ?? null;
                         $supplierCode = $row['supplier_code'] ?? null;
                         $warehouseCode = $row['warehouse_code'] ?? null;
@@ -339,22 +283,22 @@ class PurchaseInvoiceWebController extends Controller
                         $itemCode = $row['item_code'] ?? null;
 
                         if (! $reference || ! $supplierCode || ! $warehouseCode || ! $date || ! $itemCode) {
-                            throw new \RuntimeException("بعض الحقول الرئيسية مفقودة في السطر رقم {$line} (reference, supplier_code, warehouse_code, date, item_code).");
+                            throw new RuntimeException("بعض الحقول الرئيسية مفقودة في السطر رقم {$line} (reference, supplier_code, warehouse_code, date, item_code).");
                         }
 
                         $supplier = Supplier::where('code', $supplierCode)->first();
                         if (! $supplier) {
-                            throw new \RuntimeException("تعذر العثور على المورد بالكود {$supplierCode} في السطر رقم {$line}.");
+                            throw new RuntimeException("تعذر العثور على المورد بالكود {$supplierCode} في السطر رقم {$line}.");
                         }
 
                         $warehouse = Warehouse::where('code', $warehouseCode)->first();
                         if (! $warehouse) {
-                            throw new \RuntimeException("تعذر العثور على المستودع بالكود {$warehouseCode} في السطر رقم {$line}.");
+                            throw new RuntimeException("تعذر العثور على المستودع بالكود {$warehouseCode} في السطر رقم {$line}.");
                         }
 
                         $item = Item::where('code', $itemCode)->first();
                         if (! $item) {
-                            throw new \RuntimeException("تعذر العثور على الصنف بالكود {$itemCode} في السطر رقم {$line}.");
+                            throw new RuntimeException("تعذر العثور على الصنف بالكود {$itemCode} في السطر رقم {$line}.");
                         }
 
                         $quantity = (float) ($row['quantity'] ?? 0);
@@ -363,7 +307,7 @@ class PurchaseInvoiceWebController extends Controller
                         $vatPercent = $row['vat_percent'] !== '' ? (float) $row['vat_percent'] : 15.0;
 
                         if ($quantity <= 0) {
-                            throw new \RuntimeException("الكمية يجب أن تكون أكبر من صفر في السطر رقم {$line}.");
+                            throw new RuntimeException("الكمية يجب أن تكون أكبر من صفر في السطر رقم {$line}.");
                         }
 
                         $lineNet = $quantity * $unitPrice - $discount;
@@ -377,9 +321,10 @@ class PurchaseInvoiceWebController extends Controller
                         if (! $invoice) {
                             $dueDateImport = trim((string) ($row['due_date'] ?? ''));
                             if ($dueDateImport === '') {
-                                throw new \RuntimeException("تاريخ الاستحقاق مطلوب في السطر رقم {$line} (أول سطر لكل مرجع فاتورة).");
+                                throw new RuntimeException("تاريخ الاستحقاق مطلوب في السطر رقم {$line} (أول سطر لكل مرجع فاتورة).");
                             }
                             $invoice = PurchaseInvoice::create([
+                                'user_id' => $tenantUserId,
                                 'supplier_id' => $supplier->id,
                                 'warehouse_id' => $warehouse->id,
                                 'date' => $date,
@@ -389,13 +334,16 @@ class PurchaseInvoiceWebController extends Controller
                                 'currency' => $row['currency'] ?: 'SAR',
                                 'vat_rate' => $vatPercent,
                                 'vat_amount' => 0,
+                                'subtotal' => 0,
                                 'total' => 0,
+                                'status' => PurchaseInvoice::STATUS_DRAFT,
                                 'notes' => $row['notes'] ?: null,
                                 'internal_notes' => null,
                             ]);
                         }
 
                         $itemData = [
+                            'user_id' => $tenantUserId,
                             'item_id' => $item->id,
                             'description' => $row['description'] ?: null,
                             'quantity' => $quantity,
@@ -418,30 +366,39 @@ class PurchaseInvoiceWebController extends Controller
                             $action = 'created';
                         }
 
-                        // تحديث المجاميع والرصيد
-                        $subtotal = $invoice->items->sum(function (PurchaseInvoiceItem $l) {
-                            return (float) $l->quantity * (float) $l->unit_price;
-                        });
-                        $totalDiscount = (float) $invoice->items->sum('discount');
-                        $netAfterDiscount = $subtotal - $totalDiscount;
-                        $vatAmount = $invoice->items->sum(function (PurchaseInvoiceItem $l) {
-                            $net = (float) $l->quantity * (float) $l->unit_price - (float) $l->discount;
-
-                            return $net * (float) $l->vat_percent / 100;
-                        });
-                        $grandTotal = $netAfterDiscount + $vatAmount;
-                        $avgVatRate = $netAfterDiscount > 0 ? ($vatAmount / $netAfterDiscount * 100) : 0;
+                        $invoice->load('items');
+                        $totals = $this->postingService->calculateTotals(
+                            $invoice->items->map(fn (PurchaseInvoiceItem $l) => [
+                                'item_id' => $l->item_id,
+                                'quantity' => (float) $l->quantity,
+                                'unit_price' => (float) $l->unit_price,
+                                'discount' => (float) ($l->discount ?? 0),
+                                'vat_percent' => (float) ($l->vat_percent ?? 15),
+                            ])->all()
+                        );
 
                         $invoice->update([
-                            'vat_rate' => $avgVatRate,
-                            'vat_amount' => $vatAmount,
-                            'total' => $grandTotal,
+                            'subtotal' => $totals['subtotal'],
+                            'vat_rate' => $totals['avg_vat_rate'],
+                            'vat_amount' => $totals['vat_amount'],
+                            'total' => $totals['grand_total'],
                         ]);
+
+                        if (! $invoice->isPosted()) {
+                            $invoiceIdsToPost[$invoice->id] = true;
+                        }
 
                         return $action;
                     }
                 );
             });
+
+            foreach (array_keys($invoiceIdsToPost) as $invoiceId) {
+                $invoice = PurchaseInvoice::query()->find($invoiceId);
+                if ($invoice && ! $invoice->isPosted()) {
+                    $this->postingService->postExisting($invoice);
+                }
+            }
         } catch (\Throwable $e) {
             return back()
                 ->withInput()
@@ -450,6 +407,6 @@ class PurchaseInvoiceWebController extends Controller
 
         return redirect()
             ->route('purchases.invoices.index')
-            ->with('success', "تم استيراد فواتير الموردين بنجاح. تمت إضافة {$summary['created']} وتحديث {$summary['updated']}.");
+            ->with('success', "تم استيراد فواتير الموردين وترحيلها بنجاح. تمت إضافة {$summary['created']} وتحديث {$summary['updated']}.");
     }
 }

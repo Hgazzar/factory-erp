@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'المصروفات - MIRADA ERP')
+@section('title', 'المصروفات - '.config('app.name'))
 
 @push('styles')
 <style>

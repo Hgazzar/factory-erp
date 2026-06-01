@@ -2,27 +2,32 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DebitNote;
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
+use App\Models\CompanySetting;
 use App\Models\Item;
-use App\Models\ItemWarehouse;
-use App\Models\JournalEntry;
-use App\Models\JournalItem;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnItem;
 use App\Models\Supplier;
 use App\Models\Warehouse;
-use App\Support\DefaultLedgerAccounts;
+use App\Services\Purchasing\PurchaseReturnPostingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use InvalidArgumentException;
+use RuntimeException;
 
 class PurchaseReturnWebController extends Controller
 {
+    use ResolvesOperationsTenant;
+
+    public function __construct(
+        private readonly PurchaseReturnPostingService $postingService,
+    ) {}
+
     public function index(Request $request): View|Response
     {
         $query = PurchaseReturn::with(['supplier', 'purchaseInvoice', 'warehouse'])
@@ -44,9 +49,15 @@ class PurchaseReturnWebController extends Controller
         if ($request->get('export') === 'csv') {
             $rows = (clone $query)->limit(5000)->get();
             $csv = "\xEF\xBB\xBF";
-            $csv .= "رقم المرتجع,المورد,التاريخ,السبب,عدد الأصناف,الإجمالي,الحالة\n";
+            $csv .= "رقم المرتجع,المورد,الفاتورة,التاريخ,السبب,عدد الأصناف,الإجمالي,الحالة\n";
             foreach ($rows as $r) {
-                $csv .= '"'.str_replace('"', '""', $r->code ?? '').'","'.str_replace('"', '""', $r->supplier?->name ?? '').'","'.($r->date?->format('Y-m-d') ?? '').'","'.str_replace('"', '""', $r->reason ?? '').'",'.($r->items_count ?? 0).','.(float) $r->total.',"'.($r->status ?? '')."\n";
+                $invRef = $r->purchaseInvoice?->reference ?: ($r->purchase_invoice_id ? 'PINV-'.$r->purchase_invoice_id : '');
+                $csv .= '"'.str_replace('"', '""', $r->code ?? '').'","'
+                    .str_replace('"', '""', $r->supplier?->getLocalizedDisplayName() ?? '').'","'
+                    .str_replace('"', '""', $invRef).'","'
+                    .($r->date?->format('Y-m-d') ?? '').'","'
+                    .str_replace('"', '""', $r->reason_type ?? $r->reason ?? '').'",'
+                    .($r->items_count ?? 0).','.(float) $r->total.',"'.($r->status_label ?? '')."\"\n";
             }
 
             return response($csv, 200, [
@@ -57,10 +68,10 @@ class PurchaseReturnWebController extends Controller
 
         $returns = $query->paginate(20)->withQueryString();
 
-        $totalReturnedAmount = (float) PurchaseReturn::sum('total');
+        $totalReturnedAmount = (float) PurchaseReturn::where('status', PurchaseReturn::STATUS_COMPLETED)->sum('total');
         $totalCount = PurchaseReturn::count();
-        $pendingCount = PurchaseReturn::where('status', 'pending')->count();
-        $shippedCount = PurchaseReturn::where('status', 'shipped')->count();
+        $completedCount = PurchaseReturn::where('status', PurchaseReturn::STATUS_COMPLETED)->count();
+        $pendingCount = PurchaseReturn::where('status', PurchaseReturn::STATUS_PENDING)->count();
 
         $reasonTypes = ['تالف', 'خطأ في الشحن', 'عدم المطابقة', 'آخر'];
 
@@ -68,38 +79,52 @@ class PurchaseReturnWebController extends Controller
             'returns',
             'totalReturnedAmount',
             'totalCount',
+            'completedCount',
             'pendingCount',
-            'shippedCount',
             'reasonTypes'
         ));
     }
 
     public function create(): View
     {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();
         $warehouses = Warehouse::active()->orderBy('name_ar')->get();
         $items = Item::where('is_active', true)->orderBy('code')->get();
         $returnTypes = ['معيب', 'غير مطابق', 'تالف', 'خطأ في الشحن', 'آخر'];
         $lineStatuses = ['معيب', 'سليم', 'غير مطابق', 'تالف', 'أخرى'];
+        $defaultVatPercent = CompanySetting::resolvedDefaultVatPercent($tenantUserId);
 
-        return view('purchases.returns.create', compact('suppliers', 'warehouses', 'items', 'returnTypes', 'lineStatuses'));
+        return view('purchases.returns.create', compact(
+            'suppliers',
+            'warehouses',
+            'items',
+            'returnTypes',
+            'lineStatuses',
+            'defaultVatPercent',
+        ));
     }
 
     public function invoicesBySupplier(Request $request): JsonResponse
     {
-        $supplierId = $request->get('supplier_id');
-        if (! $supplierId) {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $supplierId = $request->integer('supplier_id');
+        if ($supplierId <= 0) {
             return response()->json(['invoices' => []]);
         }
 
-        $invoices = PurchaseInvoice::where('supplier_id', $supplierId)
+        $invoices = PurchaseInvoice::query()
+            ->where('supplier_id', $supplierId)
+            ->whereNotNull('posted_at')
+            ->whereNotNull('journal_entry_id')
             ->orderByDesc('date')
-            ->get(['id', 'date', 'reference', 'total'])
-            ->map(fn ($inv) => [
+            ->get(['id', 'date', 'reference', 'total', 'paid_amount'])
+            ->map(fn (PurchaseInvoice $inv) => [
                 'id' => $inv->id,
-                'label' => ($inv->reference ?: 'PINV-'.$inv->id).' ('.$inv->date->format('Y-m-d').') - SAR '.number_format((float) $inv->total, 2),
-                'date' => $inv->date->format('Y-m-d'),
+                'label' => ($inv->reference ?: 'PINV-'.$inv->id).' ('.$inv->date?->format('Y-m-d').') — SAR '.number_format((float) $inv->total, 2),
+                'date' => $inv->date?->format('Y-m-d'),
                 'total' => (float) $inv->total,
+                'balance' => max(0, (float) $inv->total - (float) ($inv->paid_amount ?? 0)),
             ]);
 
         return response()->json(['invoices' => $invoices]);
@@ -109,20 +134,24 @@ class PurchaseReturnWebController extends Controller
     {
         $invoice->load(['items.item']);
 
+        if (! $invoice->isPosted()) {
+            return response()->json(['items' => [], 'warehouse_id' => $invoice->warehouse_id], 422);
+        }
+
         $items = $invoice->items->map(function ($line) use ($invoice) {
-            $returnedQty = PurchaseReturnItem::whereHas('purchaseReturn', fn ($q) => $q->where('purchase_invoice_id', $invoice->id))
-                ->where('item_id', $line->item_id)
-                ->sum('quantity');
-            $maxReturnable = max(0, (float) $line->quantity - (float) $returnedQty);
+            $meta = $this->postingService->maxReturnableForInvoiceLine($invoice, (int) $line->item_id);
 
             return [
+                'purchase_invoice_item_id' => (int) $line->id,
                 'item_id' => $line->item_id,
-                'item_name' => $line->item->name_ar ?? $line->item->name_en ?? $line->item->code ?? '-',
+                'item_name' => $line->item?->name_ar ?? $line->item?->name_en ?? $line->item?->code ?? '-',
                 'invoice_quantity' => (float) $line->quantity,
-                'returned_quantity' => (float) $returnedQty,
-                'max_returnable' => $maxReturnable,
+                'returned_quantity' => (float) $line->quantity - $meta['available'],
+                'max_returnable' => $meta['available'],
                 'unit_price' => (float) $line->unit_price,
+                'discount' => (float) ($line->discount ?? 0),
                 'vat_percent' => (float) ($line->vat_percent ?? $invoice->vat_rate ?? 0),
+                'unit_cost' => (float) ($line->weighted_unit_cost ?? $line->unit_price ?? 0),
             ];
         })->filter(fn ($r) => $r['max_returnable'] > 0)->values();
 
@@ -134,10 +163,12 @@ class PurchaseReturnWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+
         $data = $request->validate([
-            'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('user_id', $uid)],
-            'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('user_id', $uid)],
+            'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('user_id', $tenantUserId)],
+            'purchase_invoice_id' => ['nullable', Rule::exists('purchase_invoices', 'id')->where('user_id', $tenantUserId)],
+            'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('user_id', $tenantUserId)],
             'date' => ['required', 'date'],
             'reason_type' => ['required', 'string', 'max:100'],
             'reason' => ['nullable', 'string', 'max:2000'],
@@ -146,9 +177,11 @@ class PurchaseReturnWebController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
             'internal_notes' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1'],
-            'lines.*.item_id' => ['required', Rule::exists('items', 'id')->where('user_id', $uid)],
+            'lines.*.item_id' => ['required', Rule::exists('items', 'id')->where('user_id', $tenantUserId)],
+            'lines.*.purchase_invoice_item_id' => ['nullable', 'integer'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'lines.*.discount' => ['nullable', 'numeric', 'min:0'],
             'lines.*.vat_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.line_status' => ['nullable', 'string', 'max:50'],
         ], [
@@ -158,156 +191,25 @@ class PurchaseReturnWebController extends Controller
             'lines.required' => 'يجب إضافة بند واحد على الأقل.',
         ]);
 
-        $warehouseId = $data['warehouse_id'];
-
-        $lines = collect($data['lines'])->map(function ($line) {
-            $qty = (float) $line['quantity'];
-            $price = (float) $line['unit_price'];
-            $vatPct = (float) ($line['vat_percent'] ?? 0);
-            $lineNet = $qty * $price;
-            $lineVat = $lineNet * $vatPct / 100;
-            $lineTotal = round($lineNet + $lineVat, 4);
-
-            return [
-                'item_id' => (int) $line['item_id'],
-                'quantity' => $qty,
-                'unit_price' => $price,
-                'vat_percent' => $vatPct,
-                'line_status' => $line['line_status'] ?? null,
-                'line_total' => $lineTotal,
-            ];
-        })->filter(fn ($l) => $l['quantity'] > 0)->values();
-
-        if ($lines->isEmpty()) {
-            return back()->withInput()->with('error', 'يجب إضافة بند واحد على الأقل بكمية صحيحة.');
-        }
-
-        $subtotal = $lines->sum(fn ($l) => $l['quantity'] * $l['unit_price']);
-        $vatAmount = $lines->sum('line_total') - $subtotal;
-        $total = $subtotal + $vatAmount;
-
-        DB::transaction(function () use ($request, $data, $lines, $total, $vatAmount, $subtotal, $warehouseId, $uid) {
-            $purchaseReturn = PurchaseReturn::create([
-                'user_id' => $uid,
-                'code' => null,
+        try {
+            $this->postingService->createAndPost($tenantUserId, [
+                'supplier_id' => (int) $data['supplier_id'],
+                'purchase_invoice_id' => ! empty($data['purchase_invoice_id']) ? (int) $data['purchase_invoice_id'] : null,
+                'warehouse_id' => (int) $data['warehouse_id'],
                 'date' => $data['date'],
-                'supplier_id' => $data['supplier_id'],
-                'purchase_invoice_id' => null,
-                'warehouse_id' => $warehouseId,
                 'reason_type' => $data['reason_type'],
                 'reason' => $data['reason'] ?? null,
                 'reference' => $data['reference'] ?? null,
+                'currency' => $data['currency'] ?? 'SAR',
                 'notes' => $data['notes'] ?? null,
                 'internal_notes' => $data['internal_notes'] ?? null,
-                'total' => $total,
-                'vat_amount' => $vatAmount,
-                'currency' => $data['currency'] ?? 'SAR',
-                'status' => 'completed',
-            ]);
-
-            $purchaseReturn->update(['code' => 'PR-'.$purchaseReturn->id]);
-            $code = $purchaseReturn->code;
-
-            $items = Item::whereIn('id', $lines->pluck('item_id'))->get();
-            $itemNames = $items->mapWithKeys(fn ($i) => [$i->id => $i->name_ar ?? $i->name_en ?? $i->code ?? 'صنف #'.$i->id])->toArray();
-
-            foreach ($lines as $line) {
-                $purchaseReturn->items()->create($line);
-
-                $pivot = ItemWarehouse::firstOrCreate(
-                    ['user_id' => $uid, 'item_id' => $line['item_id'], 'warehouse_id' => $warehouseId],
-                    ['quantity' => 0, 'reserved_quantity' => 0]
-                );
-                $pivot->quantity = max(0, $pivot->quantity - $line['quantity']);
-                $pivot->save();
-            }
-
-            $debitNote = DebitNote::create([
-                'user_id' => $uid,
-                'supplier_id' => $data['supplier_id'],
-                'purchase_invoice_id' => null,
-                'date' => $data['date'],
-                'reference' => $code,
-                'original_invoice_ref' => $data['reference'] ?? null,
-                'amount' => $subtotal,
-                'tax_amount' => $vatAmount,
-                'reason_type' => $data['reason_type'],
-                'reason' => $data['reason'] ?? null,
-                'notes' => $data['notes'] ?? null,
-                'status' => 'approved',
-                'created_by' => $request->user()?->id,
-            ]);
-
-            $debitNote->items()->createMany($lines->map(fn ($line) => [
-                'description' => $itemNames[$line['item_id']] ?? 'صنف #'.$line['item_id'],
-                'quantity' => $line['quantity'],
-                'unit_price' => $line['unit_price'],
-                'tax_percent' => $line['vat_percent'],
-                'line_total' => $line['line_total'],
-            ])->all());
-
-            $this->applyAccountingImpact($debitNote);
-            $debitNote->approved_at = now();
-            $debitNote->save();
-
-            $purchaseReturn->debit_note_id = $debitNote->id;
-            $purchaseReturn->save();
-        });
+            ], $data['lines']);
+        } catch (RuntimeException|InvalidArgumentException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         return redirect()
             ->route('purchases.returns.index')
-            ->with('success', 'تم إنشاء مرتجع المشتريات وإصدار إشعار الدائن وتحديث المخزون بنجاح.');
-    }
-
-    private function applyAccountingImpact(DebitNote $debitNote): void
-    {
-        if ($debitNote->journal_entry_id) {
-            return;
-        }
-
-        $total = (float) $debitNote->amount + (float) $debitNote->tax_amount;
-        $vatAmount = (float) $debitNote->tax_amount;
-
-        $suppliersAccount = DefaultLedgerAccounts::accountsPayable();
-        $purchaseReturnsAccount = DefaultLedgerAccounts::purchaseReturns();
-        $vatAccount = DefaultLedgerAccounts::vatPayable();
-
-        $entry = JournalEntry::create([
-            'user_id' => (int) $debitNote->user_id,
-            'date' => $debitNote->date,
-            'reference' => $debitNote->note_number,
-            'description' => 'إشعار دائن (مرتجع مشتريات) للمورد #'.$debitNote->supplier_id,
-            'total' => $total,
-        ]);
-
-        JournalItem::create([
-            'journal_entry_id' => $entry->id,
-            'account_id' => $suppliersAccount->id,
-            'description' => 'إشعار دائن '.$debitNote->note_number,
-            'debit' => $total,
-            'credit' => 0,
-        ]);
-
-        $net = max(0, $total - $vatAmount);
-        JournalItem::create([
-            'journal_entry_id' => $entry->id,
-            'account_id' => $purchaseReturnsAccount->id,
-            'description' => 'مردودات المشتريات - إشعار دائن',
-            'debit' => 0,
-            'credit' => $net,
-        ]);
-
-        if ($vatAmount > 0) {
-            JournalItem::create([
-                'journal_entry_id' => $entry->id,
-                'account_id' => $vatAccount->id,
-                'description' => 'ضريبة إشعار دائن',
-                'debit' => 0,
-                'credit' => $vatAmount,
-            ]);
-        }
-
-        $debitNote->journal_entry_id = $entry->id;
-        $debitNote->save();
+            ->with('success', 'تم ترحيل مرتجع المشتريات: خصم المخزون، القيد العكسي، وتحديث الفاتورة الأصلية.');
     }
 }

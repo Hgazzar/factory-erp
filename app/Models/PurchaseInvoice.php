@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,15 +25,22 @@ class PurchaseInvoice extends Model
 
     public const STATUS_OVERDUE = 'overdue';
 
+    public const POSTING_SOURCE_ORDER = 'order';
+
+    public const POSTING_SOURCE_DIRECT = 'direct';
+
     protected $fillable = [
         'user_id',
         'supplier_id',
+        'purchase_order_id',
+        'posting_source',
         'warehouse_id',
         'date',
         'due_date',
         'reference',
         'supplier_invoice_number',
         'currency',
+        'subtotal',
         'vat_rate',
         'vat_amount',
         'total',
@@ -42,11 +49,13 @@ class PurchaseInvoice extends Model
         'notes',
         'internal_notes',
         'journal_entry_id',
+        'posted_at',
+        'inventory_posted_at',
     ];
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
     }
 
     protected function casts(): array
@@ -58,6 +67,9 @@ class PurchaseInvoice extends Model
             'vat_amount' => 'decimal:4',
             'total' => 'decimal:4',
             'paid_amount' => 'decimal:4',
+            'subtotal' => 'decimal:4',
+            'posted_at' => 'datetime',
+            'inventory_posted_at' => 'datetime',
         ];
     }
 
@@ -86,6 +98,21 @@ class PurchaseInvoice extends Model
         };
     }
 
+    public function journalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class);
+    }
+
+    public function isPosted(): bool
+    {
+        return $this->posted_at !== null && $this->journal_entry_id !== null;
+    }
+
+    public function isInventoryPosted(): bool
+    {
+        return $this->inventory_posted_at !== null;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -94,6 +121,11 @@ class PurchaseInvoice extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
     }
 
     public function warehouse(): BelongsTo

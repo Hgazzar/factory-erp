@@ -2,23 +2,33 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\AuditTrail;
+use App\Models\BomList;
 use App\Models\Item;
 use App\Models\ItemBomComponent;
+use App\Services\Manufacturing\BomListService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ItemBomController extends Controller
 {
+    use ResolvesOperationsTenant;
+
+    public function __construct(
+        private readonly BomListService $bomLists,
+    ) {}
+
     /**
-     * مزامنة وصفة التصنيع: حذف المكونات السابقة للمنتج التام وإدراج الصفوف الجديدة.
+     * مزامنة وصفة التصنيع عبر BomList النشطة (مصدر الحقيقة) + مرآة ItemBomComponent للواجهة.
      */
     public function update(Request $request, Item $item): RedirectResponse
     {
         if ($item->type !== Item::TYPE_FINISHED_GOOD) {
             abort(403);
         }
+
+        $tenantUserId = $this->resolveOperationsTenantUserId();
 
         $validated = $request->validate([
             'components' => ['nullable', 'array'],
@@ -31,7 +41,12 @@ class ItemBomController extends Controller
 
         foreach ($rows as $row) {
             $cid = (int) $row['component_item_id'];
-            $comp = Item::query()->find($cid);
+            $comp = Item::query()
+                ->withoutGlobalScopes()
+                ->where('user_id', $tenantUserId)
+                ->whereKey($cid)
+                ->first();
+
             if (! $comp || $comp->type !== Item::TYPE_RAW_MATERIAL || ! $comp->is_active) {
                 return redirect()
                     ->back()
@@ -47,8 +62,7 @@ class ItemBomController extends Controller
             $seen[$cid] = true;
         }
 
-        $oldLines = ItemBomComponent::query()
-            ->where('finished_item_id', $item->id)
+        $oldLines = $item->bomComponents()
             ->with('componentItem:id,code,name_ar')
             ->get()
             ->map(fn ($c) => [
@@ -60,17 +74,18 @@ class ItemBomController extends Controller
             ->all();
 
         try {
-            DB::transaction(function () use ($item, $rows) {
-                ItemBomComponent::query()->where('finished_item_id', $item->id)->delete();
+            if ($rows === []) {
+                BomList::query()
+                    ->withoutGlobalScopes()
+                    ->where('user_id', $tenantUserId)
+                    ->where('item_id', $item->id)
+                    ->where('status', BomList::STATUS_ACTIVE)
+                    ->update(['status' => BomList::STATUS_OBSOLETE]);
 
-                foreach ($rows as $row) {
-                    ItemBomComponent::create([
-                        'finished_item_id' => $item->id,
-                        'component_item_id' => (int) $row['component_item_id'],
-                        'quantity_per_unit' => $row['quantity_per_unit'],
-                    ]);
-                }
-            });
+                ItemBomComponent::query()->where('finished_item_id', $item->id)->delete();
+            } else {
+                $this->bomLists->syncActiveBomFromItemComponents($tenantUserId, (int) $item->id, $rows);
+            }
         } catch (\Throwable $e) {
             return redirect()
                 ->back()

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'دورة رواتب جديدة - MIRADA ERP')
+@section('title', 'دورة رواتب جديدة - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>

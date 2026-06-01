@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'تقرير انحرافات التصنيع - UFUQ ERP')
+@section('title', 'تقرير انحرافات التصنيع - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-blue-600">الرئيسية</a>

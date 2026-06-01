@@ -8,6 +8,7 @@ use App\Models\DeliveryOrder;
 use App\Models\Item;
 use App\Models\ItemWarehouse;
 use App\Models\JournalEntry;
+use App\Models\StockMovement;
 use App\Models\User;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\HttpWorkflowTestCase;
@@ -63,59 +64,39 @@ final class DeliveryOrderHttpTest extends HttpWorkflowTestCase
     }
 
     #[Test]
-    public function admin_deliver_via_http_updates_inventory_financials_and_redirects_with_success(): void
+    public function admin_deliver_via_http_updates_status_without_inventory_or_journal(): void
     {
         $seed = $this->seedDeliveryOrderReadyToDeliver();
         $delivery = $seed['delivery'];
-        $expectedCogs = round(4 * 50 + 10 * 12, 4);
 
         $response = $this->actingAs($this->tenant)->post(
             route('sales.delivery-orders.deliver', $delivery),
         );
 
         $response->assertRedirect(route('sales.delivery-orders.show', $delivery->id));
-        $response->assertSessionHas(
-            'success',
-            'تم تأكيد التسليم وتحديث رصيد الأصناف (حسب نوع الصنف).',
-        );
+        $response->assertSessionHas('success');
 
         $delivery->refresh();
         $this->assertSame(DeliveryOrder::STATUS_DELIVERED, $delivery->status);
-        $this->assertNotNull($delivery->journal_entry_id);
+        $this->assertNull($delivery->journal_entry_id);
 
-        $this->assertItemCurrentStock($seed['finished'], 16.0);
-        $this->assertItemCurrentStock($seed['raw'], 90.0);
-        $this->assertPivotQuantity($seed['finished'], $seed['warehouse'], 16.0);
-        $this->assertPivotQuantity($seed['raw'], $seed['warehouse'], 90.0);
+        $this->assertItemCurrentStock($seed['finished'], 20.0);
+        $this->assertItemCurrentStock($seed['raw'], 100.0);
+        $this->assertPivotQuantity($seed['finished'], $seed['warehouse'], 20.0);
+        $this->assertPivotQuantity($seed['raw'], $seed['warehouse'], 100.0);
 
-        $this->assertStockMovementExists(
-            $seed['finished'],
-            $seed['warehouse'],
-            'delivery_out',
-            -4.0,
-            DeliveryOrder::class,
-            (int) $delivery->id,
+        $this->assertSame(
+            0,
+            StockMovement::withoutGlobalScopes()
+                ->where('reference_type', DeliveryOrder::class)
+                ->where('reference_id', $delivery->id)
+                ->count()
         );
-        $this->assertStockMovementExists(
-            $seed['raw'],
-            $seed['warehouse'],
-            'delivery_out',
-            -10.0,
-            DeliveryOrder::class,
-            (int) $delivery->id,
-        );
-
-        $entry = JournalEntry::withoutGlobalScopes()->findOrFail($delivery->journal_entry_id);
-        $this->assertJournalIsBalanced($entry, $expectedCogs);
-        $this->assertEqualsWithDelta(
-            $expectedCogs,
-            $this->journalLineAmount($entry, $this->ledger['cogs'], 'debit'),
-            0.0001
-        );
+        $this->assertSame(0, JournalEntry::query()->count());
     }
 
     #[Test]
-    public function deliver_business_failure_rolls_back_and_shows_error_without_changing_data(): void
+    public function deliver_succeeds_even_when_warehouse_stock_is_lower_than_delivery_qty(): void
     {
         $seed = $this->seedDeliveryOrderReadyToDeliver();
 
@@ -132,11 +113,9 @@ final class DeliveryOrderHttpTest extends HttpWorkflowTestCase
             ->post(route('sales.delivery-orders.deliver', $delivery));
 
         $response->assertRedirect(route('sales.delivery-orders.show', $delivery));
-        $response->assertSessionHas('error');
+        $response->assertSessionHas('success');
 
-        $this->assertSame(DeliveryOrder::STATUS_PENDING, $delivery->fresh()->status);
-        $this->assertNull($delivery->fresh()->journal_entry_id);
+        $this->assertSame(DeliveryOrder::STATUS_DELIVERED, $delivery->fresh()->status);
         $this->assertItemCurrentStock($finished, 2.0);
-        $this->assertPivotQuantity($finished, $seed['warehouse'], 2.0);
     }
 }

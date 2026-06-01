@@ -34,7 +34,7 @@
     <div class="head">
         <div>
             <h1 class="title">أمر بيع SO-{{ $salesOrder->id }}</h1>
-            <div class="sub">MIRADA ERP</div>
+            <div class="sub">{{ config('app.name') }}</div>
         </div>
         <div class="sub">{{ now()->format('Y-m-d H:i') }}</div>
     </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'طباعة - MIRADA ERP')</title>
+    <title>@yield('title', 'طباعة - '.config('app.name'))</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
@@ -120,7 +120,7 @@
             <div class="print-logo-wrap">
                 @yield('company_logo')
                 <div>
-                    <h1 class="print-company-name">@yield('company_name', 'MIRADA ERP')</h1>
+                    <h1 class="print-company-name">@yield('company_name', config('app.name'))</h1>
                     <p class="print-tax-number">@yield('company_tax', 'الرقم الضريبي: —')</p>
                 </div>
             </div>

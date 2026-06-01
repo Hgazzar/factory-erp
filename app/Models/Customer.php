@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
-use App\Models\Scopes\CustomerTenantScope;
+use App\Models\Concerns\ResolvesRouteBindingForTenant;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -16,6 +17,7 @@ class Customer extends Model
 {
     use HasAttachments;
     use HasFactory;
+    use ResolvesRouteBindingForTenant;
     use SoftDeletes;
 
     protected $appends = [
@@ -41,6 +43,10 @@ class Customer extends Model
         'vat_number',
         'credit_limit',
         'payment_terms_days',
+        'opening_balance',
+        'opening_balance_date',
+        'opening_balance_journal_entry_id',
+        'receivable_ledger_account_id',
         'address',
         'country',
         'city',
@@ -68,6 +74,8 @@ class Customer extends Model
         return [
             'is_active' => 'boolean',
             'credit_limit' => 'decimal:2',
+            'opening_balance' => 'decimal:4',
+            'opening_balance_date' => 'date',
             'payment_terms_days' => 'integer',
             'converted_at' => 'datetime',
             'crm_last_activity_at' => 'datetime',
@@ -78,7 +86,7 @@ class Customer extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new CustomerTenantScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
 
         static::creating(function (Customer $customer) {
             if ($customer->crm_status === 'potential' && empty($customer->lead_number)) {
@@ -117,34 +125,6 @@ class Customer extends Model
     }
 
     /**
-     * @param  mixed  $value
-     */
-    public function resolveRouteBinding($value, $field = null): ?Model
-    {
-        $field = $field ?: $this->getRouteKeyName();
-
-        $customer = static::withoutGlobalScopes()
-            ->where($field, $value)
-            ->first();
-
-        if (! $customer) {
-            abort(404);
-        }
-
-        if (! auth()->check()) {
-            abort(403);
-        }
-
-        if ((int) $customer->user_id !== (int) auth()->id()) {
-            abort(403);
-        }
-
-        return $customer;
-    }
-
-    /**
-     * استعلام معزول صراحةً بالمستأجر (مفيد للوحدات ومهام الخلفية دون الاعتماد على الجلسة).
-     *
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
     public static function forTenant(int $userId): \Illuminate\Database\Eloquent\Builder
@@ -153,8 +133,6 @@ class Customer extends Model
     }
 
     /**
-     * تمهيد لدور sales_agent لاحقاً: يقيّد بالعملاء المسندين للمستخدم عند تفعيل الدور.
-     *
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
     public static function queryForCrmUser(User $user): \Illuminate\Database\Eloquent\Builder
@@ -178,6 +156,16 @@ class Customer extends Model
         return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
+    public function receivableLedgerAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'receivable_ledger_account_id');
+    }
+
+    public function openingBalanceJournalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'opening_balance_journal_entry_id');
+    }
+
     public function crmAppointments(): HasMany
     {
         return $this->hasMany(CrmAppointment::class, 'customer_id');
@@ -188,9 +176,17 @@ class Customer extends Model
         return $this->hasMany(CrmActivity::class, 'customer_id')->latest();
     }
 
-    /**
-     * أعلى رقم تسلسلي بعد بادئة CUST- لهذا المستخدم، ثم زيادة واحدة (CUST-0001).
-     */
+    public function getLocalizedDisplayName(?string $locale = null): string
+    {
+        $locale = $locale ?? app()->getLocale();
+
+        if ($locale === 'ar' && filled($this->name_ar)) {
+            return (string) $this->name_ar;
+        }
+
+        return (string) ($this->display_name ?: $this->name ?: $this->code ?: '#'.$this->id);
+    }
+
     public static function generateNextCodeForUser(int $userId): string
     {
         $codes = static::withoutGlobalScopes()
@@ -205,10 +201,7 @@ class Customer extends Model
             }
         }
 
-        $next = $max + 1;
-        if ($next < 1) {
-            $next = 1;
-        }
+        $next = max(1, $max + 1);
 
         do {
             $code = 'CUST-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
@@ -222,7 +215,6 @@ class Customer extends Model
         return $code;
     }
 
-    /** رقم عميل محتمل فريد لكل مستأجر (LEAD-0001). */
     public static function generateNextLeadNumberForUser(int $userId): string
     {
         $nums = static::withoutGlobalScopes()
@@ -238,10 +230,7 @@ class Customer extends Model
             }
         }
 
-        $next = $max + 1;
-        if ($next < 1) {
-            $next = 1;
-        }
+        $next = max(1, $max + 1);
 
         do {
             $candidate = 'LEAD-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
@@ -269,7 +258,6 @@ class Customer extends Model
         return (string) ($this->name ?? '');
     }
 
-    /** تسمية عرض لمصدر العميل المحتمل (مفتاح مخزّن أو نص حر قديم). */
     public static function labelForLeadSource(?string $value): string
     {
         if ($value === null || $value === '') {
@@ -312,7 +300,6 @@ class Customer extends Model
         return $value;
     }
 
-    /** تسمية عرض لحالة مسار CRM للعميل. */
     public static function labelForCrmStatus(?string $value): string
     {
         if ($value === null || $value === '') {
@@ -328,13 +315,11 @@ class Customer extends Model
         };
     }
 
-    /** نوع سجل جهة الاتصال في القوائم: شركة أم شخص وفق اسم الشركة. */
     public static function contactRecordTypeLabel(?string $companyName): string
     {
         return filled(trim((string) $companyName)) ? 'شركة' : 'شخص';
     }
 
-    /** عنوان مختصر (مدينة، منطقة، دولة) لعرض الموقع في جداول CRM. */
     public function crmShortLocation(): string
     {
         $parts = collect([$this->city, $this->region, $this->country])
@@ -348,6 +333,11 @@ class Customer extends Model
     public function salesInvoices(): HasMany
     {
         return $this->hasMany(SalesInvoice::class);
+    }
+
+    public function salesPayments(): HasMany
+    {
+        return $this->hasMany(SalesPayment::class);
     }
 
     public function salesReturns(): HasMany
@@ -379,5 +369,10 @@ class Customer extends Model
     public function currentMembership(): HasOne
     {
         return $this->hasOne(CrmCustomerMembership::class, 'customer_id')->latestOfMany();
+    }
+
+    public function hasPostedOpeningBalance(): bool
+    {
+        return $this->opening_balance_journal_entry_id !== null;
     }
 }

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Inventory;
 
+use App\Models\BomList;
+use App\Models\BomListLine;
 use App\Models\Item;
-use App\Models\ItemBomComponent;
 use App\Models\ProductionLog;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
@@ -32,15 +33,12 @@ final class ProductionEntryInventoryServiceTest extends InventoryTestCase
         $raw = Item::factory()->forTenant($this->tenant)->rawMaterial()->create(['cost' => 10.0]);
         $finished = Item::factory()->forTenant($this->tenant)->finishedGood()->create(['cost' => 0]);
 
-        ItemBomComponent::query()->create([
-            'finished_item_id' => $finished->id,
-            'component_item_id' => $raw->id,
-            'quantity_per_unit' => 2,
-        ]);
+        $this->createActiveBomList($finished, $raw, quantityPerUnit: 2.0);
 
         $this->givenStock($raw, $warehouse, quantity: 100.0);
 
         $log = ProductionLog::query()->create([
+            'user_id' => $this->tenant->id,
             'item_id' => $finished->id,
             'warehouse_id' => $warehouse->id,
             'quantity' => 5,
@@ -70,6 +68,7 @@ final class ProductionEntryInventoryServiceTest extends InventoryTestCase
         $finished = Item::factory()->forTenant($this->tenant)->finishedGood()->create(['cost' => 35.0]);
 
         $log = ProductionLog::query()->create([
+            'user_id' => $this->tenant->id,
             'item_id' => $finished->id,
             'warehouse_id' => $warehouse->id,
             'quantity' => 4,
@@ -92,15 +91,12 @@ final class ProductionEntryInventoryServiceTest extends InventoryTestCase
         $raw = Item::factory()->forTenant($this->tenant)->rawMaterial()->create(['code' => 'RM-PE', 'cost' => 5.0]);
         $finished = Item::factory()->forTenant($this->tenant)->finishedGood()->create();
 
-        ItemBomComponent::query()->create([
-            'finished_item_id' => $finished->id,
-            'component_item_id' => $raw->id,
-            'quantity_per_unit' => 3,
-        ]);
+        $this->createActiveBomList($finished, $raw, quantityPerUnit: 3.0);
 
         $this->givenStock($raw, $warehouse, quantity: 5.0);
 
         $log = ProductionLog::query()->create([
+            'user_id' => $this->tenant->id,
             'item_id' => $finished->id,
             'warehouse_id' => $warehouse->id,
             'quantity' => 10,
@@ -120,15 +116,12 @@ final class ProductionEntryInventoryServiceTest extends InventoryTestCase
         $raw = Item::factory()->forTenant($this->tenant)->rawMaterial()->create(['cost' => 0]);
         $finished = Item::factory()->forTenant($this->tenant)->finishedGood()->create();
 
-        ItemBomComponent::query()->create([
-            'finished_item_id' => $finished->id,
-            'component_item_id' => $raw->id,
-            'quantity_per_unit' => 1,
-        ]);
+        $this->createActiveBomList($finished, $raw, quantityPerUnit: 1.0);
 
         $this->givenStock($raw, $warehouse, quantity: 50.0);
 
         $log = ProductionLog::query()->create([
+            'user_id' => $this->tenant->id,
             'item_id' => $finished->id,
             'warehouse_id' => $warehouse->id,
             'quantity' => 2,
@@ -148,6 +141,7 @@ final class ProductionEntryInventoryServiceTest extends InventoryTestCase
         $raw = Item::factory()->forTenant($this->tenant)->rawMaterial()->create();
 
         $log = ProductionLog::query()->create([
+            'user_id' => $this->tenant->id,
             'item_id' => $raw->id,
             'warehouse_id' => $warehouse->id,
             'quantity' => 5,
@@ -158,5 +152,26 @@ final class ProductionEntryInventoryServiceTest extends InventoryTestCase
 
         $this->assertFalse($result['applied']);
         $this->assertSame(0, StockMovement::withoutGlobalScopes()->count());
+    }
+
+    private function createActiveBomList(Item $finished, Item $raw, float $quantityPerUnit, float $scrapPercent = 0): BomList
+    {
+        $bom = BomList::query()->create([
+            'user_id' => $this->tenant->id,
+            'item_id' => $finished->id,
+            'name' => 'Test BOM',
+            'version' => '1.0',
+            'status' => BomList::STATUS_ACTIVE,
+        ]);
+
+        BomListLine::query()->create([
+            'bom_list_id' => $bom->id,
+            'component_item_id' => $raw->id,
+            'quantity' => $quantityPerUnit,
+            'scrap_percent' => $scrapPercent,
+            'sort_order' => 0,
+        ]);
+
+        return $bom;
     }
 }

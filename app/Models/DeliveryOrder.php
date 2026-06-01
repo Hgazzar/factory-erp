@@ -4,8 +4,6 @@ namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToAuthenticatedUserScope;
-use App\Services\InventoryAccountingService;
-use App\Services\InventoryService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -71,7 +69,7 @@ class DeliveryOrder extends Model
     }
 
     /**
-     * تأكيد التسليم: خصم من مخزن محدد للأصناف القابلة للتخزين وتسجيل COGS.
+     * تأكيد التسليم (لوجستي فقط). خصم المخزون والقيود يتم عند ترحيل فاتورة المبيعات.
      */
     public function markAsDelivered(): void
     {
@@ -92,23 +90,6 @@ class DeliveryOrder extends Model
 
             $statusBefore = $delivery->status;
 
-            $lines = $delivery->items()->with('item:id,code,name_ar,type,current_stock,cost')->get();
-            $inventory = app(InventoryService::class);
-
-            foreach ($lines as $line) {
-                $item = $line->item;
-                if (! $item || ! in_array($item->type, [Item::TYPE_RAW_MATERIAL, Item::TYPE_FINISHED_GOOD], true)) {
-                    continue;
-                }
-
-                $need = (float) $line->quantity;
-                $inventory->stockOutForDeliveryOrder($item, $warehouseId, $need, $delivery);
-            }
-
-            $split = app(InventoryAccountingService::class)->summarizeDeliveryLinesForCost($lines);
-            $journalEntry = app(InventoryAccountingService::class)->createDeliveryCostEntry($delivery, $split);
-
-            $delivery->journal_entry_id = $journalEntry?->id;
             $delivery->status = self::STATUS_DELIVERED;
             if (! $delivery->delivery_date) {
                 $delivery->delivery_date = now()->toDateString();
@@ -123,7 +104,6 @@ class DeliveryOrder extends Model
             ], [
                 'status' => self::STATUS_DELIVERED,
                 'delivery_number' => $delivery->delivery_number,
-                'journal_entry_id' => $delivery->journal_entry_id,
                 'warehouse_id' => $warehouseId,
             ]);
         });

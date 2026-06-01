@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Item;
+use App\Services\Tenant\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,8 @@ class UpdateItemRequest extends FormRequest
 
     public function rules(): array
     {
-        $userId = (int) auth()->id();
+        $userId = app(TenantContext::class)->resolveTenantUserId()
+            ?? (int) auth()->id();
         $item = $this->route('item');
 
         return [

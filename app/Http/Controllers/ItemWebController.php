@@ -3,75 +3,71 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersistsMorphAttachments;
+use App\Http\Controllers\Concerns\RespondsAsHeadlessOrWeb;
 use App\Http\Requests\StoreItemRequest;
 use App\Http\Requests\UpdateItemRequest;
 use App\Models\Item;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use App\Services\Inventory\InventoryItemService;
 use App\Services\UniversalImportService;
+use App\Support\Api\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ItemWebController extends Controller
 {
     use PersistsMorphAttachments;
+    use RespondsAsHeadlessOrWeb;
 
     /**
-     * عرض قائمة الأصناف.
+     * عرض قائمة الأصناف (Blade) أو JSON للـ Headless API.
      */
-    public function index(Request $request): View|StreamedResponse
+    public function index(Request $request, InventoryItemService $inventoryItems): View|StreamedResponse|JsonResponse
     {
-        $search = trim((string) $request->string('search'));
-        $warehouseId = $request->integer('warehouse_id');
-        $category = (string) $request->string('category');
-        $status = (string) $request->string('status');
-
-        $stockSubquery = '(SELECT COALESCE(SUM(iw.quantity), 0) FROM item_warehouse iw WHERE iw.item_id = items.id)';
-
-        $query = Item::query()
-            ->with(['unit:id,name_ar,code', 'warehouses:id,name_ar,name_en,code', 'attachments'])
-            ->withSum('warehouses as total_stock', 'item_warehouse.quantity');
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', '%'.$search.'%')
-                    ->orWhere('name_ar', 'like', '%'.$search.'%')
-                    ->orWhere('name_en', 'like', '%'.$search.'%');
-            });
-        }
-
-        if ($warehouseId > 0) {
-            $query->whereHas('warehouses', function ($q) use ($warehouseId) {
-                $q->where('warehouses.id', $warehouseId);
-            });
-        }
-
-        if (in_array($category, Item::typeValues(), true)) {
-            $query->where('type', $category);
-        }
-
-        if (in_array($status, ['available', 'low', 'out'], true)) {
-            if ($status === 'out') {
-                $query->whereRaw($stockSubquery.' <= 0');
-            } elseif ($status === 'low') {
-                $query->whereRaw($stockSubquery.' > 0')
-                    ->whereRaw('COALESCE(items.min_stock, 0) > 0')
-                    ->whereRaw($stockSubquery.' <= items.min_stock');
-            } else {
-                $query->whereRaw('('.$stockSubquery.' > COALESCE(items.min_stock, 0)) OR ('.$stockSubquery.' > 0 AND COALESCE(items.min_stock, 0) = 0)');
+        try {
+            $tenantUserId = $inventoryItems->resolveTenantUserId();
+        } catch (RuntimeException $e) {
+            if ($this->wantsApiResponse($request)) {
+                return ApiResponse::error($e->getMessage(), 403, 'tenant_unresolved');
             }
+            abort(403, $e->getMessage());
         }
 
-        $query->orderBy('code');
+        $filters = [
+            'search' => trim((string) $request->string('search')),
+            'warehouse_id' => $request->integer('warehouse_id'),
+            'category' => (string) $request->string('category'),
+            'status' => (string) $request->string('status'),
+            'per_page' => $request->integer('per_page') ?: 15,
+        ];
 
         if ($request->query('export') === 'csv') {
-            return $this->exportCsv($query->get());
+            return $this->exportCsv($inventoryItems->listItemsForExport($tenantUserId, $filters));
         }
 
-        $items = $query->paginate(15)->withQueryString();
+        if ($this->wantsApiResponse($request)) {
+            $paginator = $inventoryItems->paginateItems($tenantUserId, $filters);
+
+            return ApiResponse::paginated(
+                $paginator,
+                fn (Item $item) => $inventoryItems->toApiSummary($item),
+                [
+                    'filters' => [
+                        'search' => $filters['search'],
+                        'warehouse_id' => $filters['warehouse_id'] ?: null,
+                        'category' => $filters['category'] ?: null,
+                        'status' => $filters['status'] ?: null,
+                    ],
+                ]
+            );
+        }
+
+        $items = $inventoryItems->paginateItems($tenantUserId, $filters);
         $warehouses = Warehouse::query()->active()->orderBy('name_ar')->get(['id', 'name_ar', 'name_en', 'code']);
 
         $categories = [
@@ -86,24 +82,39 @@ class ItemWebController extends Controller
             'out' => 'نفاد الكمية',
         ];
 
-        return view('items.index', compact(
-            'items',
-            'warehouses',
-            'categories',
-            'statuses',
-            'search',
-            'warehouseId',
-            'category',
-            'status'
-        ));
+        return view('items.index', [
+            'items' => $items,
+            'warehouses' => $warehouses,
+            'categories' => $categories,
+            'statuses' => $statuses,
+            'search' => $filters['search'],
+            'warehouseId' => $filters['warehouse_id'],
+            'category' => $filters['category'],
+            'status' => $filters['status'],
+        ]);
     }
 
     /**
-     * عرض تفاصيل الصنف وإدارة BOM للمنتج التام.
+     * عرض تفاصيل الصنف (Blade) أو JSON مع كميات المستودعات.
      */
-    public function show(Item $item): View
+    public function show(Request $request, Item $item, InventoryItemService $inventoryItems): View|JsonResponse
     {
-        $item->load(['unit:id,name_ar,code', 'bomComponents.componentItem:id,code,name_ar,type', 'attachments']);
+        try {
+            $tenantUserId = $inventoryItems->resolveTenantUserId();
+            $item = $inventoryItems->findItemForTenant($tenantUserId, (int) $item->id);
+            $quantities = $inventoryItems->warehouseQuantities($tenantUserId, (int) $item->id);
+        } catch (RuntimeException $e) {
+            if ($this->wantsApiResponse($request)) {
+                return ApiResponse::error($e->getMessage(), 404, 'item_not_found');
+            }
+            abort(404, $e->getMessage());
+        }
+
+        if ($this->wantsApiResponse($request)) {
+            return ApiResponse::success(
+                $inventoryItems->toApiDetail($item, $quantities)
+            );
+        }
 
         $rawMaterials = Item::query()
             ->active()
@@ -170,42 +181,51 @@ class ItemWebController extends Controller
     /**
      * حفظ صنف جديد وربطه بالمخزن الافتراضي.
      */
-    public function store(StoreItemRequest $request): RedirectResponse
+    public function store(StoreItemRequest $request, InventoryItemService $inventoryItems): RedirectResponse|JsonResponse
     {
+        try {
+            $tenantUserId = $inventoryItems->resolveTenantUserId();
+        } catch (RuntimeException $e) {
+            if ($this->wantsApiResponse($request)) {
+                return ApiResponse::error($e->getMessage(), 403, 'tenant_unresolved');
+            }
+            abort(403, $e->getMessage());
+        }
+
         $validated = $request->validated();
         $warehouseId = (int) $validated['warehouse_id'];
-        $initialQuantity = $validated['initial_quantity'] ?? 0;
+        $initialQuantity = (float) ($validated['initial_quantity'] ?? 0);
         unset($validated['warehouse_id'], $validated['initial_quantity']);
 
         if (array_key_exists('attachments', $validated)) {
             unset($validated['attachments']);
         }
 
-        $uid = (int) auth()->id();
         $uploads = $request->file('attachments', []) ?? [];
         if (! is_array($uploads)) {
             $uploads = [];
         }
 
-        DB::transaction(function () use ($validated, $warehouseId, $initialQuantity, $request, $uid, $uploads) {
-            $item = Item::create(array_merge($validated, [
-                'user_id' => $uid,
-                'barcode' => $request->filled('barcode') ? $request->string('barcode')->toString() : null,
-                'min_stock' => $validated['min_stock'] ?? 0,
-                'cost' => 0,
-                'selling_price' => $validated['selling_price'] ?? null,
-                'is_active' => $request->boolean('is_active'),
-            ]));
+        $attributes = array_merge($validated, [
+            'barcode' => $request->filled('barcode') ? $request->string('barcode')->toString() : null,
+            'min_stock' => $validated['min_stock'] ?? 0,
+            'cost' => 0,
+            'selling_price' => $validated['selling_price'] ?? null,
+            'is_active' => $request->boolean('is_active'),
+        ]);
 
-            $item->warehouses()->attach($warehouseId, [
-                'quantity' => $initialQuantity,
-                'reserved_quantity' => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $item = $inventoryItems->createItem($tenantUserId, $attributes, $warehouseId, $initialQuantity);
 
-            $this->persistMorphAttachments($item, $uploads, $uid, 'items');
-        });
+        if ($uploads !== []) {
+            $this->persistMorphAttachments($item, $uploads, $tenantUserId, 'items');
+        }
+
+        if ($this->wantsApiResponse($request)) {
+            return ApiResponse::success(
+                ['item' => $inventoryItems->toApiSummary($item->fresh(['unit:id,name_ar,code']))],
+                201
+            );
+        }
 
         return redirect()->route('items.index')->with('success', 'تم حفظ الصنف وربطه بالمستودع الافتراضي بنجاح');
     }
@@ -219,49 +239,80 @@ class ItemWebController extends Controller
         return view('items.edit', compact('item', 'units', 'warehouses'));
     }
 
-    public function update(UpdateItemRequest $request, Item $item): RedirectResponse
+    public function update(UpdateItemRequest $request, Item $item, InventoryItemService $inventoryItems): RedirectResponse|JsonResponse
     {
+        try {
+            $tenantUserId = $inventoryItems->resolveTenantUserId();
+        } catch (RuntimeException $e) {
+            if ($this->wantsApiResponse($request)) {
+                return ApiResponse::error($e->getMessage(), 403, 'tenant_unresolved');
+            }
+            abort(403, $e->getMessage());
+        }
+
         $data = $request->validated();
         if (array_key_exists('attachments', $data)) {
             unset($data['attachments']);
         }
 
-        $uid = (int) auth()->id();
         $uploads = $request->file('attachments', []) ?? [];
         if (! is_array($uploads)) {
             $uploads = [];
         }
 
-        DB::transaction(function () use ($request, $item, $data, $uid, $uploads) {
-            $update = [
-                'code' => $data['code'],
-                'barcode' => $data['barcode'] ?? null,
-                'name_ar' => $data['name_ar'],
-                'name_en' => $data['name_en'] ?? null,
-                'unit_id' => $data['unit_id'],
-                'type' => $data['type'],
-                'min_stock' => $data['min_stock'] ?? 0,
-                'supplier' => $data['supplier'] ?? null,
-                'material_type' => $data['material_type'] ?? null,
-                'description' => $data['description'] ?? null,
-                'is_active' => $request->boolean('is_active'),
-            ];
+        $attributes = [
+            'code' => $data['code'],
+            'barcode' => $data['barcode'] ?? null,
+            'name_ar' => $data['name_ar'],
+            'name_en' => $data['name_en'] ?? null,
+            'unit_id' => $data['unit_id'],
+            'type' => $data['type'],
+            'min_stock' => $data['min_stock'] ?? 0,
+            'supplier' => $data['supplier'] ?? null,
+            'material_type' => $data['material_type'] ?? null,
+            'description' => $data['description'] ?? null,
+            'is_active' => $request->boolean('is_active'),
+        ];
 
-            $item->update(array_merge($update, [
-                'user_id' => $uid,
-            ]));
+        try {
+            $item = $inventoryItems->updateItem($tenantUserId, (int) $item->id, $attributes);
+        } catch (RuntimeException $e) {
+            if ($this->wantsApiResponse($request)) {
+                return ApiResponse::error($e->getMessage(), 404, 'item_not_found');
+            }
+            abort(404, $e->getMessage());
+        }
 
-            $this->persistMorphAttachments($item, $uploads, $uid, 'items');
-        });
+        if ($uploads !== []) {
+            $this->persistMorphAttachments($item, $uploads, $tenantUserId, 'items');
+        }
+
+        if ($this->wantsApiResponse($request)) {
+            return ApiResponse::success([
+                'item' => $inventoryItems->toApiSummary($item->fresh(['unit:id,name_ar,code'])),
+            ]);
+        }
 
         return redirect()->route('items.index')->with('success', 'تم تحديث الصنف بنجاح.');
     }
 
-    public function destroy(Item $item): RedirectResponse
+    public function destroy(Request $request, Item $item, InventoryItemService $inventoryItems): RedirectResponse|JsonResponse
     {
-        // حذف الارتباط بالمخازن أولاً ثم حذف الصنف
-        $item->warehouses()->detach();
-        $item->delete();
+        try {
+            $tenantUserId = $inventoryItems->resolveTenantUserId();
+            $inventoryItems->deleteItem($tenantUserId, (int) $item->id);
+        } catch (RuntimeException $e) {
+            if ($this->wantsApiResponse($request)) {
+                $status = str_contains($e->getMessage(), 'غير موجود') ? 404 : 403;
+
+                return ApiResponse::error($e->getMessage(), $status, 'item_delete_failed');
+            }
+            abort(str_contains($e->getMessage(), 'غير موجود') ? 404 : 403, $e->getMessage());
+        }
+
+        if ($this->wantsApiResponse($request)) {
+            return ApiResponse::success(['deleted' => true]);
+        }
 
         return redirect()->route('items.index')->with('success', 'تم حذف الصنف.');
     }

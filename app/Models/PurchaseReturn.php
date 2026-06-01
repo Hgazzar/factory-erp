@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +15,9 @@ class PurchaseReturn extends Model
     use ResolvesRouteBindingForTenant;
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_SHIPPED = 'shipped';
+
     public const STATUS_COMPLETED = 'completed';
 
     protected $fillable = [
@@ -30,16 +32,20 @@ class PurchaseReturn extends Model
         'reference',
         'notes',
         'internal_notes',
+        'subtotal',
         'total',
         'currency',
         'vat_amount',
         'status',
         'debit_note_id',
+        'journal_entry_id',
+        'posted_at',
+        'inventory_posted_at',
     ];
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
 
         static::creating(function (PurchaseReturn $model): void {
             if (! $model->user_id && $model->supplier_id) {
@@ -54,9 +60,22 @@ class PurchaseReturn extends Model
     {
         return [
             'date' => 'date',
+            'subtotal' => 'decimal:4',
             'total' => 'decimal:4',
             'vat_amount' => 'decimal:4',
+            'posted_at' => 'datetime',
+            'inventory_posted_at' => 'datetime',
         ];
+    }
+
+    public function isPosted(): bool
+    {
+        return $this->posted_at !== null && $this->journal_entry_id !== null;
+    }
+
+    public function isInventoryPosted(): bool
+    {
+        return $this->inventory_posted_at !== null;
     }
 
     public function getStatusLabelAttribute(): string
@@ -92,6 +111,11 @@ class PurchaseReturn extends Model
     public function debitNote(): BelongsTo
     {
         return $this->belongsTo(DebitNote::class);
+    }
+
+    public function journalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class);
     }
 
     public function items(): HasMany

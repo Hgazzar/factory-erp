@@ -146,7 +146,7 @@ final class DefaultLedgerAccounts
         ], $userId);
     }
 
-    public static function ensureCurrentAssetsGroup(): Account
+    public static function ensureCurrentAssetsGroup(?int $userId = null): Account
     {
         return self::firstOrCreateAccount(self::CODE_CURRENT_ASSETS, [
             'name_ar' => 'الأصول المتداولة',
@@ -155,7 +155,7 @@ final class DefaultLedgerAccounts
             'parent_id' => null,
             'opening_balance' => 0,
             'is_active' => true,
-        ]);
+        ], $userId);
     }
 
     public static function ensureCurrentLiabilitiesGroup(): Account
@@ -170,9 +170,9 @@ final class DefaultLedgerAccounts
         ]);
     }
 
-    public static function ensureInventoryParent(): Account
+    public static function ensureInventoryParent(?int $userId = null): Account
     {
-        $pid = self::ensureCurrentAssetsGroup()->id;
+        $pid = self::ensureCurrentAssetsGroup($userId)->id;
 
         return self::firstOrCreateAccount(self::CODE_INVENTORY_PARENT, [
             'name_ar' => 'المخزون',
@@ -181,7 +181,7 @@ final class DefaultLedgerAccounts
             'parent_id' => $pid,
             'opening_balance' => 0,
             'is_active' => true,
-        ]);
+        ], $userId);
     }
 
     public static function ensureCogsRoot(): Account
@@ -194,6 +194,18 @@ final class DefaultLedgerAccounts
             'opening_balance' => 0,
             'is_active' => true,
         ]);
+    }
+
+    public static function ensureCogsRootForTenant(int $tenantUserId): Account
+    {
+        return self::firstOrCreateAccount(self::CODE_COGS, [
+            'name_ar' => 'تكلفة البضاعة المباعة',
+            'name_en' => 'Cost of Goods Sold',
+            'type' => Account::TYPE_EXPENSE,
+            'parent_id' => null,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $tenantUserId);
     }
 
     public static function ensureOperatingExpensesRoot(?int $userId = null): Account
@@ -250,9 +262,23 @@ final class DefaultLedgerAccounts
         ]);
     }
 
-    public static function inventoryRawMaterials(): Account
+    public static function accountsReceivableForTenant(int $tenantUserId): Account
     {
-        $pid = self::ensureInventoryParent()->id;
+        $pid = self::ensureCurrentAssetsGroupForTenant($tenantUserId)->id;
+
+        return self::firstOrCreateAccount(self::CODE_AR, [
+            'name_ar' => 'الذمم المدينة',
+            'name_en' => 'Accounts Receivable',
+            'type' => Account::TYPE_ASSET,
+            'parent_id' => $pid,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $tenantUserId);
+    }
+
+    public static function inventoryRawMaterials(?int $userId = null): Account
+    {
+        $pid = self::ensureInventoryParent($userId)->id;
 
         return self::firstOrCreateAccount(self::CODE_RAW_MATERIALS_INV, [
             'name_ar' => 'مخزن الخامات',
@@ -261,12 +287,12 @@ final class DefaultLedgerAccounts
             'parent_id' => $pid,
             'opening_balance' => 0,
             'is_active' => true,
-        ]);
+        ], $userId);
     }
 
-    public static function inventoryFinishedGoods(): Account
+    public static function inventoryFinishedGoods(?int $userId = null): Account
     {
-        $pid = self::ensureInventoryParent()->id;
+        $pid = self::ensureInventoryParent($userId)->id;
 
         return self::firstOrCreateAccount(self::CODE_FINISHED_GOODS_INV, [
             'name_ar' => 'مخزن المنتج التام',
@@ -275,7 +301,7 @@ final class DefaultLedgerAccounts
             'parent_id' => $pid,
             'opening_balance' => 0,
             'is_active' => true,
-        ]);
+        ], $userId);
     }
 
     public static function inventoryReceipts(): Account
@@ -332,6 +358,44 @@ final class DefaultLedgerAccounts
         ]);
     }
 
+    public static function salesRevenueForTenant(int $tenantUserId): Account
+    {
+        return self::firstOrCreateAccount(self::CODE_SALES_REVENUE, [
+            'name_ar' => 'إيرادات المبيعات',
+            'name_en' => 'Sales Revenue',
+            'type' => Account::TYPE_REVENUE,
+            'parent_id' => null,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $tenantUserId);
+    }
+
+    public static function vatPayableForTenant(int $tenantUserId): Account
+    {
+        $pid = self::ensureCurrentLiabilitiesGroupForTenant($tenantUserId)->id;
+
+        return self::firstOrCreateAccount(self::CODE_VAT_PAYABLE, [
+            'name_ar' => 'ضريبة القيمة المضافة المستحقة',
+            'name_en' => 'VAT Payable',
+            'type' => Account::TYPE_LIABILITY,
+            'parent_id' => $pid,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $tenantUserId);
+    }
+
+    private static function ensureCurrentLiabilitiesGroupForTenant(int $tenantUserId): Account
+    {
+        return self::firstOrCreateAccount(self::CODE_CURRENT_LIABILITIES, [
+            'name_ar' => 'الخصوم المتداولة',
+            'name_en' => 'Current Liabilities',
+            'type' => Account::TYPE_LIABILITY,
+            'parent_id' => null,
+            'opening_balance' => 0,
+            'is_active' => true,
+        ], $tenantUserId);
+    }
+
     public static function salesReturns(): Account
     {
         $parent = self::salesRevenue();
@@ -360,9 +424,9 @@ final class DefaultLedgerAccounts
         ]);
     }
 
-    public static function scrapExpense(): Account
+    public static function scrapExpense(?int $userId = null): Account
     {
-        $parent = self::ensureOperatingExpensesRoot();
+        $parent = self::ensureOperatingExpensesRoot($userId);
 
         return self::firstOrCreateAccount(self::CODE_SCRAP_EXPENSE, [
             'name_ar' => 'هالك وإتلاف',
@@ -371,7 +435,17 @@ final class DefaultLedgerAccounts
             'parent_id' => $parent->id,
             'opening_balance' => 0,
             'is_active' => true,
-        ]);
+        ], $userId);
+    }
+
+    /**
+     * يضمن حسابات قيد الإنتاج اللحظي لدليل مستأجر محدّد.
+     */
+    public static function provisionProductionEntryLedger(int $tenantUserId): void
+    {
+        self::inventoryRawMaterials($tenantUserId);
+        self::inventoryFinishedGoods($tenantUserId);
+        self::scrapExpense($tenantUserId);
     }
 
     /**

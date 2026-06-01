@@ -1,13 +1,14 @@
     @php
-        $quickAccessModules = [
-            ['label' => 'المحاسبة', 'subtitle' => 'لوحة المحاسبة', 'route' => 'finance.dashboard', 'iconBg' => 'rgba(2, 119, 189, 0.2)', 'iconColor' => '#0277bd', 'icon' => '<path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.471c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718H4z"/>'],
-            ['label' => 'المخازن', 'subtitle' => 'لوحة المخزون', 'route' => 'inventory.dashboard', 'iconBg' => 'rgba(245, 158, 11, 0.25)', 'iconColor' => '#ea580c', 'icon' => '<path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113z"/><path d="M15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6z"/>'],
-            ['label' => 'المبيعات', 'subtitle' => 'لوحة المبيعات', 'route' => 'sales.dashboard', 'iconBg' => 'rgba(46, 125, 50, 0.2)', 'iconColor' => '#2e7d32', 'icon' => '<path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5v12h-2V2h2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2z"/>'],
-            ['label' => 'نقاط البيع', 'subtitle' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'iconBg' => 'rgba(220, 38, 38, 0.15)', 'iconColor' => '#dc2626', 'icon' => '<path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2z"/><path d="M4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3zm0 4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7z"/>'],
-            ['label' => 'المشتريات', 'subtitle' => 'لوحة المشتريات', 'route' => 'purchases.dashboard', 'iconBg' => 'rgba(124, 58, 237, 0.2)', 'iconColor' => '#7c3aed', 'icon' => '<path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5z"/>'],
-            ['label' => 'التصنيع', 'subtitle' => 'لوحة التحكم', 'route' => 'manufacturing.dashboard', 'iconBg' => 'rgba(59, 130, 246, 0.18)', 'iconColor' => '#1d4ed8', 'icon' => '<path d="M8 1a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V1zm1 0v14h6V1H9zM2 3a1 1 0 0 1 1-1h3v14H3a1 1 0 0 1-1-1V3z"/>'],
-            ['label' => 'الموارد البشرية', 'subtitle' => 'لوحة الموارد البشرية', 'route' => 'hr.dashboard', 'iconBg' => 'rgba(13, 148, 136, 0.18)', 'iconColor' => '#0d9488', 'icon' => '<path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/><path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>'],
-        ];
+        $quickAccessModules = collect([
+            ['module' => 'finance', 'label' => niche_module_label('finance'), 'subtitle' => 'لوحة المحاسبة', 'route' => 'finance.dashboard', 'iconBg' => 'rgba(2, 119, 189, 0.2)', 'iconColor' => '#0277bd', 'icon' => '<path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.471c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718H4z"/>'],
+            ['module' => 'inventory', 'label' => niche_module_label('inventory'), 'subtitle' => niche_label('modules.warehouses', 'لوحة المخزون'), 'route' => 'inventory.dashboard', 'iconBg' => 'rgba(245, 158, 11, 0.25)', 'iconColor' => '#ea580c', 'icon' => '<path d="M8.186 1.113a.5.5 0 0 0-.372 0L1.846 3.5 8 5.961 14.154 3.5 8.186 1.113z"/><path d="M15 4.239l-6.5 2.6v7.922l6.5-2.6V4.24zM7.5 14.762V6.838L1 4.239v7.923l6.5 2.6z"/>'],
+            ['module' => 'sales', 'label' => niche_module_label('sales'), 'subtitle' => 'لوحة المبيعات', 'route' => 'sales.dashboard', 'iconBg' => 'rgba(46, 125, 50, 0.2)', 'iconColor' => '#2e7d32', 'icon' => '<path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5v12h-2V2h2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2z"/>'],
+            ['module' => 'pos', 'label' => niche_module_label('pos'), 'subtitle' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'iconBg' => 'rgba(220, 38, 38, 0.15)', 'iconColor' => '#dc2626', 'icon' => '<path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2z"/><path d="M4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3zm0 4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7z"/>'],
+            ['module' => 'purchases', 'label' => niche_module_label('purchases'), 'subtitle' => 'لوحة المشتريات', 'route' => 'purchases.dashboard', 'iconBg' => 'rgba(124, 58, 237, 0.2)', 'iconColor' => '#7c3aed', 'icon' => '<path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5z"/>'],
+            ['module' => 'manufacturing', 'label' => niche_module_label('manufacturing'), 'subtitle' => 'لوحة التحكم', 'route' => 'manufacturing.dashboard', 'iconBg' => 'rgba(59, 130, 246, 0.18)', 'iconColor' => '#1d4ed8', 'icon' => '<path d="M8 1a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V1zm1 0v14h6V1H9zM2 3a1 1 0 0 1 1-1h3v14H3a1 1 0 0 1-1-1V3z"/>'],
+            ['module' => 'hr', 'label' => niche_module_label('hr'), 'subtitle' => 'لوحة الموارد البشرية', 'route' => 'hr.dashboard', 'iconBg' => 'rgba(13, 148, 136, 0.18)', 'iconColor' => '#0d9488', 'icon' => '<path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/><path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>'],
+            ['module' => 'clinic', 'label' => niche_module_label('clinic'), 'subtitle' => 'لوحة العيادة', 'route' => 'clinic.dashboard', 'iconBg' => 'rgba(13, 148, 136, 0.2)', 'iconColor' => '#0d9488', 'icon' => '<path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9V5.5z"/><path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>'],
+        ])->filter(fn ($mod) => in_array($mod['module'], $enabledModules ?? ['core'], true))->values()->all();
     @endphp
     {{-- Top Global Navbar — يُدمَج داخل .flex.flex-col.min-h-screen في التخطيط الأم --}}
     <header class="sticky top-0 z-50 w-full bg-white border-b border-gray-100 shadow-sm h-14 px-6 flex items-center justify-between shrink-0">
@@ -29,7 +30,7 @@
                         <svg class="h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     </button>
                 @endguest
-                <span class="font-semibold text-indigo-900 text-sm tracking-wide shrink-0">MIRADA ERP</span>
+                <span class="font-semibold text-indigo-900 text-sm tracking-wide shrink-0">{{ config('app.name') }}</span>
                 @hasSection('breadcrumb')
                     <nav class="flex items-center gap-2 text-[0.85rem] text-gray-500 min-w-0 overflow-hidden">
                         @yield('breadcrumb')
@@ -164,6 +165,19 @@
                             @if(auth()->user()->isAdminOrSuperAdmin())
                                 <li>
                                     <a href="{{ route('settings.company.edit') }}" class="dropdown-item rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">إعدادات المنشأة</a>
+                                </li>
+                                @if(auth()->user()->hasModule('pos'))
+                                    <li>
+                                        <a href="{{ route('settings.store.edit') }}" class="dropdown-item rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">إعدادات المتجر الإلكتروني</a>
+                                    </li>
+                                @endif
+                                <li>
+                                    <a href="{{ route('settings.api-tokens.index') }}" class="dropdown-item rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">مفاتيح الربط (API)</a>
+                                </li>
+                            @endif
+                            @if(auth()->user()->is_super_admin)
+                                <li>
+                                    <a href="{{ route('super-admin.tenants.index') }}" class="dropdown-item rounded-lg px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50 font-medium">التحكم المركزي</a>
                                 </li>
                             @endif
                             <li><hr class="dropdown-divider my-1 border-gray-100"></li>

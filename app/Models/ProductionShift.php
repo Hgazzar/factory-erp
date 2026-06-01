@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\ResolvesRouteBindingForTenant;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ProductionShift extends Model
 {
     use HasFactory;
+    use ResolvesRouteBindingForTenant;
 
     public const STATUS_PLANNED = 'planned';
     public const STATUS_IN_PROGRESS = 'in_progress';
@@ -17,6 +20,7 @@ class ProductionShift extends Model
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
+        'user_id',
         'shift_id',
         'production_line_id',
         'machine_id',
@@ -31,6 +35,11 @@ class ProductionShift extends Model
         'is_active',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new BelongsToTenantContextScope);
+    }
+
     protected function casts(): array
     {
         return [
@@ -42,6 +51,11 @@ class ProductionShift extends Model
             'planned_quantity' => 'decimal:4',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function shift(): BelongsTo
@@ -79,4 +93,3 @@ class ProductionShift extends Model
         return $query->where('is_active', true);
     }
 }
-

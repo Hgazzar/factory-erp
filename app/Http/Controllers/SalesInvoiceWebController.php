@@ -2,23 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Concerns\RespondsWithBusinessJsonErrors;
 use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\EinvoiceSetting;
-use App\Models\InventoryTransaction;
 use App\Models\Item;
-use App\Models\ItemWarehouse;
-use App\Models\JournalEntry;
-use App\Models\JournalItem;
 use App\Models\Quotation;
 use App\Models\SalesInvoice;
+use App\Models\SalesOrder;
 use App\Models\SalesPayment;
 use App\Models\Warehouse;
 use App\Services\ExcelImportService;
 use App\Services\InvoicePaymentRecordingService;
+use App\Services\Sales\SalesInvoicePostingService;
+use App\Services\Sales\SalesReceiptService;
 use App\Services\ZatcaService;
-use App\Support\DefaultLedgerAccounts;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +32,13 @@ use RuntimeException;
 
 class SalesInvoiceWebController extends Controller
 {
+    use ResolvesOperationsTenant;
     use RespondsWithBusinessJsonErrors;
+
+    public function __construct(
+        private readonly SalesInvoicePostingService $postingService,
+        private readonly SalesReceiptService $receiptService,
+    ) {}
 
     public function index(Request $request): View|Response
     {
@@ -150,15 +155,15 @@ class SalesInvoiceWebController extends Controller
         ]);
 
         try {
-            app(InvoicePaymentRecordingService::class)->recordSalesInvoicePayment(
-                $invoice,
-                (float) $data['amount'],
-                $data['date'],
-                $data['payment_method'],
-                $uid,
-                $data['reference'] ?? null,
-                $data['notes'] ?? null,
-            );
+            $invoice->loadMissing('customer');
+            $this->receiptService->record($uid, $invoice->customer, [
+                'amount' => (float) $data['amount'],
+                'date' => $data['date'],
+                'payment_method' => $data['payment_method'],
+                'reference' => $data['reference'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'sales_invoice_id' => $invoice->id,
+            ]);
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -254,9 +259,30 @@ class SalesInvoiceWebController extends Controller
         $initialLines = null;
         $fromQuotationId = null;
         $referenceFromQuotation = null;
+        $fromSalesOrderId = null;
+        $postingSource = SalesInvoice::POSTING_SOURCE_DIRECT;
+
+        $salesOrderId = $request->integer('sales_order_id');
+        if ($salesOrderId > 0) {
+            $salesOrder = SalesOrder::with(['customer', 'items.item'])->find($salesOrderId);
+            if ($salesOrder) {
+                $fromSalesOrderId = $salesOrder->id;
+                $postingSource = SalesInvoice::POSTING_SOURCE_ORDER;
+                $initialCustomerId = $salesOrder->customer_id;
+                $initialDate = $salesOrder->order_date?->format('Y-m-d') ?? now()->format('Y-m-d');
+                $initialDueDate = $salesOrder->expected_delivery?->format('Y-m-d');
+                $initialLines = $salesOrder->items->map(fn ($row) => [
+                    'item_id' => $row->item_id,
+                    'quantity' => (float) $row->quantity,
+                    'unit_price' => (float) $row->unit_price,
+                    'discount_percent' => (float) ($row->discount_percent ?? 0),
+                    'tax_percent' => (float) ($row->tax_percent ?? 0),
+                ])->toArray();
+            }
+        }
 
         $quotationId = $request->input('quotation_id', $request->input('from_quotation'));
-        if (! empty($quotationId)) {
+        if (! empty($quotationId) && $fromSalesOrderId === null) {
             $quotation = Quotation::with(['customer', 'items.item'])->find($quotationId);
             if ($quotation && $quotation->status === \App\Models\Quotation::STATUS_APPROVED) {
                 $fromQuotationId = $quotation->id;
@@ -291,6 +317,8 @@ class SalesInvoiceWebController extends Controller
             'initialLines' => $initialLines,
             'fromQuotationId' => $fromQuotationId,
             'referenceFromQuotation' => $referenceFromQuotation,
+            'fromSalesOrderId' => $fromSalesOrderId,
+            'postingSource' => $postingSource,
         ]);
     }
 
@@ -300,6 +328,8 @@ class SalesInvoiceWebController extends Controller
         $data = $request->validate([
             'customer_id' => ['required', Rule::exists('customers', 'id')->where('user_id', $uid)],
             'quotation_id' => ['nullable', Rule::exists('quotations', 'id')->where('user_id', $uid)],
+            'sales_order_id' => ['nullable', Rule::exists('sales_orders', 'id')->where('user_id', $uid)],
+            'posting_source' => ['nullable', 'in:order,direct'],
             'warehouse_id' => ['required', Rule::exists('warehouses', 'id')->where('user_id', $uid)],
             'date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:date'],
@@ -390,27 +420,10 @@ class SalesInvoiceWebController extends Controller
             $data['reference'] = 'من عرض السعر QT-'.str_pad((string) $data['quotation_id'], 3, '0', STR_PAD_LEFT);
         }
 
-        $lines = collect($data['lines'])
-            ->map(function ($line) {
-                $qty = (float) $line['quantity'];
-                $price = (float) $line['unit_price'];
-                $discount = (float) ($line['discount_percent'] ?? 0);
-                $tax = (float) ($line['tax_percent'] ?? 0);
-                $lineNet = $qty * $price * (1 - $discount / 100);
-                $lineTax = $lineNet * $tax / 100;
-                $lineTotal = $lineNet + $lineTax;
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $normalizedLines = $this->postingService->normalizeLines($tenantUserId, $data['lines']);
 
-                return [
-                    'item_id' => (int) $line['item_id'],
-                    'quantity' => $qty,
-                    'unit_price' => $price,
-                    'line_total' => round($lineTotal, 4),
-                ];
-            })
-            ->filter(fn ($l) => $l['quantity'] > 0)
-            ->values();
-
-        if ($lines->isEmpty()) {
+        if ($normalizedLines === []) {
             if ($request->expectsJson() || $request->wantsJson()) {
                 throw new HttpResponseException(response()->json([
                     'message' => 'يجب إضافة على الأقل بنداً واحداً بقيمة صحيحة.',
@@ -420,55 +433,17 @@ class SalesInvoiceWebController extends Controller
             return back()->withInput()->with('error', 'يجب إضافة على الأقل بنداً واحداً بقيمة صحيحة.');
         }
 
-        $grandTotal = $lines->sum('line_total');
-        $subtotal = 0;
-        $totalTax = 0;
-        foreach ($data['lines'] as $line) {
-            $qty = (float) $line['quantity'];
-            $price = (float) $line['unit_price'];
-            $discount = (float) ($line['discount_percent'] ?? 0);
-            $tax = (float) ($line['tax_percent'] ?? 0);
-            $lineNet = $qty * $price * (1 - $discount / 100);
-            $subtotal += $lineNet;
-            $totalTax += $lineNet * $tax / 100;
-        }
-        $vatRate = $subtotal > 0 ? round($totalTax / $subtotal * 100, 2) : 0;
-        $vatAmount = $totalTax;
+        try {
+            $postingSource = ! empty($data['sales_order_id'])
+                ? SalesInvoice::POSTING_SOURCE_ORDER
+                : ($data['posting_source'] ?? SalesInvoice::POSTING_SOURCE_DIRECT);
 
-        $invoice = null;
-        DB::transaction(function () use ($request, $data, $lines, $vatRate, $vatAmount, $grandTotal, $paymentMethod, &$invoice) {
-            foreach ($lines as $line) {
-                $pivot = ItemWarehouse::where('item_id', $line['item_id'])
-                    ->where('warehouse_id', $data['warehouse_id'])
-                    ->first();
-
-                $item = Item::query()->find($line['item_id']);
-                $label = $item ? ($item->code ?? '—') : (string) $line['item_id'];
-
-                if (! $pivot) {
-                    $this->businessUnprocessable($request, sprintf(
-                        'لا يوجد رصيد مسجّل للصنف «%s» في المخزن المحدد. سجّل توريداً أو تأكد من ربط الصنف بالمخزن.',
-                        $label
-                    ));
-                }
-
-                $available = (float) $pivot->available_quantity;
-                $need = (float) $line['quantity'];
-                if ($available + 0.0000001 < $need) {
-                    $this->businessUnprocessable($request, sprintf(
-                        'الكمية المتاحة للصنف «%s» غير كافية (متاح: %s، مطلوب: %s).',
-                        $label,
-                        rtrim(rtrim(number_format($available, 4, '.', ''), '0'), '.') ?: '0',
-                        rtrim(rtrim(number_format($need, 4, '.', ''), '0'), '.') ?: '0'
-                    ));
-                }
-            }
-
-            $invoice = SalesInvoice::create([
-                'user_id' => (int) auth()->id(),
-                'customer_id' => $data['customer_id'],
+            $invoice = $this->postingService->createAndPost($tenantUserId, [
+                'customer_id' => (int) $data['customer_id'],
                 'quotation_id' => $data['quotation_id'] ?? null,
-                'warehouse_id' => $data['warehouse_id'],
+                'sales_order_id' => $data['sales_order_id'] ?? null,
+                'posting_source' => $postingSource,
+                'warehouse_id' => (int) $data['warehouse_id'],
                 'date' => $data['date'],
                 'due_date' => $data['due_date'],
                 'reference' => $data['reference'] ?? null,
@@ -476,96 +451,20 @@ class SalesInvoiceWebController extends Controller
                 'internal_notes' => $data['internal_notes'] ?? null,
                 'terms' => $data['terms'] ?? null,
                 'payment_method' => $paymentMethod,
-                'vat_rate' => $vatRate,
-                'vat_amount' => $vatAmount,
-                'total' => $grandTotal,
-            ]);
-
-            if (! empty($data['quotation_id'])) {
-                Quotation::where('id', $data['quotation_id'])->update(['status' => \App\Models\Quotation::STATUS_CONVERTED_TO_ORDER]);
+            ], $normalizedLines);
+        } catch (RuntimeException|\InvalidArgumentException $e) {
+            if ($request->expectsJson() || $request->wantsJson()) {
+                throw new HttpResponseException(response()->json([
+                    'message' => $e->getMessage(),
+                ], 422));
             }
 
-            foreach ($lines as $line) {
-                $invoice->items()->create($line);
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
-                // خصم الكمية من المخزون
-                $pivot = ItemWarehouse::where('item_id', $line['item_id'])
-                    ->where('warehouse_id', $data['warehouse_id'])
-                    ->first();
-
-                if ($pivot) {
-                    InventoryTransaction::create([
-                        'item_id' => $line['item_id'],
-                        'warehouse_id' => $data['warehouse_id'],
-                        'quantity' => -1 * (float) $line['quantity'],
-                        'type' => 'sale',
-                        'reference_id' => $invoice->id,
-                        'reference_type' => 'sales_invoices',
-                        'notes' => 'خصم من فاتورة مبيعات',
-                    ]);
-
-                    $pivot->quantity = $pivot->quantity - $line['quantity'];
-                    $pivot->save();
-                }
-            }
-
-            // تحديث current_stock (متاح = quantity - reserved_quantity)
-            $touchedItemIds = collect($lines)->pluck('item_id')->unique()->values();
-            foreach ($touchedItemIds as $itemId) {
-                $sum = ItemWarehouse::where('item_id', $itemId)
-                    ->sum(DB::raw('quantity - reserved_quantity'));
-                Item::where('id', $itemId)->update(['current_stock' => $sum]);
-            }
-
-            // الحسابات المحاسبية (أكواد رباعية موحّدة مع AccountSeeder)
-            $cashAccount = DefaultLedgerAccounts::cashOnHand();
-            $customersAccount = DefaultLedgerAccounts::accountsReceivable();
-            $salesAccount = DefaultLedgerAccounts::salesRevenue();
-            $vatAccount = DefaultLedgerAccounts::vatPayable();
-
-            $entry = JournalEntry::create([
-                'user_id' => (int) auth()->id(),
-                'date' => $data['date'],
-                'reference' => 'SINV-'.$invoice->id,
-                'description' => 'فاتورة بيع للعميل #'.$data['customer_id'],
-                'total' => $grandTotal,
-            ]);
-
-            // مدين: عميل أو نقدية (إجمالي الفاتورة)
-            $debitAccount = $paymentMethod === 'cash' ? $cashAccount : $customersAccount;
-
-            JournalItem::create([
-                'journal_entry_id' => $entry->id,
-                'account_id' => $debitAccount->id,
-                'description' => $paymentMethod === 'cash' ? 'تحصيل نقدي من المبيعات' : 'مبيعات آجل',
-                'debit' => $grandTotal,
-                'credit' => 0,
-            ]);
-
-            // دائن: المبيعات (بدون ضريبة)
-            $netTotal = $grandTotal - $vatAmount;
-            JournalItem::create([
-                'journal_entry_id' => $entry->id,
-                'account_id' => $salesAccount->id,
-                'description' => 'إيراد مبيعات',
-                'debit' => 0,
-                'credit' => $netTotal,
-            ]);
-
-            // دائن: ضريبة القيمة المضافة (إن وجدت)
-            if ($vatAmount > 0) {
-                JournalItem::create([
-                    'journal_entry_id' => $entry->id,
-                    'account_id' => $vatAccount->id,
-                    'description' => 'ضريبة قيمة مضافة على المبيعات',
-                    'debit' => 0,
-                    'credit' => $vatAmount,
-                ]);
-            }
-
-            $invoice->journal_entry_id = $entry->id;
-            $invoice->save();
-        });
+        if (! empty($data['quotation_id'])) {
+            Quotation::where('id', $data['quotation_id'])->update(['status' => Quotation::STATUS_CONVERTED_TO_ORDER]);
+        }
 
         if ($invoice instanceof SalesInvoice) {
             $this->persistZatcaMetadataForNewInvoice($invoice);
@@ -718,143 +617,41 @@ class SalesInvoiceWebController extends Controller
                 );
 
                 $created = 0;
+                $tenantUserId = $this->resolveOperationsTenantUserId();
 
-                foreach ($invoicesData as $key => $data) {
+                foreach ($invoicesData as $data) {
                     $customer = $data['customer'];
                     $warehouse = $data['warehouse'];
                     $header = $data['header'];
-                    $lines = collect($data['lines']);
 
-                    $lines = $lines->map(function ($line) {
-                        $qty = (float) $line['quantity'];
-                        $price = (float) $line['unit_price'];
-                        $discount = (float) $line['discount'];
-                        $tax = (float) $line['tax_percent'];
+                    $importLines = collect($data['lines'])
+                        ->map(fn (array $line): array => [
+                            'item_id' => (int) $line['item']->id,
+                            'quantity' => (float) $line['quantity'],
+                            'unit_price' => (float) $line['unit_price'],
+                            'discount' => (float) $line['discount'],
+                            'tax_percent' => (float) $line['tax_percent'],
+                        ])
+                        ->filter(fn (array $l) => $l['quantity'] > 0)
+                        ->values()
+                        ->all();
 
-                        $lineNet = $qty * $price - $discount;
-                        $lineVat = $lineNet * $tax / 100;
-                        $lineTotal = $lineNet + $lineVat;
-
-                        return [
-                            'item' => $line['item'],
-                            'quantity' => $qty,
-                            'unit_price' => $price,
-                            'discount' => $discount,
-                            'tax_percent' => $tax,
-                            'line_total' => $lineTotal,
-                        ];
-                    })->filter(fn ($l) => $l['quantity'] > 0)->values();
-
-                    if ($lines->isEmpty()) {
+                    if ($importLines === []) {
                         continue;
                     }
 
-                    // تحقق من توافر المخزون قبل الإنشاء
-                    foreach ($lines as $line) {
-                        $pivot = ItemWarehouse::where('item_id', $line['item']->id)
-                            ->where('warehouse_id', $warehouse->id)
-                            ->first();
-
-                        if (! $pivot || $pivot->available_quantity < $line['quantity']) {
-                            throw new \RuntimeException('الكمية المتاحة في المخزن غير كافية للصنف '.$line['item']->code.' في الفاتورة بالمرجع '.$header['reference'].'.');
-                        }
-                    }
-
-                    $subtotal = $lines->sum(fn ($l) => $l['quantity'] * $l['unit_price']);
-                    $totalDiscount = $lines->sum('discount');
-                    $netAfterDiscount = $subtotal - $totalDiscount;
-                    $vatAmount = $lines->sum(function ($l) {
-                        $net = $l['quantity'] * $l['unit_price'] - $l['discount'];
-
-                        return $net * $l['tax_percent'] / 100;
-                    });
-                    $grandTotal = $netAfterDiscount + $vatAmount;
-                    $vatRate = $netAfterDiscount > 0 ? round($vatAmount / $netAfterDiscount * 100, 2) : 0;
-
-                    $invoice = SalesInvoice::create([
-                        'user_id' => (int) (auth()->id() ?? 1),
+                    $invoice = $this->postingService->createAndPost($tenantUserId, [
                         'customer_id' => $customer->id,
-                        'quotation_id' => null,
-                        'contract_id' => null,
                         'warehouse_id' => $warehouse->id,
-                        'invoice_status' => null,
                         'date' => $header['date'],
                         'due_date' => $header['due_date'],
                         'reference' => $header['reference'],
-                        'notes' => $header['notes'] ?: null,
-                        'internal_notes' => null,
-                        'terms' => null,
-                        'payment_method' => 'credit',
-                        'vat_rate' => $vatRate,
-                        'vat_amount' => $vatAmount,
-                        'total' => $grandTotal,
-                        'paid_amount' => 0,
-                    ]);
+                        'notes' => $header['notes'] ?? null,
+                        'payment_method' => SalesInvoice::PAYMENT_CREDIT,
+                        'posting_source' => SalesInvoice::POSTING_SOURCE_DIRECT,
+                    ], $importLines);
 
-                    foreach ($lines as $line) {
-                        $invoice->items()->create([
-                            'item_id' => $line['item']->id,
-                            'quantity' => $line['quantity'],
-                            'unit_price' => $line['unit_price'],
-                            'line_total' => $line['line_total'],
-                        ]);
-
-                        $pivot = ItemWarehouse::where('item_id', $line['item']->id)
-                            ->where('warehouse_id', $warehouse->id)
-                            ->first();
-
-                        if ($pivot) {
-                            $pivot->quantity = $pivot->quantity - $line['quantity'];
-                            $pivot->save();
-                        }
-                    }
-
-                    // القيود المحاسبية (أكواد رباعية موحّدة مع AccountSeeder)
-                    $cashAccount = DefaultLedgerAccounts::cashOnHand();
-                    $customersAccount = DefaultLedgerAccounts::accountsReceivable();
-                    $salesAccount = DefaultLedgerAccounts::salesRevenue();
-                    $vatAccount = DefaultLedgerAccounts::vatPayable();
-
-                    $entry = JournalEntry::create([
-                        'user_id' => (int) (auth()->id() ?? 1),
-                        'date' => $header['date'],
-                        'reference' => 'SINV-'.$invoice->id,
-                        'description' => 'فاتورة بيع (استيراد) للعميل #'.$customer->id,
-                        'total' => $grandTotal,
-                    ]);
-
-                    $debitAccount = $customersAccount;
-
-                    JournalItem::create([
-                        'journal_entry_id' => $entry->id,
-                        'account_id' => $debitAccount->id,
-                        'description' => 'مبيعات آجل (استيراد)',
-                        'debit' => $grandTotal,
-                        'credit' => 0,
-                    ]);
-
-                    $netTotal = $grandTotal - $vatAmount;
-                    JournalItem::create([
-                        'journal_entry_id' => $entry->id,
-                        'account_id' => $salesAccount->id,
-                        'description' => 'إيراد مبيعات (استيراد)',
-                        'debit' => 0,
-                        'credit' => $netTotal,
-                    ]);
-
-                    if ($vatAmount > 0) {
-                        JournalItem::create([
-                            'journal_entry_id' => $entry->id,
-                            'account_id' => $vatAccount->id,
-                            'description' => 'ضريبة قيمة مضافة على المبيعات (استيراد)',
-                            'debit' => 0,
-                            'credit' => $vatAmount,
-                        ]);
-                    }
-
-                    $invoice->journal_entry_id = $entry->id;
-                    $invoice->save();
-
+                    $this->persistZatcaMetadataForNewInvoice($invoice);
                     $created++;
                 }
 
@@ -868,7 +665,7 @@ class SalesInvoiceWebController extends Controller
 
         return redirect()
             ->route('sales.invoices.index')
-            ->with('success', 'تم استيراد فواتير المبيعات بنجاح. تم إنشاء '.($summary['created'] ?? 0).' فاتورة.');
+            ->with('success', 'تم استيراد فواتير المبيعات وترحيلها بنجاح (مخزون + إيراد + COGS). تم إنشاء '.($summary['created'] ?? 0).' فاتورة.');
     }
 
     public function print(SalesInvoice $invoice): View

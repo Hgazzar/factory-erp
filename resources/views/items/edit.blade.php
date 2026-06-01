@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'تعديل صنف - MIRADA ERP')
+@section('title', 'تعديل صنف - '.config('app.name'))
 
 @php
     $unitSelectOptions = $units->map(fn ($u) => [

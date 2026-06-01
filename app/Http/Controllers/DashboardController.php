@@ -18,6 +18,7 @@ use App\Models\ServiceOrder;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Services\Tenant\TenantDashboardPackageService;
 use App\Support\ErpRoles;
 use App\Support\LedgerAccountBalance;
 use Carbon\Carbon;
@@ -27,6 +28,10 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly TenantDashboardPackageService $tenantDashboardPackage,
+    ) {}
+
     public function index(Request $request): View
     {
         $today = Carbon::today();
@@ -368,12 +373,15 @@ class DashboardController extends Controller
                 ->get();
         });
 
+        $tenantPackage = $this->tenantDashboardPackage->buildForViewer($viewer);
+
         return view('dashboard', array_merge($stats, [
             'searchQuery' => $searchQuery,
             'searchResults' => $searchResults,
             'recentActivity' => $recentActivity,
             'activityScope' => $activityScope,
             'managedActivityUsers' => $managedUsers,
+            'tenantPackage' => $tenantPackage,
         ]));
     }
 

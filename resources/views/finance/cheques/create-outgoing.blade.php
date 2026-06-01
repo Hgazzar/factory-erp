@@ -4,7 +4,7 @@
     $isEdit = isset($cheque);
 @endphp
 
-@section('title', ($isEdit ? 'تعديل شيك صادر' : 'إصدار شيك') . ' - MIRADA ERP')
+@section('title', ($isEdit ? 'تعديل شيك صادر' : 'إصدار شيك') . ' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-blue-600">الرئيسية</a>

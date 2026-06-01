@@ -9,9 +9,9 @@
 </style>
 @endpush
 
-@section('title', 'طباعة عرض السعر ' . $quotation->id . ' - MIRADA ERP')
+@section('title', 'طباعة عرض السعر ' . $quotation->id . ' - '.config('app.name'))
 
-@section('company_name', $company?->name ?? 'MIRADA ERP')
+@section('company_name', $company?->name ?? config('app.name'))
 @section('company_tax', ($company && $company->tax_number) ? 'الرقم الضريبي: ' . $company->tax_number : 'الرقم الضريبي: —')
 
 @section('company_logo')

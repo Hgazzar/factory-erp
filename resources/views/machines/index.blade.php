@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'الماكينات - Factory ERP')
+@section('title', 'الماكينات - '.config('app.name'))
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">

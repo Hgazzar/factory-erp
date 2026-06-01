@@ -46,15 +46,17 @@ class AuthenticatedSessionController extends Controller
             AgentDebugLog::line('H_SESSION', 'AuthenticatedSessionController@store', 'after_session_regenerate_ok', []);
             // #endregion
 
-            $dashboardUrl = route('dashboard', absolute: false);
+            $intendedUrl = $request->user()?->role === 'worker'
+                ? route('operations.production-entry.create', absolute: false)
+                : route('dashboard', absolute: false);
 
             // #region agent log
             AgentDebugLog::line('H_REDIRECT', 'AuthenticatedSessionController@store', 'route_dashboard_resolved', [
-                'path_len' => strlen($dashboardUrl),
+                'path_len' => strlen($intendedUrl),
             ]);
             // #endregion
 
-            return redirect()->intended($dashboardUrl);
+            return redirect()->intended($intendedUrl);
         } catch (\Throwable $e) {
             $msg = $e->getMessage();
             // #region agent log

@@ -18,8 +18,34 @@ return new class extends Migration
             $table->unique(['finished_item_id', 'component_item_id']);
         });
 
+        Schema::create('bom_lists', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('item_id')->constrained('items')->cascadeOnDelete();
+            $table->string('name', 255);
+            $table->string('version', 40)->default('1.0');
+            $table->string('status', 20)->default('active');
+            $table->decimal('labor_cost', 15, 4)->default(0);
+            $table->decimal('overhead_cost', 15, 4)->default(0);
+            $table->text('header_notes')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('bom_list_lines', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('bom_list_id')->constrained('bom_lists')->cascadeOnDelete();
+            $table->foreignId('component_item_id')->constrained('items')->cascadeOnDelete();
+            $table->decimal('quantity', 15, 4);
+            $table->string('unit', 50)->nullable();
+            $table->decimal('scrap_percent', 8, 4)->default(0);
+            $table->string('notes', 500)->nullable();
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('production_logs', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
             $table->unsignedBigInteger('production_shift_id')->nullable();
             $table->foreignId('item_id')->constrained('items')->cascadeOnDelete();
             $table->foreignId('warehouse_id')->nullable()->constrained('warehouses')->nullOnDelete();
@@ -173,6 +199,8 @@ return new class extends Migration
         Schema::dropIfExists('customers');
         Schema::dropIfExists('suppliers');
         Schema::dropIfExists('production_logs');
+        Schema::dropIfExists('bom_list_lines');
+        Schema::dropIfExists('bom_lists');
         Schema::dropIfExists('item_bom_components');
     }
 };

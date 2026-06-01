@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'لوحة المخزون - MIRADA ERP')
+@section('title', 'لوحة المخزون - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -157,6 +157,7 @@
                 <a href="{{ route('inventory.item-categories.index') }}" class="inv-tab">فئات المنتجات</a>
                 <a href="{{ route('warehouses.index') }}" class="inv-tab">المستودعات</a>
                 <a href="{{ route('inventory.stock-in.create') }}" class="inv-tab">إذن إضافة مخزني</a>
+                <a href="{{ route('inventory.reports.valuation') }}" class="inv-tab">تقييم المخزون</a>
             </div>
         </div>
 
@@ -205,11 +206,11 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <a href="{{ route('production-orders.index') }}" class="inv-block inv-kpi-card rounded-lg hover:shadow-md transition-shadow no-underline text-inherit block">
+            <a href="{{ route('manufacturing.runs.index') }}" class="inv-block inv-kpi-card rounded-lg hover:shadow-md transition-shadow no-underline text-inherit block">
                 <div>
-                    <div class="inv-kpi-head">أوامر إنتاج معلّقة <x-info field="inventory.widget_pending_production" /></div>
+                    <div class="inv-kpi-head">أوامر عمل معلّقة <x-info field="inventory.widget_pending_production" /></div>
                     <div class="inv-kpi-value">{{ $pendingProductionOrdersCount ?? 0 }}</div>
-                    <div class="inv-kpi-sub">حالة «معلق» — اضغط لأوامر الإنتاج</div>
+                    <div class="inv-kpi-sub">لم يُرحَّل بعد — اضغط لأوامر العمل</div>
                 </div>
                 <div class="inv-kpi-icon bg-indigo-100 text-indigo-600">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M6.079 11.9a1.5 1.5 0 0 0 1.21.578H7.5h.21a1.5 1.5 0 0 0 1.21-.578l2.51-3.18a1.5 1.5 0 0 0 .121-1.66L9.395 3.53a1.5 1.5 0 0 0-1.42-.98H6.025a1.5 1.5 0 0 0-1.42.98L3.258 7.06a1.5 1.5 0 0 0 .12 1.66l2.701 3.18z"/></svg>

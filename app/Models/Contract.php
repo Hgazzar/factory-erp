@@ -125,6 +125,7 @@ class Contract extends Model
             'user_id' => (int) $this->user_id,
             'customer_id' => $this->customer_id,
             'contract_id' => $this->id,
+            'posting_source' => SalesInvoice::POSTING_SOURCE_DIRECT,
             'warehouse_id' => $warehouseId,
             'date' => $this->next_invoice_date,
             'due_date' => $this->next_invoice_date->copy()->addDays(30),

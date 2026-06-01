@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\BelongsToTenantContextScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +16,7 @@ class PaySlip extends Model
     protected $table = 'pay_slips';
 
     protected $fillable = [
+        'user_id',
         'payroll_cycle_id',
         'employee_id',
         'basic_salary',
@@ -27,7 +29,21 @@ class PaySlip extends Model
         'overtime_amount',
         'absence_hours',
         'late_hours',
+        'early_departure_hours',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new BelongsToTenantContextScope);
+
+        static::creating(function (PaySlip $slip): void {
+            if ($slip->user_id === null && $slip->payroll_cycle_id) {
+                $slip->user_id = Payroll::withoutGlobalScopes()
+                    ->whereKey($slip->payroll_cycle_id)
+                    ->value('user_id');
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -42,7 +58,13 @@ class PaySlip extends Model
             'overtime_amount' => 'decimal:2',
             'absence_hours' => 'decimal:2',
             'late_hours' => 'decimal:2',
+            'early_departure_hours' => 'decimal:2',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function payrollCycle(): BelongsTo

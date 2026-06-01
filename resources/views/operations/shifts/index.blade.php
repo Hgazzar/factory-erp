@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'إدارة الورديات - Factory ERP')
+@section('title', 'إدارة الورديات - '.config('app.name'))
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">

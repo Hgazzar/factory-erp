@@ -32,7 +32,7 @@
         <aside class="sales-sidebar">
             <div class="p-3 border-bottom border-secondary border-opacity-25">
                 <div class="d-flex align-items-center justify-content-between">
-                    <span class="fw-bold text-dark">UFUQ ERP</span>
+                    <span class="fw-bold text-dark">{{ config('app.name') }}</span>
                     <a href="{{ route('profile.edit') }}" class="text-decoration-none" title="الملف الشخصي">
                         <span class="ufuq-avatar">{{ strtoupper(mb_substr(Auth::user()->name ?? 'U', 0, 1)) }}</span>
                     </a>
@@ -62,7 +62,7 @@
 
         {{-- المحتوى الرئيسي: يأخذ المساحة المتبقية --}}
         <div class="sales-main">
-            {{-- الهيدر العلوي (اسم المستخدم + أيقونات + UFUQ ERP) --}}
+            {{-- الهيدر العلوي (اسم المستخدم + أيقونات + اسم النظام) --}}
             <header class="ufuq-topbar">
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-2">
@@ -78,7 +78,7 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted small d-none d-md-inline">UFUQ ERP</span>
+                        <span class="text-muted small d-none d-md-inline">{{ config('app.name') }}</span>
                         <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">الوحدات</a>
                     </div>
                 </div>

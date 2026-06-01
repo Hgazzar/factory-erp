@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'الموظفون - MIRADA ERP')
+@section('title', 'الموظفون - '.config('app.name'))
 
 @php
     $deptFilterValue = (string) request('department_id', '');
@@ -96,6 +96,9 @@
                             <span class="inline-flex items-center gap-1.5">المسمى الوظيفي <x-info field="hr.employee_position" /></span>
                         </th>
                         <th scope="col" class="px-6 py-4 text-right font-semibold">
+                            <span class="inline-flex items-center gap-1.5">الصلاحية <x-info field="hr.emp_col_role" /></span>
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-right font-semibold">
                             <span class="inline-flex items-center gap-1.5">الحالة <x-info field="hr.employee_status" /></span>
                         </th>
                         <th scope="col" class="px-6 py-4 text-right font-semibold">
@@ -135,6 +138,13 @@
                             </td>
                             <td class="px-6 py-4 text-right text-gray-800">
                                 <span class="block truncate" title="{{ $jobTitle }}">{{ $jobTitle }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-right text-gray-800">
+                                @if($employee->linkedUser)
+                                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-800">{{ \App\Support\ErpRoles::roleLabelAr($employee->linkedUser->role) }}</span>
+                                @else
+                                    <span class="text-gray-400">—</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-right">
                                 @if(($employee->status ?? 'active') === 'active')
@@ -187,7 +197,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500">
+                            <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-500">
                                 لا يوجد موظفون مطابقون للتصفية.
                                 <a href="{{ route('hr.employees.create') }}" class="font-medium text-blue-600 hover:text-blue-800">أضف موظفاً</a>
                             </td>

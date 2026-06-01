@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Machine;
 use App\Models\ProductionLine;
 use App\Models\ProductionShift;
 use App\Models\Shift;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OperationsShiftController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View
     {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
         $date = $request->filled('date') ? \Carbon\Carbon::parse($request->input('date'))->toDateString() : now()->toDateString();
 
         $shifts = Shift::active()->orderBy('code')->get();
@@ -32,27 +37,40 @@ class OperationsShiftController extends Controller
             'shifts',
             'productionLines',
             'machines',
-            'productionShifts'
+            'productionShifts',
         ));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+
         $data = $request->validate([
             'date' => ['required', 'date'],
-            'shift_id' => ['required', 'exists:shifts,id'],
-            'production_line_id' => ['nullable', 'exists:production_lines,id'],
-            'machine_id' => ['nullable', 'exists:machines,id'],
+            'shift_id' => [
+                'required',
+                Rule::exists('shifts', 'id')->where('user_id', $tenantUserId),
+            ],
+            'production_line_id' => [
+                'nullable',
+                Rule::exists('production_lines', 'id')->where('user_id', $tenantUserId),
+            ],
+            'machine_id' => [
+                'nullable',
+                Rule::exists('machines', 'id')->where('user_id', $tenantUserId),
+            ],
             'planned_start_at' => ['nullable', 'date'],
             'planned_end_at' => ['nullable', 'date'],
             'planned_quantity' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
         ]);
 
-        $data['status'] ??= ProductionShift::STATUS_PLANNED;
-        $data['is_active'] = true;
-
-        ProductionShift::create($data);
+        ProductionShift::create([
+            ...$data,
+            'user_id' => $tenantUserId,
+            'status' => ProductionShift::STATUS_PLANNED,
+            'is_active' => true,
+        ]);
 
         return redirect()
             ->back()
@@ -61,6 +79,8 @@ class OperationsShiftController extends Controller
 
     public function start(ProductionShift $productionShift): RedirectResponse
     {
+        $this->resolveOperationsTenantUserId();
+
         if ($productionShift->status !== ProductionShift::STATUS_IN_PROGRESS) {
             $productionShift->status = ProductionShift::STATUS_IN_PROGRESS;
 
@@ -78,6 +98,8 @@ class OperationsShiftController extends Controller
 
     public function complete(ProductionShift $productionShift): RedirectResponse
     {
+        $this->resolveOperationsTenantUserId();
+
         if ($productionShift->status !== ProductionShift::STATUS_COMPLETED) {
             $productionShift->status = ProductionShift::STATUS_COMPLETED;
 
@@ -97,4 +119,3 @@ class OperationsShiftController extends Controller
             ->with('success', 'تم إنهاء الوردية.');
     }
 }
-

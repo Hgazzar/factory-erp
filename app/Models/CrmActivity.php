@@ -24,8 +24,11 @@ class CrmActivity extends Model
 
     public const TYPE_APPOINTMENT = 'appointment';
 
+    public const TYPE_SALES_INVOICE = 'sales_invoice';
+
     protected $fillable = [
         'customer_id',
+        'sales_invoice_id',
         'user_id',
         'type',
         'note',
@@ -61,6 +64,7 @@ class CrmActivity extends Model
     {
         return array_merge(self::followUpTypesForModal(), [
             self::TYPE_APPOINTMENT => 'موعد مجدول',
+            self::TYPE_SALES_INVOICE => 'فاتورة مبيعات',
         ]);
     }
 
@@ -72,6 +76,11 @@ class CrmActivity extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function salesInvoice(): BelongsTo
+    {
+        return $this->belongsTo(SalesInvoice::class);
     }
 
     public function user(): BelongsTo

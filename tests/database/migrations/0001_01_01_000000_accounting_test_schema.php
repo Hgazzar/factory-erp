@@ -23,6 +23,12 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
         Schema::create('accounts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -79,6 +85,7 @@ return new class extends Migration
         Schema::dropIfExists('journal_items');
         Schema::dropIfExists('journal_entries');
         Schema::dropIfExists('accounts');
+        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
     }
 };

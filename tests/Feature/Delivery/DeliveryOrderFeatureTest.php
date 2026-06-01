@@ -8,6 +8,7 @@ use App\Models\DeliveryOrder;
 use App\Models\DeliveryOrderItem;
 use App\Models\Item;
 use App\Models\JournalEntry;
+use App\Models\StockMovement;
 use App\Models\Warehouse;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
@@ -16,7 +17,7 @@ use Tests\Support\InventoryAccountingTestCase;
 final class DeliveryOrderFeatureTest extends InventoryAccountingTestCase
 {
     #[Test]
-    public function mark_as_delivered_success_updates_status_stock_warehouse_movements_and_cogs_journal(): void
+    public function mark_as_delivered_updates_status_only_without_stock_or_journal(): void
     {
         $warehouse = Warehouse::factory()->forTenant($this->tenant)->create(['code' => 'DO-WH']);
 
@@ -50,12 +51,6 @@ final class DeliveryOrderFeatureTest extends InventoryAccountingTestCase
             'quantity' => 10,
         ]);
 
-        $fgQty = 4.0;
-        $rmQty = 10.0;
-        $expectedCogs = round($fgQty * 50 + $rmQty * 12, 4);
-        $expectedFgCredit = round($fgQty * 50, 4);
-        $expectedRmCredit = round($rmQty * 12, 4);
-
         $delivery->markAsDelivered();
 
         $delivery->refresh();
@@ -64,51 +59,25 @@ final class DeliveryOrderFeatureTest extends InventoryAccountingTestCase
 
         $this->assertSame(DeliveryOrder::STATUS_DELIVERED, $delivery->status);
         $this->assertNotNull($delivery->delivery_date);
-        $this->assertNotNull($delivery->journal_entry_id);
+        $this->assertNull($delivery->journal_entry_id);
 
-        $this->assertItemCurrentStock($finished, 16.0);
-        $this->assertItemCurrentStock($raw, 90.0);
-        $this->assertPivotQuantity($finished, $warehouse, 16.0);
-        $this->assertPivotQuantity($raw, $warehouse, 90.0);
+        $this->assertItemCurrentStock($finished, 20.0);
+        $this->assertItemCurrentStock($raw, 100.0);
+        $this->assertPivotQuantity($finished, $warehouse, 20.0);
+        $this->assertPivotQuantity($raw, $warehouse, 100.0);
 
-        $this->assertStockMovementExists(
-            $finished,
-            $warehouse,
-            'delivery_out',
-            -$fgQty,
-            DeliveryOrder::class,
-            (int) $delivery->id,
+        $this->assertSame(
+            0,
+            StockMovement::withoutGlobalScopes()
+                ->where('reference_type', DeliveryOrder::class)
+                ->where('reference_id', $delivery->id)
+                ->count()
         );
-        $this->assertStockMovementExists(
-            $raw,
-            $warehouse,
-            'delivery_out',
-            -$rmQty,
-            DeliveryOrder::class,
-            (int) $delivery->id,
-        );
-
-        $entry = JournalEntry::withoutGlobalScopes()->findOrFail($delivery->journal_entry_id);
-        $this->assertJournalIsBalanced($entry, $expectedCogs);
-        $this->assertEqualsWithDelta(
-            $expectedCogs,
-            $this->journalLineAmount($entry, $this->ledger['cogs'], 'debit'),
-            0.0001
-        );
-        $this->assertEqualsWithDelta(
-            $expectedFgCredit,
-            $this->journalLineAmount($entry, $this->ledger['fg'], 'credit'),
-            0.0001
-        );
-        $this->assertEqualsWithDelta(
-            $expectedRmCredit,
-            $this->journalLineAmount($entry, $this->ledger['rm'], 'credit'),
-            0.0001
-        );
+        $this->assertSame(0, JournalEntry::query()->count());
     }
 
     #[Test]
-    public function mark_as_delivered_fails_when_warehouse_stock_is_insufficient(): void
+    public function mark_as_delivered_succeeds_without_stock_check_when_quantities_exceed_available(): void
     {
         $warehouse = Warehouse::factory()->forTenant($this->tenant)->create();
 
@@ -132,15 +101,10 @@ final class DeliveryOrderFeatureTest extends InventoryAccountingTestCase
             'quantity' => 5,
         ]);
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('غير كاف');
-
         $delivery->markAsDelivered();
 
-        $this->assertSame(DeliveryOrder::STATUS_PENDING, $delivery->fresh()->status);
-        $this->assertNull($delivery->fresh()->journal_entry_id);
+        $this->assertSame(DeliveryOrder::STATUS_DELIVERED, $delivery->fresh()->status);
         $this->assertItemCurrentStock($finished, 2.0);
-        $this->assertPivotQuantity($finished, $warehouse, 2.0);
     }
 
     #[Test]

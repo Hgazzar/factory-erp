@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'تعديل موظف - MIRADA ERP')
+@section('title', 'تعديل موظف - '.config('app.name'))
 
 @php
     $genderOptions = [
@@ -26,15 +26,15 @@
         ['value' => 'inactive', 'label' => 'غير نشط'],
         ['value' => 'on_leave', 'label' => 'في إجازة'],
     ];
-    $roleOptions = [
-        ['value' => 'admin', 'label' => 'Admin'],
-        ['value' => 'supervisor', 'label' => 'Supervisor'],
-        ['value' => 'worker', 'label' => 'Worker'],
-    ];
     $departmentSelectOptions = $departments->map(fn ($d) => ['value' => (string) $d->id, 'label' => $d->name])->values()->all();
     $userSelectOptions = $users->map(fn ($u) => ['value' => (string) $u->id, 'label' => $u->email.' ('.$u->name.')'])->values()->all();
     $salaryTypeOptions = \App\Models\Employee::salaryTypeSelectOptions();
     $attendancePolicyOptions = \App\Models\Employee::attendancePolicySelectOptions();
+    $clinicRoleOptions = [
+        ['value' => '', 'label' => '— بدون دور عيادة —'],
+        ['value' => 'receptionist', 'label' => 'استقبال (حجوزات وتحصيل)'],
+        ['value' => 'doctor', 'label' => 'طبيب (ملف طبي وروشتات)'],
+    ];
 @endphp
 
 @section('content')
@@ -209,6 +209,11 @@
                     @error('department_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-gray-800">وردية العمل <x-info field="hr.employee_shift" /></label>
+                    <x-custom-select name="shift_id" :options="$shiftSelectOptions" :value="old('shift_id', (string) ($employee->shift_id ?? ''))" placeholder="اختر الوردية..." empty-label="بدون وردية" :error="$errors->has('shift_id')" />
+                    @error('shift_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">المسمى الوظيفي <x-info field="hr.employee_position" /></label>
                     <input type="text" name="position" value="{{ old('position', $employee->position ?? $employee->job_title) }}" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm @error('position') border-red-500 ring-1 ring-red-200 @enderror">
                     @error('position')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -224,15 +229,22 @@
                     @error('status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="mb-1.5 block text-sm font-semibold text-gray-800">المستخدم المرتبط</label>
+                    <label class="mb-1.5 block text-sm font-semibold text-gray-800">المستخدم المرتبط <x-info field="hr.employee_linked_user" /></label>
                     <x-custom-select name="linked_user_id" :options="$userSelectOptions" :value="old('linked_user_id', (string) ($employee->linked_user_id ?? ''))" placeholder="اختياري..." empty-label="بدون ربط مستخدم" :error="$errors->has('linked_user_id')" />
                     @error('linked_user_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="mb-1.5 block text-sm font-semibold text-gray-800">الدور (Role)</label>
-                    <x-custom-select name="role" :options="$roleOptions" :value="old('role', $employee->linkedUser?->role)" placeholder="اختر الدور..." :empty-option="false" :error="$errors->has('role')" />
+                    <label class="mb-1.5 block text-sm font-semibold text-gray-800">الصلاحية (Role) <x-info field="hr.employee_role" /></label>
+                    <x-custom-select name="role" :options="$roleOptions" :value="old('role', $employee->linkedUser?->role)" placeholder="اختر الصلاحية..." empty-label="—" :error="$errors->has('role')" />
                     @error('role')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
+                @if(in_array('clinic', $enabledModules ?? [], true))
+                <div>
+                    <label class="mb-1.5 block text-sm font-semibold text-gray-800">دور العيادة <x-info field="clinic.employee_clinic_role" /></label>
+                    <x-custom-select name="clinic_role" :options="$clinicRoleOptions" :value="old('clinic_role', $employee->clinic_role ?? '')" placeholder="—" empty-label="— بدون دور عيادة —" :searchable="false" :error="$errors->has('clinic_role')" />
+                    @error('clinic_role')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                @endif
             </div>
         </section>
             </div>

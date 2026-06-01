@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'إعدادات المنشأة - MIRADA ERP')
+@section('title', 'إعدادات المنشأة - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -31,7 +31,7 @@
             <div class="space-y-4">
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-1">اسم المنشأة</label>
-                    <input type="text" id="name" name="name" value="{{ old('name', $setting->name) }}" class="w-full px-3 py-2.5 pr-4 text-right border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="مثال: MIRADA ERP">
+                    <input type="text" id="name" name="name" value="{{ old('name', $setting->name) }}" class="w-full px-3 py-2.5 pr-4 text-right border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="مثال: {{ config('app.name') }}">
                     @error('name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>

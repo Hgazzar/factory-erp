@@ -59,6 +59,39 @@ final class ErpRoles
     }
 
     /**
+     * أدوار يمكن ربطها بحساب موظف (Phase 1 — عمود users.role).
+     *
+     * @return list<string>
+     */
+    public static function assignableRoles(): array
+    {
+        return ['admin', 'supervisor', 'worker'];
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    public static function assignableRoleSelectOptions(): array
+    {
+        return [
+            ['value' => 'admin', 'label' => 'مدير (Admin)'],
+            ['value' => 'supervisor', 'label' => 'مشرف (Supervisor)'],
+            ['value' => 'worker', 'label' => 'عامل (Worker)'],
+        ];
+    }
+
+    public static function roleLabelAr(?string $role): string
+    {
+        return match ($role) {
+            'admin' => 'مدير',
+            'supervisor' => 'مشرف',
+            'worker' => 'عامل',
+            'super_admin' => 'سوبر أدمن',
+            default => $role ?: '—',
+        };
+    }
+
+    /**
      * حذف نهائي لمصروف معتمد: سوبر أدمن فقط.
      */
     public static function canHardDeleteApprovedExpense(?Authenticatable $user): bool

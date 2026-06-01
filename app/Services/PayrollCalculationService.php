@@ -107,13 +107,14 @@ final class PayrollCalculationService
             'overtime_amount' => $overtimeBlock['amount'],
             'absence_hours' => $attendanceBlock['absence_hours'],
             'late_hours' => $attendanceBlock['late_hours'],
+            'early_departure_hours' => $attendanceBlock['early_departure_hours'],
         ];
 
         return ['slip' => $slip, 'lines' => $lines];
     }
 
     /**
-     * @return array{deduction_amount: float, absence_hours: float, late_hours: float}
+     * @return array{deduction_amount: float, absence_hours: float, late_hours: float, early_departure_hours: float}
      */
     private function aggregateAttendance(
         int $tenantUserId,
@@ -127,11 +128,12 @@ final class PayrollCalculationService
             ->where('user_id', $tenantUserId)
             ->where('employee_id', $employeeId)
             ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
-            ->get(['status', 'deduction_amount', 'minutes_late', 'work_hours']);
+            ->get(['status', 'deduction_amount', 'minutes_late', 'minutes_early_departure', 'work_hours']);
 
         $deduction = 0.0;
         $absenceHours = 0.0;
         $lateHours = 0.0;
+        $earlyHours = 0.0;
 
         foreach ($rows as $row) {
             $deduction += (float) ($row->deduction_amount ?? 0);
@@ -139,12 +141,14 @@ final class PayrollCalculationService
                 $absenceHours += $standardDay;
             }
             $lateHours += ((int) ($row->minutes_late ?? 0)) / 60;
+            $earlyHours += ((int) ($row->minutes_early_departure ?? 0)) / 60;
         }
 
         return [
             'deduction_amount' => $deduction,
             'absence_hours' => round($absenceHours, 2),
             'late_hours' => round($lateHours, 2),
+            'early_departure_hours' => round($earlyHours, 2),
         ];
     }
 

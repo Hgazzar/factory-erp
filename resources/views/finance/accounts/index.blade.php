@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'دليل الحسابات - UFUQ ERP')
+@section('title', 'دليل الحسابات - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-blue-600">الرئيسية</a>

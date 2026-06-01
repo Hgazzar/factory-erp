@@ -20,6 +20,9 @@
 @php
     $selectedRaw = old($name, $value);
     $selectedStr = $selectedRaw === null || $selectedRaw === '' ? '' : (string) $selectedRaw;
+    $id = filled($id ?? null)
+        ? (string) $id
+        : 'erp-ss-'.preg_replace('/[^a-zA-Z0-9_-]+/', '-', (string) $name).'-'.substr(uniqid('', true), -8);
     $wireAttrs = $attributes->filter(fn ($v, $k) => is_string($k) && str_starts_with($k, 'wire:model'));
     $outerAttrs = $attributes->except(array_keys($wireAttrs->getAttributes()));
     if ($omitHidden) {

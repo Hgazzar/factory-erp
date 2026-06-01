@@ -24,10 +24,11 @@
                 });
             });
         </script>
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100" dir="rtl">
+            <div class="text-center">
+                <a href="/" class="inline-block no-underline">
+                    <span class="text-2xl font-bold text-indigo-900 tracking-wide">{{ config('app.name') }}</span>
+                    <span class="block text-sm text-gray-500 mt-1">نظام إدارة الأعمال</span>
                 </a>
             </div>
 

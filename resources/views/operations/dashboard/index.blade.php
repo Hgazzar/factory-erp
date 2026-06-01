@@ -27,7 +27,7 @@
             <div class="card border-0 shadow-sm bg-danger text-white">
                 <div class="card-body">
                     <h6 class="opacity-75">إجمالي الهالك</h6>
-                    <h2 class="fw-bold mb-0">{{ number_format($summary['total_scrap']) }}</h2>
+                    <h2 class="fw-bold mb-0">{{ number_format($summary['total_rejected']) }}</h2>
                     <small>فاقد إنتاج</small>
                 </div>
             </div>
@@ -97,7 +97,7 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="text-danger fw-bold">{{ $pShift->scrap_quantity }}</td>
+                            <td class="text-danger fw-bold">{{ $pShift->rejected_quantity }}</td>
                             <td>
                                 @php
                                     $color = $pShift->yield_rate >= 95 ? 'bg-success' : ($pShift->yield_rate >= 85 ? 'bg-warning text-dark' : 'bg-danger');

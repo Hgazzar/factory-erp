@@ -1,6 +1,10 @@
 {
+  "_module.esm-L4ggBBWN.js": {
+    "file": "assets/module.esm-L4ggBBWN.js",
+    "name": "module.esm"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-IRTh8vi1.css",
+    "file": "assets/app-CZa4844U.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -8,10 +12,46 @@
       "app.css"
     ]
   },
+  "resources/css/pricing.css": {
+    "file": "assets/pricing-Bpree7RK.css",
+    "src": "resources/css/pricing.css",
+    "isEntry": true,
+    "name": "pricing",
+    "names": [
+      "pricing.css"
+    ]
+  },
+  "resources/css/store-premium.css": {
+    "file": "assets/store-premium-BHWflx1X.css",
+    "src": "resources/css/store-premium.css",
+    "isEntry": true,
+    "name": "store-premium",
+    "names": [
+      "store-premium.css"
+    ]
+  },
   "resources/js/app.js": {
     "file": "assets/app-BAHg614i.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true
+  },
+  "resources/js/pricing.js": {
+    "file": "assets/pricing-uMw7_kYT.js",
+    "name": "pricing",
+    "src": "resources/js/pricing.js",
+    "isEntry": true,
+    "imports": [
+      "_module.esm-L4ggBBWN.js"
+    ]
+  },
+  "resources/js/store-premium.js": {
+    "file": "assets/store-premium-V_ZSuV7I.js",
+    "name": "store-premium",
+    "src": "resources/js/store-premium.js",
+    "isEntry": true,
+    "imports": [
+      "_module.esm-L4ggBBWN.js"
+    ]
   }
 }

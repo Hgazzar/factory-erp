@@ -15,12 +15,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(prepend: [
             \App\Http\Middleware\SetLocaleToArabic::class,
         ]);
+        $middleware->web(append: [
+            \App\Http\Middleware\ApplyTenantNicheContext::class,
+        ]);
         // Railway / أي reverse proxy: بدونها قد يُعرَّف الطلب كـ HTTP فيفشل كوكي الجلسة/CSRF (419).
         $middleware->trustProxies(at: '*');
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'super_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'module' => \App\Http\Middleware\EnsureTenantModuleEnabled::class,
             'technician_or_admin' => \App\Http\Middleware\EnsureUserIsTechnicianOrAdmin::class,
+            'clinic.capability' => \App\Http\Middleware\EnsureClinicCapability::class,
+            'clinic.portal.tenant' => \App\Http\Middleware\ResolveClinicPortalTenant::class,
+            'store.portal.tenant' => \App\Http\Middleware\ResolveStorePortalTenant::class,
+            'feature' => \App\Http\Middleware\CheckFeature::class,
             'attendance.api' => \App\Http\Middleware\AuthenticateAttendanceApiToken::class,
+            'worker.scope' => \App\Http\Middleware\EnsureWorkerRouteScope::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

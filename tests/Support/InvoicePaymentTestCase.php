@@ -135,6 +135,9 @@ abstract class InvoicePaymentTestCase extends AccountingTestCase
             'date' => now()->toDateString(),
             'reference' => 'SI-'.fake()->unique()->numerify('######'),
             'invoice_status' => $invoiceStatus,
+            'status' => $invoiceStatus === 'draft'
+                ? SalesInvoice::STATUS_DRAFT
+                : SalesInvoice::STATUS_UNPAID,
             'total' => $total,
             'paid_amount' => $paid,
         ]);

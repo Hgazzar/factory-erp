@@ -119,38 +119,12 @@ class PurchaseOrderWebController extends Controller
      */
     public function completeReceipt(PurchaseOrder $order): RedirectResponse
     {
-        if ($order->status !== self::PENDING_STATUS) {
-            return redirect()
-                ->route('purchases.orders.show', $order)
-                ->with('error', 'يمكن تنفيذ الاستلام المحاسبي لأوامر الشراء في حالة «معلق» فقط.');
-        }
-
-        if ($order->journal_entry_id) {
-            return redirect()
-                ->route('purchases.orders.show', $order)
-                ->with('error', 'تم ترحيل هذا الأمر مسبقاً إلى دفتر اليومية.');
-        }
-
-        try {
-            DB::transaction(function () use ($order): void {
-                $order->loadMissing('items.item');
-                $entry = app(FinancialRecordingService::class)->recordPurchaseOrderReceipt($order);
-                $order->update([
-                    'status' => self::RECEIVED_STATUS,
-                    'journal_entry_id' => $entry->id,
-                ]);
-            });
-        } catch (\Throwable $e) {
-            report($e);
-
-            return redirect()
-                ->route('purchases.orders.show', $order)
-                ->with('error', $e->getMessage() ?: 'تعذر ترحيل الاستلام المحاسبي. تحقق من دليل الحسابات (مخزون 1041/1042، ذمم دائنة 2010).');
-        }
-
         return redirect()
             ->route('purchases.orders.show', $order)
-            ->with('success', 'تم تسجيل الاستلام وإنشاء قيد اليومية (مدين مخزون / دائن ذمم دائنة) بنجاح.');
+            ->with(
+                'error',
+                'تم إيقاف الاستلام المحاسبي من أمر الشراء. سجّل فاتورة مشتريات مرتبطة بالأمر أو إذن إضافة مخزني — المخزون والقيود تُسجَّل عند ترحيل الفاتورة/التوريد فقط.'
+            );
     }
 
     public function create(): View

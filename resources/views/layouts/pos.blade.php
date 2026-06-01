@@ -72,7 +72,7 @@
                     <x-pos-sidebar-nav />
                 </nav>
                 <div class="module-sidebar-footer text-center md:text-start">
-                    <span class="text-gray-400">MIRADA ERP · POS</span>
+                    <span class="text-gray-400">{{ config('app.name') }} · POS</span>
                 </div>
             </aside>
 

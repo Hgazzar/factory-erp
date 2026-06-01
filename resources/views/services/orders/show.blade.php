@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $order->reference_number . ' - MIRADA ERP')
+@section('title', $order->reference_number . ' - '.config('app.name'))
 
 @section('content')
 @php

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'طلب خدمة جديد - MIRADA ERP')
+@section('title', 'طلب خدمة جديد - '.config('app.name'))
 
 @section('content')
 @php

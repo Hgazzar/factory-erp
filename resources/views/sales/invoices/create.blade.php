@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'فاتورة جديدة - MIRADA ERP')
+@section('title', 'فاتورة جديدة - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -38,6 +38,12 @@
         <input type="hidden" name="warehouse_id" value="{{ $warehouse->id }}">
         @if(!empty($fromQuotationId))
             <input type="hidden" name="quotation_id" value="{{ $fromQuotationId }}">
+        @endif
+        @if(!empty($fromSalesOrderId))
+            <input type="hidden" name="sales_order_id" value="{{ $fromSalesOrderId }}">
+            <input type="hidden" name="posting_source" value="order">
+        @else
+            <input type="hidden" name="posting_source" value="{{ $postingSource ?? 'direct' }}">
         @endif
 
         {{-- تفاصيل الفاتورة --}}

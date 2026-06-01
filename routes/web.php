@@ -1,12 +1,27 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AccountingDashboardController;
 use App\Http\Controllers\AccountWebController;
 use App\Http\Controllers\ApAgingController;
 use App\Http\Controllers\Api\ProductSearchController;
 use App\Http\Controllers\ArAgingController;
+use App\Http\Controllers\ApiTokenWebController;
 use App\Http\Controllers\AttachmentWebController;
-use App\Http\Controllers\AuditLogWebController;
+use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
+use App\Http\Controllers\Clinic\ClinicApiController;
+use App\Http\Controllers\Clinic\ClinicAppointmentWebController;
+use App\Http\Controllers\Clinic\ClinicClinicalNoteWebController;
+use App\Http\Controllers\Clinic\ClinicDashboardController;
+use App\Http\Controllers\Clinic\ClinicMedicalAttachmentWebController;
+use App\Http\Controllers\Clinic\ClinicPatientWebController;
+use App\Http\Controllers\Clinic\ClinicPdfWebController;
+use App\Http\Controllers\Clinic\ClinicDoctorScheduleWebController;
+use App\Http\Controllers\Clinic\ClinicPrescriptionWebController;
+use App\Http\Controllers\Clinic\ClinicServiceWebController;
+use App\Http\Controllers\Clinic\Portal\ClinicPortalApiController;
+use App\Http\Controllers\Clinic\Portal\ClinicPortalWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BomListWebController;
@@ -30,6 +45,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DebitNoteController;
 use App\Http\Controllers\DeliveryOrderWebController;
 use App\Http\Controllers\DepartmentWebController;
+use App\Http\Controllers\ShiftWebController;
 use App\Http\Controllers\EinvoiceSettingsController;
 use App\Http\Controllers\EmployeeWebController;
 use App\Http\Controllers\ExpenseCategoryController;
@@ -54,6 +70,12 @@ use App\Http\Controllers\NotificationWebController;
 use App\Http\Controllers\OperationsDashboardController;
 use App\Http\Controllers\OperationsShiftController;
 use App\Http\Controllers\PaymentMethodAccountController;
+use App\Http\Controllers\Pos\PosProductWebController;
+use App\Http\Controllers\Pos\PosTerminalApiController;
+use App\Http\Controllers\Pos\PosTerminalWebController;
+use App\Http\Controllers\Store\Portal\StorePortalApiController;
+use App\Http\Controllers\Store\Portal\StorePortalWebController;
+use App\Http\Controllers\StoreSettingsWebController;
 use App\Http\Controllers\PosDashboardController;
 use App\Http\Controllers\PosDeviceWebController;
 use App\Http\Controllers\PosSaleWebController;
@@ -65,9 +87,11 @@ use App\Http\Controllers\ProcurementDashboardController;
 use App\Http\Controllers\ProductionEntryWebController;
 use App\Http\Controllers\ProductionOrderWebController;
 use App\Http\Controllers\ProductionReportWebController;
+use App\Http\Controllers\PricingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfitLossReportWebController;
 use App\Http\Controllers\PurchaseInvoiceWebController;
+use App\Http\Controllers\SupplierPaymentWebController;
 use App\Http\Controllers\PurchaseOrderWebController;
 use App\Http\Controllers\PurchaseReportController;
 use App\Http\Controllers\PurchaseReturnWebController;
@@ -115,6 +139,8 @@ if (app()->environment('production')) {
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 
 /*
 |--------------------------------------------------------------------------
@@ -176,14 +202,69 @@ Route::get('/__zatca-generate-csr', function () {
 
 /*
 |--------------------------------------------------------------------------
+| Clinic Patient Portal (Guest — no staff auth)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('s/{tenant_slug}')
+    ->name('store.portal.')
+    ->middleware(['store.portal.tenant', 'feature:online_store'])
+    ->group(function () {
+        Route::get('/', [StorePortalWebController::class, 'home'])->name('home');
+        Route::get('shop', [StorePortalWebController::class, 'shop'])->name('shop');
+        Route::get('p/{product}', [StorePortalWebController::class, 'product'])->whereNumber('product')->name('product');
+        Route::get('cart', [StorePortalWebController::class, 'cart'])->name('cart');
+        Route::get('checkout', [StorePortalWebController::class, 'checkout'])->name('checkout');
+        Route::get('order/success/{saleId}', [StorePortalWebController::class, 'orderSuccess'])->whereNumber('saleId')->name('order.success');
+        Route::get('about', [StorePortalWebController::class, 'about'])->name('about');
+        Route::get('contact', [StorePortalWebController::class, 'contact'])->name('contact');
+        Route::get('faq', [StorePortalWebController::class, 'faq'])->name('faq');
+        Route::get('privacy', [StorePortalWebController::class, 'privacy'])->name('privacy');
+        Route::get('shipping', [StorePortalWebController::class, 'shipping'])->name('shipping');
+
+        Route::prefix('api')->name('api.')->group(function () {
+            Route::get('categories', [StorePortalApiController::class, 'categories'])->name('categories');
+            Route::get('products', [StorePortalApiController::class, 'products'])->name('products');
+            Route::get('products/{product}', [StorePortalApiController::class, 'showProduct'])->whereNumber('product')->name('products.show');
+            Route::post('quote', [StorePortalApiController::class, 'quote'])->name('quote');
+            Route::post('coupon', [StorePortalApiController::class, 'applyCoupon'])->name('coupon');
+            Route::post('checkout', [StorePortalApiController::class, 'checkout'])->name('checkout');
+        });
+    });
+
+Route::prefix('c/{tenant_slug}')
+    ->name('clinic.portal.')
+    ->middleware(['clinic.portal.tenant', 'feature:clinic_patient_portal'])
+    ->group(function () {
+        Route::get('book', [ClinicPortalWebController::class, 'book'])->name('book');
+        Route::middleware('feature:clinic_appointment_self_management')->group(function () {
+            Route::get('manage/{token}', [ClinicPortalWebController::class, 'manage'])->name('manage');
+            Route::post('manage/{token}/cancel', [ClinicPortalWebController::class, 'cancel'])->name('manage.cancel');
+            Route::post('manage/{token}/reschedule', [ClinicPortalWebController::class, 'reschedule'])->name('manage.reschedule');
+        });
+
+        Route::prefix('api')->name('api.')->group(function () {
+            Route::get('specialties', [ClinicPortalApiController::class, 'specialties'])->name('specialties');
+            Route::get('doctors', [ClinicPortalApiController::class, 'doctors'])->name('doctors');
+            Route::get('dates', [ClinicPortalApiController::class, 'dates'])->name('dates');
+            Route::get('slots', [ClinicPortalApiController::class, 'slots'])->name('slots');
+            Route::post('book', [ClinicPortalApiController::class, 'book'])->name('book');
+            Route::middleware('feature:clinic_appointment_self_management')->group(function () {
+                Route::post('manage/{token}/cancel', [ClinicPortalApiController::class, 'cancel'])->name('manage-api.cancel');
+                Route::post('manage/{token}/reschedule', [ClinicPortalApiController::class, 'reschedule'])->name('manage-api.reschedule');
+            });
+        });
+    });
+
+/*
+|--------------------------------------------------------------------------
 | Authenticated Routes
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'worker.scope'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Technician Access
-    Route::middleware('technician_or_admin')->prefix('services/technician')->name('services.technician.')->group(function () {
+    Route::middleware(['technician_or_admin', 'module:services'])->prefix('services/technician')->name('services.technician.')->group(function () {
         Route::get('/', [TechnicianServiceOrderController::class, 'index'])->name('index');
         Route::patch('orders/{order}', [TechnicianServiceOrderController::class, 'update'])->name('orders.update');
     });
@@ -196,21 +277,36 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // نقاط البيع — خارج تقييد role:admin حتى يفتح الكاشير/المشرف الواجهة (البيانات مقيّدة بالمستأجر في النماذج).
-    Route::prefix('pos')->name('pos.')->group(function () {
+    Route::prefix('pos')->name('pos.')->middleware('module:pos')->group(function () {
         Route::get('dashboard', [PosDashboardController::class, 'index'])->name('dashboard');
-        Route::get('cashier', [PosSaleWebController::class, 'index'])->name('cashier');
+        Route::get('cashier', [PosTerminalWebController::class, 'index'])->name('cashier');
+        Route::get('terminal/receipt/{pos_sale}', [PosTerminalWebController::class, 'receipt'])->name('terminal.receipt');
+
+        Route::prefix('api')->name('api.')->group(function () {
+            Route::get('categories', [PosTerminalApiController::class, 'categories'])->name('categories');
+            Route::get('products', [PosTerminalApiController::class, 'products'])->name('products');
+            Route::get('products/lookup', [PosTerminalApiController::class, 'lookup'])->name('products.lookup');
+            Route::post('checkout', [PosTerminalApiController::class, 'checkout'])->name('checkout');
+        });
+
         Route::get('sessions', [PosSessionWebController::class, 'index'])->name('sessions.index');
-        Route::middleware('role:admin')->group(function () {
+        Route::middleware(['role:admin', 'feature:retail_pos_device_link'])->group(function () {
             Route::get('devices', [PosDeviceWebController::class, 'index'])->name('devices.index');
             Route::post('devices', [PosDeviceWebController::class, 'store'])->name('devices.store');
         });
         Route::post('sessions', [PosSessionWebController::class, 'store'])->name('sessions.store');
+        Route::get('products', [PosProductWebController::class, 'index'])->name('products.index');
+        Route::post('products', [PosProductWebController::class, 'store'])->name('products.store');
+        Route::patch('products/{pos_product}/online', [PosProductWebController::class, 'updateOnlineVisibility'])->name('products.online');
+        Route::patch('products/{pos_product}', [PosProductWebController::class, 'update'])->name('products.update');
+
         Route::get('receipts', [PosSaleWebController::class, 'index'])->name('receipts.index');
         Route::post('sales', [PosSaleWebController::class, 'store'])->name('sales.store');
         Route::get('sales/{pos_sale}', [PosSaleWebController::class, 'show'])->name('sales.show');
     });
 
-    Route::middleware('can:manage_payroll')->prefix('hr')->name('hr.')->group(function () {
+    Route::middleware(['can:manage_payroll', 'module:hr'])->prefix('hr')->name('hr.')->group(function () {
+        Route::redirect('salaries', '/hr/payrolls', 301)->name('salaries');
         Route::get('payrolls/payslips', [PayrollWebController::class, 'payslips'])->name('payrolls.payslips');
         Route::get('payrolls', [PayrollWebController::class, 'index'])->name('payrolls.index');
         Route::get('payrolls/create', [PayrollWebController::class, 'create'])->name('payrolls.create');
@@ -252,7 +348,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('attachments/{attachment}', [AttachmentWebController::class, 'destroy'])->name('attachments.destroy');
 
     // إدارة العملاء (CRM) — role:admin يشمل admin و super_admin
-    Route::prefix('crm')->name('crm.')->group(function () {
+    Route::prefix('crm')->name('crm.')->middleware('module:crm')->group(function () {
         Route::get('dashboard', [CrmDashboardController::class, 'index'])->name('dashboard');
         Route::get('customers', [CrmCustomerWebController::class, 'index'])->name('customers.index');
         Route::get('customers/new', [CrmCustomerWebController::class, 'createNewCustomer'])->name('customers.new');
@@ -290,7 +386,78 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::view('settings', 'crm.settings-placeholder')->name('settings.index');
     });
 
+    // العيادة (Clinic) — نيش medical_clinics
+    Route::prefix('clinic')->name('clinic.')->middleware('module:clinic')->group(function () {
+        Route::get('dashboard', [ClinicDashboardController::class, 'index'])
+            ->middleware('clinic.capability:view_appointments')
+            ->name('dashboard');
+        Route::get('portal/qr-download', [ClinicDashboardController::class, 'downloadPortalQr'])
+            ->middleware(['clinic.capability:view_appointments', 'feature:clinic_patient_portal'])
+            ->name('portal.qr-download');
+
+        Route::middleware('clinic.capability:view_appointments')->group(function () {
+            Route::get('appointments', [ClinicAppointmentWebController::class, 'index'])->name('appointments.index');
+            Route::post('appointments', [ClinicAppointmentWebController::class, 'store'])->name('appointments.store');
+            Route::post('appointments/quick', [ClinicAppointmentWebController::class, 'quickStore'])->name('appointments.quick-store');
+        });
+
+        Route::patch('appointments/{appointment}/status', [ClinicAppointmentWebController::class, 'updateStatus'])
+            ->middleware('clinic.capability:view_appointments')
+            ->name('appointments.status');
+
+        Route::post('api/quote-services', [ClinicApiController::class, 'quoteServices'])
+            ->middleware('clinic.capability:collect_payment')
+            ->name('api.quote-services');
+
+        Route::post('api/upload-manual-prescription', [ClinicApiController::class, 'uploadManualPrescription'])
+            ->middleware('clinic.capability:view_appointments')
+            ->name('api.upload-manual-prescription');
+
+        Route::middleware('clinic.capability:view_appointments')->group(function () {
+            Route::get('patients', [ClinicPatientWebController::class, 'index'])->name('patients.index');
+            Route::post('patients', [ClinicPatientWebController::class, 'store'])->name('patients.store');
+            Route::get('patients/{patient}/edit', [ClinicPatientWebController::class, 'edit'])->name('patients.edit');
+            Route::put('patients/{patient}', [ClinicPatientWebController::class, 'update'])->name('patients.update');
+            Route::get('patients/{patient}', [ClinicPatientWebController::class, 'show'])->name('patients.show');
+        });
+
+        Route::middleware('clinic.capability:collect_payment')->group(function () {
+            Route::get('appointments/{appointment}/receipt.pdf', [ClinicPdfWebController::class, 'receipt'])
+                ->name('appointments.receipt.pdf');
+        });
+
+        Route::middleware('clinic.capability:view_clinical')->group(function () {
+            Route::post('api/check-allergy', [ClinicApiController::class, 'checkAllergy'])->name('api.check-allergy');
+            Route::patch('patients/{patient}/clinical', [ClinicPatientWebController::class, 'updateClinical'])->name('patients.clinical.update');
+            Route::post('patients/{patient}/clinical-notes', [ClinicClinicalNoteWebController::class, 'store'])->name('clinical-notes.store');
+            Route::patch('clinical-notes/{clinicalNote}', [ClinicClinicalNoteWebController::class, 'update'])->name('clinical-notes.update');
+            Route::post('patients/{patient}/attachments', [ClinicMedicalAttachmentWebController::class, 'store'])->name('attachments.store');
+            Route::get('attachments/{medicalAttachment}/preview', [ClinicMedicalAttachmentWebController::class, 'preview'])->name('attachments.preview');
+            Route::get('attachments/{medicalAttachment}/download', [ClinicMedicalAttachmentWebController::class, 'download'])->name('attachments.download');
+            Route::delete('attachments/{medicalAttachment}', [ClinicMedicalAttachmentWebController::class, 'destroy'])->name('attachments.destroy');
+
+            Route::get('prescriptions', [ClinicPrescriptionWebController::class, 'index'])->name('prescriptions.index');
+            Route::get('prescriptions/create', [ClinicPrescriptionWebController::class, 'create'])->name('prescriptions.create');
+            Route::post('prescriptions', [ClinicPrescriptionWebController::class, 'store'])->name('prescriptions.store');
+            Route::get('prescriptions/{prescription}', [ClinicPrescriptionWebController::class, 'show'])->name('prescriptions.show');
+            Route::get('prescriptions/{prescription}/pdf', [ClinicPdfWebController::class, 'prescription'])
+                ->name('prescriptions.pdf');
+        });
+
+        Route::middleware('clinic.capability:manage_services')->group(function () {
+            Route::get('services', [ClinicServiceWebController::class, 'index'])->name('services.index');
+            Route::post('services', [ClinicServiceWebController::class, 'store'])->name('services.store');
+
+            Route::get('doctor-schedules', [ClinicDoctorScheduleWebController::class, 'index'])->name('doctor-schedules.index');
+            Route::post('doctor-schedules', [ClinicDoctorScheduleWebController::class, 'storeSchedule'])->name('doctor-schedules.store');
+            Route::delete('doctor-schedules/{schedule}', [ClinicDoctorScheduleWebController::class, 'destroySchedule'])->name('doctor-schedules.destroy');
+            Route::post('blocked-slots', [ClinicDoctorScheduleWebController::class, 'storeBlocked'])->name('blocked-slots.store');
+            Route::delete('blocked-slots/{blocked}', [ClinicDoctorScheduleWebController::class, 'destroyBlocked'])->name('blocked-slots.destroy');
+        });
+    });
+
     // Inventory & Items
+    Route::middleware('module:inventory')->group(function () {
     Route::get('api/products/search', [ProductSearchController::class, 'search'])->name('api.products.search');
     Route::get('items/{item}', [ItemWebController::class, 'show'])->whereNumber('item')->name('items.show');
     Route::put('items/{item}/bom', [ItemBomController::class, 'update'])->whereNumber('item')->name('items.bom.update');
@@ -312,10 +479,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::resource('audits', \App\Http\Controllers\InventoryAuditController::class);
         Route::post('audits/{audit}/approve', [\App\Http\Controllers\InventoryAuditController::class, 'approve'])->name('audits.approve');
         Route::get('movements', [\App\Http\Controllers\StockMovementController::class, 'index'])->name('movements.index');
+        Route::get('reports/valuation', [\App\Http\Controllers\InventoryValuationReportWebController::class, 'index'])->name('reports.valuation');
         Route::resource('price-lists', \App\Http\Controllers\PriceListController::class);
     });
+    }); // module:inventory
 
-    // Legacy production module routes -> redirect to new manufacturing dashboard
+    // Legacy production + manufacturing
+    Route::middleware('module:manufacturing')->group(function () {
     Route::redirect('production-lines', 'manufacturing', 301)->name('production-lines.index');
     Route::redirect('production-lines/create', 'manufacturing', 301)->name('production-lines.create');
     Route::get('production-lines/{any}', fn () => redirect()->route('manufacturing.dashboard'))
@@ -323,13 +493,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         ->name('production-lines.legacy');
     Route::resource('machines', MachineWebController::class);
     Route::prefix('production-orders')->name('production-orders.')->group(function () {
-        Route::get('/', [ProductionOrderWebController::class, 'index'])->name('index');
-        Route::get('create', [ProductionOrderWebController::class, 'create'])->name('create');
-        Route::post('/', [ProductionOrderWebController::class, 'store'])->name('store');
-        Route::get('items/{item}/bom-suggestions', [ProductionOrderWebController::class, 'bomSuggestions'])->name('bom-suggestions');
-        Route::get('{production_order}/ingredient-shortage', [ProductionOrderWebController::class, 'ingredientShortage'])->name('ingredient-shortage');
-        Route::post('{production_order}/prefill-purchase', [ProductionOrderWebController::class, 'prefillPurchaseOrder'])->name('prefill-purchase');
+        Route::redirect('/', '/manufacturing/runs', 301)->name('index');
+        Route::redirect('create', '/manufacturing/create', 301)->name('create');
+        Route::get('items/{item}/bom-suggestions', fn () => redirect()->route('manufacturing.runs.index', [], 301))->name('bom-suggestions');
+        Route::get('{production_order}/ingredient-shortage', fn () => redirect()->route('manufacturing.runs.index', [], 301))->name('ingredient-shortage');
+        Route::match(['post'], '{production_order}/prefill-purchase', fn () => redirect()->route('manufacturing.runs.index'))->name('prefill-purchase');
         Route::post('{production_order}/complete', [ProductionOrderWebController::class, 'complete'])->name('complete');
+        Route::match(['post'], '/', fn () => redirect()->route('manufacturing.runs.index'))->name('store');
         Route::get('{production_order}', [ProductionOrderWebController::class, 'show'])->name('show');
     });
 
@@ -349,9 +519,10 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::delete('{manufacturing_run}', [ManufacturingWebController::class, 'destroy'])->name('destroy');
         Route::get('{manufacturing_run}', [ManufacturingWebController::class, 'show'])->name('show');
     });
+    }); // module:manufacturing (legacy + runs)
 
     // Finance (Start of the module)
-    Route::prefix('finance')->name('finance.')->group(function () {
+    Route::prefix('finance')->name('finance.')->middleware('module:finance')->group(function () {
         Route::get('/', fn () => redirect()->route('finance.dashboard'))->name('index');
         Route::get('dashboard', [AccountingDashboardController::class, 'index'])->name('dashboard');
         Route::get('accounts', [AccountWebController::class, 'index'])->name('accounts.index');
@@ -427,7 +598,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     });
 
     // الموارد البشرية (HR)
-    Route::prefix('hr')->name('hr.')->group(function () {
+    Route::prefix('hr')->name('hr.')->middleware('module:hr')->group(function () {
         Route::redirect('/', '/hr/dashboard');
         Route::get('dashboard', [HRDashboardController::class, 'index'])->name('dashboard');
         Route::get('attendance', [HRAttendanceWebController::class, 'index'])->name('attendance');
@@ -440,7 +611,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('leave-requests', [HRLeaveRequestController::class, 'store'])->name('leave-requests.store');
         Route::post('leave-requests/{leave}/approve', [HRLeaveRequestController::class, 'approve'])->name('leave-requests.approve');
         Route::post('leave-requests/{leave}/reject', [HRLeaveRequestController::class, 'reject'])->name('leave-requests.reject');
-        Route::view('salaries', 'hr.salaries')->name('salaries');
+        Route::resource('shifts', ShiftWebController::class);
         Route::resource('departments', DepartmentWebController::class)->except(['show']);
         Route::get('employees/import', [EmployeeWebController::class, 'import'])->name('employees.import');
         Route::get('employees/export', [EmployeeWebController::class, 'export'])->name('employees.export');
@@ -448,7 +619,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     });
 
     // المشتريات (Purchases)
-    Route::prefix('purchases')->name('purchases.')->group(function () {
+    Route::prefix('purchases')->name('purchases.')->middleware('module:purchases')->group(function () {
         Route::get('/', [ProcurementDashboardController::class, 'index'])->name('dashboard');
         Route::get('suppliers/{supplier}/documents/{document}/download', [SupplierWebController::class, 'downloadDocument'])->name('suppliers.documents.download');
         Route::get('suppliers/import/template', [SupplierWebController::class, 'importTemplate'])->name('suppliers.import-template');
@@ -473,6 +644,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::post('invoices/import', [PurchaseInvoiceWebController::class, 'import'])->name('invoices.import');
         Route::post('invoices/{invoice}/record-payment', [PurchaseInvoiceWebController::class, 'recordPayment'])->name('invoices.record-payment');
         Route::resource('invoices', PurchaseInvoiceWebController::class)->only(['index', 'create', 'store']);
+        Route::get('payments/supplier-outstanding', [SupplierPaymentWebController::class, 'supplierOutstanding'])->name('payments.supplier-outstanding');
+        Route::resource('payments', SupplierPaymentWebController::class)->only(['index', 'create', 'store']);
         Route::get('returns/invoices-by-supplier', [PurchaseReturnWebController::class, 'invoicesBySupplier'])->name('returns.invoices-by-supplier');
         Route::get('returns/invoice-items/{invoice}', [PurchaseReturnWebController::class, 'invoiceItems'])->name('returns.invoice-items');
         Route::resource('returns', PurchaseReturnWebController::class)->only(['index', 'create', 'store'])->names('returns');
@@ -480,7 +653,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     });
 
     // المبيعات (Sales)
-    Route::prefix('sales')->name('sales.')->group(function () {
+    Route::prefix('sales')->name('sales.')->middleware('module:sales')->group(function () {
         Route::get('/', [SalesDashboardController::class, 'index'])->name('dashboard');
         Route::get('customers/import/template', [CustomerWebController::class, 'importTemplate'])->name('customers.import-template');
         Route::post('customers/import', [CustomerWebController::class, 'import'])->name('customers.import');
@@ -538,7 +711,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     });
 
     // الخدمات والصيانة (لوحة + طلبات الخدمة)
-    Route::prefix('services')->name('services.')->group(function () {
+    Route::prefix('services')->name('services.')->middleware('module:services')->group(function () {
         Route::get('dashboard', [ServicesDashboardController::class, 'index'])->name('dashboard');
         Route::prefix('orders')->name('orders.')->group(function () {
             Route::get('/', [ServiceOrderWebController::class, 'index'])->name('index');
@@ -555,14 +728,46 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // إعدادات المنشأة والسجلات
     Route::get('settings/company', [CompanySettingsController::class, 'edit'])->name('settings.company.edit');
     Route::put('settings/company', [CompanySettingsController::class, 'update'])->name('settings.company.update');
+    Route::middleware('module:pos')->group(function () {
+        Route::get('settings/store', [StoreSettingsWebController::class, 'edit'])->name('settings.store.edit');
+        Route::put('settings/store', [StoreSettingsWebController::class, 'update'])->name('settings.store.update');
+    });
+    Route::get('settings/api-tokens', [ApiTokenWebController::class, 'index'])->name('settings.api-tokens.index');
+    Route::post('settings/api-tokens', [ApiTokenWebController::class, 'store'])->name('settings.api-tokens.store');
+    Route::delete('settings/api-tokens/{tokenId}', [ApiTokenWebController::class, 'destroy'])->whereNumber('tokenId')->name('settings.api-tokens.destroy');
     Route::post('settings/system-maintenance/super-purge', [SystemMaintenanceController::class, 'superPurge'])->name('settings.system-maintenance.super-purge');
+    // لوحة الأدمن + سجل التدقيق + تقارير مركزية
+    Route::get('admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('system/audit-log', [AuditLogWebController::class, 'index'])->name('system.audit.index');
 
     Route::get('reports/profit-loss', fn () => redirect()->route('finance.reports.profit-loss'));
-    Route::get('reports/statement', [StatementReportWebController::class, 'index'])->name('reports.statement.index');
-    Route::get('reports/tax', [TaxReportWebController::class, 'index'])->name('reports.tax.index');
-    Route::get('reports/production/{record}', [ProductionReportWebController::class, 'show'])->name('reports.production.show');
-    Route::get('reports/production', [ProductionReportWebController::class, 'index'])->name('reports.production.index');
+    Route::middleware('module:sales')->group(function () {
+        Route::get('reports/statement', [StatementReportWebController::class, 'index'])->name('reports.statement.index');
+    });
+    Route::middleware('module:finance')->group(function () {
+        Route::get('reports/tax', [TaxReportWebController::class, 'index'])->name('reports.tax.index');
+    });
+    Route::middleware('module:manufacturing')->group(function () {
+        Route::get('reports/production/{record}', [ProductionReportWebController::class, 'show'])->name('reports.production.show');
+        Route::get('reports/production', [ProductionReportWebController::class, 'index'])->name('reports.production.index');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| لوحة التحكم المركزية (Super-Admin)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
+    Route::get('/', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('tenants', [SuperAdminTenantController::class, 'index'])->name('tenants.index');
+    Route::get('tenants/create', [SuperAdminTenantController::class, 'create'])->name('tenants.create');
+    Route::post('tenants', [SuperAdminTenantController::class, 'store'])->name('tenants.store');
+    Route::get('tenants/{tenant}', [SuperAdminTenantController::class, 'show'])->whereNumber('tenant')->name('tenants.show');
+    Route::put('tenants/{tenant}/modules', [SuperAdminTenantController::class, 'updateModules'])->whereNumber('tenant')->name('tenants.modules.update');
+    Route::get('tenants/{tenant}/premium-features', [SuperAdminTenantController::class, 'premiumFeatures'])->whereNumber('tenant')->name('tenants.premium-features.show');
+    Route::put('tenants/{tenant}/premium-features', [SuperAdminTenantController::class, 'updatePremiumFeatures'])->whereNumber('tenant')->name('tenants.premium-features.update');
+    Route::put('tenants/{tenant}/slug', [SuperAdminTenantController::class, 'updateSlug'])->whereNumber('tenant')->name('tenants.slug.update');
 });
 
 /*
@@ -570,11 +775,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 | موديول العمليات (Operations)
 |--------------------------------------------------------------------------
 */
-Route::prefix('operations')->name('operations.')->middleware(['auth'])->group(function () {
+Route::prefix('operations')->name('operations.')->middleware(['auth', 'worker.scope', 'module:manufacturing'])->group(function () {
     Route::get('dashboard', [OperationsDashboardController::class, 'index'])->name('dashboard.index');
     Route::get('production-entry', [ProductionEntryWebController::class, 'create'])->name('production-entry.create');
     Route::post('production-entry', [ProductionEntryWebController::class, 'store'])->name('production-entry.store');
     Route::get('production-entry/item-by-barcode', [ProductionEntryWebController::class, 'itemByBarcode'])->name('production-entry.item-by-barcode');
+    Route::get('production-entry/item-bom-status', [ProductionEntryWebController::class, 'itemBomStatus'])->name('production-entry.item-bom-status');
 
     Route::middleware('role:supervisor')->group(function () {
         Route::get('shifts', [OperationsShiftController::class, 'index'])->name('shifts.index');

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'عرض بيانات الموظف - MIRADA ERP')
+@section('title', 'عرض بيانات الموظف - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -39,6 +39,15 @@
             <a href="{{ route('hr.employees.index') }}" class="inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50">
                 رجوع للقائمة
             </a>
+            @if($latestPaySlip && $latestPaySlip->payrollCycle)
+                <a href="{{ route('hr.payroll-slips.payslip', ['payroll' => $latestPaySlip->payroll_cycle_id, 'slip' => $latestPaySlip->id]) }}"
+                   target="_blank"
+                   rel="noopener"
+                   class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-900 shadow-sm hover:bg-teal-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 16 3.5v9A1.5 1.5 0 0 1 14.5 14h-13A1.5 1.5 0 0 1 0 12.5zM1 4v8.5A.5.5 0 0 0 1.5 13h13a.5.5 0 0 0 .5-.5V4z"/></svg>
+                    آخر قسيمة راتب
+                </a>
+            @endif
             <a href="{{ route('hr.employees.edit', $employee) }}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-9.5 9.5a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2L3 10.207V12h1.793L13 3.793z"/></svg>
                 تعديل البيانات
@@ -105,7 +114,7 @@
                 <div class="flex justify-between gap-4"><dt class="text-gray-500">الحالة</dt><dd>@if($st === 'active') نشط @elseif($st === 'on_leave') في إجازة @else غير نشط @endif</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-gray-500">تاريخ التعيين</dt><dd class="tabular-nums">{{ $hire?->format('Y-m-d') ?? '—' }}</dd></div>
                 <div class="flex justify-between gap-4"><dt class="text-gray-500">المستخدم المرتبط</dt><dd>{{ $employee->linkedUser?->email ?: '—' }}</dd></div>
-                <div class="flex justify-between gap-4"><dt class="text-gray-500">الدور</dt><dd>{{ $employee->linkedUser?->role ?: '—' }}</dd></div>
+                <div class="flex justify-between gap-4"><dt class="text-gray-500">الصلاحية</dt><dd>{{ $employee->linkedUser ? \App\Support\ErpRoles::roleLabelAr($employee->linkedUser->role) : '—' }}</dd></div>
             </dl>
         </section>
         </div>

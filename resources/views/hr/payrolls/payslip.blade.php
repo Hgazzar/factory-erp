@@ -7,7 +7,7 @@
     $earn = $slip->items->where('item_kind', \App\Models\PaySlip::ITEM_KIND_EARNING);
     $ded = $slip->items->where('item_kind', \App\Models\PaySlip::ITEM_KIND_DEDUCTION);
 @endphp
-@section('title', 'قسيمة راتب — ' . ($emp?->name ?? 'موظف') . ' - ' . config('app.name', 'MIRADA ERP'))
+@section('title', 'قسيمة راتب — ' . ($emp?->name ?? 'موظف') . ' - ' . config('app.name'))
 
 @push('print_styles')
 <style>

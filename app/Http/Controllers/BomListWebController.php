@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\BomList;
 use App\Models\BomListLine;
 use App\Models\Item;
+use App\Services\Manufacturing\BomListService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,6 +17,12 @@ use Illuminate\Support\Facades\DB;
 
 class BomListWebController extends Controller
 {
+    use ResolvesOperationsTenant;
+
+    public function __construct(
+        private readonly BomListService $bomLists,
+    ) {}
+
     public function index(): View
     {
         $lists = BomList::query()
@@ -27,15 +35,19 @@ class BomListWebController extends Controller
 
     public function create(): View
     {
-        $uid = (int) auth()->id();
+        $tenantUserId = $this->resolveOperationsTenantUserId();
 
         $finishedGoods = Item::query()
+            ->withoutGlobalScopes()
+            ->where('user_id', $tenantUserId)
             ->where('type', Item::TYPE_FINISHED_GOOD)
             ->where('is_active', true)
             ->orderBy('name_ar')
             ->get(['id', 'code', 'name_ar', 'unit']);
 
         $rawMaterials = Item::query()
+            ->withoutGlobalScopes()
+            ->where('user_id', $tenantUserId)
             ->where('type', Item::TYPE_RAW_MATERIAL)
             ->where('is_active', true)
             ->orderBy('name_ar')
@@ -49,14 +61,14 @@ class BomListWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) $request->user()->id;
+        $tenantUserId = $this->resolveOperationsTenantUserId();
 
         $validated = $request->validate([
             'item_id' => [
                 'required',
                 'integer',
-                Rule::exists('items', 'id')->where(function ($q) use ($uid) {
-                    $q->where('user_id', $uid)->where('type', Item::TYPE_FINISHED_GOOD);
+                Rule::exists('items', 'id')->where(function ($q) use ($tenantUserId) {
+                    $q->where('user_id', $tenantUserId)->where('type', Item::TYPE_FINISHED_GOOD);
                 }),
             ],
             'name' => 'required|string|max:255',
@@ -69,8 +81,8 @@ class BomListWebController extends Controller
             'lines.*.component_item_id' => [
                 'required',
                 'integer',
-                Rule::exists('items', 'id')->where(function ($q) use ($uid) {
-                    $q->where('user_id', $uid)->where('type', Item::TYPE_RAW_MATERIAL);
+                Rule::exists('items', 'id')->where(function ($q) use ($tenantUserId) {
+                    $q->where('user_id', $tenantUserId)->where('type', Item::TYPE_RAW_MATERIAL);
                 }),
             ],
             'lines.*.quantity' => 'required|numeric|min:0.0001',
@@ -79,9 +91,9 @@ class BomListWebController extends Controller
             'lines.*.notes' => 'nullable|string|max:500',
         ]);
 
-        $bom = DB::transaction(function () use ($uid, $validated) {
+        $bom = DB::transaction(function () use ($tenantUserId, $validated) {
             $bom = BomList::query()->create([
-                'user_id' => $uid,
+                'user_id' => $tenantUserId,
                 'item_id' => (int) $validated['item_id'],
                 'name' => $validated['name'],
                 'version' => $validated['version'],
@@ -102,6 +114,8 @@ class BomListWebController extends Controller
                     'sort_order' => $i,
                 ]);
             }
+
+            $this->bomLists->afterBomListPersisted($bom->fresh(['lines']));
 
             return $bom;
         });

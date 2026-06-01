@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use App\Traits\HasAttachments;
 use Filament\Forms\Components\Select;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -30,12 +30,20 @@ class Supplier extends Model
         'email',
         'website',
         'address',
+        'city',
+        'region',
+        'country',
+        'postal_code',
         'supplier_type',
         'rating',
         'tax_number',
         'commercial_register',
         'credit_limit',
         'payment_terms_days',
+        'opening_balance',
+        'opening_balance_date',
+        'opening_balance_journal_entry_id',
+        'payable_ledger_account_id',
         'currency',
         'bank_name',
         'bank_account_number',
@@ -49,12 +57,14 @@ class Supplier extends Model
         return [
             'is_active' => 'boolean',
             'credit_limit' => 'decimal:4',
+            'opening_balance' => 'decimal:4',
+            'opening_balance_date' => 'date',
         ];
     }
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
 
         static::deleting(function (Supplier $supplier): void {
             foreach ($supplier->documents as $doc) {
@@ -96,6 +106,16 @@ class Supplier extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function payableLedgerAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'payable_ledger_account_id');
+    }
+
+    public function openingBalanceJournalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'opening_balance_journal_entry_id');
     }
 
     public function documents(): HasMany

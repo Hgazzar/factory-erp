@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersistsMorphAttachments;
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\CostCenter;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\PaySlip;
+use App\Models\Shift;
 use App\Models\User;
+use App\Support\ErpRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,6 +22,7 @@ use Illuminate\View\View;
 class EmployeeWebController extends Controller
 {
     use PersistsMorphAttachments;
+    use ResolvesOperationsTenant;
 
     /**
      * استيراد الموظفين (مسار مؤقت حتى تفعيل المعالجة).
@@ -96,32 +101,40 @@ class EmployeeWebController extends Controller
                 return Attendance::buildHistoryRowForDate($date, $employee, $attendanceByDate->get($date));
             });
 
-        return view('hr.employees.show', compact('employee', 'attendanceHistory'));
+        $latestPaySlip = PaySlip::query()
+            ->where('employee_id', $employee->id)
+            ->with('payrollCycle')
+            ->orderByDesc('id')
+            ->first();
+
+        return view('hr.employees.show', compact('employee', 'attendanceHistory', 'latestPaySlip'));
     }
 
     public function create(): View
     {
-        $uid = (int) auth()->id();
-        $users = User::whereDoesntHave('employee')
-            ->orderBy('email')
-            ->get();
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $users = $this->linkableUserOptions(null);
 
         $departments = Department::orderBy('name')->get();
-        $costCenterOptions = $this->costCenterSelectOptions($uid);
-        $wageAccountOptions = $this->wageAccountSelectOptions($uid);
+        $costCenterOptions = $this->costCenterSelectOptions($tenantUserId);
+        $wageAccountOptions = $this->wageAccountSelectOptions($tenantUserId);
+        $roleOptions = ErpRoles::assignableRoleSelectOptions();
+        $shiftSelectOptions = $this->shiftSelectOptions();
 
         return view('hr.employees.create', compact(
             'users',
             'departments',
             'costCenterOptions',
             'wageAccountOptions',
+            'roleOptions',
+            'shiftSelectOptions',
         ));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
-        $data = $request->validate($this->employeeRules($uid));
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate($this->employeeRules($tenantUserId));
 
         if (! empty($data['linked_user_id']) && $request->user() && (int) $data['linked_user_id'] === (int) $request->user()->id && $data['role'] !== $request->user()->role) {
             return back()
@@ -132,17 +145,17 @@ class EmployeeWebController extends Controller
         $role = $data['role'];
         unset($data['role']);
 
-        $data = $this->normalizeEmployeePayload($data, $uid);
-        $data['user_id'] = $uid;
+        $data = $this->normalizeEmployeePayload($data, $tenantUserId);
+        $data['user_id'] = $tenantUserId;
 
         $employee = Employee::create($data);
         $uploads = $request->file('attachments', []) ?? [];
         if (! is_array($uploads)) {
             $uploads = [];
         }
-        $this->persistMorphAttachments($employee, $uploads, $uid, 'employees');
+        $this->persistMorphAttachments($employee, $uploads, $tenantUserId, 'employees');
 
-        if (! empty($data['linked_user_id']) && $employee->linkedUser) {
+        if (! empty($data['linked_user_id']) && filled($role) && $employee->linkedUser) {
             $user = $employee->linkedUser;
             $oldRole = $user->role;
             $user->role = $role;
@@ -168,25 +181,30 @@ class EmployeeWebController extends Controller
     public function edit(Employee $employee): View
     {
         $employee->load('attachments');
-        $users = User::whereDoesntHave('employee')
-            ->orWhereHas('employee', function ($q) use ($employee) {
-                $q->where('id', $employee->id);
-            })
-            ->orderBy('email')
-            ->get();
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $users = $this->linkableUserOptions($employee);
 
         $departments = Department::orderBy('name')->get();
-        $uid = (int) auth()->id();
-        $costCenterOptions = $this->costCenterSelectOptions($uid);
-        $wageAccountOptions = $this->wageAccountSelectOptions($uid);
+        $costCenterOptions = $this->costCenterSelectOptions($tenantUserId);
+        $wageAccountOptions = $this->wageAccountSelectOptions($tenantUserId);
+        $roleOptions = ErpRoles::assignableRoleSelectOptions();
+        $shiftSelectOptions = $this->shiftSelectOptions();
 
-        return view('hr.employees.edit', compact('employee', 'users', 'departments', 'costCenterOptions', 'wageAccountOptions'));
+        return view('hr.employees.edit', compact(
+            'employee',
+            'users',
+            'departments',
+            'costCenterOptions',
+            'wageAccountOptions',
+            'roleOptions',
+            'shiftSelectOptions',
+        ));
     }
 
     public function update(Request $request, Employee $employee): RedirectResponse
     {
-        $uid = (int) auth()->id();
-        $data = $request->validate($this->employeeRules($uid, $employee));
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate($this->employeeRules($tenantUserId, $employee));
 
         if (! empty($data['linked_user_id']) && $request->user() && (int) $data['linked_user_id'] === (int) $request->user()->id && $data['role'] !== $request->user()->role) {
             return back()
@@ -197,7 +215,7 @@ class EmployeeWebController extends Controller
         $role = $data['role'];
         unset($data['role']);
 
-        $data = $this->normalizeEmployeePayload($data, $uid, $employee);
+        $data = $this->normalizeEmployeePayload($data, $tenantUserId, $employee);
         $data['user_id'] = $employee->user_id;
 
         $employee->update($data);
@@ -205,11 +223,11 @@ class EmployeeWebController extends Controller
         if (! is_array($uploads)) {
             $uploads = [];
         }
-        $this->persistMorphAttachments($employee, $uploads, $uid, 'employees');
+        $this->persistMorphAttachments($employee, $uploads, $tenantUserId, 'employees');
 
         if (! empty($data['linked_user_id'])) {
             $user = User::find($data['linked_user_id']);
-            if ($user) {
+            if ($user && filled($role)) {
                 $oldRole = $user->role;
                 $user->role = $role;
                 $user->save();
@@ -280,6 +298,7 @@ class EmployeeWebController extends Controller
         foreach ([
             'cost_center_id',
             'ledger_account_id',
+            'shift_id',
             'attendance_device_id',
             'fixed_insurance_deduction',
             'fixed_tax_deduction',
@@ -338,6 +357,7 @@ class EmployeeWebController extends Controller
         return [
             'linked_user_id' => ['nullable', Rule::exists('users', 'id'), $uniqueLinked],
             'department_id' => ['nullable', Rule::exists('departments', 'id')->where('user_id', $uid)],
+            'shift_id' => ['nullable', Rule::exists('shifts', 'id')->where('user_id', $uid)],
             'code' => ['required', 'string', 'max:30', $uniqueCode],
             'attendance_device_id' => ['nullable', 'string', 'max:64', $uniqueDevice],
             'name' => ['nullable', 'string', 'max:255'],
@@ -383,12 +403,51 @@ class EmployeeWebController extends Controller
             'tax_number' => ['nullable', 'string', 'max:100'],
             'insurance_number' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:5000'],
-            'role' => ['required', 'in:admin,supervisor,worker'],
+            'role' => [
+                Rule::requiredIf(fn () => filled(request('linked_user_id'))),
+                'nullable',
+                Rule::in(ErpRoles::assignableRoles()),
+            ],
+            'clinic_role' => ['nullable', 'in:receptionist,doctor'],
             'cost_center_id' => ['nullable', Rule::exists('cost_centers', 'id')->where('user_id', $uid)],
             'ledger_account_id' => ['nullable', Rule::exists('accounts', 'id')->where('user_id', $uid)],
             'attachments' => ['nullable', 'array', 'max:20'],
             'attachments.*' => ['file', 'max:10240', 'mimes:jpeg,jpg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt,csv'],
         ];
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function shiftSelectOptions(): array
+    {
+        return Shift::query()
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get()
+            ->map(fn (Shift $s) => [
+                'value' => (string) $s->id,
+                'label' => $s->code.' — '.$s->name_ar.' ('.optional($s->start_time)->format('H:i').'-'.optional($s->end_time)->format('H:i').')',
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, User>
+     */
+    private function linkableUserOptions(?Employee $employee)
+    {
+        return User::query()
+            ->whereIn('role', ErpRoles::assignableRoles())
+            ->where(function ($q) use ($employee) {
+                $q->whereDoesntHave('employee');
+                if ($employee?->linked_user_id) {
+                    $q->orWhere('id', $employee->linked_user_id);
+                }
+            })
+            ->orderBy('email')
+            ->get();
     }
 
     /**

@@ -6,13 +6,11 @@ use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Http\Controllers\Concerns\RespondsWithBusinessJsonErrors;
 use App\Models\AuditTrail;
 use App\Models\Customer;
-use App\Models\InventoryTransaction;
 use App\Models\Item;
 use App\Models\ItemWarehouse;
 use App\Models\Quotation;
 use App\Models\SalesOrder;
 use App\Models\Warehouse;
-use App\Services\FinancialRecordingService;
 use App\Services\UniversalImportService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
@@ -297,35 +295,7 @@ class SalesOrderWebController extends Controller
         $order = null;
         $uid = (int) (auth()->id() ?? 1);
         DB::transaction(function () use ($request, $data, $lines, $total, $uid, &$order, $uploads) {
-            // 1) تحقق من كفاية المخزون لكل بند داخل نفس المستودع
-            foreach ($lines as $line) {
-                $pivot = ItemWarehouse::where('item_id', $line['item_id'])
-                    ->where('warehouse_id', $line['warehouse_id'])
-                    ->first();
-
-                $item = Item::query()->find($line['item_id']);
-                $label = $item ? ($item->code ?? '—') : (string) $line['item_id'];
-
-                if (! $pivot) {
-                    $this->businessUnprocessable($request, sprintf(
-                        'لا يوجد رصيد مسجّل للصنف «%s» في المخزن المحدد. سجّل توريداً أو تأكد من ربط الصنف بالمخزن.',
-                        $label
-                    ));
-                }
-
-                $available = (float) $pivot->available_quantity;
-                $need = (float) $line['quantity'];
-                if ($available + 0.0000001 < $need) {
-                    $this->businessUnprocessable($request, sprintf(
-                        'الكمية المتاحة للصنف «%s» غير كافية (متاح: %s، مطلوب: %s).',
-                        $label,
-                        rtrim(rtrim(number_format($available, 4, '.', ''), '0'), '.') ?: '0',
-                        rtrim(rtrim(number_format($need, 4, '.', ''), '0'), '.') ?: '0'
-                    ));
-                }
-            }
-
-            // 2) إنشاء أمر البيع والبنود
+            // خصم المخزون والقيود المحاسبية تتم حصرياً عند ترحيل فاتورة المبيعات (Anti-Duplication).
             $order = SalesOrder::create([
                 'user_id' => $uid,
                 'order_number' => SalesOrder::generateNextOrderNumberForUser($uid),
@@ -341,35 +311,8 @@ class SalesOrderWebController extends Controller
 
             foreach ($lines as $line) {
                 $order->items()->create($line);
-
-                // 3) خصم المخزون + إنشاء سجل حركة
-                $pivot = ItemWarehouse::where('item_id', $line['item_id'])
-                    ->where('warehouse_id', $line['warehouse_id'])
-                    ->first();
-
-                $pivot->quantity = (float) $pivot->quantity - (float) $line['quantity'];
-                $pivot->save();
-
-                InventoryTransaction::create([
-                    'item_id' => $line['item_id'],
-                    'warehouse_id' => $line['warehouse_id'],
-                    'quantity' => -1 * (float) $line['quantity'],
-                    'type' => 'sale',
-                    'reference_id' => $order->id,
-                    'reference_type' => 'sales_orders',
-                    'notes' => 'خصم من أمر بيع',
-                ]);
             }
 
-            // 4) تحديث current_stock (كمجموع الكميات عبر كل المخازن)
-            $touchedItemIds = $lines->pluck('item_id')->unique()->values();
-            foreach ($touchedItemIds as $itemId) {
-                $sum = ItemWarehouse::where('item_id', $itemId)
-                    ->sum(DB::raw('quantity - reserved_quantity'));
-                Item::where('id', $itemId)->update(['current_stock' => $sum]);
-            }
-
-            // 5) تحديث حالة عرض السعر المرتبط (بعد نجاح الخصم)
             if (! empty($data['quotation_id'])) {
                 Quotation::where('id', $data['quotation_id'])
                     ->update(['status' => Quotation::STATUS_CONVERTED_TO_ORDER]);
@@ -448,40 +391,12 @@ class SalesOrderWebController extends Controller
         return back()->with('success', 'تم حفظ المرفقات.');
     }
 
-    public function completeAccounting(Request $request, SalesOrder $salesOrder, FinancialRecordingService $financialRecordingService): RedirectResponse
+    public function completeAccounting(Request $request, SalesOrder $salesOrder): RedirectResponse
     {
-        if ($salesOrder->status !== SalesOrder::STATUS_PENDING) {
-            return back()->with('error', 'يمكن ترحيل الإكمال المحاسبي لأوامر «معلق» فقط.');
-        }
-
-        if ($salesOrder->journal_entry_id) {
-            return back()->with('error', 'تم ترحيل هذا الأمر مسبقاً إلى دفتر اليومية.');
-        }
-
-        $request->validate([
-            'settlement' => ['required', 'in:receivable,cash'],
-        ], [
-            'settlement.required' => 'اختر طريقة التسوية (ذمم مدينة أو نقدي).',
-        ]);
-
-        try {
-            DB::transaction(function () use ($salesOrder, $request, $financialRecordingService): void {
-                $entry = $financialRecordingService->recordSalesOrderCompletion(
-                    $salesOrder,
-                    (string) $request->input('settlement')
-                );
-                $salesOrder->update([
-                    'status' => SalesOrder::STATUS_COMPLETED,
-                    'journal_entry_id' => $entry->id,
-                ]);
-            });
-        } catch (\Throwable $e) {
-            report($e);
-
-            return back()->with('error', $e->getMessage() ?: 'تعذر ترحيل أمر البيع. تحقق من دليل الحسابات (1030/1010/4200/5000/1042) ومن تكلفة الأصناف.');
-        }
-
-        return back()->with('success', 'تم ترحيل أمر البيع وتحديث الحالة إلى «مكتمل».');
+        return back()->with(
+            'error',
+            'تم إيقاف الترحيل المحاسبي من أمر البيع. أنشئ فاتورة مبيعات مرتبطة بالأمر وارحّلها — القيود والمخزون تُسجَّل عند ترحيل الفاتورة فقط.'
+        );
     }
 
     public function print(SalesOrder $salesOrder): View

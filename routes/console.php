@@ -525,6 +525,7 @@ Artisan::command('demo:cleanup {--execute : Execute deletion (default is dry-run
 
 Schedule::command('contracts:create-draft-invoices')->daily();
 Schedule::command('system:scan-notifications')->everyFifteenMinutes();
+Schedule::command('clinic:send-whatsapp-reminders')->hourly();
 
 Artisan::command('accounts:rebuild-current-balance {--dry-run : Preview without updating rows}', function () {
     $dryRun = (bool) $this->option('dry-run');

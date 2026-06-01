@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Concerns;
 
+use App\Services\Tenant\TenantContext;
 use Illuminate\Database\Eloquent\Model;
 
 trait ResolvesRouteBindingForTenant
@@ -25,7 +28,14 @@ trait ResolvesRouteBindingForTenant
             abort(403);
         }
 
-        if ((int) $model->user_id !== (int) auth()->id()) {
+        $tenantContext = app(TenantContext::class);
+        $tenantUserId = $tenantContext->resolveTenantUserId();
+
+        if ($tenantUserId === null && $tenantContext->isPlatformOperator()) {
+            $tenantUserId = (int) auth()->id();
+        }
+
+        if ($tenantUserId === null || (int) $model->user_id !== $tenantUserId) {
             abort(403);
         }
 

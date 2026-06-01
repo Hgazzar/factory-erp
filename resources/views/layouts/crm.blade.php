@@ -76,7 +76,7 @@
                     <x-crm-sidebar-nav />
                 </nav>
                 <div class="module-sidebar-footer text-center md:text-start">
-                    <span class="text-gray-400">MIRADA ERP · CRM</span>
+                    <span class="text-gray-400">{{ config('app.name') }} · CRM</span>
                 </div>
             </aside>
 

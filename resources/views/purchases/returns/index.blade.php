@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'مرتجعات المشتريات - MIRADA ERP')
+@section('title', 'مرتجعات المشتريات - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -54,8 +54,8 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5v7.5a.5.5 0 0 1-1 0V5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h2a.5.5 0 0 1 0 1h-2A1.5 1.5 0 0 1 0 10.5v-7z"/><path d="M1 14.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v-2a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5v-2H1.5a.5.5 0 0 1-.5-.5z"/></svg>
             </div>
             <div>
-                <p class="text-sm text-gray-500 font-medium">المرتجعات المشحونة</p>
-                <p class="text-xl font-bold text-gray-900">{{ $shippedCount }}</p>
+                <p class="text-sm text-gray-500 font-medium">مرتجعات مكتملة (مرحّلة)</p>
+                <p class="text-xl font-bold text-gray-900">{{ $completedCount }}</p>
             </div>
         </div>
         <div class="ret-widget flex items-center gap-4">
@@ -104,6 +104,7 @@
                         <th class="py-3 px-4 font-medium text-gray-600">رقم المرتجع</th>
                         <th class="py-3 px-4 font-medium text-gray-600">التاريخ</th>
                         <th class="py-3 px-4 font-medium text-gray-600">المورد</th>
+                        <th class="py-3 px-4 font-medium text-gray-600"><x-info field="procurement.purchase_return_invoice">الفاتورة</x-info></th>
                         <th class="py-3 px-4 font-medium text-gray-600">السبب</th>
                         <th class="py-3 px-4 font-medium text-gray-600">الأصناف</th>
                         <th class="py-3 px-4 font-medium text-gray-600">الإجمالي</th>
@@ -115,7 +116,8 @@
                     <tr class="border-b border-gray-100 hover:bg-gray-50/50">
                         <td class="py-3 px-4 font-medium text-gray-800">{{ $r->code ?? 'PR-' . $r->id }}</td>
                         <td class="py-3 px-4 text-gray-600">{{ $r->date?->format('Y-m-d') ?? '—' }}</td>
-                        <td class="py-3 px-4 text-gray-600">{{ $r->supplier?->name ?? '—' }}</td>
+                        <td class="py-3 px-4 text-gray-600">{{ $r->supplier?->getLocalizedDisplayName() ?? '—' }}</td>
+                        <td class="py-3 px-4 text-gray-600">{{ $r->purchaseInvoice?->reference ?: ($r->purchase_invoice_id ? 'PINV-'.$r->purchase_invoice_id : '—') }}</td>
                         <td class="py-3 px-4 text-gray-600">{{ $r->reason_type ?? $r->reason ?? '—' }}</td>
                         <td class="py-3 px-4 text-gray-600">{{ $r->items_count ?? 0 }}</td>
                         <td class="py-3 px-4 text-gray-800">SAR {{ number_format((float) $r->total, 2) }}</td>
@@ -131,7 +133,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="py-12 text-center">
+                        <td colspan="8" class="py-12 text-center">
                             <p class="text-gray-500 font-medium">لا توجد مرتجعات</p>
                             <p class="text-sm text-gray-400 mt-1">يمكنك إنشاء مرتجع جديد باستخدام الزر أعلاه.</p>
                         </td>
