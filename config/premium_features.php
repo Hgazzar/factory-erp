@@ -54,6 +54,28 @@ return [
             ],
         ],
 
+        'nurseries' => [
+            [
+                'key' => PremiumFeatureKeys::NURSERY_WHATSAPP_AUTOMATION,
+                'name_ar' => 'تنبيهات واتساب الحضانة',
+                'description_ar' => 'تذكير دفع وتجديد الاشتراكات وإشعارات لأولياء الأمور.',
+                'hint' => 'premium_feature_nursery_whatsapp_automation',
+            ],
+            [
+                'key' => PremiumFeatureKeys::NURSERY_SUBSCRIPTION_FINANCE,
+                'name_ar' => 'ترحيل اشتراكات الحضانة للمالية',
+                'description_ar' => 'قيد إيراد تلقائي عند تحصيل اشتراك طفل مدفوع.',
+                'hint' => 'premium_feature_nursery_subscription_finance',
+                'requires_module' => 'finance',
+            ],
+            [
+                'key' => PremiumFeatureKeys::NURSERY_PORTAL,
+                'name_ar' => 'بوابة أولياء الأمور',
+                'description_ar' => 'بوابة عامة لمتابعة حضور الطفل والاشتراكات والتقويم والأدوية.',
+                'hint' => 'premium_feature_nursery_parent_portal',
+            ],
+        ],
+
         'medical_clinics' => [
             [
                 'key' => PremiumFeatureKeys::CLINIC_MEDICAL_INSURANCE,
@@ -82,6 +104,6 @@ return [
      *
      * @var list<string>
      */
-    'full_erp_niche_keys' => ['retail', 'manufacturing', 'medical_clinics'],
+    'full_erp_niche_keys' => ['retail', 'manufacturing', 'nurseries', 'medical_clinics'],
 
 ];

@@ -118,6 +118,10 @@ final class TenantDashboardPackageService
                 $has('clinic') ? ['label' => 'لوحة العيادة', 'route' => 'clinic.dashboard', 'hint' => 'مواعيد ومرضى'] : null,
                 $has('hr') ? ['label' => 'الموارد البشرية', 'route' => 'hr.dashboard', 'hint' => 'موظفون وحضور'] : null,
             ]),
+            'nurseries' => array_filter([
+                $has('nursery') ? ['label' => 'لوحة الحضانة', 'route' => 'nursery.dashboard', 'hint' => 'حضور اليوم والأطفال'] : null,
+                $has('hr') ? ['label' => 'معلمات وموظفون', 'route' => 'hr.dashboard', 'hint' => 'طاقم الحضانة'] : null,
+            ]),
             default => array_filter([
                 $has('finance') ? ['label' => 'لوحة المحاسبة', 'route' => 'finance.dashboard', 'hint' => 'مالية'] : null,
                 $has('inventory') ? ['label' => 'لوحة المخزون', 'route' => 'inventory.dashboard', 'hint' => 'مخازن'] : null,

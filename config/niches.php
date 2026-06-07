@@ -61,8 +61,11 @@ return [
             'description_ar' => 'الأطفال، الفصول، أولياء الأمور، والاشتراكات.',
             'modules' => [
                 'finance',
-                'crm',
+                'nursery',
                 'hr',
+            ],
+            'default_premium_features' => [
+                'nursery_portal',
             ],
         ],
 

@@ -3,11 +3,8 @@
 @section('title', 'إدارة الموعد — '.$clinicName)
 
 @section('content')
-<div class="portal-wrap" dir="rtl">
-    <div class="text-center mb-4">
-        <h1 class="h3 fw-bold text-teal-900 mb-1">{{ $clinicName }}</h1>
-        <p class="text-muted mb-0">إدارة الموعد (إلغاء أو إعادة جدولة)</p>
-    </div>
+<div dir="rtl">
+    <p class="text-center text-muted small mb-3">إدارة الموعد (إلغاء أو إعادة جدولة)</p>
 
     <div class="portal-card">
         @if(session('success'))
@@ -49,7 +46,7 @@
                         <label class="form-label">وقت جديد</label>
                         <input type="time" name="start_time" class="form-control" required>
                     </div>
-                    <button type="submit" class="btn text-white" style="background:#0d9488;">حفظ الموعد الجديد</button>
+                    <button type="submit" class="btn btn-portal-primary">حفظ الموعد الجديد</button>
                 </form>
             </div>
         @endif

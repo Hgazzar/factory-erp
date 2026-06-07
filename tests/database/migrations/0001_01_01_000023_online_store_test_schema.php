@@ -22,6 +22,8 @@ return new class extends Migration
                 $table->longText('contact_us')->nullable();
                 $table->longText('faq')->nullable();
                 $table->longText('shipping_policy')->nullable();
+                $table->longText('return_policy')->nullable();
+                $table->longText('track_order_help')->nullable();
                 $table->longText('privacy_policy')->nullable();
                 $table->string('social_facebook', 255)->nullable();
                 $table->string('social_instagram', 255)->nullable();

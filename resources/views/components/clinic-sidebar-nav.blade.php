@@ -33,4 +33,10 @@
         <span><x-info field="clinic.nav_schedules" /> جداول الأطباء</span>
     </a>
     @endif
+    @if($clinicAccess->isTenantOwner())
+    <a href="{{ route('clinic.settings.index', ['tab' => 'branding']) }}"
+       class="module-nav-link {{ request()->routeIs('clinic.settings.*') ? 'active' : '' }}">
+        <span><x-info field="clinic.nav_settings" /> الهوية البصرية</span>
+    </a>
+    @endif
 </nav>

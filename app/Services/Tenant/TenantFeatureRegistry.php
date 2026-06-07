@@ -29,7 +29,24 @@ final class TenantFeatureRegistry
 
         $enabled = $this->enabledKeysForTenant($tenantId);
 
-        return in_array($featureKey, $enabled, true);
+        if (in_array($featureKey, $enabled, true)) {
+            return true;
+        }
+
+        $legacy = $this->legacyFeatureAliases()[$featureKey] ?? null;
+
+        return $legacy !== null && in_array($legacy, $enabled, true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function legacyFeatureAliases(): array
+    {
+        return [
+            'nursery_portal' => 'nursery_parent_portal',
+            'nursery_parent_portal' => 'nursery_portal',
+        ];
     }
 
     /**

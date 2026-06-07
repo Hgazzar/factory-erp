@@ -34,8 +34,9 @@ final class StoreSettingsWebController extends Controller
             : null;
 
         $merchantMetrics = app(StoreMerchantMetricsService::class)->snapshot($tenantUserId);
+        $paymobWebhookUrl = store_paymob_webhook_url();
 
-        return view('settings.store', compact('settings', 'devices', 'storeUrl', 'profile', 'merchantMetrics'));
+        return view('settings.store', compact('settings', 'devices', 'storeUrl', 'profile', 'merchantMetrics', 'paymobWebhookUrl'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -44,6 +45,20 @@ final class StoreSettingsWebController extends Controller
 
         $validated = $request->validate([
             'is_store_enabled' => ['nullable', 'boolean'],
+            'cod_enabled' => ['nullable', 'boolean'],
+            'manual_transfer_enabled' => ['nullable', 'boolean'],
+            'online_payment_enabled' => ['nullable', 'boolean'],
+            'online_payment_provider' => ['nullable', 'string', 'in:paymob,stripe'],
+            'online_payment_mode' => ['nullable', 'string', 'in:sandbox,live'],
+            'online_payment_public_key' => ['nullable', 'string', 'max:512'],
+            'online_payment_secret_key' => ['nullable', 'string', 'max:512'],
+            'tamara_enabled' => ['nullable', 'boolean'],
+            'tabby_enabled' => ['nullable', 'boolean'],
+            'paymob_integration_id' => ['nullable', 'string', 'max:64'],
+            'paymob_hmac_secret' => ['nullable', 'string', 'max:512'],
+            'tamara_api_token' => ['nullable', 'string', 'max:512'],
+            'tabby_public_key' => ['nullable', 'string', 'max:512'],
+            'tabby_secret_key' => ['nullable', 'string', 'max:512'],
             'hero_title' => ['nullable', 'string', 'max:255'],
             'hero_subtitle' => ['nullable', 'string', 'max:255'],
             'hero_offer_text' => ['nullable', 'string', 'max:2000'],
@@ -51,6 +66,8 @@ final class StoreSettingsWebController extends Controller
             'contact_us' => ['nullable', 'string', 'max:50000'],
             'faq' => ['nullable', 'string', 'max:50000'],
             'shipping_policy' => ['nullable', 'string', 'max:50000'],
+            'return_policy' => ['nullable', 'string', 'max:50000'],
+            'track_order_help' => ['nullable', 'string', 'max:50000'],
             'privacy_policy' => ['nullable', 'string', 'max:50000'],
             'social_facebook' => ['nullable', 'string', 'max:255'],
             'social_instagram' => ['nullable', 'string', 'max:255'],
@@ -76,6 +93,20 @@ final class StoreSettingsWebController extends Controller
 
         $settings->fill([
             'is_store_enabled' => $request->boolean('is_store_enabled'),
+            'cod_enabled' => $request->boolean('cod_enabled', true),
+            'manual_transfer_enabled' => $request->boolean('manual_transfer_enabled'),
+            'online_payment_enabled' => $request->boolean('online_payment_enabled'),
+            'online_payment_provider' => $validated['online_payment_provider'] ?? null,
+            'online_payment_mode' => $validated['online_payment_mode'] ?? 'sandbox',
+            'online_payment_public_key' => $validated['online_payment_public_key'] ?? null,
+            'online_payment_secret_key' => $validated['online_payment_secret_key'] ?? null,
+            'tamara_enabled' => $request->boolean('tamara_enabled'),
+            'tabby_enabled' => $request->boolean('tabby_enabled'),
+            'paymob_integration_id' => $validated['paymob_integration_id'] ?? null,
+            'paymob_hmac_secret' => $validated['paymob_hmac_secret'] ?? null,
+            'tamara_api_token' => $validated['tamara_api_token'] ?? null,
+            'tabby_public_key' => $validated['tabby_public_key'] ?? null,
+            'tabby_secret_key' => $validated['tabby_secret_key'] ?? null,
             'hero_title' => $validated['hero_title'] ?? null,
             'hero_subtitle' => $validated['hero_subtitle'] ?? null,
             'hero_offer_text' => $validated['hero_offer_text'] ?? null,
@@ -83,6 +114,8 @@ final class StoreSettingsWebController extends Controller
             'contact_us' => $validated['contact_us'] ?? null,
             'faq' => $validated['faq'] ?? null,
             'shipping_policy' => $validated['shipping_policy'] ?? null,
+            'return_policy' => $validated['return_policy'] ?? null,
+            'track_order_help' => $validated['track_order_help'] ?? null,
             'privacy_policy' => $validated['privacy_policy'] ?? null,
             'social_facebook' => $validated['social_facebook'] ?? null,
             'social_instagram' => $validated['social_instagram'] ?? null,

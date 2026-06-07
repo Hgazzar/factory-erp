@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Store\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
+use App\Models\PosSale;
 use App\Services\Store\StoreCartQuoteService;
 use App\Services\Store\StoreCheckoutService;
 use App\Services\Store\StoreCouponService;
@@ -17,6 +18,16 @@ use RuntimeException;
 
 final class StorePortalApiController extends Controller
 {
+    public function paymentMethods(Request $request, StoreCheckoutService $checkout): JsonResponse
+    {
+        $tenantUserId = (int) $request->attributes->get('store_portal_tenant_user_id');
+
+        return response()->json([
+            'methods' => $checkout->availablePaymentMethods($tenantUserId),
+            'currency' => CompanySetting::resolvedCurrencyCode($tenantUserId),
+        ]);
+    }
+
     public function categories(Request $request, StorefrontCatalogService $catalog): JsonResponse
     {
         $tenantUserId = (int) $request->attributes->get('store_portal_tenant_user_id');
@@ -144,11 +155,18 @@ final class StorePortalApiController extends Controller
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:32'],
             'customer_address' => ['required', 'string', 'max:2000'],
+            'payment_method' => ['nullable', 'string', 'in:cod,card,manual_transfer,paymob,tamara,tabby'],
             'coupon_code' => ['nullable', 'string', 'max:32'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.pos_product_id' => ['required', 'integer', 'min:1'],
             'lines.*.quantity' => ['required', 'numeric', 'gt:0'],
+            'payment_receipt' => ['nullable', 'file', 'image', 'max:5120'],
         ]);
+
+        $paymentMethod = $validated['payment_method'] ?? PosSale::PAYMENT_COD;
+        if ($paymentMethod === 'paymob') {
+            $paymentMethod = PosSale::PAYMENT_CARD;
+        }
 
         $lines = array_map(static fn (array $line): array => [
             'pos_product_id' => (int) $line['pos_product_id'],
@@ -156,11 +174,18 @@ final class StorePortalApiController extends Controller
         ], $validated['lines']);
 
         try {
-            $sale = $checkout->placeOnlineOrder($tenantUserId, [
-                'name' => $validated['customer_name'],
-                'phone' => $validated['customer_phone'],
-                'address' => $validated['customer_address'],
-            ], $lines, $validated['coupon_code'] ?? null);
+            $sale = $checkout->placeOnlineOrder(
+                $tenantUserId,
+                [
+                    'name' => $validated['customer_name'],
+                    'phone' => $validated['customer_phone'],
+                    'address' => $validated['customer_address'],
+                ],
+                $lines,
+                $validated['coupon_code'] ?? null,
+                $paymentMethod,
+                $request->file('payment_receipt'),
+            );
 
             return response()->json([
                 'order' => [
@@ -169,6 +194,7 @@ final class StorePortalApiController extends Controller
                     'total_amount' => (float) $sale->total_amount,
                     'discount_amount' => (float) ($sale->discount_amount ?? 0),
                     'payment_method' => $sale->payment_method,
+                    'status' => $sale->status,
                 ],
                 'success_url' => route('store.portal.order.success', [
                     'tenant_slug' => $request->route('tenant_slug'),

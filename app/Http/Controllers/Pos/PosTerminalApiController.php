@@ -120,6 +120,7 @@ final class PosTerminalApiController extends Controller
                 'pos_session_id' => isset($validated['pos_session_id']) ? (int) $validated['pos_session_id'] : null,
                 'payment_method' => $validated['payment_method'],
                 'payment_splits' => $validated['payment_splits'] ?? [],
+                'sale_channel' => PosSale::CHANNEL_POS_TERMINAL,
                 'lines' => $lines,
             ], (int) auth()->id());
 

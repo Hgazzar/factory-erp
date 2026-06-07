@@ -67,12 +67,14 @@ return [
         ],
 
         'nurseries' => [
-            'modules.crm' => 'الأطفال وأولياء الأمور',
+            'modules.nursery' => 'الحضانة',
             'modules.hr' => 'معلمات الحضانة',
             'modules.finance' => 'الاشتراكات والمحاسبة',
             'entities.customer' => 'ولي الأمر',
             'entities.invoice' => 'فاتورة الاشتراك',
             'entities.employee' => 'معلمة / موظف',
+            'entities.child' => 'طفل',
+            'entities.classroom' => 'فصل',
         ],
 
         'fleet_agents' => [

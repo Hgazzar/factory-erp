@@ -24,7 +24,8 @@ final class CheckFeature
             abort(404);
         }
 
-        $tenantId = $request->attributes->get('store_portal_tenant_user_id')
+        $tenantId = $request->attributes->get('nursery_portal_tenant_user_id')
+            ?? $request->attributes->get('store_portal_tenant_user_id')
             ?? $request->attributes->get('clinic_portal_tenant_user_id');
         $tenantId = $tenantId !== null ? (int) $tenantId : $this->tenantContext->resolveTenantUserId();
 

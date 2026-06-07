@@ -6,6 +6,8 @@ use App\Events\Clinic\ClinicAppointmentBooked;
 use App\Listeners\Clinic\SendClinicAppointmentWhatsAppNotification;
 use App\Models\CompanySetting;
 use App\Models\JournalEntry;
+use App\Models\Nursery\NurserySetting;
+use App\Services\Tenant\TenantBrandingService;
 use App\Models\JournalItem;
 use App\Models\ProductionLog;
 use App\Models\ProductionRecord;
@@ -30,12 +32,26 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use App\Services\Tenant\TenantContext;
 use App\Services\Tenant\TenantFeatureRegistry;
+use App\Contracts\Store\PaymentGatewayInterface;
+use App\Services\Store\Payment\ManualTransferGateway;
+use App\Services\Store\Payment\PaymentGatewayRegistry;
+use App\Services\Store\Payment\PaymobGateway;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(PaymentGatewayRegistry::class, function ($app): PaymentGatewayRegistry {
+            $registry = new PaymentGatewayRegistry;
+
+            foreach ([PaymobGateway::class, ManualTransferGateway::class] as $gatewayClass) {
+                /** @var PaymentGatewayInterface $gateway */
+                $gateway = $app->make($gatewayClass);
+                $registry->register($gateway);
+            }
+
+            return $registry;
+        });
     }
 
     public function boot(): void
@@ -93,5 +109,79 @@ class AppServiceProvider extends ServiceProvider
 
             return app(TenantFeatureRegistry::class)->isEnabled($featureKey, $tenantId);
         });
+
+        View::composer('layouts.nursery-portal', function (\Illuminate\View\View $view): void {
+            $tenantUserId = (int) ($view->getData()['tenantUserId'] ?? 0);
+            $fallback = trim((string) ($view->getData()['nurseryName'] ?? ''));
+            $this->composeTenantBranding($view, $tenantUserId, $fallback !== '' ? $fallback : null);
+        });
+
+        View::composer('layouts.nursery', function (\Illuminate\View\View $view): void {
+            $tenantId = $this->resolveBrandingTenantUserId();
+            if ($tenantId === null) {
+                return;
+            }
+            $fallback = NurserySetting::query()->where('user_id', $tenantId)->value('nursery_name');
+            $this->composeTenantBranding($view, $tenantId, is_string($fallback) ? $fallback : null);
+        });
+
+        View::composer('layouts.clinic', function (\Illuminate\View\View $view): void {
+            $tenantId = $this->resolveBrandingTenantUserId();
+            if ($tenantId === null) {
+                return;
+            }
+            $this->composeTenantBranding($view, $tenantId);
+        });
+
+        View::composer('layouts.clinic-portal', function (\Illuminate\View\View $view): void {
+            $tenantUserId = (int) request()->attributes->get('clinic_portal_tenant_user_id', 0);
+            $this->composeTenantBranding($view, $tenantUserId);
+        });
+
+        View::composer('layouts.store', function (\Illuminate\View\View $view): void {
+            if ($view->offsetExists('tenantThemeVars')) {
+                return;
+            }
+            $tenantUserId = (int) request()->attributes->get('store_portal_tenant_user_id', 0);
+            if ($tenantUserId < 1) {
+                return;
+            }
+            $branding = app(TenantBrandingService::class)->branding($tenantUserId);
+            $view->with('tenantThemeVars', $branding['theme_vars']);
+            if (! $view->offsetExists('tenantBrand')) {
+                $view->with('tenantBrand', $branding);
+            }
+        });
+    }
+
+    private function resolveBrandingTenantUserId(): ?int
+    {
+        $tenantId = app(TenantContext::class)->resolveTenantUserId();
+        if ($tenantId === null && auth()->check() && auth()->user()->role === 'admin') {
+            $tenantId = (int) auth()->id();
+        }
+
+        return ($tenantId !== null && $tenantId > 0) ? $tenantId : null;
+    }
+
+    private function composeTenantBranding(\Illuminate\View\View $view, int $tenantUserId, ?string $fallbackName = null): void
+    {
+        if ($tenantUserId < 1 || $view->offsetExists('tenantBrand')) {
+            return;
+        }
+
+        $branding = app(TenantBrandingService::class)->branding($tenantUserId, $fallbackName);
+
+        $view->with([
+            'tenantBrand' => $branding,
+            'tenantThemeVars' => $branding['theme_vars'],
+            'tenantDisplayName' => $branding['display_name'],
+            'tenantLogoUrl' => $branding['logo_url'],
+            'nurseryBrand' => $branding,
+            'nurseryThemeVars' => $branding['theme_vars'],
+            'nurseryDisplayName' => $branding['display_name'],
+            'nurseryLogoUrl' => $branding['logo_url'],
+            'nurseryName' => $fallbackName ?? $branding['fallback_name'],
+        ]);
     }
 }

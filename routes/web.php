@@ -19,9 +19,25 @@ use App\Http\Controllers\Clinic\ClinicPatientWebController;
 use App\Http\Controllers\Clinic\ClinicPdfWebController;
 use App\Http\Controllers\Clinic\ClinicDoctorScheduleWebController;
 use App\Http\Controllers\Clinic\ClinicPrescriptionWebController;
+use App\Http\Controllers\Clinic\ClinicSettingsWebController;
 use App\Http\Controllers\Clinic\ClinicServiceWebController;
 use App\Http\Controllers\Clinic\Portal\ClinicPortalApiController;
 use App\Http\Controllers\Clinic\Portal\ClinicPortalWebController;
+use App\Http\Controllers\Nursery\NurseryAttendanceWebController;
+use App\Http\Controllers\Nursery\NurseryChildWebController;
+use App\Http\Controllers\Nursery\NurseryClassroomWebController;
+use App\Http\Controllers\Nursery\NurseryStaffWebController;
+use App\Http\Controllers\Nursery\NurseryUnitWebController;
+use App\Http\Controllers\Nursery\NurseryCalendarWebController;
+use App\Http\Controllers\Nursery\NurserySettingsWebController;
+use App\Http\Controllers\Nursery\NurserySubscriptionWebController;
+use App\Http\Controllers\Nursery\NurseryDashboardController;
+use App\Http\Controllers\Nursery\NurseryGuardianWebController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalAuthController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalCalendarWebController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalChildWebController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalFinanceWebController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BomListWebController;
@@ -78,6 +94,9 @@ use App\Http\Controllers\Store\Portal\StorePortalWebController;
 use App\Http\Controllers\StoreSettingsWebController;
 use App\Http\Controllers\PosDashboardController;
 use App\Http\Controllers\PosDeviceWebController;
+use App\Http\Controllers\Store\OrderManagementController;
+use App\Http\Controllers\Store\StorePaymobWebhookController;
+use App\Http\Controllers\Store\StorePosSalePdfWebController;
 use App\Http\Controllers\PosSaleWebController;
 use App\Http\Controllers\PosSessionWebController;
 use App\Http\Controllers\PaymentWebController;
@@ -211,6 +230,7 @@ Route::prefix('s/{tenant_slug}')
     ->group(function () {
         Route::get('/', [StorePortalWebController::class, 'home'])->name('home');
         Route::get('shop', [StorePortalWebController::class, 'shop'])->name('shop');
+        Route::get('offers', [StorePortalWebController::class, 'offers'])->name('offers');
         Route::get('p/{product}', [StorePortalWebController::class, 'product'])->whereNumber('product')->name('product');
         Route::get('cart', [StorePortalWebController::class, 'cart'])->name('cart');
         Route::get('checkout', [StorePortalWebController::class, 'checkout'])->name('checkout');
@@ -220,8 +240,15 @@ Route::prefix('s/{tenant_slug}')
         Route::get('faq', [StorePortalWebController::class, 'faq'])->name('faq');
         Route::get('privacy', [StorePortalWebController::class, 'privacy'])->name('privacy');
         Route::get('shipping', [StorePortalWebController::class, 'shipping'])->name('shipping');
+        Route::get('returns', [StorePortalWebController::class, 'returns'])->name('returns');
+        Route::match(['get', 'post'], 'track-order', [StorePortalWebController::class, 'track'])->name('track');
+        Route::get('order/{saleId}/invoice.pdf', [StorePosSalePdfWebController::class, 'portalReceipt'])
+            ->whereNumber('saleId')
+            ->middleware('signed')
+            ->name('invoice.pdf');
 
         Route::prefix('api')->name('api.')->group(function () {
+            Route::get('payment-methods', [StorePortalApiController::class, 'paymentMethods'])->name('payment-methods');
             Route::get('categories', [StorePortalApiController::class, 'categories'])->name('categories');
             Route::get('products', [StorePortalApiController::class, 'products'])->name('products');
             Route::get('products/{product}', [StorePortalApiController::class, 'showProduct'])->whereNumber('product')->name('products.show');
@@ -230,6 +257,9 @@ Route::prefix('s/{tenant_slug}')
             Route::post('checkout', [StorePortalApiController::class, 'checkout'])->name('checkout');
         });
     });
+
+Route::post('webhooks/store/paymob', StorePaymobWebhookController::class)
+    ->name('store.webhooks.paymob');
 
 Route::prefix('c/{tenant_slug}')
     ->name('clinic.portal.')
@@ -252,6 +282,26 @@ Route::prefix('c/{tenant_slug}')
                 Route::post('manage/{token}/cancel', [ClinicPortalApiController::class, 'cancel'])->name('manage-api.cancel');
                 Route::post('manage/{token}/reschedule', [ClinicPortalApiController::class, 'reschedule'])->name('manage-api.reschedule');
             });
+        });
+    });
+
+Route::prefix('nursery-portal/{tenant_slug}')
+    ->name('nursery.portal.')
+    ->middleware(['nursery.portal.tenant', 'feature:nursery_portal'])
+    ->group(function () {
+        Route::get('/', [NurseryPortalWebController::class, 'login'])->name('login');
+        Route::post('otp/request', [NurseryPortalAuthController::class, 'requestOtp'])->name('otp.request');
+        Route::post('otp/verify', [NurseryPortalAuthController::class, 'verifyOtp'])->name('otp.verify');
+        Route::get('invite/{token}', [NurseryPortalWebController::class, 'acceptInvite'])->name('invite');
+
+        Route::middleware('nursery.portal.guardian')->group(function () {
+            Route::get('home', [NurseryPortalWebController::class, 'home'])->name('home');
+            Route::get('children/{childId}', [NurseryPortalChildWebController::class, 'show'])
+                ->whereNumber('childId')
+                ->name('children.show');
+            Route::get('finance', [NurseryPortalFinanceWebController::class, 'index'])->name('finance');
+            Route::get('calendar', [NurseryPortalCalendarWebController::class, 'index'])->name('calendar');
+            Route::post('logout', [NurseryPortalWebController::class, 'logout'])->name('logout');
         });
     });
 
@@ -301,6 +351,11 @@ Route::middleware(['auth', 'worker.scope'])->group(function () {
         Route::patch('products/{pos_product}', [PosProductWebController::class, 'update'])->name('products.update');
 
         Route::get('receipts', [PosSaleWebController::class, 'index'])->name('receipts.index');
+        Route::get('orders', [OrderManagementController::class, 'index'])->name('orders.index');
+        Route::get('orders/{pos_sale}/invoice.pdf', [StorePosSalePdfWebController::class, 'merchantReceipt'])->name('orders.invoice.pdf');
+        Route::get('orders/{pos_sale}/payment-receipt', [OrderManagementController::class, 'paymentReceipt'])->name('orders.payment-receipt');
+        Route::post('orders/{pos_sale}/status', [OrderManagementController::class, 'updateStatus'])->name('orders.update-status');
+        Route::redirect('online-orders', 'orders')->name('online-orders.index');
         Route::post('sales', [PosSaleWebController::class, 'store'])->name('sales.store');
         Route::get('sales/{pos_sale}', [PosSaleWebController::class, 'show'])->name('sales.show');
     });
@@ -395,6 +450,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             ->middleware(['clinic.capability:view_appointments', 'feature:clinic_patient_portal'])
             ->name('portal.qr-download');
 
+        Route::get('settings', [ClinicSettingsWebController::class, 'index'])
+            ->middleware('clinic.capability:view_appointments')
+            ->name('settings.index');
+        Route::put('settings/branding', [ClinicSettingsWebController::class, 'updateBranding'])
+            ->middleware('clinic.capability:view_appointments')
+            ->name('settings.branding.update');
+
         Route::middleware('clinic.capability:view_appointments')->group(function () {
             Route::get('appointments', [ClinicAppointmentWebController::class, 'index'])->name('appointments.index');
             Route::post('appointments', [ClinicAppointmentWebController::class, 'store'])->name('appointments.store');
@@ -453,6 +515,126 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::delete('doctor-schedules/{schedule}', [ClinicDoctorScheduleWebController::class, 'destroySchedule'])->name('doctor-schedules.destroy');
             Route::post('blocked-slots', [ClinicDoctorScheduleWebController::class, 'storeBlocked'])->name('blocked-slots.store');
             Route::delete('blocked-slots/{blocked}', [ClinicDoctorScheduleWebController::class, 'destroyBlocked'])->name('blocked-slots.destroy');
+        });
+    });
+
+    // الحضانة (Nursery) — نيش nurseries
+    Route::prefix('nursery')->name('nursery.')->middleware('module:nursery')->group(function () {
+        Route::get('dashboard', [NurseryDashboardController::class, 'index'])
+            ->middleware('nursery.capability:view_daily')
+            ->name('dashboard');
+        Route::get('portal/qr-download', [NurseryDashboardController::class, 'downloadPortalQr'])
+            ->middleware(['nursery.capability:view_daily', 'feature:nursery_portal'])
+            ->name('portal.qr-download');
+
+        Route::middleware('nursery.capability:view_daily')->group(function () {
+            Route::get('attendance', [NurseryAttendanceWebController::class, 'index'])->name('attendance.index');
+            Route::post('attendance/check-in', [NurseryAttendanceWebController::class, 'checkIn'])->name('attendance.check-in');
+            Route::post('attendance/check-out', [NurseryAttendanceWebController::class, 'checkOut'])->name('attendance.check-out');
+            Route::get('attendance/report', [NurseryAttendanceWebController::class, 'report'])->name('attendance.report');
+
+            Route::get('children', [NurseryChildWebController::class, 'index'])->name('children.index');
+        });
+
+        Route::middleware('nursery.capability:manage_child_attendance')->group(function () {
+            Route::post('attendance/weekdays', [NurseryAttendanceWebController::class, 'storeWeekdays'])->name('attendance.weekdays');
+            Route::post('attendance/leaves', [NurseryAttendanceWebController::class, 'storeLeave'])->name('attendance.leaves.store');
+            Route::delete('attendance/leaves/{leave}', [NurseryAttendanceWebController::class, 'destroyLeave'])->name('attendance.leaves.destroy');
+        });
+
+        Route::middleware('nursery.capability:manage_staff_attendance')->group(function () {
+            Route::post('attendance/staff/check-in', [NurseryAttendanceWebController::class, 'staffCheckIn'])->name('attendance.staff.check-in');
+            Route::post('attendance/staff/check-out', [NurseryAttendanceWebController::class, 'staffCheckOut'])->name('attendance.staff.check-out');
+        });
+
+        Route::middleware('nursery.capability:manage_children')->group(function () {
+            Route::get('partials/city-select', [NurseryChildWebController::class, 'citySelectPartial'])->name('partials.city-select');
+            Route::get('children/create', [NurseryChildWebController::class, 'create'])->name('children.create');
+            Route::post('children', [NurseryChildWebController::class, 'store'])->name('children.store');
+            Route::get('children/{child}/edit', [NurseryChildWebController::class, 'edit'])->name('children.edit');
+            Route::put('children/{child}', [NurseryChildWebController::class, 'update'])->name('children.update');
+            Route::post('children/{child}/portal-invite', [NurseryChildWebController::class, 'sendPortalInvite'])->name('children.portal-invite');
+
+            Route::post('guardians/{guardian}/portal-invite', [NurseryGuardianWebController::class, 'sendPortalInvite'])->name('guardians.portal-invite');
+            Route::delete('guardians/{guardian}/revoke-portal', [NurseryGuardianWebController::class, 'revokePortalAccess'])->name('guardians.revoke-portal');
+        });
+
+        Route::middleware('nursery.capability:view_daily')->group(function () {
+            Route::get('guardians', [NurseryGuardianWebController::class, 'index'])->name('guardians.index');
+            Route::get('guardians/{guardian}', [NurseryGuardianWebController::class, 'show'])->name('guardians.show');
+            Route::get('children/{child}', [NurseryChildWebController::class, 'show'])->name('children.show');
+        });
+
+        Route::middleware('nursery.capability:view_daily')->group(function () {
+            Route::get('classrooms', [NurseryClassroomWebController::class, 'index'])->name('classrooms.index');
+        });
+
+        Route::middleware('nursery.capability:manage_classrooms')->group(function () {
+            Route::get('classrooms/create', [NurseryClassroomWebController::class, 'create'])->name('classrooms.create');
+            Route::post('classrooms', [NurseryClassroomWebController::class, 'store'])->name('classrooms.store');
+            Route::get('classrooms/{classroom}/edit', [NurseryClassroomWebController::class, 'edit'])->name('classrooms.edit');
+            Route::put('classrooms/{classroom}', [NurseryClassroomWebController::class, 'update'])->name('classrooms.update');
+        });
+
+        Route::middleware('nursery.capability:view_staff')->group(function () {
+            Route::get('staff', [NurseryStaffWebController::class, 'index'])->name('staff.index');
+        });
+
+        Route::middleware('nursery.capability:manage_staff')->group(function () {
+            Route::get('staff/partials/city-select', [NurseryStaffWebController::class, 'citySelectPartial'])->name('staff.partials.city-select');
+            Route::get('staff/create', [NurseryStaffWebController::class, 'create'])->name('staff.create');
+            Route::post('staff', [NurseryStaffWebController::class, 'store'])->name('staff.store');
+            Route::get('staff/{employee}/edit', [NurseryStaffWebController::class, 'edit'])->name('staff.edit');
+            Route::put('staff/{employee}', [NurseryStaffWebController::class, 'update'])->name('staff.update');
+        });
+
+        Route::middleware('nursery.capability:view_units')->group(function () {
+            Route::get('units', [NurseryUnitWebController::class, 'index'])->name('units.index');
+        });
+
+        Route::middleware('nursery.capability:manage_units')->group(function () {
+            Route::get('units/create', [NurseryUnitWebController::class, 'create'])->name('units.create');
+            Route::post('units', [NurseryUnitWebController::class, 'store'])->name('units.store');
+            Route::get('units/{unit}/edit', [NurseryUnitWebController::class, 'edit'])->name('units.edit');
+            Route::put('units/{unit}', [NurseryUnitWebController::class, 'update'])->name('units.update');
+        });
+
+        Route::middleware('nursery.capability:view_calendar')->group(function () {
+            Route::get('calendar', [NurseryCalendarWebController::class, 'index'])->name('calendar.index');
+            Route::get('calendar/events', [NurseryCalendarWebController::class, 'events'])->name('calendar.events');
+        });
+
+        Route::middleware('nursery.capability:manage_calendar')->group(function () {
+            Route::get('calendar/create', [NurseryCalendarWebController::class, 'create'])->name('calendar.create');
+            Route::post('calendar', [NurseryCalendarWebController::class, 'store'])->name('calendar.store');
+            Route::get('calendar/lessons', [NurseryCalendarWebController::class, 'lessonOptions'])->name('calendar.lessons');
+            Route::get('calendar/{entry}/edit', [NurseryCalendarWebController::class, 'edit'])->name('calendar.edit');
+            Route::put('calendar/{entry}', [NurseryCalendarWebController::class, 'update'])->name('calendar.update');
+            Route::delete('calendar/{entry}', [NurseryCalendarWebController::class, 'destroy'])->name('calendar.destroy');
+        });
+
+        Route::middleware('nursery.capability:view_subscriptions')->group(function () {
+            Route::get('subscriptions', [NurserySubscriptionWebController::class, 'index'])->name('subscriptions.index');
+            Route::get('subscriptions/plan-amount', [NurserySubscriptionWebController::class, 'planAmount'])->name('subscriptions.plan-amount');
+        });
+
+        Route::middleware('nursery.capability:manage_subscriptions')->group(function () {
+            Route::post('subscriptions', [NurserySubscriptionWebController::class, 'store'])->name('subscriptions.store');
+            Route::patch('subscriptions/{subscription}/cancel', [NurserySubscriptionWebController::class, 'cancel'])->name('subscriptions.cancel');
+            Route::post('subscriptions/reminders/payment', [NurserySubscriptionWebController::class, 'sendPaymentReminders'])->name('subscriptions.reminders.payment');
+        });
+
+        Route::middleware('nursery.capability:manage_settings')->group(function () {
+            Route::get('settings', [NurserySettingsWebController::class, 'index'])->name('settings.index');
+            Route::get('settings/partials/city-select', [NurserySettingsWebController::class, 'citySelectPartial'])->name('settings.partials.city-select');
+            Route::put('settings/account', [NurserySettingsWebController::class, 'updateAccount'])->name('settings.account.update');
+            Route::put('settings/branding', [NurserySettingsWebController::class, 'updateBranding'])->name('settings.branding.update');
+            Route::post('settings/plans', [NurserySettingsWebController::class, 'storePlan'])->name('settings.plans.store');
+            Route::put('settings/plans/{plan}', [NurserySettingsWebController::class, 'updatePlan'])->name('settings.plans.update');
+            Route::delete('settings/plans/{plan}', [NurserySettingsWebController::class, 'destroyPlan'])->name('settings.plans.destroy');
+            Route::post('settings/shifts', [NurserySettingsWebController::class, 'storeShifts'])->name('settings.shifts.store');
+            Route::delete('settings/shifts/{shift}', [NurserySettingsWebController::class, 'destroyShift'])->name('settings.shifts.destroy');
+            Route::put('settings/features', [NurserySettingsWebController::class, 'updateFeatures'])->name('settings.features.update');
         });
     });
 

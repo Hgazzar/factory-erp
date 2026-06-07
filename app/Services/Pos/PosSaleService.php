@@ -49,6 +49,7 @@ final class PosSaleService
             PosSale::PAYMENT_CARD,
             PosSale::PAYMENT_MIXED,
             PosSale::PAYMENT_COD,
+            PosSale::PAYMENT_MANUAL_TRANSFER,
         ];
         $paymentMethod = in_array($paymentMethod, $allowedMethods, true)
             ? $paymentMethod
@@ -112,7 +113,7 @@ final class PosSaleService
                 $lineSubtotal = round($qty * $unitPrice, 4);
                 $lineVat = round($lineSubtotal * ((float) $product->vat_percent / 100), 4);
                 $lineTotal = round($lineSubtotal + $lineVat, 4);
-                $lineCogs = round($qty * (float) $product->cost_price, 4);
+                $lineCogs = round($qty * $product->resolvedUnitCost(), 4);
 
                 $preparedLines[] = [
                     'product' => $product,
@@ -138,6 +139,17 @@ final class PosSaleService
                 $paymentSplits = $this->validateMixedPaymentSplits($paymentSplits, $totalAmount);
             }
 
+            $saleChannel = isset($payload['sale_channel']) ? trim((string) $payload['sale_channel']) : null;
+            if ($saleChannel === null || $saleChannel === '') {
+                $saleChannel = PosSale::CHANNEL_POS_TERMINAL;
+            }
+
+            $initialStatus = isset($payload['initial_status']) && trim((string) $payload['initial_status']) !== ''
+                ? trim((string) $payload['initial_status'])
+                : $this->resolveOnlineStoreInitialStatus($paymentMethod, $saleChannel);
+
+            $deferJournal = $initialStatus !== PosSale::STATUS_COMPLETED;
+
             $sale = PosSale::withoutGlobalScopes()->create([
                 'user_id' => $tenantUserId,
                 'pos_device_id' => $deviceId,
@@ -150,13 +162,19 @@ final class PosSaleService
                 'total_amount' => $totalAmount,
                 'cogs_amount' => $cogsTotal,
                 'payment_method' => $paymentMethod,
-                'sale_channel' => isset($payload['sale_channel']) ? trim((string) $payload['sale_channel']) : null,
+                'payment_gateway_reference' => isset($payload['payment_gateway_reference'])
+                    ? trim((string) $payload['payment_gateway_reference'])
+                    : null,
+                'payment_receipt_path' => isset($payload['payment_receipt_path'])
+                    ? trim((string) $payload['payment_receipt_path'])
+                    : null,
+                'sale_channel' => $saleChannel,
                 'customer_name' => isset($payload['customer_name']) ? trim((string) $payload['customer_name']) : null,
                 'customer_phone' => isset($payload['customer_phone']) ? trim((string) $payload['customer_phone']) : null,
                 'customer_address' => isset($payload['customer_address']) ? trim((string) $payload['customer_address']) : null,
                 'coupon_code' => isset($payload['coupon_code']) ? trim((string) $payload['coupon_code']) : null,
                 'discount_amount' => round((float) ($payload['discount_amount'] ?? 0), 4),
-                'status' => PosSale::STATUS_COMPLETED,
+                'status' => $initialStatus,
                 'created_at' => $soldAt,
                 'updated_at' => now(),
             ]);
@@ -169,7 +187,7 @@ final class PosSaleService
                     'pos_sale_id' => $sale->id,
                     'pos_product_id' => $product->id,
                     'quantity' => $entry['quantity'],
-                    'unit_cost' => (float) $product->cost_price,
+                    'unit_cost' => $product->resolvedUnitCost(),
                     'unit_price' => $entry['unit_price'],
                     'vat_percent' => (float) $product->vat_percent,
                     'vat_amount' => $entry['line_vat'],
@@ -181,23 +199,139 @@ final class PosSaleService
                 $product->save();
             }
 
-            $entry = $this->recordAccountingEntry(
-                $sale,
-                $tenantUserId,
-                $subtotal,
-                $vatTotal,
-                $totalAmount,
-                $cogsTotal,
-                $paymentMethod,
-                $actingUserId,
-                $paymentSplits,
-            );
+            if (! $deferJournal) {
+                $entry = $this->recordAccountingEntry(
+                    $sale,
+                    $tenantUserId,
+                    $subtotal,
+                    $vatTotal,
+                    $totalAmount,
+                    $cogsTotal,
+                    $paymentMethod,
+                    $actingUserId,
+                    $paymentSplits,
+                );
 
-            $sale->journal_entry_id = $entry->id;
-            $sale->save();
+                $sale->journal_entry_id = $entry->id;
+                $sale->save();
+            }
 
             return $sale->fresh(['items.product', 'journalEntry']);
         });
+    }
+
+    /**
+     * ترحيل قيد محاسبي لبيع POS — يُستخدم عند التحصيل (COD أونلاين) أو داخل processSale.
+     */
+    public function postSaleJournal(
+        PosSale $sale,
+        int $tenantUserId,
+        string $paymentMethodForDebit,
+        ?int $actingUserId = null,
+        array $paymentSplits = [],
+    ): \App\Models\JournalEntry {
+        if ($sale->journal_entry_id !== null) {
+            throw new InvalidArgumentException('تم ترحيل قيد محاسبي لهذا البيع مسبقاً.');
+        }
+
+        $entry = $this->recordAccountingEntry(
+            $sale,
+            $tenantUserId,
+            (float) $sale->subtotal_amount,
+            (float) $sale->vat_amount,
+            (float) $sale->total_amount,
+            (float) $sale->cogs_amount,
+            $paymentMethodForDebit,
+            $actingUserId,
+            $paymentSplits,
+        );
+
+        return $entry;
+    }
+
+    /**
+     * قيد تحصيل نقدي مقابل ذمم مدينة — المرحلة الثانية من COD (بعد التسليم).
+     */
+    public function postCollectionJournal(
+        PosSale $sale,
+        int $tenantUserId,
+        ?int $actingUserId = null,
+    ): \App\Models\JournalEntry {
+        if ($sale->collection_journal_entry_id !== null) {
+            throw new InvalidArgumentException('تم ترحيل قيد التحصيل مسبقاً.');
+        }
+
+        if ($sale->journal_entry_id === null) {
+            throw new InvalidArgumentException('لا يوجد قيد إيراد/ذمم لتحصيله.');
+        }
+
+        $totalAmount = round((float) $sale->total_amount, 4);
+        if ($totalAmount <= 0) {
+            throw new InvalidArgumentException('إجمالي البيع غير صالح للتحصيل.');
+        }
+
+        $cash = DefaultLedgerAccounts::paymentSourceAssetForTenant(PosSale::PAYMENT_CASH, $tenantUserId);
+        $receivable = DefaultLedgerAccounts::accountsReceivableForTenant($tenantUserId);
+
+        return $this->financialRecording->recordBalancedJournal(
+            $tenantUserId,
+            now()->toDateString(),
+            $sale->invoice_number.'-COL',
+            'تحصيل طلب متجر — '.$sale->invoice_number,
+            [
+                [
+                    'account_id' => $cash->id,
+                    'debit' => $totalAmount,
+                    'credit' => 0,
+                    'description' => 'تحصيل نقدي — '.$sale->invoice_number,
+                ],
+                [
+                    'account_id' => $receivable->id,
+                    'debit' => 0,
+                    'credit' => $totalAmount,
+                    'description' => 'تسوية ذمم مدينة — '.$sale->invoice_number,
+                ],
+            ],
+            $actingUserId ?? $tenantUserId,
+        );
+    }
+
+    /**
+     * تحديث حالة طلب متجر إلكتروني — collected | delivered | cancelled.
+     */
+    public function updateStatus(int $tenantUserId, int $saleId, string $newStatus, ?int $actingUserId = null): PosSale
+    {
+        $normalized = match (strtolower(trim($newStatus))) {
+            PosSale::STATUS_COLLECTED, 'collected' => PosSale::STATUS_COLLECTED,
+            PosSale::STATUS_DELIVERED, 'delivered' => PosSale::STATUS_DELIVERED,
+            PosSale::STATUS_VOIDED, PosSale::STATUS_CANCELLED, 'cancelled', 'voided' => PosSale::STATUS_VOIDED,
+            default => throw new InvalidArgumentException('حالة الطلب غير مدعومة.'),
+        };
+
+        return match ($normalized) {
+            PosSale::STATUS_DELIVERED => app(PosSaleFulfillmentService::class)->markDelivered($tenantUserId, $saleId, $actingUserId),
+            PosSale::STATUS_COLLECTED => app(PosSaleFulfillmentService::class)->markCollected($tenantUserId, $saleId, $actingUserId),
+            PosSale::STATUS_VOIDED => app(PosSaleFulfillmentService::class)->voidSale($tenantUserId, $saleId, $actingUserId),
+        };
+    }
+
+    private function resolveOnlineStoreInitialStatus(string $paymentMethod, ?string $saleChannel): string
+    {
+        if ($saleChannel !== PosSale::CHANNEL_ONLINE_STORE) {
+            return PosSale::STATUS_COMPLETED;
+        }
+
+        return match ($paymentMethod) {
+            PosSale::PAYMENT_COD => PosSale::STATUS_PENDING,
+            PosSale::PAYMENT_MANUAL_TRANSFER => PosSale::STATUS_PENDING_VERIFICATION,
+            PosSale::PAYMENT_CARD => PosSale::STATUS_PENDING,
+            default => PosSale::STATUS_COMPLETED,
+        };
+    }
+
+    private function shouldDeferOnlineCodJournal(string $paymentMethod, ?string $saleChannel): bool
+    {
+        return $this->resolveOnlineStoreInitialStatus($paymentMethod, $saleChannel) !== PosSale::STATUS_COMPLETED;
     }
 
     public function updateProductPrice(PosProduct $product, float $newSalePrice, ?string $reason = null): PosProduct
@@ -287,7 +421,7 @@ final class PosSaleService
                 'account_id' => $receivable->id,
                 'debit' => $totalAmount,
                 'credit' => 0,
-                'description' => 'مبيعات أونلاين (دفع عند الاستلام) — '.$sale->invoice_number,
+                'description' => 'مبيعات COD — '.$sale->invoice_number,
             ];
         } else {
             $cashOrBank = DefaultLedgerAccounts::paymentSourceAssetForTenant($paymentMethod, $tenantUserId);

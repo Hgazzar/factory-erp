@@ -83,4 +83,14 @@ final class NicheCatalogTest extends TestCase
 
         $this->assertContains('clinic', $modules);
     }
+
+    #[Test]
+    public function nurseries_default_modules_include_nursery_not_crm(): void
+    {
+        $modules = app(NicheCatalog::class)->defaultModuleKeys('nurseries');
+
+        $this->assertContains('nursery', $modules);
+        $this->assertContains('finance', $modules);
+        $this->assertNotContains('crm', $modules);
+    }
 }

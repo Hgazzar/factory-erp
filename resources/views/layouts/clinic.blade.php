@@ -18,16 +18,45 @@
     @unless(file_exists(public_path('hot')) || file_exists(public_path('build/manifest.json')))
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     @endunless
+    @include('tenant.partials.theme-css-vars')
     <style>
         /* أساسيات التخطيط — تعمل حتى بدون Tailwind */
         *, *::before, *::after { box-sizing: border-box; }
         body {
             font-family: 'Cairo', sans-serif;
-            background: #f0fdfa;
+            background: linear-gradient(160deg, var(--clinic-bg) 0%, var(--clinic-bg-mid) 45%, var(--clinic-secondary) 100%);
+            color: var(--clinic-text);
             min-height: 100vh;
             margin: 0;
             display: flex;
             flex-direction: column;
+        }
+        .nursery-brand-mark--sidebar,
+        .tenant-brand-mark--sidebar {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: .65rem;
+            margin-bottom: .75rem;
+        }
+        .tenant-brand-mark--sidebar .tenant-brand-mark__logo-wrap,
+        .nursery-brand-mark--sidebar .nursery-brand-mark__logo-wrap {
+            width: 3.25rem;
+            height: 3.25rem;
+            border-radius: 1rem;
+            background: linear-gradient(135deg, var(--clinic-bg-mid), #fff);
+            border: 1px solid var(--clinic-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: .25rem;
+        }
+        .tenant-brand-mark__name,
+        .nursery-brand-mark--sidebar .nursery-brand-mark__name {
+            font-size: 1.125rem;
+            font-weight: 800;
+            color: var(--clinic-text);
+            margin: 0;
         }
         .clinic-shell { display: flex; flex: 1; min-height: 0; overflow: hidden; }
         .clinic-main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
@@ -37,31 +66,33 @@
         /* السايدبار */
         .module-sidebar {
             width: 280px; min-width: 280px; background: #fff;
-            border-left: 1px solid #ccfbf1;
+            border-left: 1px solid var(--clinic-border);
             display: flex; flex-direction: column; overflow-y: auto;
         }
-        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid #f0fdfa; }
+        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--clinic-border); }
         .module-sidebar-icon-wrap {
             width: 48px; height: 48px; border-radius: 0.75rem;
+            background: linear-gradient(135deg, var(--clinic-primary), var(--clinic-primary-dark));
+            color: var(--clinic-on-primary);
             display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem;
         }
-        .module-sidebar-title { font-size: 1.125rem; font-weight: 700; color: #134e4a; margin: 0 0 0.75rem; }
+        .module-sidebar-title { font-size: 1.125rem; font-weight: 700; color: var(--clinic-text); margin: 0 0 0.75rem; }
         .module-sidebar-back {
             display: inline-flex; align-items: center; gap: 0.5rem;
             padding: 0.5rem 0.75rem; border-radius: 0.5rem;
-            color: #6b7280; text-decoration: none; font-size: 0.875rem;
-            background: #f0fdfa; border: 1px solid #ccfbf1;
+            color: var(--clinic-primary-dark); text-decoration: none; font-size: 0.875rem;
+            background: var(--clinic-bg-mid); border: 1px solid var(--clinic-border);
         }
-        .module-sidebar-back:hover { background: #ccfbf1; color: #134e4a; }
+        .module-sidebar-back:hover { background: var(--clinic-secondary); color: var(--clinic-text); }
         .module-nav { padding: 0.75rem; list-style: none; margin: 0; }
         .module-nav-link {
             display: flex; align-items: center; gap: 0.75rem;
             padding: 0.6rem 0.75rem; border-radius: 0.5rem;
-            color: #4b5563; text-decoration: none; font-size: 0.9375rem;
+            color: var(--clinic-text-muted); text-decoration: none; font-size: 0.9375rem;
             transition: background 0.15s, color 0.15s;
         }
-        .module-nav-link:hover { background: #f0fdfa; color: #134e4a; }
-        .module-nav-link.active { background: #0d9488; color: #fff; font-weight: 500; }
+        .module-nav-link:hover { background: var(--clinic-secondary); color: var(--clinic-text); }
+        .module-nav-link.active { background: var(--clinic-primary); color: var(--clinic-on-primary); font-weight: 500; }
         .module-sidebar-footer {
             margin-top: auto; padding: 0.75rem 1rem;
             border-top: 1px solid #f0fdfa; font-size: 0.8rem; color: #9ca3af;
@@ -74,8 +105,8 @@
             border: 1px solid transparent; cursor: pointer; text-decoration: none;
             font-family: inherit; line-height: 1.25;
         }
-        .clinic-btn-primary { background: #0d9488; color: #fff; border-color: #0d9488; }
-        .clinic-btn-primary:hover { background: #0f766e; color: #fff; }
+        .clinic-btn-primary { background: var(--clinic-primary); color: var(--clinic-on-primary); border-color: var(--clinic-primary); }
+        .clinic-btn-primary:hover { background: var(--clinic-primary-dark); color: var(--clinic-on-primary); }
         .clinic-btn-outline { background: #fff; color: #374151; border-color: #e5e7eb; }
         .clinic-btn-outline:hover { background: #f9fafb; }
         .clinic-btn-outline.is-active { background: #0d9488; color: #fff; border-color: #0d9488; }
@@ -88,7 +119,7 @@
             display: flex; flex-wrap: wrap; align-items: center;
             justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem;
         }
-        .clinic-page-title { font-size: 1.5rem; font-weight: 700; color: #134e4a; margin: 0; }
+        .clinic-page-title { font-size: 1.5rem; font-weight: 700; color: var(--clinic-text); margin: 0; }
         .clinic-page-subtitle { font-size: 0.875rem; color: #6b7280; margin: 0.25rem 0 0; }
         .clinic-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 
@@ -140,10 +171,14 @@
         <div class="clinic-shell">
             <aside class="module-sidebar hidden md:flex shrink-0 flex-col">
                 <div class="module-sidebar-header">
-                    <div class="module-sidebar-icon-wrap" style="background: rgba(13, 148, 136, 0.15); color: #0d9488;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9V5.5z"/><path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
-                    </div>
-                    <h2 class="module-sidebar-title">{{ niche_module_label('clinic') }}</h2>
+                    @if(!empty($tenantBrand))
+                        @include('tenant.partials.brand-mark', ['variant' => 'sidebar', 'markClass' => 'tenant-brand-mark', 'fallbackEmoji' => '🏥'])
+                    @else
+                        <div class="module-sidebar-icon-wrap" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9V5.5z"/><path d="M6.5 0A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
+                        </div>
+                        <h2 class="module-sidebar-title">{{ niche_module_label('clinic') }}</h2>
+                    @endif
                     <a href="{{ route('dashboard') }}" class="module-sidebar-back">← العودة للوحدات</a>
                 </div>
                 <nav class="module-nav flex-1">

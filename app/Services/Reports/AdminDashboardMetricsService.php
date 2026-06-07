@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Reports;
 
 use App\Models\Account;
+use App\Models\PosSale;
 use App\Models\PurchaseInvoice;
 use App\Models\SalesInvoice;
 use App\Support\DefaultLedgerAccounts;
@@ -59,6 +60,45 @@ final class AdminDashboardMetricsService
             'liquidity' => $this->liquidityBalance($tenantUserId),
             'sales_mtd' => round($salesMtd, 4),
             'purchases_mtd' => round($purchasesMtd, 4),
+            'from_date' => $from,
+            'to_date' => $to,
+            'channel_sales' => $this->channelSalesComparison($tenantUserId, $from, $to),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     online_total: float,
+     *     online_count: int,
+     *     pos_total: float,
+     *     pos_count: int,
+     *     from_date: string,
+     *     to_date: string,
+     * }
+     */
+    public function channelSalesComparison(int $tenantUserId, string $from, string $to): array
+    {
+        $fromDt = Carbon::parse($from)->startOfDay();
+        $toDt = Carbon::parse($to)->endOfDay();
+
+        $base = PosSale::withoutGlobalScopes()
+            ->where('user_id', $tenantUserId)
+            ->revenueRecognized()
+            ->whereBetween('created_at', [$fromDt, $toDt]);
+
+        $online = (clone $base)
+            ->where('sale_channel', PosSale::CHANNEL_ONLINE_STORE);
+
+        $pos = (clone $base)->where(function ($query): void {
+            $query->whereNull('sale_channel')
+                ->orWhere('sale_channel', '!=', PosSale::CHANNEL_ONLINE_STORE);
+        });
+
+        return [
+            'online_total' => round((float) (clone $online)->sum('total_amount'), 4),
+            'online_count' => (int) (clone $online)->count(),
+            'pos_total' => round((float) (clone $pos)->sum('total_amount'), 4),
+            'pos_count' => (int) (clone $pos)->count(),
             'from_date' => $from,
             'to_date' => $to,
         ];

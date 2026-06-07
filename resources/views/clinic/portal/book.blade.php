@@ -3,11 +3,8 @@
 @section('title', 'حجز موعد — '.$clinicName)
 
 @section('content')
-<div class="portal-wrap" dir="rtl" x-data="clinicPortalBook()" x-init="init()">
-    <div class="text-center mb-4">
-        <h1 class="h3 fw-bold text-teal-900 mb-1">{{ $clinicName }}</h1>
-        <p class="text-muted mb-0"><x-info field="clinic.portal_intro" /> احجز موعدك أونلاين بخطوات بسيطة</p>
-    </div>
+<div dir="rtl" x-data="clinicPortalBook()" x-init="init()">
+    <p class="text-center text-muted small mb-3"><x-info field="clinic.portal_intro" /></p>
 
     <div class="portal-progress">
         <span :class="step >= 1 ? 'is-done' : ''"></span>

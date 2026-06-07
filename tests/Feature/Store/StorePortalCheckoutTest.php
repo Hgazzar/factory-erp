@@ -74,7 +74,19 @@ final class StorePortalCheckoutTest extends PosTestCase
     {
         $this->get(route('store.portal.home', ['tenant_slug' => $this->slug]))
             ->assertOk()
-            ->assertSee('سماعة لاسلكية');
+            ->assertSee('سماعة لاسلكية')
+            ->assertSee('تسوق الآن')
+            ->assertSee('akStoreQuickAdd', false);
+    }
+
+    #[Test]
+    public function store_static_pages_and_nav_are_available(): void
+    {
+        $this->get(route('store.portal.offers', ['tenant_slug' => $this->slug]))
+            ->assertRedirect(route('store.portal.home', ['tenant_slug' => $this->slug]).'?featured=1#productsSection');
+        $this->get(route('store.portal.returns', ['tenant_slug' => $this->slug]))->assertOk()->assertSee('سياسة الإرجاع');
+        $this->get(route('store.portal.track', ['tenant_slug' => $this->slug]))->assertOk()->assertSee('تتبع الطلب');
+        $this->get(route('store.portal.faq', ['tenant_slug' => $this->slug]))->assertOk();
     }
 
     #[Test]
@@ -96,9 +108,39 @@ final class StorePortalCheckoutTest extends PosTestCase
     }
 
     #[Test]
+    public function online_checkout_auto_provisions_pos_device_when_missing(): void
+    {
+        $this->assertSame(0, \App\Models\PosDevice::withoutGlobalScopes()->where('user_id', $this->tenant->id)->count());
+
+        $this->postJson(route('store.portal.api.checkout', ['tenant_slug' => $this->slug]), [
+            'customer_name' => 'عميل',
+            'customer_phone' => '0509999999',
+            'customer_address' => 'القاهرة',
+            'lines' => [
+                ['pos_product_id' => $this->product->id, 'quantity' => 1],
+            ],
+        ])->assertCreated();
+
+        $this->assertSame(1, \App\Models\PosDevice::withoutGlobalScopes()->where('user_id', $this->tenant->id)->count());
+    }
+
+    #[Test]
+    public function checkout_page_shows_cod_and_online_payment_options(): void
+    {
+        $this->get(route('store.portal.checkout', ['tenant_slug' => $this->slug]))
+            ->assertOk()
+            ->assertSee('paymentMethods', false);
+
+        $this->getJson(route('store.portal.api.payment-methods', ['tenant_slug' => $this->slug]))
+            ->assertOk()
+            ->assertJsonFragment(['key' => 'cod', 'label' => 'الدفع عند الاستلام'])
+            ->assertJsonFragment(['key' => 'card']);
+    }
+
+    #[Test]
     public function online_checkout_creates_cod_sale_and_deducts_stock(): void
     {
-        $device = $this->makePosDevice();
+        $this->makePosDevice();
 
         $response = $this->postJson(route('store.portal.api.checkout', ['tenant_slug' => $this->slug]), [
             'customer_name' => 'أحمد محمد',
@@ -115,13 +157,22 @@ final class StorePortalCheckoutTest extends PosTestCase
         $sale = PosSale::withoutGlobalScopes()->findOrFail((int) $response->json('order.id'));
         $this->assertSame(PosSale::CHANNEL_ONLINE_STORE, $sale->sale_channel);
         $this->assertSame('أحمد محمد', $sale->customer_name);
-        $this->assertNotNull($sale->journal_entry_id);
-        $this->assertSame(PosSale::CHANNEL_ONLINE_STORE, $sale->sale_channel);
+        $this->assertNull($sale->journal_entry_id);
+        $this->assertSame(PosSale::STATUS_PENDING, $sale->status);
         $this->assertEqualsWithDelta(8.0, (float) $this->product->fresh()->current_quantity, 0.0001);
 
         $this->get(route('store.portal.order.success', ['tenant_slug' => $this->slug, 'saleId' => $sale->id]))
             ->assertOk()
-            ->assertSee('شكراً لك');
+            ->assertSee('تم تأكيد طلبك');
+    }
+
+    #[Test]
+    public function store_product_page_has_add_to_cart_handler(): void
+    {
+        $this->get(route('store.portal.product', ['tenant_slug' => $this->slug, 'product' => $this->product->id]))
+            ->assertOk()
+            ->assertSee('أضف للسلة')
+            ->assertSee('akStoreQuickAdd', false);
     }
 
     #[Test]

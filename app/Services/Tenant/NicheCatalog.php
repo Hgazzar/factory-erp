@@ -60,6 +60,25 @@ final class NicheCatalog
     }
 
     /**
+     * @return list<string>
+     */
+    public function defaultPremiumFeatureKeys(string $nicheKey): array
+    {
+        $niche = $this->find($nicheKey);
+
+        if ($niche === null) {
+            return [];
+        }
+
+        $features = $niche['default_premium_features'] ?? [];
+
+        return array_values(array_filter(array_map(
+            static fn (string $k): string => strtolower(trim($k)),
+            is_array($features) ? $features : []
+        ), static fn (string $k): bool => $k !== ''));
+    }
+
+    /**
      * @return list<array{value: string, label: string, description?: string}>
      */
     public function selectOptions(): array

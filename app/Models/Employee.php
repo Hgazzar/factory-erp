@@ -34,6 +34,7 @@ class Employee extends Model
         'linked_user_id',
         'department_id',
         'shift_id',
+        'nursery_shift_id',
         'cost_center_id',
         'ledger_account_id',
         'code',
@@ -66,6 +67,11 @@ class Employee extends Model
         'emergency_contact_relation',
         'status',
         'clinic_role',
+        'nursery_role',
+        'nursery_job_role',
+        'nursery_permissions',
+        'nursery_education',
+        'nursery_specialization',
         'clinic_specialty_id',
         'base_salary',
         'salary_type',
@@ -163,6 +169,7 @@ class Employee extends Model
             'hired_at' => 'date',
             'hire_date' => 'date',
             'birth_date' => 'date',
+            'nursery_permissions' => 'array',
         ];
     }
 
@@ -190,6 +197,11 @@ class Employee extends Model
     public function shift(): BelongsTo
     {
         return $this->belongsTo(Shift::class);
+    }
+
+    public function nurseryShift(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Nursery\NurseryShift::class, 'nursery_shift_id');
     }
 
     /**

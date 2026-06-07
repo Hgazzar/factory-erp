@@ -97,6 +97,14 @@ return [
             'niche_tags' => ['clinic'],
             'sort_order' => 85,
         ],
+        'nursery' => [
+            'name_ar' => 'الحضانة',
+            'name_en' => 'Nursery',
+            'description_ar' => 'الأطفال، الفصول، حضور وانصراف يومي.',
+            'is_core' => false,
+            'niche_tags' => ['nursery'],
+            'sort_order' => 86,
+        ],
     ],
 
     /**
@@ -115,6 +123,7 @@ return [
         'crm' => 'crm',
         'services' => 'services',
         'clinic' => 'clinic',
+        'nursery' => 'nursery',
         'operations' => 'manufacturing',
     ],
 

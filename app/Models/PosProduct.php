@@ -25,6 +25,7 @@ class PosProduct extends Model
         'barcode',
         'description',
         'cost_price',
+        'avg_cost',
         'sale_price',
         'vat_percent',
         'opening_quantity',
@@ -48,6 +49,7 @@ class PosProduct extends Model
     {
         return [
             'cost_price' => 'float',
+            'avg_cost' => 'float',
             'sale_price' => 'float',
             'compare_at_price' => 'float',
             'vat_percent' => 'float',
@@ -83,5 +85,14 @@ class PosProduct extends Model
     public function saleItems(): HasMany
     {
         return $this->hasMany(PosSaleItem::class, 'pos_product_id');
+    }
+
+    public function resolvedUnitCost(): float
+    {
+        if ($this->avg_cost !== null && (float) $this->avg_cost > 0) {
+            return round((float) $this->avg_cost, 4);
+        }
+
+        return round((float) $this->cost_price, 4);
     }
 }

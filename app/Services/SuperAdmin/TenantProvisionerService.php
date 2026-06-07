@@ -10,6 +10,9 @@ use App\Models\User;
 use App\Services\ChartOfAccountsProvisioner;
 use App\Services\Tenant\NicheCatalog;
 use App\Services\Tenant\NicheLexiconService;
+use App\Services\Tenant\PremiumFeatureCatalog;
+use App\Services\Tenant\TenantBrandingService;
+use App\Services\Tenant\TenantFeatureRegistry;
 use App\Services\Tenant\TenantModuleRegistry;
 use App\Support\TenantSlug;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +28,9 @@ final class TenantProvisionerService
         private readonly NicheCatalog $nicheCatalog,
         private readonly TenantModuleRegistry $moduleRegistry,
         private readonly NicheLexiconService $lexiconService,
+        private readonly PremiumFeatureCatalog $premiumCatalog,
+        private readonly TenantFeatureRegistry $featureRegistry,
+        private readonly TenantBrandingService $tenantBranding,
     ) {}
 
     /**
@@ -68,10 +74,15 @@ final class TenantProvisionerService
 
             ChartOfAccountsProvisioner::ensureForUser((int) $tenant->id);
 
+            $this->tenantBranding->ensureForTenant((int) $tenant->id);
+
+            $this->syncInitialPremiumFeatures((int) $tenant->id, $nicheKey, $data);
+
             return $tenant;
         });
 
         $this->moduleRegistry->forgetCache((int) $tenant->id);
+        $this->featureRegistry->forgetCache((int) $tenant->id);
         $this->lexiconService->forgetCache((int) $tenant->id);
 
         return [
@@ -84,5 +95,26 @@ final class TenantProvisionerService
     public function normalizeDomain(string $domain): string
     {
         return TenantSlug::normalize($domain);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function syncInitialPremiumFeatures(int $tenantUserId, string $nicheKey, array $data): void
+    {
+        $catalogKeys = $this->premiumCatalog->keysForNiche($nicheKey);
+        if ($catalogKeys === []) {
+            return;
+        }
+
+        $requested = isset($data['premium_features']) && is_array($data['premium_features'])
+            ? array_map(static fn ($k) => strtolower(trim((string) $k)), $data['premium_features'])
+            : $this->nicheCatalog->defaultPremiumFeatureKeys($nicheKey);
+
+        $enabled = $this->premiumCatalog->filterKeysForNiche($nicheKey, $requested);
+
+        if ($enabled !== []) {
+            $this->featureRegistry->syncCatalogKeys($tenantUserId, $catalogKeys, $enabled);
+        }
     }
 }

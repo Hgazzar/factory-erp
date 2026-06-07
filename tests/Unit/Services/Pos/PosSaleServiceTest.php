@@ -11,6 +11,7 @@ use App\Models\PosProduct;
 use App\Models\PosProductBrand;
 use App\Models\PosProductCategory;
 use App\Models\PosSale;
+use App\Services\Pos\PosSaleFulfillmentService;
 use App\Services\Pos\PosSaleService;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\PosTestCase;
@@ -65,6 +66,7 @@ final class PosSaleServiceTest extends PosTestCase
 
         $this->assertNotNull($sale->journal_entry_id);
         $this->assertSame('completed', $sale->status);
+        $this->assertSame(PosSale::CHANNEL_POS_TERMINAL, $sale->sale_channel);
         $this->assertEqualsWithDelta(20.0, (float) $sale->subtotal_amount, 0.0001);
         $this->assertEqualsWithDelta(3.0, (float) $sale->vat_amount, 0.0001);
         $this->assertEqualsWithDelta(23.0, (float) $sale->total_amount, 0.0001);
@@ -109,13 +111,14 @@ final class PosSaleServiceTest extends PosTestCase
     }
 
     #[Test]
-    public function cod_sale_debits_accounts_receivable(): void
+    public function online_cod_is_pending_without_journal_until_collected(): void
     {
         $device = $this->makePosDevice();
         $product = PosProduct::query()->create([
             'user_id' => $this->tenant->id,
             'name' => 'Online item',
             'cost_price' => 5,
+            'avg_cost' => 4,
             'sale_price' => 20,
             'vat_percent' => 0,
             'opening_quantity' => 5,
@@ -134,7 +137,99 @@ final class PosSaleServiceTest extends PosTestCase
         ], (int) $this->tenant->id);
 
         $this->assertSame(PosSale::PAYMENT_COD, $sale->payment_method);
-        $this->assertJournalIsBalanced($sale->journalEntry);
+        $this->assertSame(PosSale::STATUS_PENDING, $sale->status);
+        $this->assertNull($sale->journal_entry_id);
+        $this->assertEqualsWithDelta(4.0, (float) $sale->cogs_amount, 0.0001);
+
+        $collected = app(PosSaleFulfillmentService::class)->markCollected(
+            (int) $this->tenant->id,
+            (int) $sale->id,
+            (int) $this->tenant->id,
+        );
+
+        $this->assertSame(PosSale::STATUS_COLLECTED, $collected->status);
+        $this->assertNotNull($collected->journal_entry_id);
+        $this->assertJournalIsBalanced($collected->journalEntry);
+
+        $cashDebit = (float) JournalItem::query()
+            ->where('journal_entry_id', $collected->journal_entry_id)
+            ->where('account_id', $this->cashAccount->id)
+            ->sum('debit');
+        $this->assertGreaterThan(0, $cashDebit);
+
+        $arDebit = (float) JournalItem::query()
+            ->where('journal_entry_id', $collected->journal_entry_id)
+            ->where('account_id', $this->receivableAccount->id)
+            ->sum('debit');
+        $this->assertEqualsWithDelta(0.0, $arDebit, 0.0001);
+    }
+
+    #[Test]
+    public function pending_online_cod_can_be_voided_and_stock_restored(): void
+    {
+        $device = $this->makePosDevice();
+        $product = PosProduct::query()->create([
+            'user_id' => $this->tenant->id,
+            'name' => 'Online item',
+            'cost_price' => 5,
+            'sale_price' => 20,
+            'vat_percent' => 0,
+            'opening_quantity' => 5,
+            'current_quantity' => 5,
+            'is_active' => true,
+        ]);
+
+        $sale = $this->service->processSale((int) $this->tenant->id, [
+            'pos_device_id' => $device->id,
+            'payment_method' => PosSale::PAYMENT_COD,
+            'sale_channel' => PosSale::CHANNEL_ONLINE_STORE,
+            'lines' => [
+                ['pos_product_id' => $product->id, 'quantity' => 2],
+            ],
+        ], (int) $this->tenant->id);
+
+        app(PosSaleFulfillmentService::class)->voidSale(
+            (int) $this->tenant->id,
+            (int) $sale->id,
+            (int) $this->tenant->id,
+        );
+
+        $this->assertSame(PosSale::STATUS_VOIDED, $sale->fresh()->status);
+        $this->assertEqualsWithDelta(5.0, (float) $product->fresh()->current_quantity, 0.0001);
+    }
+
+    #[Test]
+    public function update_status_delivered_then_collected_uses_two_journals(): void
+    {
+        $device = $this->makePosDevice();
+        $product = PosProduct::query()->create([
+            'user_id' => $this->tenant->id,
+            'name' => 'Online item',
+            'cost_price' => 5,
+            'sale_price' => 20,
+            'vat_percent' => 0,
+            'opening_quantity' => 5,
+            'current_quantity' => 5,
+            'is_active' => true,
+        ]);
+
+        $sale = $this->service->processSale((int) $this->tenant->id, [
+            'pos_device_id' => $device->id,
+            'payment_method' => PosSale::PAYMENT_COD,
+            'sale_channel' => PosSale::CHANNEL_ONLINE_STORE,
+            'customer_name' => 'Test',
+            'lines' => [
+                ['pos_product_id' => $product->id, 'quantity' => 1],
+            ],
+        ], (int) $this->tenant->id);
+
+        $delivered = $this->service->updateStatus((int) $this->tenant->id, (int) $sale->id, 'delivered', (int) $this->tenant->id);
+        $this->assertSame(PosSale::STATUS_DELIVERED, $delivered->status);
+        $this->assertNotNull($delivered->journal_entry_id);
+
+        $collected = $this->service->updateStatus((int) $this->tenant->id, (int) $sale->id, 'collected', (int) $this->tenant->id);
+        $this->assertSame(PosSale::STATUS_COLLECTED, $collected->status);
+        $this->assertNotNull($collected->collection_journal_entry_id);
     }
 
     #[Test]

@@ -29,4 +29,14 @@ final class PremiumFeatureKeys
     public const CLINIC_BRANCH_APPOINTMENTS = 'clinic_branch_appointments';
 
     public const CLINIC_WHATSAPP_AUTOMATION = 'clinic_whatsapp_automation';
+
+    // Nurseries
+    public const NURSERY_WHATSAPP_AUTOMATION = 'nursery_whatsapp_automation';
+
+    public const NURSERY_SUBSCRIPTION_FINANCE = 'nursery_subscription_finance';
+
+    public const NURSERY_PARENT_PORTAL = 'nursery_portal';
+
+    /** مفتاح موحّد لبوابة أولياء الأمور (tenant_features). */
+    public const NURSERY_PORTAL = 'nursery_portal';
 }

@@ -51,6 +51,14 @@
     الجلسات
 </a>
 
+<a href="{{ route('pos.orders.index') }}" class="{{ $linkClass }} {{ request()->routeIs('pos.orders.*') || request()->routeIs('pos.online-orders.*') ? 'active' : '' }}">
+    <svg class="module-nav-icon shrink-0" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v1h12V4a1 1 0 0 0-1-1H2zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/>
+        <path d="M2 9.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
+    </svg>
+    طلبات المتجر
+</a>
+
 <a href="{{ route('pos.receipts.index') }}" class="{{ $linkClass }} {{ request()->routeIs('pos.receipts.*') ? 'active' : '' }}">
     <svg class="module-nav-icon shrink-0" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
         <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>

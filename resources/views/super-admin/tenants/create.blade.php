@@ -81,6 +81,33 @@
             @error('niche_key')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
         </div>
 
+        <div id="nursery-features-block"
+             class="rounded-lg border border-indigo-100 bg-indigo-50/40 p-4 space-y-3 hidden"
+             x-data="{ niche: @json(old('niche_key', '')) }"
+             x-show="niche === 'nurseries'"
+             x-on:searchable-select-change.window="if (($event.detail || {}).name === 'niche_key') niche = $event.detail.value || ''"
+             x-on:custom-select-change.window="if (($event.detail || {}).name === 'niche_key') niche = $event.detail.value || ''">
+            <h3 class="text-sm font-bold text-indigo-950">مزايا الحضانة <x-info field="nursery.settings_features_intro" /></h3>
+            <p class="text-xs text-indigo-800/80">اختر المزايا المفعّلة عند الإنشاء — الافتراضي: بوابة أولياء الأمور.</p>
+            <ul class="space-y-2">
+                @foreach($nurseryFeatures as $feature)
+                    <li>
+                        <label class="flex items-start gap-2 rounded-lg border border-indigo-100 bg-white p-3 cursor-pointer">
+                            <input type="checkbox"
+                                   name="premium_features[]"
+                                   value="{{ $feature['key'] }}"
+                                   class="mt-0.5"
+                                   @checked(in_array($feature['key'], old('premium_features', $defaultNurseryFeatures), true))>
+                            <span>
+                                <span class="block text-sm font-semibold text-gray-900">{{ $feature['name_ar'] }}</span>
+                                <span class="block text-xs text-gray-500">{{ $feature['description_ar'] }}</span>
+                            </span>
+                        </label>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+
         <div class="flex flex-wrap items-center gap-3 pt-2">
             <button type="submit"
                     class="inline-flex items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">

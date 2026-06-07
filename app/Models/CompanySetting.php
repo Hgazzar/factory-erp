@@ -26,6 +26,7 @@ class CompanySetting extends Model
         'address',
         'logo_url',
         'currency_code',
+        'country_code',
     ];
 
     protected $casts = [

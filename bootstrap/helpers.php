@@ -36,3 +36,20 @@ if (! function_exists('niche_module_label')) {
             ->moduleLabel($moduleKey);
     }
 }
+
+if (! function_exists('store_paymob_webhook_url')) {
+    /**
+     * Production Paymob processed-callback URL (POST). Must match APP_URL on the server.
+     */
+    function store_paymob_webhook_url(): string
+    {
+        $base = rtrim((string) config('app.url'), '/');
+        $path = (string) config('store.webhooks.paymob_path', '/webhooks/store/paymob');
+
+        if ($path === '' || $path[0] !== '/') {
+            $path = '/'.$path;
+        }
+
+        return $base.$path;
+    }
+}

@@ -11,7 +11,19 @@ class PosSale extends Model
 {
     public const STATUS_COMPLETED = 'completed';
 
+    public const STATUS_PENDING = 'pending';
+
+    /** محجوز للمستقبل — التسليم قبل التحصيل */
+    public const STATUS_DELIVERED = 'delivered';
+
+    public const STATUS_COLLECTED = 'collected';
+
+    public const STATUS_PENDING_VERIFICATION = 'pending_verification';
+
     public const STATUS_VOIDED = 'voided';
+
+    /** alias used in merchant UI — maps to voided */
+    public const STATUS_CANCELLED = 'cancelled';
 
     public const PAYMENT_CASH = 'cash';
 
@@ -24,6 +36,8 @@ class PosSale extends Model
     public const PAYMENT_OTHER = 'other';
 
     public const PAYMENT_COD = 'cod';
+
+    public const PAYMENT_MANUAL_TRANSFER = 'manual_transfer';
 
     public const CHANNEL_ONLINE_STORE = 'online_store';
 
@@ -48,7 +62,13 @@ class PosSale extends Model
         'coupon_code',
         'discount_amount',
         'status',
+        'delivered_at',
+        'whatsapp_delivered_notified_at',
+        'whatsapp_invoice_notified_at',
         'journal_entry_id',
+        'collection_journal_entry_id',
+        'payment_gateway_reference',
+        'payment_receipt_path',
     ];
 
     protected static function booted(): void
@@ -65,6 +85,10 @@ class PosSale extends Model
             'total_amount' => 'decimal:4',
             'cogs_amount' => 'decimal:4',
             'discount_amount' => 'decimal:4',
+            'delivered_at' => 'datetime',
+            'whatsapp_delivered_notified_at' => 'datetime',
+            'whatsapp_invoice_notified_at' => 'datetime',
+            'whatsapp_received_notified_at' => 'datetime',
         ];
     }
 
@@ -83,6 +107,11 @@ class PosSale extends Model
         return $this->belongsTo(JournalEntry::class);
     }
 
+    public function collectionJournalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'collection_journal_entry_id');
+    }
+
     public function lines(): HasMany
     {
         return $this->hasMany(PosSaleLine::class);
@@ -96,6 +125,109 @@ class PosSale extends Model
     public function scopeCompleted($query)
     {
         return $query->where('status', self::STATUS_COMPLETED);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function revenueRecognizedStatuses(): array
+    {
+        return [self::STATUS_COMPLETED, self::STATUS_COLLECTED, self::STATUS_DELIVERED];
+    }
+
+    public function scopeRevenueRecognized($query)
+    {
+        return $query->whereIn('status', self::revenueRecognizedStatuses());
+    }
+
+    public function scopeOnlineStore($query)
+    {
+        return $query->where('sale_channel', self::CHANNEL_ONLINE_STORE);
+    }
+
+    public function scopeForTenant($query, int $tenantUserId)
+    {
+        return $query->where('user_id', $tenantUserId);
+    }
+
+    public function scopeWithOptionalStatus($query, ?string $status)
+    {
+        $status = trim((string) $status);
+        if ($status !== '' && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Orders that still need merchant action (fulfillment, verification, or collection).
+     */
+    public function scopeAwaitingMerchantAction($query)
+    {
+        return $query->whereIn('status', self::awaitingMerchantActionStatuses());
+    }
+
+    public function scopeCreatedOnDate($query, $date)
+    {
+        return $query->whereDate('created_at', $date);
+    }
+
+    public function scopeCreatedSince($query, $dateTime)
+    {
+        return $query->where('created_at', '>=', $dateTime);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function awaitingMerchantActionStatuses(): array
+    {
+        return [
+            self::STATUS_PENDING,
+            self::STATUS_PENDING_VERIFICATION,
+            self::STATUS_DELIVERED,
+        ];
+    }
+
+    public function scopePendingOnlineCod($query)
+    {
+        return $query
+            ->where('status', self::STATUS_PENDING)
+            ->where('payment_method', self::PAYMENT_COD)
+            ->where('sale_channel', self::CHANNEL_ONLINE_STORE);
+    }
+
+    public function isOnlineCodPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING
+            && $this->payment_method === self::PAYMENT_COD
+            && $this->sale_channel === self::CHANNEL_ONLINE_STORE;
+    }
+
+    public function isOnlineStoreOrder(): bool
+    {
+        return $this->sale_channel === self::CHANNEL_ONLINE_STORE;
+    }
+
+    public function isPendingVerification(): bool
+    {
+        return $this->status === self::STATUS_PENDING_VERIFICATION;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function onlineOrderStatusLabels(): array
+    {
+        return [
+            self::STATUS_PENDING => 'بانتظار التسليم',
+            self::STATUS_PENDING_VERIFICATION => 'بانتظار التحقق من التحويل',
+            self::STATUS_DELIVERED => 'تم التسليم',
+            self::STATUS_COLLECTED => 'تم التحصيل',
+            self::STATUS_COMPLETED => 'مكتمل',
+            self::STATUS_VOIDED => 'ملغى',
+        ];
     }
 
     /**

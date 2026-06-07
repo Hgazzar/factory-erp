@@ -21,8 +21,8 @@
             <div class="text-2xl font-bold text-gray-900 tabular-nums">{{ number_format($merchantMetrics['revenue_month'], 2) }}</div>
         </div>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-            <div class="text-xs font-medium text-amber-800 mb-1">تنبيه مخزون</div>
-            <div class="text-2xl font-bold text-amber-900 tabular-nums">{{ count($merchantMetrics['low_stock']) }}</div>
+            <div class="text-xs font-medium text-amber-800 mb-1"><x-info field="store.metrics_pending_collection" /> بانتظار التحصيل / التحقق</div>
+            <div class="text-2xl font-bold text-amber-900 tabular-nums">{{ $merchantMetrics['pending_collection'] ?? 0 }}</div>
         </div>
     </div>
 
@@ -97,6 +97,90 @@
                     :value="old('default_pos_device_id', $settings->default_pos_device_id)" empty-label="أول جهاز نشط" :searchable="count($devices) > 6" />
             </div>
 
+            <h2 class="text-base font-bold text-gray-900 pt-2">طرق الدفع</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="hidden" name="cod_enabled" value="0">
+                    <input type="checkbox" name="cod_enabled" value="1" class="rounded border-gray-300" @checked(old('cod_enabled', $settings->cod_enabled ?? true))>
+                    <x-info field="store.payment_cod" /> الدفع عند الاستلام (COD)
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="hidden" name="manual_transfer_enabled" value="0">
+                    <input type="checkbox" name="manual_transfer_enabled" value="1" class="rounded border-gray-300" @checked(old('manual_transfer_enabled', $settings->manual_transfer_enabled))>
+                    <x-info field="store.payment_manual_transfer" /> تحويل بنكي + إيصال
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="hidden" name="online_payment_enabled" value="0">
+                    <input type="checkbox" name="online_payment_enabled" value="1" class="rounded border-gray-300" @checked(old('online_payment_enabled', $settings->online_payment_enabled))>
+                    <x-info field="pos.online_payment_enabled" /> Paymob (بطاقة/محفظة)
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="hidden" name="tamara_enabled" value="0">
+                    <input type="checkbox" name="tamara_enabled" value="1" class="rounded border-gray-300" @checked(old('tamara_enabled', $settings->tamara_enabled))>
+                    <x-info field="store.payment_tamara" /> Tamara (السعودية)
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="hidden" name="tabby_enabled" value="0">
+                    <input type="checkbox" name="tabby_enabled" value="1" class="rounded border-gray-300" @checked(old('tabby_enabled', $settings->tabby_enabled))>
+                    <x-info field="store.payment_tabby" /> Tabby
+                </label>
+            </div>
+
+            <h2 class="text-base font-bold text-gray-900 pt-4">Paymob</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="pos.online_payment_provider" /> مزود الدفع</label>
+                    <x-searchable-select name="online_payment_provider" :searchable="false"
+                        :options="[['value' => 'paymob', 'label' => 'Paymob'], ['value' => 'stripe', 'label' => 'Stripe']]"
+                        :value="old('online_payment_provider', $settings->online_payment_provider ?? 'paymob')"
+                        empty-label="Paymob" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="pos.online_payment_mode" /> الوضع</label>
+                    <x-searchable-select name="online_payment_mode" :searchable="false"
+                        :options="[['value' => 'sandbox', 'label' => 'Sandbox (اختبار)'], ['value' => 'live', 'label' => 'Live (إنتاج)']]"
+                        :value="old('online_payment_mode', $settings->online_payment_mode ?? 'sandbox')"
+                        empty-option="false" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">المفتاح العام</label>
+                    <input type="text" name="online_payment_public_key" value="{{ old('online_payment_public_key', $settings->online_payment_public_key) }}" class="w-full rounded-lg border-gray-300" dir="ltr" autocomplete="off">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">المفتاح السري</label>
+                    <input type="password" name="online_payment_secret_key" value="{{ old('online_payment_secret_key', $settings->online_payment_secret_key) }}" class="w-full rounded-lg border-gray-300" dir="ltr" autocomplete="off">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Integration ID</label>
+                    <input type="text" name="paymob_integration_id" value="{{ old('paymob_integration_id', $settings->paymob_integration_id) }}" class="w-full rounded-lg border-gray-300" dir="ltr">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">HMAC Secret (Webhooks)</label>
+                    <input type="password" name="paymob_hmac_secret" value="{{ old('paymob_hmac_secret', $settings->paymob_hmac_secret) }}" class="w-full rounded-lg border-gray-300" dir="ltr" autocomplete="off">
+                </div>
+                <div class="md:col-span-2 rounded-lg border border-indigo-100 bg-indigo-50/60 p-4">
+                    <p class="text-sm font-semibold text-indigo-900 mb-1">رابط Webhook (Processed Callback) — ضعه في لوحة Paymob</p>
+                    <code class="block text-xs sm:text-sm text-indigo-800 break-all dir-ltr" dir="ltr">{{ $paymobWebhookUrl ?? store_paymob_webhook_url() }}</code>
+                    <p class="text-xs text-indigo-700/80 mt-2">POST فقط · يجب أن يطابق <code class="text-xs">APP_URL</code> في الإنتاج · Paymob يرسل التوقيع في <code class="text-xs">?hmac=</code></p>
+                </div>
+            </div>
+
+            <h2 class="text-base font-bold text-gray-900 pt-4">Tamara / Tabby</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Tamara API Token</label>
+                    <input type="password" name="tamara_api_token" value="{{ old('tamara_api_token', $settings->tamara_api_token) }}" class="w-full rounded-lg border-gray-300" dir="ltr" autocomplete="off">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Tabby Public Key</label>
+                    <input type="text" name="tabby_public_key" value="{{ old('tabby_public_key', $settings->tabby_public_key) }}" class="w-full rounded-lg border-gray-300" dir="ltr">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Tabby Secret Key</label>
+                    <input type="password" name="tabby_secret_key" value="{{ old('tabby_secret_key', $settings->tabby_secret_key) }}" class="w-full rounded-lg border-gray-300" dir="ltr" autocomplete="off">
+                </div>
+            </div>
+
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="store.about_us" /> من نحن</label>
                 <textarea name="about_us" rows="4" class="w-full rounded-lg border-gray-300">{{ old('about_us', $settings->about_us) }}</textarea>
@@ -112,6 +196,14 @@
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="store.shipping_policy" /> سياسة الشحن</label>
                 <textarea name="shipping_policy" rows="4" class="w-full rounded-lg border-gray-300">{{ old('shipping_policy', $settings->shipping_policy) }}</textarea>
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="store.return_policy" /> سياسة الإرجاع</label>
+                <textarea name="return_policy" rows="4" class="w-full rounded-lg border-gray-300">{{ old('return_policy', $settings->return_policy) }}</textarea>
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="store.track_order_help" /> تعليمات تتبع الطلب</label>
+                <textarea name="track_order_help" rows="3" class="w-full rounded-lg border-gray-300">{{ old('track_order_help', $settings->track_order_help) }}</textarea>
             </div>
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="store.privacy_policy" /> سياسة الخصوصية</label>

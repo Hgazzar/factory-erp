@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\SuperAdmin\SuperAdminTenantService;
 use App\Services\SuperAdmin\TenantProvisionerService;
+use App\Services\Tenant\PremiumFeatureCatalog;
 use App\Support\TenantSlug;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -37,16 +38,22 @@ final class TenantController extends Controller
         ]);
     }
 
-    public function create(SuperAdminTenantService $tenants): View
+    public function create(SuperAdminTenantService $tenants, PremiumFeatureCatalog $premiumCatalog): View
     {
+        $nurseryFeatures = $premiumCatalog->definitionsForNiche('nurseries');
+        $defaultNurseryFeatures = app(\App\Services\Tenant\NicheCatalog::class)->defaultPremiumFeatureKeys('nurseries');
+
         return view('super-admin.tenants.create', [
             'nicheOptions' => $tenants->nicheSelectOptions(),
+            'nurseryFeatures' => $nurseryFeatures,
+            'defaultNurseryFeatures' => $defaultNurseryFeatures,
         ]);
     }
 
-    public function store(Request $request, TenantProvisionerService $provisioner): RedirectResponse
+    public function store(Request $request, TenantProvisionerService $provisioner, PremiumFeatureCatalog $premiumCatalog): RedirectResponse
     {
         $allowedNiches = array_keys(config('niches.niches', []));
+        $nurseryCatalogKeys = $premiumCatalog->keysForNiche('nurseries');
 
         $data = $request->validate([
             'company_name' => ['required', 'string', 'max:255'],
@@ -54,6 +61,8 @@ final class TenantController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'slug' => TenantSlug::createRules(),
             'niche_key' => ['required', 'string', Rule::in($allowedNiches)],
+            'premium_features' => ['nullable', 'array'],
+            'premium_features.*' => ['string', Rule::in($nurseryCatalogKeys)],
         ], [
             'slug.required' => 'حقل الـ slug مطلوب — اختر اسماً فريداً يدوياً.',
             'slug.regex' => 'الـ slug: حروف إنجليزية صغيرة وأرقام وشرطات فقط (مثل: retail-store).',

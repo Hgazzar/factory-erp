@@ -52,6 +52,24 @@
         </div>
     </div>
 
+    @php $channel = $kpis['channel_sales'] ?? []; @endphp
+    <div class="mb-6 adm-chart-card">
+        <h2 class="mb-1 text-sm font-bold text-slate-900"><x-info field="admin.widget_channel_sales" /> مبيعات POS مقابل المتجر الإلكتروني</h2>
+        <p class="mb-4 text-xs text-slate-500">إيراد مُثبت محاسبياً (مكتمل / مُحصّل) — {{ $channel['from_date'] ?? $kpis['from_date'] }} إلى {{ $channel['to_date'] ?? $kpis['to_date'] }}</p>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-5">
+                <p class="text-xs font-semibold text-indigo-700">المتجر الإلكتروني</p>
+                <p class="mt-2 text-2xl font-black tabular-nums text-indigo-900">{{ erp_money($channel['online_total'] ?? 0) }}</p>
+                <p class="mt-1 text-xs text-indigo-600/80">{{ (int) ($channel['online_count'] ?? 0) }} عملية</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                <p class="text-xs font-semibold text-slate-700">نقطة البيع (POS)</p>
+                <p class="mt-2 text-2xl font-black tabular-nums text-slate-900">{{ erp_money($channel['pos_total'] ?? 0) }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ (int) ($channel['pos_count'] ?? 0) }} عملية</p>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <div class="adm-chart-card">
             <h2 class="mb-1 text-sm font-bold text-slate-900"><x-info field="admin.chart_sales_vs_purchases" /> المبيعات مقابل المشتريات</h2>

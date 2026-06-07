@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Clinic\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Clinic\Appointment;
-use App\Models\CompanySetting;
 use App\Models\TenantProfile;
+use App\Services\Tenant\TenantBrandingService;
 use App\Services\Clinic\ClinicAvailabilityService;
 use App\Services\Clinic\ClinicPortalBookingService;
 use Carbon\Carbon;
@@ -17,12 +17,16 @@ use Illuminate\View\View;
 
 final class ClinicPortalWebController extends Controller
 {
+    public function __construct(
+        private readonly TenantBrandingService $brandingService,
+    ) {}
+
     public function book(Request $request): View
     {
         /** @var TenantProfile $profile */
         $profile = $request->attributes->get('clinic_portal_profile');
         $tenantUserId = (int) $request->attributes->get('clinic_portal_tenant_user_id');
-        $clinicName = CompanySetting::forTenant($tenantUserId)?->name ?? config('app.name');
+        $clinicName = $this->brandingService->branding($tenantUserId)['display_name'];
 
         return view('clinic.portal.book', [
             'clinicName' => $clinicName,
@@ -42,7 +46,7 @@ final class ClinicPortalWebController extends Controller
         /** @var TenantProfile $profile */
         $profile = $request->attributes->get('clinic_portal_profile');
         $tenantUserId = (int) $request->attributes->get('clinic_portal_tenant_user_id');
-        $clinicName = CompanySetting::forTenant($tenantUserId)?->name ?? config('app.name');
+        $clinicName = $this->brandingService->branding($tenantUserId)['display_name'];
 
         $appointment = $this->resolveManagedAppointment($tenantUserId, $token);
         abort_if($appointment === null, 404, 'رابط إدارة الموعد غير صالح.');

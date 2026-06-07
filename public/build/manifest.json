@@ -4,7 +4,7 @@
     "name": "module.esm"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CZa4844U.css",
+    "file": "assets/app-CT2bBVZY.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -19,15 +19,6 @@
     "name": "pricing",
     "names": [
       "pricing.css"
-    ]
-  },
-  "resources/css/store-premium.css": {
-    "file": "assets/store-premium-BHWflx1X.css",
-    "src": "resources/css/store-premium.css",
-    "isEntry": true,
-    "name": "store-premium",
-    "names": [
-      "store-premium.css"
     ]
   },
   "resources/js/app.js": {
@@ -45,10 +36,10 @@
       "_module.esm-L4ggBBWN.js"
     ]
   },
-  "resources/js/store-premium.js": {
-    "file": "assets/store-premium-V_ZSuV7I.js",
-    "name": "store-premium",
-    "src": "resources/js/store-premium.js",
+  "resources/js/store.js": {
+    "file": "assets/store-Ci0xh1Dt.js",
+    "name": "store",
+    "src": "resources/js/store.js",
     "isEntry": true,
     "imports": [
       "_module.esm-L4ggBBWN.js"
