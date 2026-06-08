@@ -4,23 +4,25 @@ declare(strict_types=1);
 
 namespace App\Services\Clinic;
 
+use App\Core\Messaging\WhatsAppChannelFactory;
+use App\Core\Messaging\WhatsAppConfigResolver;
 use App\Models\Clinic\Appointment;
 use App\Models\CompanySetting;
 use App\Models\TenantProfile;
 use App\Services\Tenant\TenantFeatureRegistry;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 /**
- * نواة إرسال رسائل واتساب — Meta Cloud API (قابل للتوسع).
+ * قوالب رسائل واتساب للعيادة — النقل عبر Core Messaging.
  */
 final class WhatsAppNotificationService
 {
+    public function __construct(
+        private readonly WhatsAppChannelFactory $channels,
+    ) {}
+
     public function isEnabled(): bool
     {
-        return (bool) config('clinic.whatsapp.enabled', false)
-            && trim((string) config('clinic.whatsapp.access_token', '')) !== ''
-            && trim((string) config('clinic.whatsapp.phone_number_id', '')) !== '';
+        return $this->channel()->isEnabled();
     }
 
     /**
@@ -53,61 +55,7 @@ final class WhatsAppNotificationService
 
     public function sendTextMessage(string $toPhone, string $message): bool
     {
-        $to = $this->normalizePhone($toPhone);
-
-        if ($to === '') {
-            Log::warning('WhatsApp: empty recipient phone.');
-
-            return false;
-        }
-
-        if (! $this->isEnabled()) {
-            Log::info('WhatsApp (dry-run): would send message', [
-                'to' => $to,
-                'message' => $message,
-            ]);
-
-            return true;
-        }
-
-        $token = (string) config('clinic.whatsapp.access_token');
-        $phoneNumberId = (string) config('clinic.whatsapp.phone_number_id');
-        $apiVersion = (string) config('clinic.whatsapp.api_version', 'v21.0');
-
-        $url = "https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages";
-
-        try {
-            $response = Http::withToken($token)
-                ->timeout(15)
-                ->post($url, [
-                    'messaging_product' => 'whatsapp',
-                    'to' => $to,
-                    'type' => 'text',
-                    'text' => [
-                        'preview_url' => true,
-                        'body' => $message,
-                    ],
-                ]);
-
-            if ($response->failed()) {
-                Log::error('WhatsApp API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'to' => $to,
-                ]);
-
-                return false;
-            }
-
-            return true;
-        } catch (\Throwable $e) {
-            Log::error('WhatsApp send failed', [
-                'error' => $e->getMessage(),
-                'to' => $to,
-            ]);
-
-            return false;
-        }
+        return $this->channel()->sendText($toPhone, $message);
     }
 
     /**
@@ -226,20 +174,8 @@ final class WhatsAppNotificationService
         return route('clinic.portal.book', ['tenant_slug' => $slug]).'?manage_token='.urlencode($token).'&appointment_id='.(int) $appointment->id;
     }
 
-    private function normalizePhone(string $phone): string
+    private function channel(): \App\Contracts\Core\Messaging\WhatsAppChannelInterface
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-
-        if ($digits === '') {
-            return '';
-        }
-
-        $defaultCountry = (string) config('clinic.whatsapp.default_country_code', '20');
-
-        if (str_starts_with($digits, '0')) {
-            $digits = $defaultCountry.ltrim($digits, '0');
-        }
-
-        return $digits;
+        return $this->channels->forProfile(WhatsAppConfigResolver::PROFILE_CLINIC);
     }
 }

@@ -8,6 +8,7 @@ use App\Models\TenantFeature;
 use App\Models\TenantProfile;
 use App\Models\User;
 use App\Support\PremiumFeatureKeys;
+use App\Support\StoreFeatureKeys;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Tests\Support\AccountingTestCase;
 
@@ -35,6 +36,7 @@ final class SuperAdminPremiumFeaturesTest extends AccountingTestCase
         $keys = collect($response->json('features'))->pluck('key')->all();
 
         $this->assertSame([
+            StoreFeatureKeys::ONLINE_STORE,
             PremiumFeatureKeys::RETAIL_MULTI_BRANCHES,
             PremiumFeatureKeys::RETAIL_POS_DEVICE_LINK,
             PremiumFeatureKeys::RETAIL_WHATSAPP_AUTOMATION,

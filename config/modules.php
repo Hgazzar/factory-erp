@@ -70,7 +70,7 @@ return [
             'name_en' => 'Point of Sale',
             'description_ar' => 'الكاشير، الجلسات، الإيصالات.',
             'is_core' => false,
-            'niche_tags' => ['ecommerce', 'retail'],
+            'niche_tags' => ['ecommerce', 'retail', 'factory', 'fleet', 'clinic', 'nursery'],
             'sort_order' => 70,
         ],
         'crm' => [

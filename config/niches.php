@@ -38,6 +38,10 @@ return [
                 'crm',
                 'purchases',
             ],
+            'default_premium_features' => [
+                'online_store',
+                'retail_whatsapp_automation',
+            ],
         ],
 
         'medical_clinics' => [

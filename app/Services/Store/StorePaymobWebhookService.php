@@ -6,7 +6,7 @@ namespace App\Services\Store;
 
 use App\Models\PosSale;
 use App\Services\Pos\PosSaleService;
-use App\Services\Store\Payment\PaymentWebhookResult;
+use App\Core\Payment\PaymentWebhookResult;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 

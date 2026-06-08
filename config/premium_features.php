@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\PremiumFeatureKeys;
+use App\Support\StoreFeatureKeys;
 
 /**
  * كتالوج المزايا البريميوم حسب النيش — يُعرض في لوحة السوبر أدمن فقط.
@@ -12,6 +13,13 @@ return [
     'niches' => [
 
         'retail' => [
+            [
+                'key' => StoreFeatureKeys::ONLINE_STORE,
+                'name_ar' => 'المتجر الإلكتروني',
+                'description_ar' => 'واجهة متجر عامة، checkout، طرق دفع، وإدارة الطلبات.',
+                'hint' => 'premium_feature_online_store',
+                'requires_module' => 'pos',
+            ],
             [
                 'key' => PremiumFeatureKeys::RETAIL_MULTI_BRANCHES,
                 'name_ar' => 'تعدد الفروع',
@@ -35,6 +43,20 @@ return [
 
         'manufacturing' => [
             [
+                'key' => StoreFeatureKeys::ONLINE_STORE,
+                'name_ar' => 'معرض منتجات أونلاين',
+                'description_ar' => 'بيع المنتجات التامة عبر متجر إلكتروني (يتطلب تفعيل موديول POS).',
+                'hint' => 'premium_feature_online_store_manufacturing',
+                'requires_module' => 'pos',
+            ],
+            [
+                'key' => PremiumFeatureKeys::RETAIL_WHATSAPP_AUTOMATION,
+                'name_ar' => 'واتساب طلبات المعرض',
+                'description_ar' => 'إشعارات واتساب تلقائية لطلبات المتجر/المعرض.',
+                'hint' => 'premium_feature_retail_whatsapp_automation',
+                'requires_module' => 'pos',
+            ],
+            [
                 'key' => PremiumFeatureKeys::MANUFACTURING_SMART_PRODUCTION_ENTRY,
                 'name_ar' => 'شاشة تسجيل الإنتاج الذكية',
                 'description_ar' => 'واجهة إنتاج متقدمة مع اقتراحات وربط بالورديات.',
@@ -55,6 +77,13 @@ return [
         ],
 
         'nurseries' => [
+            [
+                'key' => StoreFeatureKeys::ONLINE_STORE,
+                'name_ar' => 'متجر أولياء الأمور',
+                'description_ar' => 'بيع مستلزمات/زي/uniforms عبر متجر إلكتروني (يتطلب POS).',
+                'hint' => 'premium_feature_online_store_nursery',
+                'requires_module' => 'pos',
+            ],
             [
                 'key' => PremiumFeatureKeys::NURSERY_WHATSAPP_AUTOMATION,
                 'name_ar' => 'تنبيهات واتساب الحضانة',
@@ -78,6 +107,13 @@ return [
 
         'medical_clinics' => [
             [
+                'key' => StoreFeatureKeys::ONLINE_STORE,
+                'name_ar' => 'متجر المستلزمات الطبية',
+                'description_ar' => 'بيع مستلزمات/أدوية عبر متجر إلكتروني (يتطلب POS).',
+                'hint' => 'premium_feature_online_store_clinic',
+                'requires_module' => 'pos',
+            ],
+            [
                 'key' => PremiumFeatureKeys::CLINIC_MEDICAL_INSURANCE,
                 'name_ar' => 'منظومة شركات التأمين',
                 'description_ar' => 'خطط التأمين والتغطية على الفواتير والمرضى.',
@@ -97,6 +133,30 @@ return [
             ],
         ],
 
+        'fleet_agents' => [
+            [
+                'key' => StoreFeatureKeys::ONLINE_STORE,
+                'name_ar' => 'متجر المندوب الإلكتروني',
+                'description_ar' => 'قائمة طلبات للعملاء + تحصيل ميداني (يتطلب POS).',
+                'hint' => 'premium_feature_online_store_fleet',
+                'requires_module' => 'pos',
+            ],
+            [
+                'key' => PremiumFeatureKeys::RETAIL_POS_DEVICE_LINK,
+                'name_ar' => 'ربط أجهزة المندوب',
+                'description_ar' => 'ربط أجهزة POS ميدانية للمناديب.',
+                'hint' => 'premium_feature_retail_pos_device_link',
+                'requires_module' => 'pos',
+            ],
+            [
+                'key' => PremiumFeatureKeys::RETAIL_WHATSAPP_AUTOMATION,
+                'name_ar' => 'واتساب طلبات المندوب',
+                'description_ar' => 'إشعارات واتساب لطلبات التحصيل الميداني.',
+                'hint' => 'premium_feature_retail_whatsapp_automation',
+                'requires_module' => 'pos',
+            ],
+        ],
+
     ],
 
     /**
@@ -104,6 +164,6 @@ return [
      *
      * @var list<string>
      */
-    'full_erp_niche_keys' => ['retail', 'manufacturing', 'nurseries', 'medical_clinics'],
+    'full_erp_niche_keys' => ['retail', 'manufacturing', 'fleet_agents', 'nurseries', 'medical_clinics'],
 
 ];

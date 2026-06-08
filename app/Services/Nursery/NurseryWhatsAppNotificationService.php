@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace App\Services\Nursery;
 
+use App\Core\Messaging\WhatsAppChannelFactory;
+use App\Core\Messaging\WhatsAppConfigResolver;
 use App\Models\Nursery\NurserySetting;
 use App\Models\Nursery\Subscription;
 use App\Services\Tenant\TenantFeatureRegistry;
 use App\Support\PremiumFeatureKeys;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 final class NurseryWhatsAppNotificationService
 {
+    public function __construct(
+        private readonly WhatsAppChannelFactory $channels,
+    ) {}
+
     public function isEnabled(): bool
     {
-        return (bool) config('nursery.whatsapp.enabled', false)
-            && trim((string) config('nursery.whatsapp.access_token', '')) !== ''
-            && trim((string) config('nursery.whatsapp.phone_number_id', '')) !== '';
+        return $this->channel()->isEnabled();
     }
 
     public function featureEnabled(int $tenantUserId): bool
@@ -120,80 +122,11 @@ final class NurseryWhatsAppNotificationService
 
     public function sendTextMessage(string $toPhone, string $message): bool
     {
-        $to = $this->normalizePhone($toPhone);
-
-        if ($to === '') {
-            Log::warning('Nursery WhatsApp: empty recipient phone.');
-
-            return false;
-        }
-
-        if (! $this->isEnabled()) {
-            Log::info('Nursery WhatsApp (dry-run): would send message', [
-                'to' => $to,
-                'message' => $message,
-            ]);
-
-            return true;
-        }
-
-        $token = (string) config('nursery.whatsapp.access_token');
-        $phoneNumberId = (string) config('nursery.whatsapp.phone_number_id');
-        $apiVersion = (string) config('nursery.whatsapp.api_version', 'v21.0');
-        $url = "https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages";
-
-        try {
-            $response = Http::withToken($token)
-                ->timeout(15)
-                ->post($url, [
-                    'messaging_product' => 'whatsapp',
-                    'to' => $to,
-                    'type' => 'text',
-                    'text' => [
-                        'preview_url' => false,
-                        'body' => $message,
-                    ],
-                ]);
-
-            if ($response->failed()) {
-                Log::error('Nursery WhatsApp API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'to' => $to,
-                ]);
-
-                return false;
-            }
-
-            return true;
-        } catch (\Throwable $e) {
-            Log::error('Nursery WhatsApp send failed', [
-                'error' => $e->getMessage(),
-                'to' => $to,
-            ]);
-
-            return false;
-        }
+        return $this->channel()->sendText($toPhone, $message, previewUrl: false);
     }
 
-    private function normalizePhone(string $phone): string
+    private function channel(): \App\Contracts\Core\Messaging\WhatsAppChannelInterface
     {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-
-        if ($digits === '') {
-            return '';
-        }
-
-        $defaultCountry = (string) config('nursery.whatsapp.default_country_code', '966');
-
-        if (str_starts_with($digits, '0')) {
-            $digits = $defaultCountry.ltrim($digits, '0');
-        }
-
-        if (! str_starts_with($digits, $defaultCountry) && strlen($digits) === 9) {
-            $digits = $defaultCountry.$digits;
-        }
-
-        return $digits;
+        return $this->channels->forProfile(WhatsAppConfigResolver::PROFILE_NURSERY);
     }
 }

@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Models\TenantProfile;
 use App\Models\TenantStoreSetting;
+use App\Services\Store\StoreNicheCapabilities;
 use App\Services\Tenant\TenantModuleRegistry;
 use Closure;
 use Illuminate\Http\Request;
@@ -13,10 +14,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class ResolveStorePortalTenant
 {
-    private const ALLOWED_NICHES = ['retail', 'full_erp'];
-
     public function __construct(
         private readonly TenantModuleRegistry $modules,
+        private readonly StoreNicheCapabilities $storeNiches,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -33,8 +33,9 @@ final class ResolveStorePortalTenant
             abort(404, 'المتجر غير موجود أو غير نشط.');
         }
 
-        if (! in_array($profile->niche_key, self::ALLOWED_NICHES, true)) {
-            abort(404, 'المتجر الإلكتروني غير متاح لهذا المستأجر.');
+        $nicheKey = strtolower(trim((string) $profile->niche_key));
+        if (! $this->storeNiches->supportsOnlineStorePortal($nicheKey)) {
+            abort(404, 'المتجر الإلكتروني غير متاح لهذا النوع من المنشآت.');
         }
 
         $tenantUserId = (int) $profile->tenant_user_id;
@@ -51,6 +52,7 @@ final class ResolveStorePortalTenant
         $request->attributes->set('store_portal_tenant_user_id', $tenantUserId);
         $request->attributes->set('store_portal_profile', $profile);
         $request->attributes->set('store_portal_settings', $storeSettings);
+        $request->attributes->set('store_portal_niche_key', $nicheKey);
 
         return $next($request);
     }

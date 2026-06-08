@@ -4,32 +4,39 @@ declare(strict_types=1);
 
 namespace App\Services\Store;
 
+use App\Core\Messaging\WhatsAppChannelFactory;
+use App\Core\Messaging\WhatsAppConfigResolver;
 use App\Models\CompanySetting;
 use App\Models\PosSale;
 use App\Models\TenantProfile;
 use App\Services\Tenant\TenantFeatureRegistry;
-use App\Support\PremiumFeatureKeys;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 /**
- * إشعارات واتساب لطلبات المتجر — يعيد استخدام إعدادات Meta Cloud API (مثل العيادة).
+ * إشعارات واتساب لطلبات المتجر — قوالب الرسائل هنا؛ النقل عبر Core Messaging.
  */
 final class StoreWhatsAppNotificationService
 {
+    public function __construct(
+        private readonly WhatsAppChannelFactory $channels,
+    ) {}
+
     public function isEnabled(): bool
     {
-        return (bool) config('store.whatsapp.enabled', false)
-            && trim((string) config('store.whatsapp.access_token', '')) !== ''
-            && trim((string) config('store.whatsapp.phone_number_id', '')) !== '';
+        return $this->channel()->isEnabled();
     }
 
     public function featureEnabled(int $tenantUserId): bool
     {
-        return app(TenantFeatureRegistry::class)->isEnabled(
-            PremiumFeatureKeys::RETAIL_WHATSAPP_AUTOMATION,
-            $tenantUserId,
-        );
+        $registry = app(TenantFeatureRegistry::class);
+        $nicheKey = app(\App\Services\Tenant\NicheLexiconService::class)->resolveNicheKey($tenantUserId);
+
+        foreach (app(StoreNicheCapabilities::class)->whatsappAutomationFeatureKeys($nicheKey) as $key) {
+            if ($registry->isEnabled($key, $tenantUserId)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function sendOrderDelivered(int $tenantUserId, PosSale $sale): bool
@@ -141,66 +148,12 @@ final class StoreWhatsAppNotificationService
 
     public function sendTextMessage(string $toPhone, string $message): bool
     {
-        $to = $this->normalizePhone($toPhone);
-
-        if ($to === '') {
-            Log::warning('Store WhatsApp: empty recipient phone.');
-
-            return false;
-        }
-
-        if (! $this->isEnabled()) {
-            Log::info('Store WhatsApp (dry-run): would send message', [
-                'to' => $to,
-                'message' => $message,
-            ]);
-
-            return true;
-        }
-
-        return $this->postMessage($to, [
-            'type' => 'text',
-            'text' => [
-                'preview_url' => true,
-                'body' => $message,
-            ],
-        ]);
+        return $this->channel()->sendText($toPhone, $message);
     }
 
     public function sendDocumentMessage(string $toPhone, string $absolutePath, string $filename, ?string $caption = null): bool
     {
-        $to = $this->normalizePhone($toPhone);
-
-        if ($to === '' || ! is_file($absolutePath)) {
-            return false;
-        }
-
-        if (! $this->isEnabled()) {
-            Log::info('Store WhatsApp (dry-run): would send document', [
-                'to' => $to,
-                'filename' => $filename,
-                'caption' => $caption,
-                'path' => $absolutePath,
-            ]);
-
-            return true;
-        }
-
-        $mediaId = $this->uploadMedia($absolutePath, 'application/pdf');
-        if ($mediaId === null) {
-            return false;
-        }
-
-        $payload = [
-            'type' => 'document',
-            'document' => array_filter([
-                'id' => $mediaId,
-                'filename' => $filename,
-                'caption' => $caption,
-            ]),
-        ];
-
-        return $this->postMessage($to, $payload);
+        return $this->channel()->sendDocument($toPhone, $absolutePath, $filename, $caption);
     }
 
     public function trackOrderUrl(int $tenantUserId): ?string
@@ -215,98 +168,8 @@ final class StoreWhatsAppNotificationService
         return route('store.portal.track', ['tenant_slug' => $slug]);
     }
 
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function postMessage(string $to, array $payload): bool
+    private function channel(): \App\Contracts\Core\Messaging\WhatsAppChannelInterface
     {
-        $token = (string) config('store.whatsapp.access_token');
-        $phoneNumberId = (string) config('store.whatsapp.phone_number_id');
-        $apiVersion = (string) config('store.whatsapp.api_version', 'v21.0');
-        $url = "https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages";
-
-        try {
-            $response = Http::withToken($token)
-                ->timeout(20)
-                ->post($url, array_merge([
-                    'messaging_product' => 'whatsapp',
-                    'to' => $to,
-                ], $payload));
-
-            if ($response->failed()) {
-                Log::error('Store WhatsApp API error', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'to' => $to,
-                ]);
-
-                return false;
-            }
-
-            return true;
-        } catch (\Throwable $e) {
-            Log::error('Store WhatsApp send failed', [
-                'error' => $e->getMessage(),
-                'to' => $to,
-            ]);
-
-            return false;
-        }
-    }
-
-    private function uploadMedia(string $absolutePath, string $mime): ?string
-    {
-        $token = (string) config('store.whatsapp.access_token');
-        $phoneNumberId = (string) config('store.whatsapp.phone_number_id');
-        $apiVersion = (string) config('store.whatsapp.api_version', 'v21.0');
-        $url = "https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/media";
-
-        try {
-            $response = Http::withToken($token)
-                ->timeout(30)
-                ->attach('file', file_get_contents($absolutePath) ?: '', basename($absolutePath))
-                ->post($url, [
-                    'messaging_product' => 'whatsapp',
-                    'type' => $mime,
-                ]);
-
-            if ($response->failed()) {
-                Log::error('Store WhatsApp media upload failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                return null;
-            }
-
-            $id = $response->json('id');
-
-            return is_string($id) && $id !== '' ? $id : null;
-        } catch (\Throwable $e) {
-            Log::error('Store WhatsApp media upload exception', ['error' => $e->getMessage()]);
-
-            return null;
-        }
-    }
-
-    private function normalizePhone(string $phone): string
-    {
-        $digits = preg_replace('/\D+/', '', $phone) ?? '';
-
-        if ($digits === '') {
-            return '';
-        }
-
-        $defaultCountry = (string) config('store.whatsapp.default_country_code', '966');
-
-        if (str_starts_with($digits, '0')) {
-            $digits = $defaultCountry.ltrim($digits, '0');
-        }
-
-        if (! str_starts_with($digits, $defaultCountry) && strlen($digits) <= 10) {
-            $digits = $defaultCountry.ltrim($digits, '0');
-        }
-
-        return $digits;
+        return $this->channels->forProfile(WhatsAppConfigResolver::PROFILE_STORE);
     }
 }

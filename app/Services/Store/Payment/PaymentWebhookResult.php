@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Store\Payment;
 
-final class PaymentWebhookResult
+/** @deprecated Use App\Core\Payment\PaymentWebhookResult */
+class PaymentWebhookResult extends \App\Core\Payment\PaymentWebhookResult
 {
-    public function __construct(
-        public readonly string $gatewayReference,
-        public readonly bool $success,
-        public readonly ?string $failureReason = null,
-    ) {}
 }

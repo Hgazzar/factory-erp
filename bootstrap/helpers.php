@@ -53,3 +53,22 @@ if (! function_exists('store_paymob_webhook_url')) {
         return $base.$path;
     }
 }
+
+if (! function_exists('store_niche_nav_label')) {
+    function store_niche_nav_label(string $field = 'storefront'): string
+    {
+        if (! auth()->check()) {
+            return 'المتجر الإلكتروني';
+        }
+
+        $nicheKey = app(\App\Services\Tenant\NicheLexiconService::class)
+            ->resolveNicheKey((int) auth()->id());
+        $caps = app(\App\Services\Store\StoreNicheCapabilities::class);
+
+        return match ($field) {
+            'settings' => $caps->settingsNavLabel($nicheKey),
+            'orders' => $caps->ordersNavLabel($nicheKey),
+            default => $caps->storefrontLabel($nicheKey),
+        };
+    }
+}

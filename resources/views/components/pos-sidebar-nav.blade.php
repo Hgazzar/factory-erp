@@ -1,5 +1,10 @@
 @php
     $linkClass = 'module-nav-link';
+    $onlineStoreEnabled = auth()->check()
+        && app(\App\Services\Tenant\TenantFeatureRegistry::class)->isEnabled(
+            \App\Support\StoreFeatureKeys::ONLINE_STORE,
+            (int) auth()->id(),
+        );
 @endphp
 
 <a href="{{ route('pos.dashboard') }}" class="{{ $linkClass }} {{ request()->routeIs('pos.dashboard') ? 'active' : '' }}">
@@ -17,13 +22,15 @@
     المنتجات
 </a>
 
+@if($onlineStoreEnabled)
 <a href="{{ route('settings.store.edit') }}" class="{{ $linkClass }} {{ request()->routeIs('settings.store.*') ? 'active' : '' }}">
     <svg class="module-nav-icon shrink-0" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
         <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
         <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319z"/>
     </svg>
-    المتجر الإلكتروني
+    {{ store_niche_nav_label('settings') }}
 </a>
+@endif
 
 <a href="{{ route('pos.cashier') }}" class="{{ $linkClass }} {{ request()->routeIs('pos.cashier') ? 'active' : '' }}">
     <svg class="module-nav-icon shrink-0" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
@@ -51,13 +58,15 @@
     الجلسات
 </a>
 
+@if($onlineStoreEnabled)
 <a href="{{ route('pos.orders.index') }}" class="{{ $linkClass }} {{ request()->routeIs('pos.orders.*') || request()->routeIs('pos.online-orders.*') ? 'active' : '' }}">
     <svg class="module-nav-icon shrink-0" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
         <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v1h12V4a1 1 0 0 0-1-1H2zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/>
         <path d="M2 9.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
     </svg>
-    طلبات المتجر
+    {{ store_niche_nav_label('orders') }}
 </a>
+@endif
 
 <a href="{{ route('pos.receipts.index') }}" class="{{ $linkClass }} {{ request()->routeIs('pos.receipts.*') ? 'active' : '' }}">
     <svg class="module-nav-icon shrink-0" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">

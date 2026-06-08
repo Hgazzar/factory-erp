@@ -32,10 +32,17 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use App\Services\Tenant\TenantContext;
 use App\Services\Tenant\TenantFeatureRegistry;
-use App\Contracts\Store\PaymentGatewayInterface;
-use App\Services\Store\Payment\ManualTransferGateway;
-use App\Services\Store\Payment\PaymentGatewayRegistry;
-use App\Services\Store\Payment\PaymobGateway;
+use App\Contracts\Core\Payment\PaymentCredentialsProvider;
+use App\Contracts\Core\Payment\PaymentGatewayInterface;
+use App\Core\Messaging\PhoneNumberNormalizer;
+use App\Core\Messaging\WhatsAppChannelFactory;
+use App\Core\Messaging\WhatsAppConfigResolver;
+use App\Core\Payment\ManualTransferGateway;
+use App\Core\Payment\PaymentGatewayRegistry;
+use App\Core\Payment\PaymobGateway;
+use App\Core\Payment\PaymobHmacVerifier;
+use App\Core\Payment\PaymobWebhookAuthenticator;
+use App\Services\Store\Payment\StorePaymentCredentialsProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -52,6 +59,14 @@ class AppServiceProvider extends ServiceProvider
 
             return $registry;
         });
+
+        $this->app->singleton(PaymobHmacVerifier::class);
+        $this->app->singleton(PaymobWebhookAuthenticator::class);
+        $this->app->singleton(PaymentCredentialsProvider::class, StorePaymentCredentialsProvider::class);
+
+        $this->app->singleton(WhatsAppConfigResolver::class);
+        $this->app->singleton(PhoneNumberNormalizer::class);
+        $this->app->singleton(WhatsAppChannelFactory::class);
     }
 
     public function boot(): void

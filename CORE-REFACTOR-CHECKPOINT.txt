@@ -1,0 +1,338 @@
+═══════════════════════════════════════════════════════════════════
+AKWAD — Core & Cross-Niche Generalization Checkpoint
+Status: PLANNED — لا تُنفَّذ إلا بطلب صريح: "ابدأ Core Phase N"
+Last updated: 2026-06-08
+Prerequisite: Store/POS v1.0 (local commit + tag v1.0-Retail-Engine)
+Scope: 6 نيشات — retail | full_erp | manufacturing | fleet_agents |
+       medical_clinics | nurseries
+Note: لا يوجد نيش مطاعم — خارج النطاق
+Git: local only — no push unless requested
+═══════════════════════════════════════════════════════════════════
+
+■ الهدف الشامل
+────────────────
+تعميم (عبر App/Core + Adapters) على كل النيشات حسب ما يناسب كل منهم:
+
+  (1) WhatsApp transport + queue
+  (2) Modular Payment (Paymob, تحويل, COD) + PaymentMethodResolver
+  (3) HMAC + Paymob webhooks
+  (4) Queues (WhatsApp + PDF + webhook handlers)
+  (5) Checkout / Order engine (عند online_store)
+  (6) Merchant settings + metrics pattern
+
+Core = infrastructure مشتركة
+Store / Clinic / Nursery / … = orchestration + business rules + labels
+
+■ القاعدة الذهبية
+──────────────────
+  Core لا يعرف: PosSale | Appointment | Child | Subscription | BOM
+  Core يعرف:    DTOs | Gateways | HMAC | Meta API | Job dispatch | file upload
+
+■ ما تم بالفعل (Store v1.0 — لا يُعاد بناؤه)
+────────────────────────────────────────────
+  ✅ PaymentGateway + Paymob + ManualTransfer (App/Services/Store/Payment)
+  ✅ PaymobHmacVerifier + StorePaymobWebhookController
+  ✅ Jobs: SendStoreOrder{Received,Delivered,Invoice}WhatsAppJob
+  ✅ StoreCheckoutService + OrderManagement + PosSaleFulfillment
+  ✅ StoreNicheCapabilities + config/store.php niches (6 نيشات)
+  ✅ premium_features online_store per niche
+  ✅ settings/store.blade.php + Paymob toggles + webhook URL
+  ✅ StoreMerchantMetricsService + StoreOnlineOrderQuery
+
+  ⏳ المتبقي: استخراج إلى Core + refactor Clinic/Nursery + unify patterns
+
+═══════════════════════════════════════════════════════════════════
+PILLAR 1 — WhatsApp (transport + queue)
+═══════════════════════════════════════════════════════════════════
+
+  ┌─ Core (ينتقل/يُنشأ) ─────────────────────────────────────────┐
+  │ WhatsAppChannelInterface                                       │
+  │ MetaCloudWhatsAppChannel (HTTP Meta Cloud API)                 │
+  │ WhatsAppConfigResolver (store.* → clinic.* → nursery.*)        │
+  │ PhoneNumberNormalizer                                          │
+  │ SendWhatsAppMessageJob (generic: tenant, phone, body, doc?)    │
+  └────────────────────────────────────────────────────────────────┘
+
+  ┌─ يبقى per-module (قوالب + triggers) ─────────────────────────┐
+  │ Store:  StoreWhatsAppNotificationService + StoreOrder*Jobs   │
+  │ Clinic: WhatsAppNotificationService + appointment messages   │
+  │ Nursery: NurseryWhatsAppNotificationService + reminders      │
+  └────────────────────────────────────────────────────────────────┘
+
+  Per-niche — ماذا يُرسل؟
+  ─────────────────────
+  retail / full_erp     │ استلام طلب · تسليم · فاتورة PDF
+  manufacturing         │ نفس المحرك — نص «معرض/طلب»
+  fleet_agents          │ نفس المحرك — نص «تحصيل/طلب مندوب»
+  medical_clinics       │ مواعيد (Clinic) + مستلزمات (Store عند online_store)
+  nurseries             │ تذكير اشتراك/دعوة (Nursery) + متجر (Store)
+
+  feature keys (TenantFeature):
+  retail/fleet/mfg      │ retail_whatsapp_automation
+  medical_clinics       │ clinic_whatsapp_automation (+ retail للمتجر)
+  nurseries             │ nursery_whatsapp_automation (+ retail للمتجر)
+
+═══════════════════════════════════════════════════════════════════
+PILLAR 2 — Modular Payment
+═══════════════════════════════════════════════════════════════════
+
+  ┌─ Core (ينتقل من Store) ──────────────────────────────────────┐
+  │ PaymentGatewayInterface                                        │
+  │ PaymentGatewayRegistry                                       │
+  │ PaymobGateway | ManualTransferGateway                          │
+  │ PaymentChargeResult | PaymentWebhookResult                     │
+  │ PaymentCredentialsProvider (interface)                         │
+  └────────────────────────────────────────────────────────────────┘
+
+  ┌─ Store adapter ──────────────────────────────────────────────┐
+  │ StorePaymentCredentialsProvider ← TenantStoreSetting           │
+  │ StorePaymentMethodResolver ← country_code + toggles              │
+  │ StorePaymentReceiptService ← receipt upload (public disk)      │
+  │ StoreCheckoutService ← orchestration → PosSale                 │
+  └────────────────────────────────────────────────────────────────┘
+
+  Per-niche — ماذا يُ sold؟
+  ───────────────────────
+  retail / full_erp     │ PosProduct — منتجات retail
+  manufacturing         │ منتج تام من المخزون — «معرض المصنع»
+  fleet_agents          │ بضاعة العهدة — طلب + COD ميداني
+  medical_clinics       │ مستلزمات/أدوية (Store boundary) — ليس كشف
+  nurseries             │ زي/مستلزمات (Store boundary) — ليس اشتراك
+
+  ⚠ Clinic/Nursery لا يستدعون PaymobGateway مباشرة — يمر عبر Store checkout
+    أو Core registry + adapter لاحقاً لـ Subscription billing (Phase 6)
+
+  geography (StorePaymentMethodResolver — مشترك):
+  SA → cod, manual, card, tamara, tabby
+  EG → cod, manual, card
+  AE → cod, manual, card, tabby
+
+═══════════════════════════════════════════════════════════════════
+PILLAR 3 — HMAC & Webhooks
+═══════════════════════════════════════════════════════════════════
+
+  ┌─ Core ───────────────────────────────────────────────────────┐
+  │ PaymobHmacVerifier (SHA-512 field order)                       │
+  │ PaymobWebhookAuthenticator (401 invalid / missing secret)      │
+  └────────────────────────────────────────────────────────────────┘
+
+  ┌─ Store (handler) ──────────────────────────────────────────────┐
+  │ POST /webhooks/store/paymob                                    │
+  │ StorePaymobWebhookController → authenticator → service         │
+  │ StorePaymobWebhookService → PosSale completed + journal        │
+  │ store_paymob_webhook_url() helper + settings UI                │
+  └────────────────────────────────────────────────────────────────┘
+
+  ينطبق على كل نيش يفعّل online_store + Paymob live:
+  retail, full_erp, manufacturing, fleet, clinic supplies, nursery shop
+
+  HMAC secret: TenantStoreSetting.paymob_hmac_secret (إعدادات المتجر)
+
+═══════════════════════════════════════════════════════════════════
+PILLAR 4 — Queues (beyond WhatsApp)
+═══════════════════════════════════════════════════════════════════
+
+  Pattern مشترك في Core:
+  ┌──────────────────────────────────────────────────────────────┐
+  │ DispatchJob → worker → side effect (send / PDF / webhook)    │
+  └──────────────────────────────────────────────────────────────┘
+
+  │ Use case              │ Job (today → target)                │
+  ├───────────────────────┼─────────────────────────────────────┤
+  │ Order received WA     │ SendStoreOrderReceivedWhatsAppJob   │
+  │ Order delivered WA    │ SendStoreOrderDeliveredWhatsAppJob  │
+  │ Invoice WA + PDF      │ SendStoreOrderInvoiceWhatsAppJob    │
+  │ Clinic appointment    │ Listener sync → Clinic*Job (Phase3) │
+  │ Nursery reminder      │ sync → Nursery*Job (Phase 3)       │
+  │ Paymob webhook        │ sync HTTP → optional WebhookJob     │
+  │ PDF generate          │ inline → GenerateDocumentJob (P3)  │
+
+  PDF pattern (Core contract Phase 3):
+  DocumentGeneratorInterface
+  Store  → StorePosSalePdfService (PosSale receipt)
+  Clinic → prescription PDF (موجود/لاحق)
+  Nursery→ subscription invoice PDF (لاحق)
+
+═══════════════════════════════════════════════════════════════════
+PILLAR 5 — Checkout / Order engine (online_store)
+═══════════════════════════════════════════════════════════════════
+
+  مشترك (Store module — مُفعَّل per-niche via StoreNicheCapabilities):
+  • storefront /s/{slug} + cart + checkout API
+  • COD | card | manual_transfer + receipt upload
+  • OrderManagementController + PosSaleFulfillmentService
+  • status: pending → pending_verification → delivered → collected | completed
+  • accounting deferral (journal on collect/complete)
+
+  Per-niche labels (config/store.php niches.*):
+  ┌─────────────────┬──────────────────────────┬─────────────────────┐
+  │ niche           │ storefront               │ orders nav          │
+  ├─────────────────┼──────────────────────────┼─────────────────────┤
+  │ retail          │ المتجر الإلكتروني        │ طلبات المتجر        │
+  │ full_erp        │ المتجر الإلكتروني        │ طلبات المتجر        │
+  │ manufacturing   │ معرض منتجات المصنع       │ طلبات المعرض        │
+  │ fleet_agents    │ متجر المندوب             │ طلبات التحصيل       │
+  │ medical_clinics │ متجر المستلزمات           │ طلبات المستلزمات    │
+  │ nurseries       │ متجر أولياء الأمور       │ طلبات المتجر        │
+  └─────────────────┴──────────────────────────┴─────────────────────┘
+
+  تفعيل: Super Admin → module pos + premium online_store + إعدادات التاجر
+  افتراضي تلقائي: retail فقط (provision_online_store = true)
+
+═══════════════════════════════════════════════════════════════════
+PILLAR 6 — Merchant settings + Metrics
+═══════════════════════════════════════════════════════════════════
+
+  مشترك (settings/store — StoreSettingsWebController):
+  • toggles: COD, manual, Paymob, Tamara, Tabby
+  • keys: public/secret, integration id, HMAC secret
+  • webhook URL display
+  • metrics snapshot (sales_today, pending_collection, …)
+
+  Core refactor (Phase 5 — optional):
+  PaymentSettingsPresenter ← niche-aware labels from StoreNicheCapabilities
+  MetricsQueryInterface ← Store implements؛ Clinic/Nursery later if needed
+
+  Dashboard (Phase 6 — planned):
+  /pos/dashboard consuming StoreMerchantMetricsService + daily_sales series
+
+═══════════════════════════════════════════════════════════════════
+ما لا يُعمَّم — معزول داخل كل نيش
+═══════════════════════════════════════════════════════════════════
+
+  medical_clinics │ Appointments, Patients, Prescriptions, PHI, Insurance, Portal
+  nurseries       │ Children, Attendance, Subscriptions, Parent portal, Classrooms
+  manufacturing   │ BOM, Production entry, Machines, Operations shifts
+  fleet_agents    │ Inventory custody, field CRM, collection routes
+  retail          │ (Store/POS هو محور البيع — ليس «معزول»)
+  full_erp        │ union of modules — toggles per tenant
+
+═══════════════════════════════════════════════════════════════════
+MATRIX — كل نيش × كل pillar
+═══════════════════════════════════════════════════════════════════
+
+Legend: ● = included when enabled | ○ = opt-in | — = niche-specific only
+
+                    │ P1 WA │ P2 Pay │ P3 HMAC│ P4 Queue│ P5 Store│ P6 Settings
+────────────────────┼───────┼────────┼────────┼─────────┼─────────┼────────────
+retail              │   ●   │   ●    │   ●    │    ●    │   ●     │     ●
+full_erp            │   ○   │   ○    │   ○    │    ○    │   ○     │     ○
+manufacturing       │   ○   │   ○    │   ○    │    ○    │   ○     │     ○
+fleet_agents        │   ○   │   ○    │   ○    │    ○    │   ○     │     ○
+medical_clinics     │ ●+—   │   ○    │   ○    │  ●+—    │   ○     │     ○
+nurseries           │ ●+—   │   ○    │   ○    │  ●+—    │   ○     │     ○
+
+  ●+— = Core transport + niche messages (appointments / subscriptions)
+  ○    = Super Admin: pos module + online_store premium + merchant config
+
+═══════════════════════════════════════════════════════════════════
+PHASES — تنفيذ متسلسل (لا git push)
+═══════════════════════════════════════════════════════════════════
+
+PHASE 1 — Core WhatsApp
+  Files create:  app/Contracts/Core/Messaging/*
+                  app/Core/Messaging/*
+                  app/Jobs/Core/SendWhatsAppMessageJob.php
+  Refactor:      Store/Clinic/Nursery WhatsApp services → Core channel
+  Tests:         StoreOrderWhatsAppTest + new Core unit test
+  Trigger:       "ابدأ Core Phase 1"
+
+PHASE 2 — Core Payment + HMAC
+  Move:          app/Services/Store/Payment/* → app/Core/Payment/*
+  Create:        PaymentCredentialsProvider, PaymobWebhookAuthenticator
+  Aliases:       App\Contracts\Store\* deprecated extends Core
+  Tests:         StoreProductionPaymentTest, PaymobHmacVerifierTest
+  Trigger:       "ابدأ Core Phase 2"
+
+PHASE 3 — Queues + PDF pattern (Clinic/Nursery)
+  Clinic:        Listener → SendClinicAppointmentWhatsAppJob
+  Nursery:       reminders/invites → jobs
+  Core:          DocumentGeneratorInterface (optional)
+  Tests:         Clinic/Nursery feature tests
+  Trigger:       "ابدأ Core Phase 3"
+
+PHASE 4 — Checkout boundary documentation + hardening
+  Ensure:        Clinic/Nursery never duplicate Paymob — use Store routes
+  Verify:        StoreNicheCapabilities + premium_features for all 6 niches
+  Tests:         StorePortalCheckoutTest per niche (feature flagged)
+  Trigger:       "ابدأ Core Phase 4"
+
+PHASE 5 — Merchant settings Core presenter
+  Extract:       payment toggles labels via StoreNicheCapabilities
+  Unify:         WhatsAppConfigResolver used everywhere
+  Trigger:       "ابدأ Core Phase 5"
+
+PHASE 6 — Dashboard + metrics abstraction
+  Build:         /pos/dashboard (or niche dashboard tabs)
+  Abstract:      MetricsQueryInterface ← StoreMerchantMetricsService
+  Trigger:       "ابدأ Core Phase 6"
+
+═══════════════════════════════════════════════════════════════════
+BACKWARD COMPATIBILITY
+═══════════════════════════════════════════════════════════════════
+
+  • Public method signatures on Clinic/Nursery WhatsApp services unchanged
+  • config/clinic.php, config/nursery.php, config/store.php — keys unchanged
+  • Routes: store.webhooks.paymob, store.portal.* — unchanged
+  • TenantFeature keys: online_store, *_whatsapp_automation — unchanged
+  • Deprecated class aliases 1 sprint then remove
+  • Existing tenants: no migration — behavior identical after refactor
+
+═══════════════════════════════════════════════════════════════════
+SUPER ADMIN — تفعيل per-niche (مرجع للتاجر)
+═══════════════════════════════════════════════════════════════════
+
+  1. Modules: enable "pos" (+ inventory/sales if needed)
+  2. Premium: enable "online_store" (+ whatsapp automation for niche)
+  3. Merchant: إعدادات المتجر → Paymob keys + HMAC + toggles
+  4. Paymob dashboard: Processed callback = {APP_URL}/webhooks/store/paymob
+  5. Queue worker: php artisan queue:work
+
+  retail new tenant: steps 3–5 only (online_store auto-provisioned)
+
+═══════════════════════════════════════════════════════════════════
+FILE INVENTORY — Store today (source for Core extraction)
+═══════════════════════════════════════════════════════════════════
+
+  Payments:
+    app/Contracts/Store/PaymentGatewayInterface.php
+    app/Services/Store/Payment/*.php (7 files)
+    app/Services/Store/StoreCheckoutService.php
+    app/Services/Store/StorePaymentReceiptService.php
+    app/Services/Store/StoreOnlinePaymentService.php (deprecate)
+
+  HMAC/Webhook:
+    app/Http/Controllers/Store/StorePaymobWebhookController.php
+    app/Services/Store/StorePaymobWebhookService.php
+    bootstrap/helpers.php → store_paymob_webhook_url()
+
+  WhatsApp:
+    app/Services/Store/StoreWhatsAppNotificationService.php
+    app/Services/Store/StoreOrderWhatsAppNotifier.php
+    app/Jobs/Store/SendStoreOrder*.php (3 files)
+
+  Clinic/Nursery (refactor targets):
+    app/Services/Clinic/WhatsAppNotificationService.php
+    app/Listeners/Clinic/SendClinicAppointmentWhatsAppNotification.php
+    app/Services/Nursery/NurseryWhatsAppNotificationService.php
+
+  Config:
+    config/store.php (payment, webhooks, whatsapp, niches)
+    config/premium_features.php
+    config/niches.php
+
+═══════════════════════════════════════════════════════════════════
+VERIFY بعد كل Phase (local)
+═══════════════════════════════════════════════════════════════════
+
+  php artisan test tests/Feature/Store/
+  php artisan test tests/Feature/Clinic/
+  php artisan test tests/Feature/Nursery/
+  php artisan test tests/Unit/Services/Store/
+  php artisan test tests/Feature/SuperAdmin/SuperAdminPremiumFeaturesTest.php
+
+═══════════════════════════════════════════════════════════════════
+للبدء: "ابدأ Core Phase 1" … "ابدأ Core Phase 6"
+مرجع deployment: notes.txt
+مرجع .env production: ~/Backups/Production_Credentials/
+═══════════════════════════════════════════════════════════════════

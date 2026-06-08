@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Store;
 
+use App\Contracts\Core\Payment\PaymentCredentialsProvider;
+use App\Core\Payment\PaymobGateway;
+use App\Core\Payment\PaymobWebhookAuthenticator;
 use App\Http\Controllers\Controller;
 use App\Models\TenantStoreSetting;
-use App\Services\Store\Payment\PaymobGateway;
-use App\Services\Store\Payment\PaymobHmacVerifier;
 use App\Services\Store\StorePaymobWebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ use Illuminate\Support\Facades\Log;
  * HMAC are rejected in live mode. Route name: store.webhooks.paymob
  *
  * @see store_paymob_webhook_url()
- * @see PaymobHmacVerifier
+ * @see \App\Core\Payment\PaymobHmacVerifier
  */
 final class StorePaymobWebhookController extends Controller
 {
@@ -35,7 +36,8 @@ final class StorePaymobWebhookController extends Controller
         Request $request,
         StorePaymobWebhookService $webhooks,
         PaymobGateway $paymob,
-        PaymobHmacVerifier $hmacVerifier,
+        PaymobWebhookAuthenticator $authenticator,
+        PaymentCredentialsProvider $credentials,
     ): JsonResponse {
         $payload = $request->all();
         $reference = (string) ($payload['obj']['id'] ?? $payload['id'] ?? $payload['transaction_id'] ?? '');
@@ -53,7 +55,7 @@ final class StorePaymobWebhookController extends Controller
 
         $settings = TenantStoreSetting::forTenant($tenantUserId);
 
-        if ($response = $this->ensureAuthenticPaymobRequest($request, $settings, $payload, $hmacVerifier)) {
+        if ($response = $this->ensureAuthenticPaymobRequest($request, $settings, $payload, $authenticator, $credentials)) {
             return $response;
         }
 
@@ -75,41 +77,29 @@ final class StorePaymobWebhookController extends Controller
         Request $request,
         TenantStoreSetting $settings,
         array $payload,
-        PaymobHmacVerifier $hmacVerifier,
+        PaymobWebhookAuthenticator $authenticator,
+        PaymentCredentialsProvider $credentials,
     ): ?JsonResponse {
-        $secret = trim((string) $settings->paymob_hmac_secret);
-        $liveMode = $this->isLivePaymobMode($settings);
+        $webhookSettings = $credentials->paymobWebhookSettings($settings);
+        $incomingHmac = $request->query('hmac') ?? $request->input('hmac');
 
-        if ($secret === '') {
-            if ($liveMode) {
-                Log::warning('Paymob webhook rejected: HMAC secret not configured', [
-                    'tenant_user_id' => $settings->tenant_user_id,
-                ]);
+        $auth = $authenticator->authenticate(
+            $payload,
+            is_string($incomingHmac) ? $incomingHmac : null,
+            $webhookSettings['hmac_secret'],
+            $webhookSettings['live_mode'],
+        );
 
-                return response()->json(['ok' => false, 'message' => 'hmac secret not configured'], 401);
-            }
-
+        if ($auth->allowed) {
             return null;
         }
 
-        $incomingHmac = $request->query('hmac') ?? $request->input('hmac');
+        Log::warning('Paymob webhook rejected', [
+            'tenant_user_id' => $settings->tenant_user_id,
+            'reason' => $auth->failureReason,
+            'reference' => $payload['obj']['id'] ?? $payload['id'] ?? null,
+        ]);
 
-        if (! $hmacVerifier->verify($payload, is_string($incomingHmac) ? $incomingHmac : null, $secret)) {
-            Log::warning('Paymob webhook rejected: invalid HMAC signature', [
-                'tenant_user_id' => $settings->tenant_user_id,
-                'reference' => $payload['obj']['id'] ?? $payload['id'] ?? null,
-            ]);
-
-            return response()->json(['ok' => false, 'message' => 'invalid signature'], 401);
-        }
-
-        return null;
-    }
-
-    private function isLivePaymobMode(TenantStoreSetting $settings): bool
-    {
-        $mode = strtolower(trim((string) ($settings->online_payment_mode ?: 'sandbox')));
-
-        return $mode === 'live' && ! (bool) config('store.payment.sandbox', true);
+        return response()->json(['ok' => false, 'message' => $auth->failureReason], $auth->httpStatus);
     }
 }
