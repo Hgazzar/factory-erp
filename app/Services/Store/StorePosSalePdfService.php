@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Store;
 
+use App\Contracts\Core\Documents\DocumentGeneratorInterface;
 use App\Models\CompanySetting;
 use App\Models\PosSale;
 use App\Models\TenantProfile;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
-final class StorePosSalePdfService
+final class StorePosSalePdfService implements DocumentGeneratorInterface
 {
     /**
      * @return array{0: \Barryvdh\DomPDF\PDF, 1: string}
@@ -59,7 +60,16 @@ final class StorePosSalePdfService
 
     public function storeReceiptFile(PosSale $sale, int $tenantUserId): string
     {
-        [$pdf, $filename] = $this->makeReceiptPdf($sale, $tenantUserId);
+        return $this->storeFile($sale, $tenantUserId);
+    }
+
+    public function storeFile(object $subject, int $tenantUserId): string
+    {
+        if (! $subject instanceof PosSale) {
+            throw new \InvalidArgumentException('StorePosSalePdfService expects a PosSale instance.');
+        }
+
+        [$pdf, $filename] = $this->makeReceiptPdf($subject, $tenantUserId);
         $relative = 'store-invoices/'.$tenantUserId.'/'.$filename;
         Storage::disk('local')->put($relative, $pdf->output());
 

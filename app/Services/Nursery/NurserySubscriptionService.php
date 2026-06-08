@@ -18,7 +18,7 @@ final class NurserySubscriptionService
 {
     public function __construct(
         private readonly NurserySubscriptionAccountingService $accounting,
-        private readonly NurseryWhatsAppNotificationService $whatsapp,
+        private readonly NurseryWhatsAppNotifier $notifier,
     ) {}
 
     public function ensureDefaultPlans(int $tenantUserId): void
@@ -113,7 +113,8 @@ final class NurserySubscriptionService
 
         if ($isPaid) {
             $financePosted = $this->tryRecordFinance($subscription, $tenantUserId);
-            $whatsappSent = $this->whatsapp->sendSubscriptionPaidConfirmation($tenantUserId, $subscription->fresh());
+            $this->notifier->dispatchSubscriptionPaidConfirmation($tenantUserId, (int) $subscription->id);
+            $whatsappSent = true;
         }
 
         return [
@@ -149,8 +150,9 @@ final class NurserySubscriptionService
         $skipped = 0;
 
         foreach ($items as $subscription) {
-            if ($this->whatsapp->sendPaymentReminder($tenantUserId, $subscription)) {
-                $subscription->update(['payment_reminder_sent_at' => now()]);
+            $this->notifier->dispatchPaymentReminder($tenantUserId, (int) $subscription->id);
+
+            if ($subscription->fresh()->payment_reminder_sent_at !== null) {
                 $sent++;
             } else {
                 $skipped++;
@@ -179,8 +181,9 @@ final class NurserySubscriptionService
         $skipped = 0;
 
         foreach ($items as $subscription) {
-            if ($this->whatsapp->sendRenewalReminder($tenantUserId, $subscription)) {
-                $subscription->update(['renewal_reminder_sent_at' => now()]);
+            $this->notifier->dispatchRenewalReminder($tenantUserId, (int) $subscription->id);
+
+            if ($subscription->fresh()->renewal_reminder_sent_at !== null) {
                 $sent++;
             } else {
                 $skipped++;

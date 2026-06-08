@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Clinic\Appointment;
-use App\Services\Clinic\ClinicPortalBookingService;
-use App\Services\Clinic\WhatsAppNotificationService;
+use App\Services\Clinic\ClinicAppointmentWhatsAppNotifier;
 use App\Services\Tenant\TenantFeatureRegistry;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -18,11 +17,9 @@ final class ClinicSendWhatsAppRemindersCommand extends Command
     protected $description = 'Send WhatsApp reminders for clinic appointments in next 24 hours.';
 
     public function handle(
-        WhatsAppNotificationService $whatsApp,
-        ClinicPortalBookingService $portalBooking,
+        ClinicAppointmentWhatsAppNotifier $notifier,
         TenantFeatureRegistry $features,
-    ): int
-    {
+    ): int {
         $now = now();
         $windowEnd = $now->copy()->addDay();
         $dryRun = (bool) $this->option('dry-run');
@@ -43,6 +40,7 @@ final class ClinicSendWhatsAppRemindersCommand extends Command
         foreach ($appointments as $appointment) {
             if (! $features->isEnabled('clinic_whatsapp_automation', (int) $appointment->user_id)) {
                 $skipped++;
+
                 continue;
             }
 
@@ -52,38 +50,24 @@ final class ClinicSendWhatsAppRemindersCommand extends Command
 
             if ($scheduledAt->lt($now) || $scheduledAt->gt($windowEnd)) {
                 $skipped++;
+
                 continue;
             }
 
             $phone = trim((string) ($appointment->patient?->phone ?? ''));
             if ($phone === '') {
                 $skipped++;
+
                 continue;
             }
 
             if ($dryRun) {
                 $sent++;
+
                 continue;
             }
 
-            $portalBooking->ensureManageToken($appointment);
-            $appointment->refresh();
-
-            $ok = $whatsApp->sendAppointmentReminder((int) $appointment->user_id, $phone, [
-                'patient_name' => $appointment->patient?->name,
-                'appointment_date' => $appointment->appointment_date?->format('Y-m-d'),
-                'start_time' => substr((string) $appointment->start_time, 0, 5),
-                'doctor_name' => $appointment->doctor?->name,
-                'manage_url' => $whatsApp->portalManageUrlForAppointment($appointment),
-            ]);
-
-            if (! $ok) {
-                $skipped++;
-                continue;
-            }
-
-            $appointment->reminder_sent_at = now();
-            $appointment->save();
+            $notifier->dispatchReminder((int) $appointment->user_id, (int) $appointment->id);
             $sent++;
         }
 
