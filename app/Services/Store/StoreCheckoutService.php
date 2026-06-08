@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Store;
 
+use App\Contracts\Core\Checkout\OnlineStoreCheckoutInterface;
 use App\Models\AuditLog;
 use App\Models\CompanySetting;
 use App\Models\PosSale;
@@ -16,7 +17,7 @@ use App\Services\Store\Payment\StorePaymentMethodResolver;
 use Illuminate\Http\UploadedFile;
 use InvalidArgumentException;
 
-final class StoreCheckoutService
+final class StoreCheckoutService implements OnlineStoreCheckoutInterface
 {
     public function __construct(
         private readonly PosSaleService $posSales,

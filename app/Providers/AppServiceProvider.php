@@ -32,6 +32,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use App\Services\Tenant\TenantContext;
 use App\Services\Tenant\TenantFeatureRegistry;
+use App\Contracts\Core\Checkout\OnlineStoreCheckoutInterface;
 use App\Contracts\Core\Payment\PaymentCredentialsProvider;
 use App\Contracts\Core\Payment\PaymentGatewayInterface;
 use App\Core\Messaging\PhoneNumberNormalizer;
@@ -43,6 +44,7 @@ use App\Core\Payment\PaymobGateway;
 use App\Core\Payment\PaymobHmacVerifier;
 use App\Core\Payment\PaymobWebhookAuthenticator;
 use App\Services\Store\Payment\StorePaymentCredentialsProvider;
+use App\Services\Store\StoreCheckoutService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -63,6 +65,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PaymobHmacVerifier::class);
         $this->app->singleton(PaymobWebhookAuthenticator::class);
         $this->app->singleton(PaymentCredentialsProvider::class, StorePaymentCredentialsProvider::class);
+        $this->app->bind(OnlineStoreCheckoutInterface::class, StoreCheckoutService::class);
 
         $this->app->singleton(WhatsAppConfigResolver::class);
         $this->app->singleton(PhoneNumberNormalizer::class);

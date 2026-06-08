@@ -258,6 +258,10 @@ Route::prefix('s/{tenant_slug}')
         });
     });
 
+/*
+| Paymob webhooks — Store module only (Phase 4 checkout boundary).
+| Clinic/Nursery billing must not register duplicate payment callbacks.
+*/
 Route::post('webhooks/store/paymob', StorePaymobWebhookController::class)
     ->name('store.webhooks.paymob');
 
