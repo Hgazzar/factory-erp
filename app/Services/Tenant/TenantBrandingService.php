@@ -12,6 +12,16 @@ use Illuminate\Support\Facades\Storage;
 
 final class TenantBrandingService
 {
+    public const MODULE_NURSERY = TenantThemeService::MODULE_NURSERY;
+
+    public const MODULE_CLINIC = TenantThemeService::MODULE_CLINIC;
+
+    public const MODULE_STORE = TenantThemeService::MODULE_STORE;
+
+    public const MODULE_FLEET = TenantThemeService::MODULE_FLEET;
+
+    public const MODULE_TENANT = TenantThemeService::MODULE_TENANT;
+
     public function __construct(
         private readonly TenantThemeService $themeService,
     ) {}
@@ -31,52 +41,65 @@ final class TenantBrandingService
      *     theme_secondary: string
      * }
      */
-    public function branding(int $tenantUserId, ?string $fallbackName = null): array
-    {
+    public function branding(
+        int $tenantUserId,
+        ?string $fallbackName = null,
+        string $module = self::MODULE_TENANT,
+    ): array {
         $setting = TenantSetting::query()->where('tenant_user_id', $tenantUserId)->first();
-        $defaults = $this->themeService->defaultColorsForTenant($tenantUserId);
+        $defaults = $this->themeService->defaultColorsForModule($module, $tenantUserId);
         $fallbackName = $this->resolveFallbackName($tenantUserId, $fallbackName);
+        [$primaryCol, $secondaryCol] = $this->themeService->moduleColorColumns($module);
 
         $display = trim((string) ($setting?->display_name ?? ''));
         $displayName = $display !== '' ? $display : $fallbackName;
 
-        $primary = TenantThemeService::normalizeHex($setting?->theme_primary_color) ?? $defaults['primary'];
-        $secondary = TenantThemeService::normalizeHex($setting?->theme_secondary_color) ?? $defaults['secondary'];
+        $storedPrimary = $setting?->{$primaryCol} ?? ($module === self::MODULE_TENANT ? $setting?->theme_primary_color : null);
+        $storedSecondary = $setting?->{$secondaryCol} ?? ($module === self::MODULE_TENANT ? $setting?->theme_secondary_color : null);
+
+        $primary = TenantThemeService::normalizeHex($storedPrimary) ?? $defaults['primary'];
+        $secondary = TenantThemeService::normalizeHex($storedSecondary) ?? $defaults['secondary'];
 
         return [
             'display_name' => $displayName,
             'logo_url' => $this->logoUrl($setting),
             'fallback_name' => $fallbackName,
             'theme_vars' => $this->themeService->cssVariables(
-                $setting?->theme_primary_color,
-                $setting?->theme_secondary_color,
+                $storedPrimary,
+                $storedSecondary,
                 $defaults['primary'],
                 $defaults['secondary'],
+                $this->themeService->cssPrefixesForModule($module),
             ),
             'theme_primary' => $primary,
             'theme_secondary' => $secondary,
+            'module' => $module,
         ];
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    public function updateBranding(int $tenantUserId, array $data): TenantSetting
-    {
+    public function updateBranding(
+        int $tenantUserId,
+        array $data,
+        string $module = self::MODULE_TENANT,
+    ): TenantSetting {
         $setting = TenantSetting::forTenant($tenantUserId);
+        [$primaryCol, $secondaryCol] = $this->themeService->moduleColorColumns($module);
 
         $displayName = trim((string) ($data['display_name'] ?? ''));
         $setting->display_name = $displayName !== '' ? $displayName : null;
 
         if (! empty($data['reset_theme_colors'])) {
-            $setting->theme_primary_color = null;
-            $setting->theme_secondary_color = null;
+            $setting->{$primaryCol} = null;
+            $setting->{$secondaryCol} = null;
         } else {
-            $setting->theme_primary_color = TenantThemeService::validateHex(
+            $setting->{$primaryCol} = TenantThemeService::validateHex(
                 $data['theme_primary_color'] ?? null,
                 'الأساسي'
             );
-            $setting->theme_secondary_color = TenantThemeService::validateHex(
+            $setting->{$secondaryCol} = TenantThemeService::validateHex(
                 $data['theme_secondary_color'] ?? null,
                 'الثانوي'
             );

@@ -39,6 +39,13 @@ return [
                 'description_ar' => 'إشعارات واتساب تلقائية للعملاء (طلبات، عروض، تذكيرات).',
                 'hint' => 'premium_feature_retail_whatsapp_automation',
             ],
+            [
+                'key' => PremiumFeatureKeys::FLEET_FIELD_OPS,
+                'name_ar' => 'العمليات الميدانية (المناديب)',
+                'description_ar' => 'مناديب، عملاء ميدان، وكتalog خفيف — يتطلب تفعيل موديول المناديب.',
+                'hint' => 'premium_feature_fleet_field_ops',
+                'requires_module' => 'fleet',
+            ],
         ],
 
         'manufacturing' => [
@@ -134,6 +141,13 @@ return [
         ],
 
         'fleet_agents' => [
+            [
+                'key' => PremiumFeatureKeys::FLEET_FIELD_OPS,
+                'name_ar' => 'العمليات الميدانية',
+                'description_ar' => 'لوحة المناديب، العملاء الميدانيين، وكتalog البضاعة.',
+                'hint' => 'premium_feature_fleet_field_ops',
+                'requires_module' => 'fleet',
+            ],
             [
                 'key' => StoreFeatureKeys::ONLINE_STORE,
                 'name_ar' => 'متجر المندوب الإلكتروني',

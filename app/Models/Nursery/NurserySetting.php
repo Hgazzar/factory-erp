@@ -63,7 +63,11 @@ class NurserySetting extends Model
      */
     public function branding(): array
     {
-        $payload = app(TenantBrandingService::class)->branding((int) $this->user_id, (string) $this->nursery_name);
+        $payload = app(TenantBrandingService::class)->branding(
+            (int) $this->user_id,
+            (string) $this->nursery_name,
+            TenantBrandingService::MODULE_NURSERY,
+        );
 
         return [
             'display_name' => $payload['display_name'],

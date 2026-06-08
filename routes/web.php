@@ -38,6 +38,10 @@ use App\Http\Controllers\Nursery\Portal\NurseryPortalCalendarWebController;
 use App\Http\Controllers\Nursery\Portal\NurseryPortalChildWebController;
 use App\Http\Controllers\Nursery\Portal\NurseryPortalFinanceWebController;
 use App\Http\Controllers\Nursery\Portal\NurseryPortalWebController;
+use App\Http\Controllers\Fleet\FleetAgentWebController;
+use App\Http\Controllers\Fleet\FleetCustomerWebController;
+use App\Http\Controllers\Fleet\FleetDashboardController;
+use App\Http\Controllers\Fleet\FleetProductWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BomListWebController;
@@ -639,6 +643,36 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::post('settings/shifts', [NurserySettingsWebController::class, 'storeShifts'])->name('settings.shifts.store');
             Route::delete('settings/shifts/{shift}', [NurserySettingsWebController::class, 'destroyShift'])->name('settings.shifts.destroy');
             Route::put('settings/features', [NurserySettingsWebController::class, 'updateFeatures'])->name('settings.features.update');
+        });
+    });
+
+    Route::prefix('fleet')->name('fleet.')->middleware(['module:fleet', 'fleet.access'])->group(function () {
+        Route::get('dashboard', [FleetDashboardController::class, 'index'])
+            ->middleware('fleet.capability:view_dashboard')
+            ->name('dashboard');
+
+        Route::middleware('fleet.capability:manage_agents')->group(function () {
+            Route::get('agents', [FleetAgentWebController::class, 'index'])->name('agents.index');
+            Route::get('agents/create', [FleetAgentWebController::class, 'create'])->name('agents.create');
+            Route::post('agents', [FleetAgentWebController::class, 'store'])->name('agents.store');
+            Route::get('agents/{agent}/edit', [FleetAgentWebController::class, 'edit'])->name('agents.edit');
+            Route::put('agents/{agent}', [FleetAgentWebController::class, 'update'])->name('agents.update');
+        });
+
+        Route::middleware('fleet.capability:manage_customers')->group(function () {
+            Route::get('customers', [FleetCustomerWebController::class, 'index'])->name('customers.index');
+            Route::get('customers/create', [FleetCustomerWebController::class, 'create'])->name('customers.create');
+            Route::post('customers', [FleetCustomerWebController::class, 'store'])->name('customers.store');
+            Route::get('customers/{customer}/edit', [FleetCustomerWebController::class, 'edit'])->name('customers.edit');
+            Route::put('customers/{customer}', [FleetCustomerWebController::class, 'update'])->name('customers.update');
+        });
+
+        Route::middleware('fleet.capability:manage_products')->group(function () {
+            Route::get('products', [FleetProductWebController::class, 'index'])->name('products.index');
+            Route::get('products/create', [FleetProductWebController::class, 'create'])->name('products.create');
+            Route::post('products', [FleetProductWebController::class, 'store'])->name('products.store');
+            Route::get('products/{product}/edit', [FleetProductWebController::class, 'edit'])->name('products.edit');
+            Route::put('products/{product}', [FleetProductWebController::class, 'update'])->name('products.update');
         });
     });
 

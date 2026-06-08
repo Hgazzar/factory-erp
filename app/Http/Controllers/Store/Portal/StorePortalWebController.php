@@ -28,7 +28,7 @@ final class StorePortalWebController extends Controller
         $settings = $request->attributes->get('store_portal_settings');
         $company = CompanySetting::forTenant($tenantUserId);
         $slug = (string) $request->route('tenant_slug');
-        $branding = $this->brandingService->branding($tenantUserId);
+        $branding = $this->brandingService->branding($tenantUserId, null, TenantBrandingService::MODULE_STORE);
 
         return [
             'tenantUserId' => $tenantUserId,

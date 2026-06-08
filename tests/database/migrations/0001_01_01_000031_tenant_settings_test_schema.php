@@ -18,6 +18,14 @@ return new class extends Migration
                 $table->string('logo_path', 500)->nullable();
                 $table->string('theme_primary_color', 7)->nullable();
                 $table->string('theme_secondary_color', 7)->nullable();
+                $table->string('nursery_theme_primary_color', 7)->nullable();
+                $table->string('nursery_theme_secondary_color', 7)->nullable();
+                $table->string('clinic_theme_primary_color', 7)->nullable();
+                $table->string('clinic_theme_secondary_color', 7)->nullable();
+                $table->string('store_theme_primary_color', 7)->nullable();
+                $table->string('store_theme_secondary_color', 7)->nullable();
+                $table->string('fleet_theme_primary_color', 7)->nullable();
+                $table->string('fleet_theme_secondary_color', 7)->nullable();
                 $table->timestamps();
             });
         }

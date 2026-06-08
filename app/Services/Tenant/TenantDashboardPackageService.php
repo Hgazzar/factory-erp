@@ -129,6 +129,7 @@ final class TenantDashboardPackageService
                 $has('pos') ? ['label' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'hint' => 'كاشير المعرض'] : null,
             ]),
             'fleet_agents' => array_filter([
+                $has('fleet') ? ['label' => 'لوحة المناديب', 'route' => 'fleet.dashboard', 'hint' => 'مناديب وعملاء ميدان'] : null,
                 $has('pos') ? ['label' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'hint' => 'كاشير المندوب'] : null,
                 $has('sales') ? ['label' => 'لوحة المبيعات', 'route' => 'sales.dashboard', 'hint' => 'تحصيلات ميدانية'] : null,
                 $has('crm') ? ['label' => 'لوحة CRM', 'route' => 'crm.dashboard', 'hint' => 'عملاء المناديب'] : null,

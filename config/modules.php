@@ -105,6 +105,14 @@ return [
             'niche_tags' => ['nursery'],
             'sort_order' => 86,
         ],
+        'fleet' => [
+            'name_ar' => 'المناديب',
+            'name_en' => 'Fleet / Field Ops',
+            'description_ar' => 'المناديب، عملاء الميدان، وكتalog خفيف للبضاعة.',
+            'is_core' => false,
+            'niche_tags' => ['fleet'],
+            'sort_order' => 87,
+        ],
     ],
 
     /**
@@ -124,6 +132,7 @@ return [
         'services' => 'services',
         'clinic' => 'clinic',
         'nursery' => 'nursery',
+        'fleet' => 'fleet',
         'operations' => 'manufacturing',
     ],
 

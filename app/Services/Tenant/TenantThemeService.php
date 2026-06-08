@@ -9,10 +9,20 @@ use App\Models\TenantSetting;
 use InvalidArgumentException;
 
 /**
- * ألوان هوية المستأجر — متغيرات CSS مع تباين آمن، بغض النظر عن النيش.
+ * ألوان هوية المستأجر — متغيرات CSS مع تباين آمن لكل وحدة (حضانة / عيادة / متجر).
  */
 final class TenantThemeService
 {
+    public const MODULE_NURSERY = 'nursery';
+
+    public const MODULE_CLINIC = 'clinic';
+
+    public const MODULE_STORE = 'store';
+
+    public const MODULE_FLEET = 'fleet';
+
+    public const MODULE_TENANT = 'tenant';
+
     public const DEFAULT_PRIMARY = '#f97316';
 
     public const DEFAULT_SECONDARY = '#ffedd5';
@@ -26,11 +36,32 @@ final class TenantThemeService
      */
     public function defaultColorsForTenant(int $tenantUserId): array
     {
-        $nicheKey = TenantProfile::forTenantUser($tenantUserId)?->niche_key;
+        return $this->defaultColorsForModule(self::MODULE_TENANT, $tenantUserId);
+    }
+
+    /**
+     * @return array{primary: string, secondary: string}
+     */
+    public function defaultColorsForModule(string $module, int $tenantUserId): array
+    {
+        $nicheKey = strtolower(trim((string) (TenantProfile::forTenantUser($tenantUserId)?->niche_key ?? '')));
         $defaults = config('tenant.branding.defaults', []);
-        $pair = is_string($nicheKey) && isset($defaults[$nicheKey])
-            ? $defaults[$nicheKey]
-            : ($defaults['_default'] ?? ['primary' => self::DEFAULT_PRIMARY, 'secondary' => self::DEFAULT_SECONDARY]);
+
+        $configKey = match ($module) {
+            self::MODULE_NURSERY => 'nurseries',
+            self::MODULE_CLINIC => 'medical_clinics',
+            self::MODULE_STORE => in_array($nicheKey, ['retail', 'manufacturing', 'fleet_agents', 'full_erp'], true)
+                ? $nicheKey
+                : 'retail',
+            self::MODULE_FLEET => 'fleet_agents',
+            default => is_string($nicheKey) && $nicheKey !== '' ? $nicheKey : '_default',
+        };
+
+        if (! isset($defaults[$configKey])) {
+            $configKey = is_string($nicheKey) && isset($defaults[$nicheKey]) ? $nicheKey : '_default';
+        }
+
+        $pair = $defaults[$configKey] ?? ($defaults['_default'] ?? ['primary' => self::DEFAULT_PRIMARY, 'secondary' => self::DEFAULT_SECONDARY]);
 
         return [
             'primary' => (string) ($pair['primary'] ?? self::DEFAULT_PRIMARY),
@@ -39,22 +70,60 @@ final class TenantThemeService
     }
 
     /**
+     * @return list<string>
+     */
+    public function cssPrefixesForModule(string $module): array
+    {
+        return match ($module) {
+            self::MODULE_NURSERY => ['nursery', 'np'],
+            self::MODULE_CLINIC => ['clinic', 'cp'],
+            self::MODULE_STORE => ['store', 'sp'],
+            self::MODULE_FLEET => ['fleet', 'fp'],
+            default => ['tenant'],
+        };
+    }
+
+    /**
      * @return array<string, string> CSS custom properties
      */
-    public function cssVariablesForTenant(int $tenantUserId): array
+    public function cssVariablesForTenant(int $tenantUserId, string $module = self::MODULE_TENANT): array
     {
         $setting = TenantSetting::query()->where('tenant_user_id', $tenantUserId)->first();
-        $defaults = $this->defaultColorsForTenant($tenantUserId);
+        $defaults = $this->defaultColorsForModule($module, $tenantUserId);
+        [$primaryCol, $secondaryCol] = $this->moduleColorColumns($module);
+
+        $storedPrimary = $setting?->{$primaryCol};
+        $storedSecondary = $setting?->{$secondaryCol};
+        if ($module === self::MODULE_TENANT) {
+            $storedPrimary ??= $setting?->theme_primary_color;
+            $storedSecondary ??= $setting?->theme_secondary_color;
+        }
 
         return $this->cssVariables(
-            $setting?->theme_primary_color,
-            $setting?->theme_secondary_color,
+            $storedPrimary,
+            $storedSecondary,
             $defaults['primary'],
             $defaults['secondary'],
+            $this->cssPrefixesForModule($module),
         );
     }
 
     /**
+     * @return array{0: string, 1: string}
+     */
+    public function moduleColorColumns(string $module): array
+    {
+        return match ($module) {
+            self::MODULE_NURSERY => ['nursery_theme_primary_color', 'nursery_theme_secondary_color'],
+            self::MODULE_CLINIC => ['clinic_theme_primary_color', 'clinic_theme_secondary_color'],
+            self::MODULE_STORE => ['store_theme_primary_color', 'store_theme_secondary_color'],
+            self::MODULE_FLEET => ['fleet_theme_primary_color', 'fleet_theme_secondary_color'],
+            default => ['theme_primary_color', 'theme_secondary_color'],
+        };
+    }
+
+    /**
+     * @param  list<string>  $prefixes
      * @return array<string, string>
      */
     public function cssVariables(
@@ -62,6 +131,7 @@ final class TenantThemeService
         ?string $secondary,
         ?string $defaultPrimary = null,
         ?string $defaultSecondary = null,
+        array $prefixes = ['tenant'],
     ): array {
         $primary = self::normalizeHex($primary) ?? $defaultPrimary ?? self::DEFAULT_PRIMARY;
         $secondary = self::normalizeHex($secondary) ?? $defaultSecondary ?? self::DEFAULT_SECONDARY;
@@ -95,7 +165,7 @@ final class TenantThemeService
         ];
 
         $vars = [];
-        foreach (['tenant', 'nursery', 'np', 'clinic', 'cp', 'store', 'sp'] as $prefix) {
+        foreach ($prefixes as $prefix) {
             foreach ($base as $key => $value) {
                 $vars["--{$prefix}-{$key}"] = $value;
             }

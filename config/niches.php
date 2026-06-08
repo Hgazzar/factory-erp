@@ -80,9 +80,10 @@ return [
             'description_ar' => 'عهدة المناديب، خطوط السير، والتحصيل الميداني.',
             'modules' => [
                 'finance',
-                'inventory',
-                'sales',
-                'crm',
+                'fleet',
+            ],
+            'default_premium_features' => [
+                'fleet_field_ops',
             ],
         ],
 

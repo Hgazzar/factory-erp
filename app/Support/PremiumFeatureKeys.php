@@ -37,6 +37,8 @@ final class PremiumFeatureKeys
 
     public const NURSERY_PARENT_PORTAL = 'nursery_portal';
 
-    /** مفتاح موحّد لبوابة أولياء الأمور (tenant_features). */
     public const NURSERY_PORTAL = 'nursery_portal';
+
+    // Fleet / field agents
+    public const FLEET_FIELD_OPS = 'fleet_field_ops';
 }

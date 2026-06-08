@@ -39,8 +39,8 @@ final class ClinicBrandingSettingsTest extends ClinicTestCase
         $this->assertDatabaseHas('tenant_settings', [
             'tenant_user_id' => $this->tenant->id,
             'display_name' => 'عيادة النور',
-            'theme_primary_color' => '#1d4ed8',
-            'theme_secondary_color' => '#bfdbfe',
+            'clinic_theme_primary_color' => '#1d4ed8',
+            'clinic_theme_secondary_color' => '#bfdbfe',
         ]);
 
         TenantSetting::forTenant((int) $this->tenant->id);

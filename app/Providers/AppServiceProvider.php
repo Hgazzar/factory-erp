@@ -140,7 +140,12 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.nursery-portal', function (\Illuminate\View\View $view): void {
             $tenantUserId = (int) ($view->getData()['tenantUserId'] ?? 0);
             $fallback = trim((string) ($view->getData()['nurseryName'] ?? ''));
-            $this->composeTenantBranding($view, $tenantUserId, $fallback !== '' ? $fallback : null);
+            $this->composeTenantBranding(
+                $view,
+                $tenantUserId,
+                $fallback !== '' ? $fallback : null,
+                TenantBrandingService::MODULE_NURSERY,
+            );
         });
 
         View::composer('layouts.nursery', function (\Illuminate\View\View $view): void {
@@ -149,7 +154,12 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
             $fallback = NurserySetting::query()->where('user_id', $tenantId)->value('nursery_name');
-            $this->composeTenantBranding($view, $tenantId, is_string($fallback) ? $fallback : null);
+            $this->composeTenantBranding(
+                $view,
+                $tenantId,
+                is_string($fallback) ? $fallback : null,
+                TenantBrandingService::MODULE_NURSERY,
+            );
         });
 
         View::composer('layouts.clinic', function (\Illuminate\View\View $view): void {
@@ -157,12 +167,20 @@ class AppServiceProvider extends ServiceProvider
             if ($tenantId === null) {
                 return;
             }
-            $this->composeTenantBranding($view, $tenantId);
+            $this->composeTenantBranding($view, $tenantId, null, TenantBrandingService::MODULE_CLINIC);
         });
 
         View::composer('layouts.clinic-portal', function (\Illuminate\View\View $view): void {
             $tenantUserId = (int) request()->attributes->get('clinic_portal_tenant_user_id', 0);
-            $this->composeTenantBranding($view, $tenantUserId);
+            $this->composeTenantBranding($view, $tenantUserId, null, TenantBrandingService::MODULE_CLINIC);
+        });
+
+        View::composer('layouts.fleet', function (\Illuminate\View\View $view): void {
+            $tenantId = $this->resolveBrandingTenantUserId();
+            if ($tenantId === null) {
+                return;
+            }
+            $this->composeTenantBranding($view, $tenantId, null, TenantBrandingService::MODULE_FLEET);
         });
 
         View::composer('layouts.store', function (\Illuminate\View\View $view): void {
@@ -173,7 +191,11 @@ class AppServiceProvider extends ServiceProvider
             if ($tenantUserId < 1) {
                 return;
             }
-            $branding = app(TenantBrandingService::class)->branding($tenantUserId);
+            $branding = app(TenantBrandingService::class)->branding(
+                $tenantUserId,
+                null,
+                TenantBrandingService::MODULE_STORE,
+            );
             $view->with('tenantThemeVars', $branding['theme_vars']);
             if (! $view->offsetExists('tenantBrand')) {
                 $view->with('tenantBrand', $branding);
@@ -191,13 +213,17 @@ class AppServiceProvider extends ServiceProvider
         return ($tenantId !== null && $tenantId > 0) ? $tenantId : null;
     }
 
-    private function composeTenantBranding(\Illuminate\View\View $view, int $tenantUserId, ?string $fallbackName = null): void
-    {
+    private function composeTenantBranding(
+        \Illuminate\View\View $view,
+        int $tenantUserId,
+        ?string $fallbackName = null,
+        string $module = TenantBrandingService::MODULE_TENANT,
+    ): void {
         if ($tenantUserId < 1 || $view->offsetExists('tenantBrand')) {
             return;
         }
 
-        $branding = app(TenantBrandingService::class)->branding($tenantUserId, $fallbackName);
+        $branding = app(TenantBrandingService::class)->branding($tenantUserId, $fallbackName, $module);
 
         $view->with([
             'tenantBrand' => $branding,

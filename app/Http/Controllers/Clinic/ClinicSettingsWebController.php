@@ -29,7 +29,7 @@ final class ClinicSettingsWebController extends Controller
         $tenantUserId = $this->resolveOperationsTenantUserId();
         $tab = $this->normalizeTab((string) $request->query('tab', 'branding'));
 
-        $branding = $this->brandingService->branding($tenantUserId);
+        $branding = $this->brandingService->branding($tenantUserId, null, TenantBrandingService::MODULE_CLINIC);
         $profile = TenantProfile::forTenantUser($tenantUserId);
         $tenantSlug = $profile?->slug ?? $profile?->domain;
 
@@ -68,7 +68,7 @@ final class ClinicSettingsWebController extends Controller
         ]);
 
         try {
-            $this->brandingService->updateBranding($tenantUserId, $data);
+            $this->brandingService->updateBranding($tenantUserId, $data, TenantBrandingService::MODULE_CLINIC);
             $this->brandingService->updateLogo(
                 $tenantUserId,
                 $request->file('logo_file'),

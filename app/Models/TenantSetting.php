@@ -15,6 +15,12 @@ class TenantSetting extends Model
         'logo_path',
         'theme_primary_color',
         'theme_secondary_color',
+        'nursery_theme_primary_color',
+        'nursery_theme_secondary_color',
+        'clinic_theme_primary_color',
+        'clinic_theme_secondary_color',
+        'store_theme_primary_color',
+        'store_theme_secondary_color',
     ];
 
     public function tenantUser(): BelongsTo

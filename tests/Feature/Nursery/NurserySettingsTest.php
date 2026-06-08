@@ -72,8 +72,8 @@ final class NurserySettingsTest extends NurseryTestCase
 
         $this->assertDatabaseHas('tenant_settings', [
             'tenant_user_id' => $this->tenant->id,
-            'theme_primary_color' => '#2563eb',
-            'theme_secondary_color' => '#dbeafe',
+            'nursery_theme_primary_color' => '#2563eb',
+            'nursery_theme_secondary_color' => '#dbeafe',
         ]);
 
         $this->put(route('nursery.settings.branding.update'), [
@@ -82,8 +82,8 @@ final class NurserySettingsTest extends NurseryTestCase
 
         $this->assertDatabaseHas('tenant_settings', [
             'tenant_user_id' => $this->tenant->id,
-            'theme_primary_color' => null,
-            'theme_secondary_color' => null,
+            'nursery_theme_primary_color' => null,
+            'nursery_theme_secondary_color' => null,
         ]);
     }
 }

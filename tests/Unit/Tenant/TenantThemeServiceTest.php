@@ -11,14 +11,29 @@ use Tests\TestCase;
 final class TenantThemeServiceTest extends TestCase
 {
     #[Test]
-    public function it_builds_css_variables_with_clinic_and_nursery_aliases(): void
+    public function it_builds_css_variables_only_for_requested_module_prefixes(): void
     {
-        $vars = app(TenantThemeService::class)->cssVariables('#0d9488', '#ccfbf1');
+        $clinicVars = app(TenantThemeService::class)->cssVariables(
+            '#0d9488',
+            '#ccfbf1',
+            null,
+            null,
+            ['clinic', 'cp'],
+        );
+        $nurseryVars = app(TenantThemeService::class)->cssVariables(
+            '#f97316',
+            '#ffedd5',
+            null,
+            null,
+            ['nursery', 'np'],
+        );
 
-        $this->assertSame('#0d9488', $vars['--clinic-primary']);
-        $this->assertSame('#0d9488', $vars['--nursery-primary']);
-        $this->assertSame('#0d9488', $vars['--cp-primary']);
-        $this->assertContains($vars['--clinic-on-primary'], ['#ffffff', '#1c1917']);
+        $this->assertSame('#0d9488', $clinicVars['--clinic-primary']);
+        $this->assertSame('#0d9488', $clinicVars['--cp-primary']);
+        $this->assertArrayNotHasKey('--nursery-primary', $clinicVars);
+        $this->assertSame('#f97316', $nurseryVars['--nursery-primary']);
+        $this->assertArrayNotHasKey('--clinic-primary', $nurseryVars);
+        $this->assertContains($clinicVars['--clinic-on-primary'], ['#ffffff', '#1c1917']);
     }
 
     #[Test]

@@ -57,7 +57,7 @@ final class NurserySettingsService
      */
     public function updateBranding(int $tenantUserId, array $data): NurserySetting
     {
-        $this->tenantBranding->updateBranding($tenantUserId, $data);
+        $this->tenantBranding->updateBranding($tenantUserId, $data, TenantBrandingService::MODULE_NURSERY);
 
         return NurserySetting::forTenant($tenantUserId)->fresh();
     }
