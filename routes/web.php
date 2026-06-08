@@ -42,6 +42,7 @@ use App\Http\Controllers\Fleet\FleetAgentWebController;
 use App\Http\Controllers\Fleet\FleetCustomerWebController;
 use App\Http\Controllers\Fleet\FleetDashboardController;
 use App\Http\Controllers\Fleet\FleetProductWebController;
+use App\Http\Controllers\Fleet\FleetRouteWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BomListWebController;
@@ -673,6 +674,25 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::post('products', [FleetProductWebController::class, 'store'])->name('products.store');
             Route::get('products/{product}/edit', [FleetProductWebController::class, 'edit'])->name('products.edit');
             Route::put('products/{product}', [FleetProductWebController::class, 'update'])->name('products.update');
+        });
+
+        Route::middleware('fleet.capability:view_routes')->group(function () {
+            Route::get('routes', [FleetRouteWebController::class, 'index'])->name('routes.index');
+        });
+
+        Route::middleware('fleet.capability:manage_routes')->group(function () {
+            Route::get('routes/create', [FleetRouteWebController::class, 'create'])->name('routes.create');
+            Route::post('routes', [FleetRouteWebController::class, 'store'])->name('routes.store');
+            Route::get('routes/{route}/edit', [FleetRouteWebController::class, 'edit'])->name('routes.edit');
+            Route::put('routes/{route}', [FleetRouteWebController::class, 'update'])->name('routes.update');
+            Route::post('routes/{route}/start', [FleetRouteWebController::class, 'start'])->name('routes.start');
+            Route::post('routes/{route}/complete', [FleetRouteWebController::class, 'complete'])->name('routes.complete');
+            Route::post('routes/{route}/cancel', [FleetRouteWebController::class, 'cancel'])->name('routes.cancel');
+            Route::patch('route-stops/{stop}/status', [FleetRouteWebController::class, 'updateStopStatus'])->name('route-stops.status');
+        });
+
+        Route::middleware('fleet.capability:view_routes')->group(function () {
+            Route::get('routes/{route}', [FleetRouteWebController::class, 'show'])->name('routes.show');
         });
     });
 

@@ -7,6 +7,7 @@ namespace App\Services\Fleet;
 use App\Models\Fleet\FleetAgent;
 use App\Models\Fleet\FleetCustomer;
 use App\Models\Fleet\FleetProduct;
+use App\Models\Fleet\FleetRoute;
 
 final class FleetDashboardService
 {
@@ -35,7 +36,11 @@ final class FleetDashboardService
                 ->where('user_id', $tenantUserId)
                 ->where('is_active', true)
                 ->count(),
-            'routes_today' => 0,
+            'routes_today' => (int) FleetRoute::query()
+                ->where('user_id', $tenantUserId)
+                ->whereDate('route_date', now()->toDateString())
+                ->whereIn('status', [FleetRoute::STATUS_PLANNED, FleetRoute::STATUS_IN_PROGRESS])
+                ->count(),
         ];
     }
 }

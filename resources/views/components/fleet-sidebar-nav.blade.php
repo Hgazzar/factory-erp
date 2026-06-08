@@ -9,6 +9,12 @@
             <span>🏠 <x-info field="fleet.nav_dashboard" /> لوحة التحكم</span>
         </a>
     @endif
+    @if($access->allows(FleetAccess::CAP_VIEW_ROUTES))
+        <a href="{{ route('fleet.routes.index') }}"
+           class="module-nav-link {{ request()->routeIs('fleet.routes.*') ? 'active' : '' }}">
+            <span>🗺️ <x-info field="fleet.nav_routes" /> خطوط السير</span>
+        </a>
+    @endif
     @if($access->allows(FleetAccess::CAP_MANAGE_AGENTS))
         <a href="{{ route('fleet.agents.index') }}"
            class="module-nav-link {{ request()->routeIs('fleet.agents.*') ? 'active' : '' }}">

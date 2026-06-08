@@ -43,19 +43,20 @@
                 </div>
                 <p class="text-2xl font-extrabold text-violet-600 tabular-nums">{{ $stats['products_active'] }}</p>
             </div>
-            <div class="fleet-card p-4 text-center opacity-75">
+            <div class="fleet-card p-4 text-center">
                 <div class="flex items-center justify-center gap-1 flex-wrap mb-2">
                     <span class="text-sm font-bold text-violet-950">خطوط السير اليوم</span>
                     <x-info field="fleet.stat_routes_today" />
                 </div>
-                <p class="text-2xl font-extrabold text-violet-400 tabular-nums">{{ $stats['routes_today'] }}</p>
-                <p class="text-xs text-violet-600 mt-1">قريباً — F2</p>
+                <p class="text-2xl font-extrabold text-violet-600 tabular-nums">{{ $stats['routes_today'] }}</p>
+                <a href="{{ route('fleet.routes.index') }}" class="text-xs text-violet-600 font-semibold mt-2 inline-block hover:underline">عرض خطوط السير</a>
             </div>
         </div>
     </section>
 
     <section class="flex flex-wrap gap-2">
-        <a href="{{ route('fleet.agents.index') }}" class="fleet-btn fleet-btn-primary text-sm">إدارة المناديب</a>
+        <a href="{{ route('fleet.routes.index') }}" class="fleet-btn fleet-btn-primary text-sm">خطوط السير</a>
+        <a href="{{ route('fleet.agents.index') }}" class="fleet-btn fleet-btn-soft text-sm">إدارة المناديب</a>
         <a href="{{ route('fleet.customers.index') }}" class="fleet-btn fleet-btn-soft text-sm">عملاء الميدان</a>
         <a href="{{ route('fleet.products.index') }}" class="fleet-btn fleet-btn-soft text-sm">الكتalog الخفيف</a>
     </section>

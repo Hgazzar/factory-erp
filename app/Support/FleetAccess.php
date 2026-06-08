@@ -21,6 +21,10 @@ final class FleetAccess
 
     public const CAP_MANAGE_PRODUCTS = 'manage_products';
 
+    public const CAP_VIEW_ROUTES = 'view_routes';
+
+    public const CAP_MANAGE_ROUTES = 'manage_routes';
+
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly TenantFeatureRegistry $features,
@@ -67,7 +71,7 @@ final class FleetAccess
         }
 
         return match ($capability) {
-            self::CAP_VIEW_DASHBOARD => true,
+            self::CAP_VIEW_DASHBOARD, self::CAP_VIEW_ROUTES => true,
             default => false,
         };
     }
