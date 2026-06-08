@@ -41,6 +41,16 @@ final class StoreNicheCapabilitiesTest extends TestCase
     }
 
     #[Test]
+    public function merchant_settings_labels_vary_by_niche(): void
+    {
+        $caps = new StoreNicheCapabilities;
+
+        $this->assertSame('تفعيل معرض منتجات المصنع للجمهور', $caps->enablePublicStorefrontLabel('manufacturing'));
+        $this->assertSame('طرق دفع طلبات التحصيل', $caps->paymentMethodsHeading('fleet_agents'));
+        $this->assertSame('بانتظار التحصيل الميداني', $caps->metricsPendingCollectionLabel('fleet_agents'));
+    }
+
+    #[Test]
     public function clinic_whatsapp_key_is_allowed_for_clinic_niche(): void
     {
         $caps = new StoreNicheCapabilities;

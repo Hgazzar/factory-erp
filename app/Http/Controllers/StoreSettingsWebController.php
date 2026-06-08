@@ -9,6 +9,7 @@ use App\Models\PosDevice;
 use App\Models\TenantProfile;
 use App\Models\TenantStoreSetting;
 use App\Services\Store\StoreMerchantMetricsService;
+use App\Services\Store\StoreMerchantSettingsPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -34,9 +35,9 @@ final class StoreSettingsWebController extends Controller
             : null;
 
         $merchantMetrics = app(StoreMerchantMetricsService::class)->snapshot($tenantUserId);
-        $paymobWebhookUrl = store_paymob_webhook_url();
+        $storeUi = app(StoreMerchantSettingsPresenter::class)->present($tenantUserId, $settings, $profile);
 
-        return view('settings.store', compact('settings', 'devices', 'storeUrl', 'profile', 'merchantMetrics', 'paymobWebhookUrl'));
+        return view('settings.store', compact('settings', 'devices', 'storeUrl', 'profile', 'merchantMetrics', 'storeUi'));
     }
 
     public function update(Request $request): RedirectResponse

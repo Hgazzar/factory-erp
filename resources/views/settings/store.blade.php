@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'إعدادات المتجر الإلكتروني — '.config('app.name'))
+@section('title', ($storeUi['page_title'] ?? 'إعدادات المتجر').' — '.config('app.name'))
 
 @section('content')
 <div dir="rtl" class="max-w-5xl space-y-6">
@@ -21,7 +21,7 @@
             <div class="text-2xl font-bold text-gray-900 tabular-nums">{{ number_format($merchantMetrics['revenue_month'], 2) }}</div>
         </div>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-            <div class="text-xs font-medium text-amber-800 mb-1"><x-info field="store.metrics_pending_collection" /> بانتظار التحصيل / التحقق</div>
+            <div class="text-xs font-medium text-amber-800 mb-1"><x-info field="store.metrics_pending_collection" /> {{ $storeUi['metrics_pending_label'] ?? 'بانتظار التحصيل / التحقق' }}</div>
             <div class="text-2xl font-bold text-amber-900 tabular-nums">{{ $merchantMetrics['pending_collection'] ?? 0 }}</div>
         </div>
     </div>
@@ -53,7 +53,7 @@
     @endisset
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h1 class="text-xl font-bold text-gray-900 mb-2">إعدادات المتجر الإلكتروني</h1>
+        <h1 class="text-xl font-bold text-gray-900 mb-2">{{ $storeUi['page_title'] ?? 'إعدادات المتجر الإلكتروني' }}</h1>
         @if($storeUrl)
             <p class="text-sm text-gray-600 mb-4">
                 رابط المتجر:
@@ -72,7 +72,7 @@
                 <input type="checkbox" name="is_store_enabled" value="1" id="is_store_enabled" class="rounded border-gray-300"
                        @checked(old('is_store_enabled', $settings->is_store_enabled))>
                 <label for="is_store_enabled" class="text-sm font-medium text-gray-800 inline-flex items-center gap-1">
-                    <x-info field="store.is_enabled" /> تفعيل المتجر الإلكتروني للجمهور
+                    <x-info field="store.is_enabled" /> {{ $storeUi['enable_storefront_label'] ?? 'تفعيل المتجر الإلكتروني للجمهور' }}
                 </label>
             </div>
 
@@ -97,34 +97,37 @@
                     :value="old('default_pos_device_id', $settings->default_pos_device_id)" empty-label="أول جهاز نشط" :searchable="count($devices) > 6" />
             </div>
 
-            <h2 class="text-base font-bold text-gray-900 pt-2">طرق الدفع</h2>
+            <h2 class="text-base font-bold text-gray-900 pt-2">{{ $storeUi['payment_methods_heading'] ?? 'طرق الدفع' }}</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label class="flex items-center gap-2 text-sm">
-                    <input type="hidden" name="cod_enabled" value="0">
-                    <input type="checkbox" name="cod_enabled" value="1" class="rounded border-gray-300" @checked(old('cod_enabled', $settings->cod_enabled ?? true))>
-                    <x-info field="store.payment_cod" /> الدفع عند الاستلام (COD)
-                </label>
-                <label class="flex items-center gap-2 text-sm">
-                    <input type="hidden" name="manual_transfer_enabled" value="0">
-                    <input type="checkbox" name="manual_transfer_enabled" value="1" class="rounded border-gray-300" @checked(old('manual_transfer_enabled', $settings->manual_transfer_enabled))>
-                    <x-info field="store.payment_manual_transfer" /> تحويل بنكي + إيصال
-                </label>
-                <label class="flex items-center gap-2 text-sm">
-                    <input type="hidden" name="online_payment_enabled" value="0">
-                    <input type="checkbox" name="online_payment_enabled" value="1" class="rounded border-gray-300" @checked(old('online_payment_enabled', $settings->online_payment_enabled))>
-                    <x-info field="pos.online_payment_enabled" /> Paymob (بطاقة/محفظة)
-                </label>
-                <label class="flex items-center gap-2 text-sm">
-                    <input type="hidden" name="tamara_enabled" value="0">
-                    <input type="checkbox" name="tamara_enabled" value="1" class="rounded border-gray-300" @checked(old('tamara_enabled', $settings->tamara_enabled))>
-                    <x-info field="store.payment_tamara" /> Tamara (السعودية)
-                </label>
-                <label class="flex items-center gap-2 text-sm">
-                    <input type="hidden" name="tabby_enabled" value="0">
-                    <input type="checkbox" name="tabby_enabled" value="1" class="rounded border-gray-300" @checked(old('tabby_enabled', $settings->tabby_enabled))>
-                    <x-info field="store.payment_tabby" /> Tabby
-                </label>
+                @foreach($storeUi['payment_toggles'] ?? [] as $toggle)
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="hidden" name="{{ $toggle['field'] }}" value="0">
+                        <input type="checkbox" name="{{ $toggle['field'] }}" value="1" class="rounded border-gray-300"
+                               @checked(old($toggle['field'], $toggle['default_checked']))>
+                        <x-info field="{{ $toggle['hint'] }}" /> {{ $toggle['label'] }}
+                    </label>
+                @endforeach
             </div>
+
+            @if(isset($storeUi['whatsapp']))
+            <div class="rounded-lg border {{ $storeUi['whatsapp']['api_enabled'] ? 'border-emerald-200 bg-emerald-50/60' : 'border-gray-200 bg-gray-50' }} p-4 mt-4">
+                <p class="text-sm font-semibold text-gray-900 mb-1">واتساب طلبات {{ $storeUi['storefront_label'] ?? 'المتجر' }}</p>
+                <p class="text-xs text-gray-600">
+                    API:
+                    @if($storeUi['whatsapp']['api_enabled'])
+                        <span class="text-emerald-700 font-medium">مفعّل (Meta Cloud)</span>
+                    @else
+                        <span class="text-amber-700 font-medium">وضع تجريبي — ضبط STORE_WHATSAPP_* أو CLINIC_WHATSAPP_* في .env</span>
+                    @endif
+                    · أتمتة الباقة:
+                    @if($storeUi['whatsapp']['automation_enabled'])
+                        <span class="text-emerald-700 font-medium">مفعّلة</span>
+                    @else
+                        <span class="text-gray-500">غير مفعّلة (Super Admin → premium)</span>
+                    @endif
+                </p>
+            </div>
+            @endif
 
             <h2 class="text-base font-bold text-gray-900 pt-4">Paymob</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -160,7 +163,7 @@
                 </div>
                 <div class="md:col-span-2 rounded-lg border border-indigo-100 bg-indigo-50/60 p-4">
                     <p class="text-sm font-semibold text-indigo-900 mb-1">رابط Webhook (Processed Callback) — ضعه في لوحة Paymob</p>
-                    <code class="block text-xs sm:text-sm text-indigo-800 break-all dir-ltr" dir="ltr">{{ $paymobWebhookUrl ?? store_paymob_webhook_url() }}</code>
+                    <code class="block text-xs sm:text-sm text-indigo-800 break-all dir-ltr" dir="ltr">{{ $storeUi['paymob_webhook_url'] ?? store_paymob_webhook_url() }}</code>
                     <p class="text-xs text-indigo-700/80 mt-2">POST فقط · يجب أن يطابق <code class="text-xs">APP_URL</code> في الإنتاج · Paymob يرسل التوقيع في <code class="text-xs">?hmac=</code></p>
                 </div>
             </div>

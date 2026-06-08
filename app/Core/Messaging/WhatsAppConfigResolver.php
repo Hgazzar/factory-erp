@@ -45,4 +45,20 @@ final class WhatsAppConfigResolver
             'default_country_code' => (string) ($raw['default_country_code'] ?? '966'),
         ];
     }
+
+    public function isEnabled(string $profile): bool
+    {
+        return $this->resolve($profile)['enabled'];
+    }
+
+    public function messagingProfileForNiche(?string $nicheKey): string
+    {
+        $nicheKey = strtolower(trim((string) $nicheKey));
+
+        return match ($nicheKey) {
+            self::PROFILE_CLINIC, 'medical_clinics' => self::PROFILE_CLINIC,
+            self::PROFILE_NURSERY, 'nurseries' => self::PROFILE_NURSERY,
+            default => self::PROFILE_STORE,
+        };
+    }
 }

@@ -64,6 +64,26 @@ final class StoreNicheCapabilities
         return (string) ($this->nicheConfig($nicheKey)['orders_nav_label_ar'] ?? 'طلبات المتجر');
     }
 
+    public function enablePublicStorefrontLabel(?string $nicheKey): string
+    {
+        return 'تفعيل '.$this->storefrontLabel($nicheKey).' للجمهور';
+    }
+
+    public function paymentMethodsHeading(?string $nicheKey): string
+    {
+        return 'طرق دفع '.$this->ordersNavLabel($nicheKey);
+    }
+
+    public function metricsPendingCollectionLabel(?string $nicheKey): string
+    {
+        return match ($this->normalize($nicheKey)) {
+            'fleet_agents' => 'بانتظار التحصيل الميداني',
+            'manufacturing' => 'بانتظار تجهيز الطلب / التحقق',
+            'medical_clinics' => 'بانتظار التجهيز / التحقق',
+            default => 'بانتظار التحصيل / التحقق',
+        };
+    }
+
     public function posModuleLabelKey(?string $nicheKey): string
     {
         $nicheKey = $this->normalize($nicheKey);
