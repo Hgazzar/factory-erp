@@ -58,6 +58,7 @@ return new class extends Migration
     private function indexExists(string $table, string $index): bool
     {
         $connection = Schema::getConnection();
+        $schema = $connection->getConfig('schema') ?? 'public';
         $driver = $connection->getDriverName();
 
         if ($driver === 'sqlite') {
@@ -72,13 +73,16 @@ return new class extends Migration
             return false;
         }
 
-        $database = $connection->getDatabaseName();
-
-        $result = $connection->select(
-            'SELECT COUNT(*) AS aggregate FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ?',
-            [$database, $table, $index],
-        );
-
-        return (int) ($result[0]->aggregate ?? 0) > 0;
+        return match ($driver) {
+            'pgsql' => (bool) $connection->selectOne(
+                'select 1 from pg_indexes where schemaname = ? and tablename = ? and indexname = ?',
+                [$schema, $table, $index],
+            ),
+            'mysql', 'mariadb' => (bool) $connection->selectOne(
+                'select 1 from information_schema.statistics where table_schema = database() and table_name = ? and index_name = ? limit 1',
+                [$table, $index],
+            ),
+            default => false,
+        };
     }
 };
