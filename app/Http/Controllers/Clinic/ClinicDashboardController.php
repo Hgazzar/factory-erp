@@ -11,6 +11,7 @@ use App\Models\Clinic\Patient;
 use App\Models\Clinic\Prescription;
 use App\Models\TenantProfile;
 use App\Services\Clinic\ClinicPortalQrCodeService;
+use App\Services\Store\StoreOnlineDashboardPresenter;
 use App\Services\Tenant\TenantFeatureRegistry;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
@@ -61,7 +62,12 @@ final class ClinicDashboardController extends Controller
             $qrDataUri = $portalUrl ? $qrCode->pngDataUri($portalUrl) : null;
         }
 
-        return view('clinic.dashboard', compact('stats', 'upcoming', 'portalUrl', 'qrDataUri'));
+        $storeOnlinePanel = app(StoreOnlineDashboardPresenter::class)->present(
+            $tenantUserId,
+            StoreOnlineDashboardPresenter::VARIANT_COMPACT,
+        );
+
+        return view('clinic.dashboard', compact('stats', 'upcoming', 'portalUrl', 'qrDataUri', 'storeOnlinePanel'));
     }
 
     public function downloadPortalQr(ClinicPortalQrCodeService $qrCode): Response

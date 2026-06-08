@@ -85,6 +85,10 @@
     </div>
     @endcanFeature
 
+    @if(! empty($storeOnlinePanel))
+        <x-store.online-metrics-panel :panel="$storeOnlinePanel" />
+    @endif
+
     <div class="rounded-xl border border-teal-100 bg-white shadow-sm overflow-hidden">
         <div class="border-b border-teal-50 px-5 py-4">
             <h2 class="font-semibold text-gray-900">الحجوزات القادمة</h2>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Store;
 
+use App\Contracts\Core\Metrics\MetricsQueryInterface;
 use App\Models\PosProduct;
 use App\Models\PosSale;
 use App\Models\PosSaleItem;
@@ -11,8 +12,13 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
-final class StoreMerchantMetricsService
+final class StoreMerchantMetricsService implements MetricsQueryInterface
 {
+    public function key(): string
+    {
+        return 'store_online';
+    }
+
     /**
      * @return array{
      *   sales_today: float,

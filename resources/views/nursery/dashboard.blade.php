@@ -138,6 +138,10 @@
         </div>
     </section>
 
+    @if(! empty($storeOnlinePanel))
+        <x-store.online-metrics-panel :panel="$storeOnlinePanel" />
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-2">
         <section class="nursery-card p-4">
             <h2 class="text-lg font-bold text-orange-950 mb-1">لم يحضروا بعد</h2>

@@ -62,6 +62,10 @@
         @endforeach
     </div>
 
+    @if(! empty($storeOnlinePanel))
+        <x-store.online-metrics-panel :panel="$storeOnlinePanel" />
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center gap-2">

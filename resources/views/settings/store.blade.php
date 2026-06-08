@@ -6,51 +6,9 @@
 <div dir="rtl" class="max-w-5xl space-y-6">
     <x-flash-messages />
 
-    @isset($merchantMetrics)
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div class="text-xs font-medium text-gray-500 mb-1"><x-info field="store.metrics_sales_today" /> مبيعات اليوم</div>
-            <div class="text-2xl font-bold text-gray-900 tabular-nums">{{ number_format($merchantMetrics['sales_today'], 2) }}</div>
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div class="text-xs font-medium text-gray-500 mb-1"><x-info field="store.metrics_orders_today" /> طلبات اليوم</div>
-            <div class="text-2xl font-bold text-indigo-600 tabular-nums">{{ $merchantMetrics['orders_today'] }}</div>
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div class="text-xs font-medium text-gray-500 mb-1"><x-info field="store.metrics_revenue_month" /> إيراد الشهر</div>
-            <div class="text-2xl font-bold text-gray-900 tabular-nums">{{ number_format($merchantMetrics['revenue_month'], 2) }}</div>
-        </div>
-        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-            <div class="text-xs font-medium text-amber-800 mb-1"><x-info field="store.metrics_pending_collection" /> {{ $storeUi['metrics_pending_label'] ?? 'بانتظار التحصيل / التحقق' }}</div>
-            <div class="text-2xl font-bold text-amber-900 tabular-nums">{{ $merchantMetrics['pending_collection'] ?? 0 }}</div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 class="text-sm font-bold text-gray-900 mb-3">أفضل المنتجات (30 يوم)</h2>
-            @forelse($merchantMetrics['top_products'] as $row)
-                <div class="flex justify-between text-sm py-2 border-b border-gray-100 last:border-0">
-                    <span>{{ $row['name'] }}</span>
-                    <span class="text-gray-500 tabular-nums">{{ $row['qty'] }} — {{ number_format($row['revenue'], 2) }}</span>
-                </div>
-            @empty
-                <p class="text-sm text-gray-500">لا توجد مبيعات أونلاين بعد.</p>
-            @endforelse
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 class="text-sm font-bold text-gray-900 mb-3">آخر الطلبات</h2>
-            @forelse($merchantMetrics['recent_orders'] as $order)
-                <div class="flex justify-between text-sm py-2 border-b border-gray-100 last:border-0">
-                    <span>{{ $order['invoice_number'] }} — {{ $order['customer'] ?? 'زائر' }}</span>
-                    <span class="text-gray-500 tabular-nums">{{ number_format($order['total'], 2) }}</span>
-                </div>
-            @empty
-                <p class="text-sm text-gray-500">لا طلبات حديثة.</p>
-            @endforelse
-        </div>
-    </div>
-    @endisset
+    @if(! empty($storeOnlinePanel))
+        <x-store.online-metrics-panel :panel="$storeOnlinePanel" />
+    @endif
 
     <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h1 class="text-xl font-bold text-gray-900 mb-2">{{ $storeUi['page_title'] ?? 'إعدادات المتجر الإلكتروني' }}</h1>

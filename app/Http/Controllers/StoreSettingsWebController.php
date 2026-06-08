@@ -8,8 +8,8 @@ use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\PosDevice;
 use App\Models\TenantProfile;
 use App\Models\TenantStoreSetting;
-use App\Services\Store\StoreMerchantMetricsService;
 use App\Services\Store\StoreMerchantSettingsPresenter;
+use App\Services\Store\StoreOnlineDashboardPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -34,10 +34,13 @@ final class StoreSettingsWebController extends Controller
             ? route('store.portal.home', ['tenant_slug' => $profile->slug ?? $profile->domain])
             : null;
 
-        $merchantMetrics = app(StoreMerchantMetricsService::class)->snapshot($tenantUserId);
+        $storeOnlinePanel = app(StoreOnlineDashboardPresenter::class)->present(
+            $tenantUserId,
+            StoreOnlineDashboardPresenter::VARIANT_EMBEDDED,
+        );
         $storeUi = app(StoreMerchantSettingsPresenter::class)->present($tenantUserId, $settings, $profile);
 
-        return view('settings.store', compact('settings', 'devices', 'storeUrl', 'profile', 'merchantMetrics', 'storeUi'));
+        return view('settings.store', compact('settings', 'devices', 'storeUrl', 'profile', 'storeOnlinePanel', 'storeUi'));
     }
 
     public function update(Request $request): RedirectResponse

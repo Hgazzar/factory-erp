@@ -12,6 +12,7 @@ use App\Services\Clinic\ClinicPortalQrCodeService;
 use App\Services\Nursery\NurseryAttendanceService;
 use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryPortalInviteService;
+use App\Services\Store\StoreOnlineDashboardPresenter;
 use App\Services\Nursery\NurserySubscriptionService;
 use App\Support\NurseryAccess;
 use App\Support\PremiumFeatureKeys;
@@ -54,6 +55,11 @@ final class NurseryDashboardController extends Controller
         $settings = NurserySetting::forTenant($tenantUserId);
         $canManage = app(NurseryAccess::class)->allows(NurseryAccess::CAP_MANAGE_SETTINGS);
 
+        $storeOnlinePanel = app(StoreOnlineDashboardPresenter::class)->present(
+            $tenantUserId,
+            StoreOnlineDashboardPresenter::VARIANT_COMPACT,
+        );
+
         return view('nursery.dashboard', compact(
             'overview',
             'stats',
@@ -63,6 +69,7 @@ final class NurseryDashboardController extends Controller
             'qrDataUri',
             'settings',
             'canManage',
+            'storeOnlinePanel',
         ));
     }
 

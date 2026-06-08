@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CompanySetting;
+use App\Services\Store\StoreOnlineDashboardPresenter;
 use App\Models\Item;
 use App\Models\PosDevice;
 use App\Models\PosSale;
@@ -116,7 +117,13 @@ class PosDashboardController extends Controller
                 'warehouse_name' => $d->warehouse?->name_ar ?? $d->warehouse?->name_en,
             ]);
 
+        $storeOnlinePanel = app(StoreOnlineDashboardPresenter::class)->present(
+            $uid,
+            StoreOnlineDashboardPresenter::VARIANT_FULL,
+        );
+
         return view('pos.dashboard', [
+            'storeOnlinePanel' => $storeOnlinePanel,
             'filterDate' => $day,
             'kpis' => [
                 'today_sales_sar' => round($todaySalesTotal, 2),
