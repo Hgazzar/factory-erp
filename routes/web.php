@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ProductSearchController;
 use App\Http\Controllers\ArAgingController;
 use App\Http\Controllers\ApiTokenWebController;
 use App\Http\Controllers\AttachmentWebController;
+use App\Http\Controllers\AuditLogWebController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
 use App\Http\Controllers\Clinic\ClinicApiController;
@@ -43,6 +44,7 @@ use App\Http\Controllers\Fleet\FleetCustomerWebController;
 use App\Http\Controllers\Fleet\FleetDashboardController;
 use App\Http\Controllers\Fleet\FleetProductWebController;
 use App\Http\Controllers\Fleet\FleetRouteWebController;
+use App\Http\Controllers\Fleet\FleetCustodyWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BomListWebController;
@@ -693,6 +695,23 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
         Route::middleware('fleet.capability:view_routes')->group(function () {
             Route::get('routes/{route}', [FleetRouteWebController::class, 'show'])->name('routes.show');
+        });
+
+        Route::middleware('fleet.capability:view_custody')->group(function () {
+            Route::get('custody', [FleetCustodyWebController::class, 'index'])->name('custody.index');
+            Route::get('custody/balances', [FleetCustodyWebController::class, 'balances'])->name('custody.balances');
+            Route::get('custody/balances/{agent}', [FleetCustodyWebController::class, 'agentBalance'])->name('custody.balances.agent');
+        });
+
+        Route::middleware('fleet.capability:manage_custody')->group(function () {
+            Route::get('custody/create', [FleetCustodyWebController::class, 'create'])->name('custody.create');
+            Route::post('custody', [FleetCustodyWebController::class, 'store'])->name('custody.store');
+            Route::post('custody/{custody}/confirm', [FleetCustodyWebController::class, 'confirm'])->name('custody.confirm');
+            Route::post('custody/{custody}/void', [FleetCustodyWebController::class, 'void'])->name('custody.void');
+        });
+
+        Route::middleware('fleet.capability:view_custody')->group(function () {
+            Route::get('custody/{custody}', [FleetCustodyWebController::class, 'show'])->name('custody.show');
         });
     });
 

@@ -11,13 +11,19 @@ use App\Models\Fleet\FleetRoute;
 
 final class FleetDashboardService
 {
+    public function __construct(
+        private readonly FleetCustodyBalanceService $custodyBalances,
+    ) {}
+
     /**
      * @return array{
      *   agents_active: int,
      *   agents_total: int,
      *   customers_active: int,
      *   products_active: int,
-     *   routes_today: int
+     *   routes_today: int,
+     *   custody_agents: int,
+     *   custody_issues_issued: int
      * }
      */
     public function overviewStats(int $tenantUserId): array
@@ -41,6 +47,8 @@ final class FleetDashboardService
                 ->whereDate('route_date', now()->toDateString())
                 ->whereIn('status', [FleetRoute::STATUS_PLANNED, FleetRoute::STATUS_IN_PROGRESS])
                 ->count(),
+            'custody_agents' => $this->custodyBalances->agentsWithCustodyCount($tenantUserId),
+            'custody_issues_issued' => $this->custodyBalances->issuedIssuesCount($tenantUserId),
         ];
     }
 }

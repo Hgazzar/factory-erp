@@ -7,6 +7,7 @@ namespace App\Support;
 use App\Models\User;
 use App\Services\Tenant\TenantContext;
 use App\Services\Tenant\TenantFeatureRegistry;
+use App\Services\Tenant\TenantModuleRegistry;
 
 /**
  * صلاحيات موديول المناديب — مالك المنشأة + ميزة fleet_field_ops للنيشات غير المناديب.
@@ -25,9 +26,14 @@ final class FleetAccess
 
     public const CAP_MANAGE_ROUTES = 'manage_routes';
 
+    public const CAP_VIEW_CUSTODY = 'view_custody';
+
+    public const CAP_MANAGE_CUSTODY = 'manage_custody';
+
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly TenantFeatureRegistry $features,
+        private readonly TenantModuleRegistry $modules,
     ) {}
 
     public function isTenantOwner(?User $user = null): bool
@@ -46,6 +52,10 @@ final class FleetAccess
         $tenantUserId ??= $this->tenantContext->resolveTenantUserId();
 
         if ($tenantUserId === null || $tenantUserId < 1) {
+            return false;
+        }
+
+        if (! $this->modules->isEnabled('fleet', $tenantUserId)) {
             return false;
         }
 
@@ -71,7 +81,7 @@ final class FleetAccess
         }
 
         return match ($capability) {
-            self::CAP_VIEW_DASHBOARD, self::CAP_VIEW_ROUTES => true,
+            self::CAP_VIEW_DASHBOARD, self::CAP_VIEW_ROUTES, self::CAP_VIEW_CUSTODY => true,
             default => false,
         };
     }
