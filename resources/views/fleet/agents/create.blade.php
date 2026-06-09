@@ -22,6 +22,13 @@
             <input type="email" name="email" value="{{ old('email') }}" class="w-full rounded-lg border-gray-300" dir="ltr">
         </div>
         <div>
+            <label class="block text-sm font-semibold mb-1"><x-info field="fleet.agent_api_pin" /> رمز دخول التطبيق</label>
+            <input type="password" name="api_pin" value="{{ old('api_pin') }}" inputmode="numeric" pattern="\d{4,8}" maxlength="8"
+                   class="w-full rounded-lg border-gray-300" dir="ltr" autocomplete="new-password" placeholder="4–8 أرقام">
+            <p class="text-xs text-violet-700/70 mt-1">اختياري — يُستخدم مع رقم الجوال في تطبيق المندوب.</p>
+            @error('api_pin')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+        <div>
             <label class="block text-sm font-semibold mb-1"><x-info field="fleet.agent_notes" /> ملاحظات</label>
             <textarea name="notes" rows="3" class="w-full rounded-lg border-gray-300">{{ old('notes') }}</textarea>
         </div>

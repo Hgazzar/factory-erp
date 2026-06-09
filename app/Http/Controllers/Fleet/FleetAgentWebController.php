@@ -68,6 +68,7 @@ final class FleetAgentWebController extends Controller
             'phone' => ['nullable', 'string', 'max:32'],
             'email' => ['nullable', 'email', 'max:120'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'api_pin' => ['nullable', 'string', 'min:4', 'max:8', 'regex:/^\d+$/'],
         ]);
 
         try {
@@ -95,6 +96,7 @@ final class FleetAgentWebController extends Controller
             'email' => ['nullable', 'email', 'max:120'],
             'status' => ['required', Rule::in([FleetAgent::STATUS_ACTIVE, FleetAgent::STATUS_INACTIVE])],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'api_pin' => ['nullable', 'string', 'min:4', 'max:8', 'regex:/^\d+$/'],
         ]);
 
         try {

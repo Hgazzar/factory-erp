@@ -35,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'store.portal.tenant' => \App\Http\Middleware\ResolveStorePortalTenant::class,
             'feature' => \App\Http\Middleware\CheckFeature::class,
             'attendance.api' => \App\Http\Middleware\AuthenticateAttendanceApiToken::class,
+            'fleet.agent.api' => \App\Http\Middleware\AuthenticateFleetAgentApi::class,
             'worker.scope' => \App\Http\Middleware\EnsureWorkerRouteScope::class,
         ]);
     })

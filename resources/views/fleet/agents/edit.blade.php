@@ -33,6 +33,17 @@
             />
         </div>
         <div>
+            <label class="block text-sm font-semibold mb-1"><x-info field="fleet.agent_api_pin" /> رمز دخول التطبيق</label>
+            <input type="password" name="api_pin" inputmode="numeric" pattern="\d{4,8}" maxlength="8"
+                   class="w-full rounded-lg border-gray-300" dir="ltr" autocomplete="new-password" placeholder="اتركه فارغاً للإبقاء على الرمز الحالي">
+            @if($agent->hasApiAccess())
+                <p class="text-xs text-emerald-700 mt-1">التطبيق مفعّل لهذا المندوب.</p>
+            @else
+                <p class="text-xs text-amber-700 mt-1">لم يُضبط رمز دخول بعد.</p>
+            @endif
+            @error('api_pin')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+        </div>
+        <div>
             <label class="block text-sm font-semibold mb-1"><x-info field="fleet.agent_notes" /> ملاحظات</label>
             <textarea name="notes" rows="3" class="w-full rounded-lg border-gray-300">{{ old('notes', $agent->notes) }}</textarea>
         </div>

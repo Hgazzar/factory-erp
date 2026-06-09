@@ -19,14 +19,27 @@ final class FleetAgentService
             throw new InvalidArgumentException('اسم المندوب مطلوب.');
         }
 
-        return FleetAgent::query()->create([
+        $phone = $this->nullable($data['phone'] ?? null);
+        $apiPin = trim((string) ($data['api_pin'] ?? ''));
+
+        if ($apiPin !== '' && $phone === null) {
+            throw new InvalidArgumentException('رقم الجوال مطلوب عند تفعيل دخول تطبيق المندوب.');
+        }
+
+        $agent = FleetAgent::query()->create([
             'user_id' => $tenantUserId,
             'name' => $name,
-            'phone' => $this->nullable($data['phone'] ?? null),
+            'phone' => $phone,
             'email' => $this->nullable($data['email'] ?? null),
             'status' => FleetAgent::STATUS_ACTIVE,
             'notes' => $this->nullable($data['notes'] ?? null),
         ]);
+
+        if ($apiPin !== '') {
+            $this->applyApiPin($agent, $apiPin);
+        }
+
+        return $agent->fresh();
     }
 
     /**
@@ -45,9 +58,16 @@ final class FleetAgentService
 
         $status = (string) ($data['status'] ?? $agent->status);
 
+        $phone = $this->nullable($data['phone'] ?? null);
+        $apiPin = trim((string) ($data['api_pin'] ?? ''));
+
+        if ($apiPin !== '' && $phone === null) {
+            throw new InvalidArgumentException('رقم الجوال مطلوب عند تفعيل دخول تطبيق المندوب.');
+        }
+
         $agent->update([
             'name' => $name,
-            'phone' => $this->nullable($data['phone'] ?? null),
+            'phone' => $phone,
             'email' => $this->nullable($data['email'] ?? null),
             'status' => in_array($status, [FleetAgent::STATUS_ACTIVE, FleetAgent::STATUS_INACTIVE], true)
                 ? $status
@@ -55,7 +75,23 @@ final class FleetAgentService
             'notes' => $this->nullable($data['notes'] ?? null),
         ]);
 
+        if ($apiPin !== '') {
+            $this->applyApiPin($agent, $apiPin);
+        }
+
         return $agent->fresh();
+    }
+
+    private function applyApiPin(FleetAgent $agent, string $pin): void
+    {
+        $min = max(4, (int) config('fleet.agent_api.pin_min_length', 4));
+        $max = max($min, (int) config('fleet.agent_api.pin_max_length', 8));
+
+        if (! preg_match('/^\d+$/', $pin) || strlen($pin) < $min || strlen($pin) > $max) {
+            throw new InvalidArgumentException("رمز دخول التطبيق يجب أن يكون {$min}–{$max} أرقام.");
+        }
+
+        $agent->setApiPin($pin);
     }
 
     private function nullable(mixed $value): ?string
