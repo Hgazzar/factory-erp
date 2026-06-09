@@ -21,6 +21,12 @@
             <span>📋 <x-info field="fleet.nav_custody" /> {{ niche_label('modules.inventory', 'العهدة') }}</span>
         </a>
     @endif
+    @if($access->allows(FleetAccess::CAP_VIEW_STORE_ORDERS))
+        <a href="{{ route('fleet.store-orders.index') }}"
+           class="module-nav-link {{ request()->routeIs('fleet.store-orders.*') ? 'active' : '' }}">
+            <span>🛒 <x-info field="fleet.nav_store_orders" /> طلبات المتجر</span>
+        </a>
+    @endif
     @if($access->allows(FleetAccess::CAP_VIEW_ROUTES))
         <a href="{{ route('fleet.routes.index') }}"
            class="module-nav-link {{ request()->routeIs('fleet.routes.*') ? 'active' : '' }}">

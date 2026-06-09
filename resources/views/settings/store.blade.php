@@ -55,6 +55,17 @@
                     :value="old('default_pos_device_id', $settings->default_pos_device_id)" empty-label="أول جهاز نشط" :searchable="count($devices) > 6" />
             </div>
 
+            @php $fleetOps = app(\App\Support\FleetAccess::class)->operationsEnabled($settings->tenant_user_id); @endphp
+            @if($fleetOps)
+                <h2 class="text-base font-bold text-gray-900 pt-2">التسليم الميداني (Fleet)</h2>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="hidden" name="field_delivery_enabled" value="0">
+                    <input type="checkbox" name="field_delivery_enabled" value="1" class="rounded border-gray-300"
+                           @checked(old('field_delivery_enabled', $settings->field_delivery_enabled))>
+                    <x-info field="store.field_delivery_enabled" /> تفعيل خيار «تسليم ميداني (مندوب)» في checkout
+                </label>
+            @endif
+
             <h2 class="text-base font-bold text-gray-900 pt-2">{{ $storeUi['payment_methods_heading'] ?? 'طرق الدفع' }}</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 @foreach($storeUi['payment_toggles'] ?? [] as $toggle)

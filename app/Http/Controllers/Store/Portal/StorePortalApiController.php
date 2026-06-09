@@ -7,8 +7,8 @@ namespace App\Http\Controllers\Store\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
 use App\Models\PosSale;
-use App\Services\Store\StoreCartQuoteService;
 use App\Services\Store\StoreCheckoutService;
+use App\Services\Store\StoreCartQuoteService;
 use App\Services\Store\StoreCouponService;
 use App\Services\Store\StorefrontCatalogService;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +24,7 @@ final class StorePortalApiController extends Controller
 
         return response()->json([
             'methods' => $checkout->availablePaymentMethods($tenantUserId),
+            'fulfillment_options' => $checkout->checkoutFulfillmentOptions($tenantUserId),
             'currency' => CompanySetting::resolvedCurrencyCode($tenantUserId),
         ]);
     }
@@ -160,6 +161,7 @@ final class StorePortalApiController extends Controller
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.pos_product_id' => ['required', 'integer', 'min:1'],
             'lines.*.quantity' => ['required', 'numeric', 'gt:0'],
+            'fulfillment_mode' => ['nullable', 'string', 'in:pickup,field_delivery'],
             'payment_receipt' => ['nullable', 'file', 'image', 'max:5120'],
         ]);
 
@@ -185,6 +187,7 @@ final class StorePortalApiController extends Controller
                 $validated['coupon_code'] ?? null,
                 $paymentMethod,
                 $request->file('payment_receipt'),
+                $validated['fulfillment_mode'] ?? PosSale::FULFILLMENT_PICKUP,
             );
 
             return response()->json([
@@ -195,6 +198,8 @@ final class StorePortalApiController extends Controller
                     'discount_amount' => (float) ($sale->discount_amount ?? 0),
                     'payment_method' => $sale->payment_method,
                     'status' => $sale->status,
+                    'fulfillment_mode' => $sale->fulfillment_mode,
+                    'fulfillment_status' => $sale->fulfillment_status,
                 ],
                 'success_url' => route('store.portal.order.success', [
                     'tenant_slug' => $request->route('tenant_slug'),

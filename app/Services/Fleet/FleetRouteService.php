@@ -13,6 +13,9 @@ use InvalidArgumentException;
 
 final class FleetRouteService
 {
+    public function __construct(
+        private readonly FleetStoreOrderService $storeOrders,
+    ) {}
     /**
      * @param  list<int>  $customerIds  ordered stop list
      */
@@ -89,6 +92,8 @@ final class FleetRouteService
             'started_at' => $route->started_at ?? now(),
         ]);
 
+        $this->storeOrders->markOutForDeliveryOnRoute($tenantUserId, (int) $route->id);
+
         return $route->fresh();
     }
 
@@ -130,7 +135,11 @@ final class FleetRouteService
             'visited_at' => $status === FleetRouteStop::STATUS_VISITED ? now() : null,
         ]);
 
-        return $stop->fresh(['customer:id,name,phone']);
+        if ($status === FleetRouteStop::STATUS_VISITED) {
+            $this->storeOrders->onRouteStopVisited($tenantUserId, $stop);
+        }
+
+        return $stop->fresh(['customer:id,name,phone', 'posSale:id,invoice_number']);
     }
 
     /**

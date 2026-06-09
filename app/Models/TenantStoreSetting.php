@@ -13,6 +13,7 @@ class TenantStoreSetting extends Model
         'tenant_user_id',
         'is_store_enabled',
         'cod_enabled',
+        'field_delivery_enabled',
         'manual_transfer_enabled',
         'online_payment_enabled',
         'online_payment_provider',
@@ -48,6 +49,7 @@ class TenantStoreSetting extends Model
         return [
             'is_store_enabled' => 'boolean',
             'cod_enabled' => 'boolean',
+            'field_delivery_enabled' => 'boolean',
             'manual_transfer_enabled' => 'boolean',
             'online_payment_enabled' => 'boolean',
             'tamara_enabled' => 'boolean',
@@ -75,8 +77,9 @@ class TenantStoreSetting extends Model
             ['tenant_user_id' => $tenantUserId],
             [
                 'is_store_enabled' => true,
-                'cod_enabled' => true,
-                'manual_transfer_enabled' => false,
+            'cod_enabled' => true,
+            'field_delivery_enabled' => false,
+            'manual_transfer_enabled' => false,
                 'online_payment_enabled' => true,
                 'online_payment_provider' => config('store.payment.default_provider', 'paymob'),
                 'online_payment_mode' => config('store.payment.sandbox', true) ? 'sandbox' : 'live',

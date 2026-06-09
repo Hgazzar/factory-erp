@@ -115,6 +115,7 @@ final class StorePortalWebController extends Controller
         /** @var TenantStoreSetting $settings */
         $settings = $request->attributes->get('store_portal_settings');
         $data['paymentMethods'] = $checkout->availablePaymentMethods($data['tenantUserId']);
+        $data['fulfillmentOptions'] = $checkout->checkoutFulfillmentOptions($data['tenantUserId']);
         $data['onlinePaymentEnabled'] = collect($data['paymentMethods'])->contains(fn ($m) => ($m['key'] ?? '') === \App\Models\PosSale::PAYMENT_CARD);
         $data['paymentProvider'] = $settings->effectivePaymentProvider();
         $data['paymentProviderLabel'] = $settings->paymentProviderLabel();

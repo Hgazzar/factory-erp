@@ -100,8 +100,23 @@
         </div>
     </section>
 
+    <section>
+        <h2 class="text-base font-bold text-violet-950 mb-3">ربط المتجر</h2>
+        <div class="grid gap-3 grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 max-w-xl">
+            <div class="fleet-card p-4 text-center">
+                <div class="flex items-center justify-center gap-1 flex-wrap mb-2">
+                    <span class="text-sm font-bold text-violet-950">طلبات بانتظار الإسناد</span>
+                    <x-info field="fleet.stat_store_orders_pending" />
+                </div>
+                <p class="text-2xl font-extrabold text-violet-600 tabular-nums">{{ $stats['store_orders_pending'] }}</p>
+                <a href="{{ route('fleet.store-orders.index') }}" class="text-xs text-violet-600 font-semibold mt-2 inline-block hover:underline">Pool طلبات المتجر</a>
+            </div>
+        </div>
+    </section>
+
     <section class="flex flex-wrap gap-2">
-        <a href="{{ route('fleet.routes.index') }}" class="fleet-btn fleet-btn-primary text-sm">خطوط السير</a>
+        <a href="{{ route('fleet.store-orders.index') }}" class="fleet-btn fleet-btn-primary text-sm">طلبات المتجر</a>
+        <a href="{{ route('fleet.routes.index') }}" class="fleet-btn fleet-btn-soft text-sm">خطوط السير</a>
         <a href="{{ route('fleet.collections.index') }}" class="fleet-btn fleet-btn-soft text-sm">التحصيل الميداني</a>
         <a href="{{ route('fleet.custody.index') }}" class="fleet-btn fleet-btn-soft text-sm">صرف عهدة</a>
         <a href="{{ route('fleet.agents.index') }}" class="fleet-btn fleet-btn-soft text-sm">إدارة المناديب</a>

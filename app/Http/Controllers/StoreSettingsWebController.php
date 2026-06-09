@@ -50,6 +50,7 @@ final class StoreSettingsWebController extends Controller
         $validated = $request->validate([
             'is_store_enabled' => ['nullable', 'boolean'],
             'cod_enabled' => ['nullable', 'boolean'],
+            'field_delivery_enabled' => ['nullable', 'boolean'],
             'manual_transfer_enabled' => ['nullable', 'boolean'],
             'online_payment_enabled' => ['nullable', 'boolean'],
             'online_payment_provider' => ['nullable', 'string', 'in:paymob,stripe'],
@@ -98,6 +99,7 @@ final class StoreSettingsWebController extends Controller
         $settings->fill([
             'is_store_enabled' => $request->boolean('is_store_enabled'),
             'cod_enabled' => $request->boolean('cod_enabled', true),
+            'field_delivery_enabled' => $request->boolean('field_delivery_enabled'),
             'manual_transfer_enabled' => $request->boolean('manual_transfer_enabled'),
             'online_payment_enabled' => $request->boolean('online_payment_enabled'),
             'online_payment_provider' => $validated['online_payment_provider'] ?? null,

@@ -10,6 +10,7 @@
          'currency' => $currencyCode,
          'routes' => $routes,
          'paymentMethods' => $paymentMethods ?? [],
+         'fulfillmentOptions' => $fulfillmentOptions ?? [],
          'paymentSandbox' => $paymentSandbox ?? true,
      ]))"
      x-init="init()">
@@ -62,6 +63,26 @@
                                   class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none transition-all text-sm resize-none"></textarea>
                     </div>
                 </div>
+
+                <template x-if="fulfillmentOptions.length > 1">
+                    <div class="mt-8">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i class="fas fa-truck text-store-primary"></i>
+                            طريقة التسليم
+                        </h3>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <template x-for="option in fulfillmentOptions" :key="option.key">
+                                <label class="border-2 rounded-xl p-4 cursor-pointer transition-all text-center"
+                                       :class="form.fulfillment_mode === option.key ? 'border-store-primary bg-red-50' : 'border-gray-200 hover:border-gray-300'">
+                                    <input type="radio" class="sr-only" :value="option.key" x-model="form.fulfillment_mode">
+                                    <i class="fas text-2xl mb-2 block"
+                                       :class="option.key === 'field_delivery' ? 'fa-user-tie text-violet-600' : 'fa-store text-green-600'"></i>
+                                    <span class="text-sm font-bold text-gray-700" x-text="option.label"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                </template>
 
                 <h3 class="text-lg font-bold text-gray-800 mt-8 mb-4 flex items-center gap-2">
                     <i class="fas fa-credit-card text-orange-500"></i>

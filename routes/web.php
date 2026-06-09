@@ -42,6 +42,7 @@ use App\Http\Controllers\Nursery\Portal\NurseryPortalWebController;
 use App\Http\Controllers\Fleet\FleetAgentWebController;
 use App\Http\Controllers\Fleet\FleetCustomerWebController;
 use App\Http\Controllers\Fleet\FleetDashboardController;
+use App\Http\Controllers\Fleet\FleetStoreOrderWebController;
 use App\Http\Controllers\Fleet\FleetProductWebController;
 use App\Http\Controllers\Fleet\FleetRouteWebController;
 use App\Http\Controllers\Fleet\FleetCustodyWebController;
@@ -678,6 +679,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::post('products', [FleetProductWebController::class, 'store'])->name('products.store');
             Route::get('products/{product}/edit', [FleetProductWebController::class, 'edit'])->name('products.edit');
             Route::put('products/{product}', [FleetProductWebController::class, 'update'])->name('products.update');
+            Route::post('products/{product}/publish', [FleetProductWebController::class, 'publish'])->name('products.publish');
         });
 
         Route::middleware('fleet.capability:view_routes')->group(function () {
@@ -735,6 +737,19 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
         Route::middleware('fleet.capability:view_collections')->group(function () {
             Route::get('collections/{collection}', [FleetCollectionWebController::class, 'show'])->name('collections.show');
+        });
+
+        Route::middleware('fleet.capability:view_store_orders')->group(function () {
+            Route::get('store-orders', [FleetStoreOrderWebController::class, 'index'])->name('store-orders.index');
+        });
+
+        Route::middleware('fleet.capability:manage_store_orders')->group(function () {
+            Route::post('store-orders/{sale}/assign-route', [FleetStoreOrderWebController::class, 'assignRoute'])
+                ->whereNumber('sale')
+                ->name('store-orders.assign-route');
+            Route::post('store-orders/{sale}/assign-agent', [FleetStoreOrderWebController::class, 'assignAgent'])
+                ->whereNumber('sale')
+                ->name('store-orders.assign-agent');
         });
     });
 

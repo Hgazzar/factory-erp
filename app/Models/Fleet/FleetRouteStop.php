@@ -24,6 +24,7 @@ class FleetRouteStop extends Model
         'user_id',
         'route_id',
         'customer_id',
+        'pos_sale_id',
         'sort_order',
         'status',
         'visited_at',
@@ -46,5 +47,10 @@ class FleetRouteStop extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(FleetCustomer::class, 'customer_id');
+    }
+
+    public function posSale(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\PosSale::class, 'pos_sale_id');
     }
 }

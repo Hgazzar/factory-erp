@@ -26,6 +26,7 @@ interface OnlineStoreCheckoutInterface
         ?string $couponCode = null,
         string $paymentMethod = PosSale::PAYMENT_COD,
         ?UploadedFile $paymentReceipt = null,
+        string $fulfillmentMode = PosSale::FULFILLMENT_PICKUP,
     ): PosSale;
 
     /**

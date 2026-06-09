@@ -43,6 +43,20 @@ class PosSale extends Model
 
     public const CHANNEL_POS_TERMINAL = 'pos_terminal';
 
+    public const FULFILLMENT_PICKUP = 'pickup';
+
+    public const FULFILLMENT_FIELD_DELIVERY = 'field_delivery';
+
+    public const FULFILLMENT_AGENT_COLLECTION = 'agent_collection';
+
+    public const FULFILLMENT_STATUS_PENDING = 'fulfillment_pending';
+
+    public const FULFILLMENT_STATUS_ASSIGNED = 'assigned_to_route';
+
+    public const FULFILLMENT_STATUS_OUT_FOR_DELIVERY = 'out_for_delivery';
+
+    public const FULFILLMENT_STATUS_FULFILLED = 'fulfilled';
+
     protected $fillable = [
         'user_id',
         'pos_device_id',
@@ -56,6 +70,10 @@ class PosSale extends Model
         'cogs_amount',
         'payment_method',
         'sale_channel',
+        'fulfillment_mode',
+        'fulfillment_status',
+        'assigned_agent_id',
+        'fleet_customer_id',
         'customer_name',
         'customer_phone',
         'customer_address',
@@ -213,6 +231,38 @@ class PosSale extends Model
     public function isPendingVerification(): bool
     {
         return $this->status === self::STATUS_PENDING_VERIFICATION;
+    }
+
+    public function isFieldDelivery(): bool
+    {
+        return $this->fulfillment_mode === self::FULFILLMENT_FIELD_DELIVERY;
+    }
+
+    public function isInFleetPool(): bool
+    {
+        return $this->isFieldDelivery()
+            && $this->fulfillment_status === self::FULFILLMENT_STATUS_PENDING;
+    }
+
+    /** @return array<string, string> */
+    public static function fulfillmentModeLabels(): array
+    {
+        return [
+            self::FULFILLMENT_PICKUP => 'استلام مباشر',
+            self::FULFILLMENT_FIELD_DELIVERY => 'تسليم ميداني',
+            self::FULFILLMENT_AGENT_COLLECTION => 'تحصيل مندوب',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public static function fulfillmentStatusLabels(): array
+    {
+        return [
+            self::FULFILLMENT_STATUS_PENDING => 'بانتظار الإسناد',
+            self::FULFILLMENT_STATUS_ASSIGNED => 'مُسند لخط سير',
+            self::FULFILLMENT_STATUS_OUT_FOR_DELIVERY => 'خرج للتسليم',
+            self::FULFILLMENT_STATUS_FULFILLED => 'تم التنفيذ',
+        ];
     }
 
     /**

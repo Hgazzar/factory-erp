@@ -53,7 +53,14 @@
                 @foreach($route->stops as $stop)
                     <tr>
                         <td class="px-4 py-3 tabular-nums text-violet-600 font-bold">{{ $stop->sort_order }}</td>
-                        <td class="px-4 py-3 font-medium">{{ $stop->customer?->name ?? '—' }}</td>
+                        <td class="px-4 py-3 font-medium">
+                            {{ $stop->customer?->name ?? '—' }}
+                            @if($stop->pos_sale_id)
+                                <span class="block text-xs text-violet-600 font-semibold mt-0.5">
+                                    🛒 {{ $stop->posSale?->invoice_number ?? 'طلب متجر' }}
+                                </span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3" dir="ltr">{{ $stop->customer?->phone ?? '—' }}</td>
                         <td class="px-4 py-3">{{ $stop->customer?->city ?? '—' }}</td>
                         <td class="px-4 py-3">

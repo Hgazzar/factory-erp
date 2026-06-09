@@ -15,6 +15,7 @@ class FleetProduct extends Model
 
     protected $fillable = [
         'user_id',
+        'pos_product_id',
         'name',
         'sku',
         'sale_price',

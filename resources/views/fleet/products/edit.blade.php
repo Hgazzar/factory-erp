@@ -41,5 +41,21 @@
             <a href="{{ route('fleet.products.index') }}" class="fleet-btn fleet-btn-soft">إلغاء</a>
         </div>
     </form>
+
+    @if(app(\App\Services\Tenant\TenantModuleRegistry::class)->isEnabled('pos', (int) auth()->id()))
+        <div class="fleet-card p-6 space-y-3">
+            <h2 class="text-lg font-bold text-violet-950"><x-info field="fleet.product_pos_link" /> نشر للمتجر</h2>
+            @if($product->pos_product_id)
+                <p class="text-sm text-emerald-700 font-semibold">مرتبط بمنتج POS #{{ $product->pos_product_id }}</p>
+            @else
+                <p class="text-sm text-violet-700">انشر هذا الصنف كمنتج في متجر POS ليظهر في checkout.</p>
+            @endif
+            <form method="POST" action="{{ route('fleet.products.publish', $product) }}">
+                @csrf
+                <button type="submit" class="fleet-btn fleet-btn-soft">نشر / تحديث في المتجر</button>
+            </form>
+            @error('publish')<p class="text-sm text-red-600">{{ $message }}</p>@enderror
+        </div>
+    @endif
 </div>
 @endsection

@@ -9,6 +9,8 @@ use App\Models\AuditLog;
 use App\Models\CompanySetting;
 use App\Models\PosSale;
 use App\Models\TenantStoreSetting;
+use App\Services\Fleet\FleetStoreIntegrationService;
+use App\Services\Fleet\FleetStoreOrderService;
 use App\Services\Pos\PosSaleService;
 use App\Core\Payment\PaymentChargeResult;
 use App\Core\Payment\PaymentGatewayRegistry;
@@ -27,6 +29,8 @@ final class StoreCheckoutService implements OnlineStoreCheckoutInterface
         private readonly StorePaymentMethodResolver $paymentMethods,
         private readonly StorePaymentReceiptService $receipts,
         private readonly StoreOrderWhatsAppNotifier $whatsappNotifier,
+        private readonly FleetStoreIntegrationService $fleetStore,
+        private readonly FleetStoreOrderService $fleetStoreOrders,
     ) {}
 
     /**
@@ -40,6 +44,7 @@ final class StoreCheckoutService implements OnlineStoreCheckoutInterface
         ?string $couponCode = null,
         string $paymentMethod = PosSale::PAYMENT_COD,
         ?UploadedFile $paymentReceipt = null,
+        string $fulfillmentMode = PosSale::FULFILLMENT_PICKUP,
     ): PosSale {
         $name = trim((string) ($customer['name'] ?? ''));
         $phone = trim((string) ($customer['phone'] ?? ''));
@@ -64,6 +69,11 @@ final class StoreCheckoutService implements OnlineStoreCheckoutInterface
         }
 
         $this->paymentMethods->assertAllowed($tenantUserId, $settings, $paymentMethod);
+
+        $fulfillmentMode = strtolower(trim($fulfillmentMode));
+        if ($fulfillmentMode === PosSale::FULFILLMENT_FIELD_DELIVERY && ! $this->fleetStore->fieldDeliveryAvailable($tenantUserId)) {
+            throw new InvalidArgumentException('التسليم الميداني غير متاح حالياً.');
+        }
 
         if ($this->paymentMethods->requiresReceipt($paymentMethod) && $paymentReceipt === null) {
             throw new InvalidArgumentException('يرجى رفع صورة إيصال التحويل البنكي.');
@@ -134,7 +144,19 @@ final class StoreCheckoutService implements OnlineStoreCheckoutInterface
             $this->whatsappNotifier->dispatchInvoiceNotification($tenantUserId, (int) $sale->id);
         }
 
+        if ($fulfillmentMode === PosSale::FULFILLMENT_FIELD_DELIVERY) {
+            $sale = $this->fleetStoreOrders->afterOnlineCheckout($tenantUserId, $sale, $fulfillmentMode);
+        }
+
         return $sale->fresh(['items.product']);
+    }
+
+    /**
+     * @return list<array{key: string, label: string}>
+     */
+    public function checkoutFulfillmentOptions(int $tenantUserId): array
+    {
+        return $this->fleetStore->checkoutFulfillmentOptions($tenantUserId);
     }
 
     /**

@@ -210,6 +210,7 @@ function akCheckoutPage(config) {
         routes: config.routes,
         slug: config.slug,
         paymentMethods: config.paymentMethods || [],
+        fulfillmentOptions: config.fulfillmentOptions || [],
         paymentSandbox: config.paymentSandbox !== false,
         paymentReceiptFile: null,
         cartLines: [],
@@ -222,6 +223,7 @@ function akCheckoutPage(config) {
             customer_address: '',
             coupon_code: '',
             payment_method: (config.paymentMethods && config.paymentMethods[0]) ? config.paymentMethods[0].key : 'cod',
+            fulfillment_mode: (config.fulfillmentOptions && config.fulfillmentOptions[0]) ? config.fulfillmentOptions[0].key : 'pickup',
         },
         couponMessage: '',
         couponError: '',
@@ -300,6 +302,7 @@ function akCheckoutPage(config) {
                     body.append('customer_phone', this.form.customer_phone);
                     body.append('customer_address', this.form.customer_address);
                     body.append('payment_method', this.form.payment_method);
+                    body.append('fulfillment_mode', this.form.fulfillment_mode);
                     if (this.form.coupon_code) body.append('coupon_code', this.form.coupon_code);
                     body.append('payment_receipt', this.paymentReceiptFile);
                     this.quoteLinesPayload().forEach((line, i) => {

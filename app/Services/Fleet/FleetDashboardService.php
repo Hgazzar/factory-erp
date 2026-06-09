@@ -14,6 +14,7 @@ final class FleetDashboardService
 {
     public function __construct(
         private readonly FleetCustodyBalanceService $custodyBalances,
+        private readonly FleetStoreOrderPoolService $storeOrderPool,
     ) {}
 
     /**
@@ -26,7 +27,8 @@ final class FleetDashboardService
      *   custody_agents: int,
      *   custody_issues_issued: int,
      *   collections_today: int,
-     *   cod_collected_today: float
+     *   cod_collected_today: float,
+     *   store_orders_pending: int
      * }
      */
     public function overviewStats(int $tenantUserId): array
@@ -67,6 +69,7 @@ final class FleetDashboardService
                 ->whereDate('collected_on', $today)
                 ->count(),
             'cod_collected_today' => round($codToday, 4),
+            'store_orders_pending' => $this->storeOrderPool->pendingCount($tenantUserId),
         ];
     }
 }

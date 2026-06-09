@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Fleet;
 use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Fleet\FleetProduct;
+use App\Services\Fleet\FleetProductPublishService;
 use App\Services\Fleet\FleetProductService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -93,5 +94,16 @@ final class FleetProductWebController extends Controller
         }
 
         return redirect()->route('fleet.products.index')->with('success', 'تم تحديث الصنف.');
+    }
+
+    public function publish(FleetProduct $product, FleetProductPublishService $publisher): RedirectResponse
+    {
+        try {
+            $publisher->publishToStore($product, $this->resolveOperationsTenantUserId());
+        } catch (InvalidArgumentException $e) {
+            return back()->withErrors(['publish' => $e->getMessage()]);
+        }
+
+        return back()->with('success', 'تم نشر الصنف في متجر POS.');
     }
 }

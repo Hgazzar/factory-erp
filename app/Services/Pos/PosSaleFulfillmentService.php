@@ -32,6 +32,10 @@ final class PosSaleFulfillmentService
                 throw new InvalidArgumentException('يمكن تأكيد التسليم للطلبات المعلّقة فقط.');
             }
 
+            if ($sale->isFieldDelivery() && $sale->fulfillment_status !== PosSale::FULFILLMENT_STATUS_FULFILLED) {
+                throw new InvalidArgumentException('طلبات التسليم الميداني تُسلَّم عبر موديول المناديب — لا يمكن تأكيدها من لوحة المتجر.');
+            }
+
             if ($sale->journal_entry_id === null) {
                 $entry = $this->posSaleService->postSaleJournal(
                     $sale,

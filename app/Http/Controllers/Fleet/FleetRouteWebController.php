@@ -99,6 +99,7 @@ final class FleetRouteWebController extends Controller
         $route->load([
             'agent:id,name,phone',
             'stops.customer:id,name,phone,city,address',
+            'stops.posSale:id,invoice_number,total_amount,fulfillment_status',
         ]);
 
         return view('fleet.routes.show', [

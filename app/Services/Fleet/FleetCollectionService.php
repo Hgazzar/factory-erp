@@ -18,6 +18,7 @@ final class FleetCollectionService
 {
     public function __construct(
         private readonly FleetCustodyBalanceService $balances,
+        private readonly FleetStoreOrderService $storeOrders,
     ) {}
 
     /**
@@ -121,6 +122,7 @@ final class FleetCollectionService
                         'status' => FleetRouteStop::STATUS_VISITED,
                         'visited_at' => now(),
                     ]);
+                    $this->storeOrders->onRouteStopVisited($tenantUserId, $stop);
                 }
             }
 
