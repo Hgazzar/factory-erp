@@ -9,6 +9,12 @@
             <span>🏠 <x-info field="fleet.nav_dashboard" /> لوحة التحكم</span>
         </a>
     @endif
+    @if($access->allows(FleetAccess::CAP_VIEW_COLLECTIONS))
+        <a href="{{ route('fleet.collections.index') }}"
+           class="module-nav-link {{ request()->routeIs('fleet.collections.*') ? 'active' : '' }}">
+            <span>💰 <x-info field="fleet.nav_collections" /> التحصيل الميداني</span>
+        </a>
+    @endif
     @if($access->allows(FleetAccess::CAP_VIEW_CUSTODY))
         <a href="{{ route('fleet.custody.index') }}"
            class="module-nav-link {{ request()->routeIs('fleet.custody.*') ? 'active' : '' }}">

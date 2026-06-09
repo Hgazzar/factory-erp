@@ -68,6 +68,10 @@
                             @if(app(\App\Support\FleetAccess::class)->allows(\App\Support\FleetAccess::CAP_MANAGE_ROUTES)
                                 && in_array($route->status, [\App\Models\Fleet\FleetRoute::STATUS_PLANNED, \App\Models\Fleet\FleetRoute::STATUS_IN_PROGRESS], true))
                                 <div class="flex flex-wrap gap-1">
+                                    @if(app(\App\Support\FleetAccess::class)->allows(\App\Support\FleetAccess::CAP_MANAGE_COLLECTIONS))
+                                        <a href="{{ route('fleet.collections.create', ['route_stop_id' => $stop->id, 'route_id' => $route->id, 'agent_id' => $route->agent_id, 'customer_id' => $stop->customer_id]) }}"
+                                           class="text-xs font-semibold text-violet-700 hover:underline">تحصيل</a>
+                                    @endif
                                     @if($stop->status !== 'visited')
                                         <form method="POST" action="{{ route('fleet.route-stops.status', $stop) }}">@csrf @method('PATCH')
                                             <input type="hidden" name="status" value="visited">

@@ -76,8 +76,33 @@
         </div>
     </section>
 
+    <section>
+        <h2 class="text-base font-bold text-violet-950 mb-3">التحصيل الميداني</h2>
+        <div class="grid gap-3 grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 max-w-xl">
+            <div class="fleet-card p-4 text-center">
+                <div class="flex items-center justify-center gap-1 flex-wrap mb-2">
+                    <span class="text-sm font-bold text-violet-950">تحصيلات اليوم</span>
+                    <x-info field="fleet.stat_collections_today" />
+                </div>
+                <p class="text-2xl font-extrabold text-violet-600 tabular-nums">{{ $stats['collections_today'] }}</p>
+                <a href="{{ route('fleet.collections.index', ['date' => now()->toDateString()]) }}" class="text-xs text-violet-600 font-semibold mt-2 inline-block hover:underline">سجل التحصيل</a>
+            </div>
+            <div class="fleet-card p-4 text-center">
+                <div class="flex items-center justify-center gap-1 flex-wrap mb-2">
+                    <span class="text-sm font-bold text-violet-950">COD اليوم</span>
+                    <x-info field="fleet.stat_cod_collected_today" />
+                </div>
+                <p class="text-2xl font-extrabold text-violet-600 tabular-nums">{{ erp_money($stats['cod_collected_today']) }}</p>
+                @if(app(\App\Support\FleetAccess::class)->allows(\App\Support\FleetAccess::CAP_MANAGE_COLLECTIONS))
+                    <a href="{{ route('fleet.collections.create') }}" class="text-xs text-violet-600 font-semibold mt-2 inline-block hover:underline">تحصيل جديد</a>
+                @endif
+            </div>
+        </div>
+    </section>
+
     <section class="flex flex-wrap gap-2">
         <a href="{{ route('fleet.routes.index') }}" class="fleet-btn fleet-btn-primary text-sm">خطوط السير</a>
+        <a href="{{ route('fleet.collections.index') }}" class="fleet-btn fleet-btn-soft text-sm">التحصيل الميداني</a>
         <a href="{{ route('fleet.custody.index') }}" class="fleet-btn fleet-btn-soft text-sm">صرف عهدة</a>
         <a href="{{ route('fleet.agents.index') }}" class="fleet-btn fleet-btn-soft text-sm">إدارة المناديب</a>
         <a href="{{ route('fleet.customers.index') }}" class="fleet-btn fleet-btn-soft text-sm">عملاء الميدان</a>

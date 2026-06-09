@@ -30,6 +30,10 @@ final class FleetAccess
 
     public const CAP_MANAGE_CUSTODY = 'manage_custody';
 
+    public const CAP_VIEW_COLLECTIONS = 'view_collections';
+
+    public const CAP_MANAGE_COLLECTIONS = 'manage_collections';
+
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly TenantFeatureRegistry $features,
@@ -81,7 +85,7 @@ final class FleetAccess
         }
 
         return match ($capability) {
-            self::CAP_VIEW_DASHBOARD, self::CAP_VIEW_ROUTES, self::CAP_VIEW_CUSTODY => true,
+            self::CAP_VIEW_DASHBOARD, self::CAP_VIEW_ROUTES, self::CAP_VIEW_CUSTODY, self::CAP_VIEW_COLLECTIONS => true,
             default => false,
         };
     }

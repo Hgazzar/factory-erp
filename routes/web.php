@@ -45,6 +45,8 @@ use App\Http\Controllers\Fleet\FleetDashboardController;
 use App\Http\Controllers\Fleet\FleetProductWebController;
 use App\Http\Controllers\Fleet\FleetRouteWebController;
 use App\Http\Controllers\Fleet\FleetCustodyWebController;
+use App\Http\Controllers\Fleet\FleetCustodyReturnWebController;
+use App\Http\Controllers\Fleet\FleetCollectionWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BomListWebController;
@@ -701,6 +703,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::get('custody', [FleetCustodyWebController::class, 'index'])->name('custody.index');
             Route::get('custody/balances', [FleetCustodyWebController::class, 'balances'])->name('custody.balances');
             Route::get('custody/balances/{agent}', [FleetCustodyWebController::class, 'agentBalance'])->name('custody.balances.agent');
+            Route::get('custody/returns', [FleetCustodyReturnWebController::class, 'index'])->name('custody.returns.index');
         });
 
         Route::middleware('fleet.capability:manage_custody')->group(function () {
@@ -708,10 +711,30 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::post('custody', [FleetCustodyWebController::class, 'store'])->name('custody.store');
             Route::post('custody/{custody}/confirm', [FleetCustodyWebController::class, 'confirm'])->name('custody.confirm');
             Route::post('custody/{custody}/void', [FleetCustodyWebController::class, 'void'])->name('custody.void');
+            Route::get('custody/returns/create', [FleetCustodyReturnWebController::class, 'create'])->name('custody.returns.create');
+            Route::post('custody/returns', [FleetCustodyReturnWebController::class, 'store'])->name('custody.returns.store');
+            Route::post('custody/returns/{custodyReturn}/confirm', [FleetCustodyReturnWebController::class, 'confirm'])->name('custody.returns.confirm');
+            Route::post('custody/returns/{custodyReturn}/void', [FleetCustodyReturnWebController::class, 'void'])->name('custody.returns.void');
         });
 
         Route::middleware('fleet.capability:view_custody')->group(function () {
+            Route::get('custody/returns/{custodyReturn}', [FleetCustodyReturnWebController::class, 'show'])->name('custody.returns.show');
             Route::get('custody/{custody}', [FleetCustodyWebController::class, 'show'])->name('custody.show');
+        });
+
+        Route::middleware('fleet.capability:view_collections')->group(function () {
+            Route::get('collections', [FleetCollectionWebController::class, 'index'])->name('collections.index');
+        });
+
+        Route::middleware('fleet.capability:manage_collections')->group(function () {
+            Route::get('collections/create', [FleetCollectionWebController::class, 'create'])->name('collections.create');
+            Route::post('collections', [FleetCollectionWebController::class, 'store'])->name('collections.store');
+            Route::post('collections/{collection}/confirm', [FleetCollectionWebController::class, 'confirm'])->name('collections.confirm');
+            Route::post('collections/{collection}/void', [FleetCollectionWebController::class, 'void'])->name('collections.void');
+        });
+
+        Route::middleware('fleet.capability:view_collections')->group(function () {
+            Route::get('collections/{collection}', [FleetCollectionWebController::class, 'show'])->name('collections.show');
         });
     });
 
