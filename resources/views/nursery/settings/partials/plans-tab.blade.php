@@ -6,55 +6,75 @@
         @endif
     </div>
 
-    <div class="nursery-card nursery-table-card">
+    <div class="nursery-card nursery-table-card min-w-0">
         <div class="nursery-table-card__toolbar">
             <div>
                 <h2>قائمة خطط الاشتراك</h2>
                 <p>الأنواع والقيم والضريبة</p>
             </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="nursery-table min-w-[640px]">
+        <div class="min-w-0 overflow-x-auto">
+            <table class="nursery-table nursery-table--plans w-full table-fixed">
+                <colgroup>
+                    <col style="width: {{ $canManage ? '28%' : '32%' }}">
+                    <col style="width: 16%">
+                    <col style="width: 12%">
+                    <col style="width: 18%">
+                    <col style="width: 14%">
+                    @if($canManage)<col style="width: 12%">@endif
+                </colgroup>
                 <thead>
                     <tr>
                         <th>اسم الخطة <x-info field="nursery.settings_plan_name" /></th>
-                        <th>النوع <x-info field="nursery.settings_plan_type" /></th>
                         <th>القيمة</th>
                         <th>الضريبة</th>
                         <th>بعد الضريبة <x-info field="nursery.settings_plan_after_tax" /></th>
                         <th>العملة <x-info field="nursery.settings_plan_currency" /></th>
-                        @if($canManage)<th class="text-center w-28">إجراءات</th>@endif
+                        @if($canManage)<th class="text-center">إجراءات</th>@endif
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($plans as $plan)
                         @if(!$plan->is_active) @continue @endif
+                        @php
+                            $typeLabel = collect($planTypeOptions)->firstWhere('value', $plan->plan_type ?? 'custom')['label'] ?? 'مخصص';
+                            $currencyCode = (string) ($plan->currency_code ?? 'SAR');
+                        @endphp
                         <tr>
                             <td>
-                                <span class="nursery-table-name__title">{{ $plan->name }}</span>
+                                <div class="nursery-table-name__text">
+                                    <span class="nursery-table-name__title">{{ $plan->name }}</span>
+                                    <span class="nursery-table-name__sub">{{ $typeLabel }}</span>
+                                </div>
                             </td>
-                            <td>{{ collect($planTypeOptions)->firstWhere('value', $plan->plan_type ?? 'custom')['label'] ?? 'مخصص' }}</td>
-                            <td class="tabular-nums font-semibold text-slate-700">{{ number_format((float) $plan->amount, 2) }}</td>
-                            <td class="tabular-nums">{{ number_format((float) $plan->tax_rate, 0) }}%</td>
-                            <td class="tabular-nums font-semibold text-orange-700">{{ number_format($plan->amountAfterTax(), 2) }}</td>
-                            <td>{{ collect($currencyOptions)->firstWhere('value', $plan->currency_code ?? 'SAR')['label'] ?? 'SAR' }}</td>
+                            <td class="tabular-nums font-semibold text-slate-700 whitespace-nowrap">{{ number_format((float) $plan->amount, 2) }}</td>
+                            <td class="tabular-nums whitespace-nowrap">{{ number_format((float) $plan->tax_rate, 0) }}%</td>
+                            <td class="tabular-nums font-semibold text-orange-700 whitespace-nowrap">{{ number_format($plan->amountAfterTax(), 2) }}</td>
+                            <td class="whitespace-nowrap">
+                                <span class="font-semibold text-slate-700">{{ $currencyCode }}</span>
+                            </td>
                             @if($canManage)
                                 <td class="text-center">
-                                    <div class="flex gap-1 justify-center">
-                                        <button type="button" @click="editPlan = {{ $plan->id }}; showAdd = true"
-                                                class="nursery-btn nursery-btn-soft text-xs py-1 px-2">تعديل</button>
-                                        <form method="POST" action="{{ route('nursery.settings.plans.destroy', $plan) }}" onsubmit="return confirm('إلغاء تفعيل هذه الخطة؟')">
+                                    <x-erp-actions-dropdown :menu-id="'nursery-plan-'.$plan->id">
+                                        <x-erp-actions-menu-item type="button" icon="edit"
+                                            @click="editPlan = {{ $plan->id }}; showAdd = true">
+                                            تعديل
+                                        </x-erp-actions-menu-item>
+                                        <form method="POST" action="{{ route('nursery.settings.plans.destroy', $plan) }}">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="nursery-btn nursery-btn-soft text-xs py-1 px-2 text-red-700">حذف</button>
+                                            <x-erp-actions-menu-item type="submit" icon="delete" :danger="true"
+                                                confirm="إلغاء تفعيل هذه الخطة؟">
+                                                حذف
+                                            </x-erp-actions-menu-item>
                                         </form>
-                                    </div>
+                                    </x-erp-actions-dropdown>
                                 </td>
                             @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 7 : 6 }}" class="!py-10 text-center text-orange-700/70">لا توجد خطط — أضف خطة اشتراك.</td>
+                            <td colspan="{{ $canManage ? 6 : 5 }}" class="!py-10 text-center text-orange-700/70">لا توجد خطط — أضف خطة اشتراك.</td>
                         </tr>
                     @endforelse
                 </tbody>

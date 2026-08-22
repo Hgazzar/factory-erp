@@ -464,6 +464,15 @@
         }
         .nursery-table thead th.text-center,
         .nursery-table tbody td.text-center { text-align: center; }
+        .nursery-table--plans thead th {
+            white-space: normal;
+            padding-inline: 0.85rem;
+            vertical-align: bottom;
+        }
+        .nursery-table--plans tbody td {
+            padding-inline: 0.85rem;
+            vertical-align: middle;
+        }
         .nursery-table tbody td {
             padding: 1.15rem 1.4rem;
             border-bottom: 1px solid rgba(15, 23, 42, 0.045);
@@ -827,37 +836,221 @@
         .nursery-switch-input:disabled + .nursery-switch-track { opacity: 0.55; }
         .nursery-attendance-tabs {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-            gap: 0.35rem;
-            padding: 0.35rem;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.4rem;
+            padding: 0.4rem;
             background: #fff;
             border: 1px solid rgba(15, 23, 42, 0.06);
             border-radius: 1rem;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
         }
-        @media (max-width: 640px) {
-            .nursery-attendance-tabs { grid-template-columns: 1fr; }
-        }
         .nursery-attendance-tab {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 0.15rem; padding: 0.65rem 0.5rem; border-radius: 0.75rem;
-            text-decoration: none; text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            min-height: 5.75rem;
+            padding: 0.75rem 0.5rem;
+            border-radius: 0.85rem;
+            text-decoration: none;
+            text-align: center;
             border: 2px solid transparent;
+            color: var(--nursery-text-muted);
             transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
         }
-        .nursery-attendance-tab-icon { font-size: 1.25rem; line-height: 1; }
-        .nursery-attendance-tab-label { font-size: 0.875rem; font-weight: 700; color: var(--nursery-text); }
-        .nursery-attendance-tab-desc { font-size: 0.65rem; font-weight: 500; color: var(--nursery-text-muted); opacity: 0.75; }
+        .nursery-attendance-tab-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.7rem;
+            background: var(--nursery-bg-mid);
+            color: var(--nursery-primary-dark);
+            flex-shrink: 0;
+            font-size: 0;
+            line-height: 1;
+        }
+        .nursery-attendance-tab-icon svg {
+            width: 1.15rem;
+            height: 1.15rem;
+        }
+        .nursery-attendance-tab > span:not(.nursery-attendance-tab-icon) {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.15rem;
+            min-width: 0;
+        }
+        .nursery-attendance-tab-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 800;
+            line-height: 1.25;
+            color: var(--nursery-text);
+        }
+        .nursery-attendance-tab-desc {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 500;
+            line-height: 1.3;
+            color: var(--nursery-text-muted);
+            opacity: 0.8;
+        }
         .nursery-attendance-tab:hover {
-            background: var(--nursery-bg-mid); border-color: var(--nursery-border);
+            background: var(--nursery-bg-mid);
+            border-color: var(--nursery-border);
         }
         .nursery-attendance-tab.is-active {
             background: linear-gradient(135deg, var(--nursery-primary), var(--nursery-primary-dark));
             border-color: var(--nursery-primary-dark);
-            box-shadow: 0 4px 12px var(--nursery-shadow);
+            box-shadow: 0 4px 14px var(--nursery-shadow);
+            color: var(--nursery-on-primary);
+        }
+        .nursery-attendance-tab.is-active .nursery-attendance-tab-icon {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--nursery-on-primary);
         }
         .nursery-attendance-tab.is-active .nursery-attendance-tab-label,
-        .nursery-attendance-tab.is-active .nursery-attendance-tab-desc { color: var(--nursery-on-primary); opacity: 1; }
+        .nursery-attendance-tab.is-active .nursery-attendance-tab-desc {
+            color: var(--nursery-on-primary);
+            opacity: 1;
+        }
+        @media (max-width: 640px) {
+            .nursery-attendance-tabs { grid-template-columns: 1fr; }
+            .nursery-attendance-tab {
+                min-height: 0;
+                flex-direction: row;
+                justify-content: flex-start;
+                gap: 0.75rem;
+                padding: 0.7rem 0.85rem;
+                text-align: right;
+            }
+            .nursery-attendance-tab > span:not(.nursery-attendance-tab-icon) {
+                align-items: flex-start;
+            }
+            .nursery-attendance-tab-label,
+            .nursery-attendance-tab-desc { text-align: right; }
+        }
+
+        /* تبويبات صفحة الإعدادات — صف واحد متساوٍ بدون يتيم في صف ثانٍ */
+        .nursery-settings-tabs {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.4rem;
+            padding: 0.4rem;
+            background: #fff;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            border-radius: 1rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        }
+        .nursery-settings-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            min-height: 5.75rem;
+            padding: 0.75rem 0.4rem;
+            border-radius: 0.85rem;
+            text-decoration: none;
+            text-align: center;
+            border: 2px solid transparent;
+            color: var(--nursery-text-muted);
+            transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+        }
+        .nursery-settings-tab-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.7rem;
+            background: var(--nursery-bg-mid);
+            color: var(--nursery-primary-dark);
+            flex-shrink: 0;
+        }
+        .nursery-settings-tab-icon svg {
+            width: 1.15rem;
+            height: 1.15rem;
+        }
+        .nursery-settings-tab > span:not(.nursery-settings-tab-icon) {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.15rem;
+            min-width: 0;
+        }
+        .nursery-settings-tab-label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 800;
+            line-height: 1.25;
+            color: var(--nursery-text);
+        }
+        .nursery-settings-tab-desc {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 500;
+            line-height: 1.3;
+            color: var(--nursery-text-muted);
+            opacity: 0.8;
+            max-width: 100%;
+        }
+        .nursery-settings-tab:hover {
+            background: var(--nursery-bg-mid);
+            border-color: var(--nursery-border);
+        }
+        .nursery-settings-tab.is-active {
+            background: linear-gradient(135deg, var(--nursery-primary), var(--nursery-primary-dark));
+            border-color: var(--nursery-primary-dark);
+            box-shadow: 0 4px 14px var(--nursery-shadow);
+            color: var(--nursery-on-primary);
+        }
+        .nursery-settings-tab.is-active .nursery-settings-tab-icon {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--nursery-on-primary);
+        }
+        .nursery-settings-tab.is-active .nursery-settings-tab-label,
+        .nursery-settings-tab.is-active .nursery-settings-tab-desc {
+            color: var(--nursery-on-primary);
+            opacity: 1;
+        }
+        @media (max-width: 1100px) {
+            .nursery-settings-tabs {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+            }
+            .nursery-settings-tab {
+                flex: 0 0 9.5rem;
+                min-height: 5.5rem;
+            }
+        }
+        @media (max-width: 640px) {
+            .nursery-settings-tabs {
+                display: grid;
+                grid-template-columns: 1fr;
+                overflow: visible;
+            }
+            .nursery-settings-tab {
+                flex: none;
+                min-height: 0;
+                flex-direction: row;
+                justify-content: flex-start;
+                gap: 0.75rem;
+                padding: 0.7rem 0.85rem;
+                text-align: right;
+            }
+            .nursery-settings-tab > span:not(.nursery-settings-tab-icon) {
+                align-items: flex-start;
+            }
+            .nursery-settings-tab-label,
+            .nursery-settings-tab-desc { text-align: right; }
+        }
         @media (max-width: 767px) {
             .module-sidebar { display: none !important; }
         }

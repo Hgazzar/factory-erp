@@ -387,7 +387,7 @@ $config = [
             'info_field' => 'nursery.nav_finance',
             'shell' => 'nursery',
             'module' => 'nursery',
-            'active' => 'nursery.finance',
+            'active' => 'nursery.finance.index',
             'nursery_capability' => NurseryAccess::CAP_VIEW_FINANCE,
             'hint' => 'تحصيلات ومستحقات وصافي',
         ],
