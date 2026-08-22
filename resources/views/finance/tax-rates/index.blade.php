@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'ضرائب الدليل - '.config('app.name'))
+@section('title', niche_label('finance.tax_rates', 'معدلات الضريبة').' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>

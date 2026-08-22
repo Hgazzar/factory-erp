@@ -74,7 +74,8 @@ final class NurseryGuardianAdminTest extends NurseryTestCase
         $this->actingAs($this->tenant)
             ->post(route('nursery.guardians.portal-invite', $this->guardian))
             ->assertRedirect()
-            ->assertSessionHas('success');
+            ->assertSessionHas('success', fn (string $message): bool => str_contains($message, 'تمت جدولة')
+                && ! str_contains($message, 'وهمي'));
 
         $this->guardian->refresh();
         $this->assertNotEmpty($this->guardian->portal_access_token);

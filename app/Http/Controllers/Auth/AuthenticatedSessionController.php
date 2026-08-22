@@ -4,10 +4,15 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\Tenant\TenantContext;
+use App\Services\Tenant\TenantModuleRegistry;
+use App\Services\Tenant\TenantNavigationService;
+use App\Services\Tenant\TenantThemeService;
 use App\Support\AgentDebugLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -18,6 +23,24 @@ class AuthenticatedSessionController extends Controller
     public function create(): View
     {
         return view('auth.login');
+    }
+
+    /**
+     * شاشة دخول مخصّصة لنظام الحضانة (ستايل Nursery).
+     */
+    public function createNursery(TenantThemeService $theme): View
+    {
+        $nurseryThemeVars = $theme->cssVariables(
+            null,
+            null,
+            TenantThemeService::DEFAULT_PRIMARY,
+            TenantThemeService::DEFAULT_SECONDARY,
+            ['nursery', 'np', 'tenant'],
+        );
+
+        return view('auth.nursery-login', [
+            'nurseryThemeVars' => $nurseryThemeVars,
+        ]);
     }
 
     /**
@@ -46,9 +69,8 @@ class AuthenticatedSessionController extends Controller
             AgentDebugLog::line('H_SESSION', 'AuthenticatedSessionController@store', 'after_session_regenerate_ok', []);
             // #endregion
 
-            $intendedUrl = $request->user()?->role === 'worker'
-                ? route('operations.production-entry.create', absolute: false)
-                : route('dashboard', absolute: false);
+            $intendedUrl = app(TenantNavigationService::class)
+                ->defaultHomeRoute($request->user());
 
             // #region agent log
             AgentDebugLog::line('H_REDIRECT', 'AuthenticatedSessionController@store', 'route_dashboard_resolved', [
@@ -71,6 +93,34 @@ class AuthenticatedSessionController extends Controller
 
             throw $e;
         }
+    }
+
+    /**
+     * دخول عبر صفحة الحضانة فقط — يرفض حسابات غير Nursery.
+     */
+    public function storeNursery(LoginRequest $request): RedirectResponse
+    {
+        $request->authenticate();
+        $request->session()->regenerate();
+
+        $user = $request->user();
+        $navigation = app(TenantNavigationService::class);
+        $modules = app(TenantModuleRegistry::class);
+        $tenantUserId = app(TenantContext::class)->resolveTenantUserId($user);
+
+        $isNursery = $tenantUserId !== null
+            && $navigation->isNurseryPrimaryShell($tenantUserId)
+            && $modules->isEnabled('nursery', $tenantUserId);
+
+        if (! $isNursery) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'هذه الصفحة مخصّصة لحسابات نظام الحضانة فقط.',
+            ]);
+        }
+
+        return redirect()->route('nursery.dashboard');
     }
 
     /**

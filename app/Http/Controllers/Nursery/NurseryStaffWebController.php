@@ -41,6 +41,7 @@ final class NurseryStaffWebController extends Controller
         ];
 
         $items = Employee::query()
+            ->with(['attachments'])
             ->where('user_id', $tenantUserId)
             ->when($q !== '', fn ($query) => $query->where(function ($inner) use ($q): void {
                 $inner->where('name', 'like', '%'.$q.'%')
@@ -79,22 +80,22 @@ final class NurseryStaffWebController extends Controller
         $permissions = $gate->filterGrantable(null, $request->input('permissions', []));
 
         try {
-            $employee = $staff->create($tenantUserId, $data, $permissions);
+            $result = $staff->create($tenantUserId, $data, $permissions);
         } catch (InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        $this->persistUploads($request, $employee, $tenantUserId);
+        $this->persistUploads($request, $result['employee'], $tenantUserId);
 
-        if ($request->input('submit_action') === 'save_and_invite') {
-            return redirect()
-                ->route('nursery.staff.index')
-                ->with('success', 'تم حفظ الموظف. إرسال الدعوة سيتوفر لاحقاً.');
+        $success = 'تم إضافة الموظف وإنشاء حساب الدخول.';
+        if (filled($result['temporary_password'] ?? null)) {
+            $success .= ' البريد: '.($result['user']->email ?? $result['employee']->email)
+                .' — كلمة المرور المؤقتة: '.$result['temporary_password'];
         }
 
         return redirect()
             ->route('nursery.staff.index')
-            ->with('success', 'تم إضافة الموظف.');
+            ->with('success', $success);
     }
 
     public function edit(Employee $employee, NurseryStaffPermissionGate $gate): View
@@ -102,7 +103,7 @@ final class NurseryStaffWebController extends Controller
         $tenantUserId = $this->resolveOperationsTenantUserId();
         abort_unless((int) $employee->user_id === $tenantUserId, 404);
 
-        $employee->load('attachments');
+        $employee->load(['attachments']);
 
         return view('nursery.staff.edit', array_merge(
             $this->formViewData($gate),
@@ -116,15 +117,26 @@ final class NurseryStaffWebController extends Controller
         abort_unless((int) $employee->user_id === $tenantUserId, 404);
 
         $data = $this->validateStaffPayload($request);
-        $permissions = $gate->filterGrantable(null, $request->input('permissions', []));
+        $permissions = $this->permissionsForUpdate($gate, $employee, $request->input('permissions', []));
 
         try {
-            $employee = $staff->update($employee, $tenantUserId, $data, $permissions);
+            $result = $staff->update($employee, $tenantUserId, $data, $permissions);
         } catch (InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        $this->persistUploads($request, $employee, $tenantUserId);
+        $this->persistUploads($request, $result['employee'], $tenantUserId);
+
+        if ($result['created'] && filled($result['temporary_password'] ?? null)) {
+            return redirect()
+                ->route('nursery.staff.index')
+                ->with(
+                    'success',
+                    'تم تحديث الموظف وإنشاء حساب الدخول. البريد: '
+                    .($result['user']->email ?? $result['employee']->email)
+                    .' — كلمة المرور المؤقتة: '.$result['temporary_password']
+                );
+        }
 
         return redirect()
             ->route('nursery.staff.index')
@@ -154,7 +166,6 @@ final class NurseryStaffWebController extends Controller
                 ['value' => 'female', 'label' => 'أنثى'],
             ],
             'systemRoleOptions' => [
-                ['value' => '', 'label' => '— بدون دور تشغيل —'],
                 ['value' => NurseryAccess::ROLE_RECEPTION, 'label' => 'استقبال'],
                 ['value' => NurseryAccess::ROLE_TEACHER, 'label' => 'معلمة'],
             ],
@@ -162,13 +173,16 @@ final class NurseryStaffWebController extends Controller
             'selectedPermissions' => $selected,
             'grantableKeys' => $gate->grantableKeys(),
             'canGrantAll' => count($gate->grantableKeys()) === count(NurseryPermissionCatalog::allKeys()),
+            'rolePermissionTemplates' => [
+                NurseryAccess::ROLE_TEACHER => NurseryPermissionCatalog::templateForRole(NurseryAccess::ROLE_TEACHER),
+                NurseryAccess::ROLE_RECEPTION => NurseryPermissionCatalog::templateForRole(NurseryAccess::ROLE_RECEPTION),
+            ],
             'shiftOptions' => NurseryShift::query()
                 ->where('user_id', $tenantUserId)
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get()
                 ->map(fn (NurseryShift $s) => ['value' => (string) $s->id, 'label' => $s->name.' ('.$s->formattedRange().')'])
-                ->prepend(['value' => '', 'label' => '— بدون مناوبة —'])
                 ->values()
                 ->all(),
         ];
@@ -179,7 +193,6 @@ final class NurseryStaffWebController extends Controller
     {
         return collect(config('nursery_job_roles.roles', []))
             ->map(fn (string $label, string $key): array => ['value' => $key, 'label' => $label])
-            ->prepend(['value' => '', 'label' => '— اختر الدور —'])
             ->values()
             ->all();
     }
@@ -213,7 +226,28 @@ final class NurseryStaffWebController extends Controller
             'permissions.*' => ['string', Rule::in(NurseryPermissionCatalog::allKeys())],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:10240'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'remove_avatar' => ['nullable', 'boolean'],
         ]);
+    }
+
+    /**
+     * Disabled checkboxes are omitted from POST. Keep existing keys the editor cannot grant.
+     *
+     * @param  mixed  $requested
+     * @return list<string>
+     */
+    private function permissionsForUpdate(NurseryStaffPermissionGate $gate, Employee $employee, mixed $requested): array
+    {
+        $posted = $gate->filterGrantable(null, $requested);
+        $existing = NurseryPermissionCatalog::normalize($employee->nursery_permissions);
+        $grantable = $gate->grantableKeys();
+        $preserved = array_values(array_filter(
+            $existing,
+            fn (string $key): bool => ! in_array($key, $grantable, true)
+        ));
+
+        return array_values(array_unique(array_merge($preserved, $posted)));
     }
 
     private function persistUploads(Request $request, Employee $employee, int $tenantUserId): void
@@ -222,5 +256,12 @@ final class NurseryStaffWebController extends Controller
         if ($uploads !== []) {
             $this->persistMorphAttachments($employee, $uploads, $tenantUserId, 'nursery/staff');
         }
+        $this->persistAvatarUpload(
+            $employee,
+            $request->file('avatar'),
+            $tenantUserId,
+            'nursery/staff',
+            $request->boolean('remove_avatar')
+        );
     }
 }

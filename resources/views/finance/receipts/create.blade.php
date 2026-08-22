@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
 @section('title', 'سند قبض جديد - ' . config('app.name'))
 
@@ -42,7 +42,7 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
                 <div class="lg:col-span-4">
-                    <label class="mb-1 block text-sm font-medium text-gray-700" for="customer_id-trigger">العميل <span class="text-red-500">*</span></label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700" for="customer_id-trigger">{{ niche_label('entities.customer', 'العميل') }} <span class="text-red-500">*</span></label>
                     <x-searchable-select
                         name="customer_id"
                         id="customer_id"
@@ -50,8 +50,8 @@
                         :value="old('customer_id')"
                         :required="true"
                         :error="$errors->has('customer_id')"
-                        empty-label="— اختر العميل —"
-                        placeholder="ابحث باسم العميل أو الرمز..."
+                        empty-label="— اختر {{ niche_label('entities.customer', 'العميل') }} —"
+                        placeholder="ابحث باسم {{ niche_label('entities.customer', 'العميل') }} أو الرمز..."
                     />
                     @error('customer_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>

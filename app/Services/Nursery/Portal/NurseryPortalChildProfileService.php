@@ -6,6 +6,7 @@ namespace App\Services\Nursery\Portal;
 
 use App\Models\Nursery\AttendanceLog;
 use App\Models\Nursery\Child;
+use App\Services\Nursery\NurseryChildDailyActivityService;
 use Carbon\Carbon;
 
 /**
@@ -18,7 +19,14 @@ final class NurseryPortalChildProfileService
     ) {}
 
     /**
-     * @return array{child: Child, todayLog: AttendanceLog|null, todayStatus: string, todayStatusLabel: string}
+     * @return array{
+     *     child: Child,
+     *     todayLog: AttendanceLog|null,
+     *     todayStatus: string,
+     *     todayStatusLabel: string,
+     *     dailyActivities: \Illuminate\Support\Collection<int, \App\Models\Nursery\ChildDailyActivity>,
+     *     dailySummary: list<array{type: string, label: string, lines: list<string>}>
+     * }
      */
     public function profile(int $tenantUserId, int $guardianId, int $childId, ?Carbon $date = null): array
     {
@@ -36,11 +44,20 @@ final class NurseryPortalChildProfileService
         $status = $this->resolveTodayStatus($todayLog);
         $labels = self::statusLabels();
 
+        $dailyActivities = app(NurseryChildDailyActivityService::class)->forChildOnDate(
+            $tenantUserId,
+            (int) $child->id,
+            $date->toDateString(),
+            true,
+        );
+
         return [
             'child' => $child,
             'todayLog' => $todayLog,
             'todayStatus' => $status,
             'todayStatusLabel' => $labels[$status] ?? $status,
+            'dailyActivities' => $dailyActivities,
+            'dailySummary' => app(NurseryChildDailyActivityService::class)->summary($dailyActivities),
         ];
     }
 

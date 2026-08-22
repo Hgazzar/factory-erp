@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
 @section('title', 'سند صرف جديد - ' . config('app.name'))
 

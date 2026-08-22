@@ -32,6 +32,7 @@ final class NurserySubscriptionTest extends NurseryTestCase
         $this->get(route('nursery.subscriptions.index'))
             ->assertOk()
             ->assertSee('إجمالي الاشتراكات')
+            ->assertSee('المنتهية')
             ->assertSee('التذكيرات');
 
         $plan = SubscriptionPlan::query()->where('user_id', $this->tenant->id)->first();
@@ -50,6 +51,7 @@ final class NurserySubscriptionTest extends NurseryTestCase
             'child_id' => $child->id,
             'plan_id' => $plan->id,
             'is_paid' => true,
+            'status' => Subscription::STATUS_PAID,
         ]);
 
         $sub = Subscription::query()->where('child_id', $child->id)->first();

@@ -19,6 +19,13 @@
         <section class="nursery-card p-5 space-y-4 lg:col-span-2">
             <h2 class="text-lg font-bold text-orange-950 border-b border-orange-100 pb-2">المعلومات الأساسية</h2>
             <div class="grid gap-4 lg:grid-cols-2">
+                <div class="lg:col-span-2">
+                    <x-nursery-avatar-upload
+                        :name="old('name', $child?->name)"
+                        :src="$child?->firstImageUrl()"
+                        info-field="nursery.child_avatar"
+                    />
+                </div>
                 <div>
                     <label class="block text-sm font-semibold text-orange-950 mb-1">
                         الاسم <span class="text-red-600">*</span>
@@ -41,7 +48,9 @@
                         تاريخ الميلاد (ميلادي)
                         <x-info field="nursery.child_birth_date" />
                     </label>
-                    <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $child?->date_of_birth?->format('Y-m-d')) }}"
+                    <input type="date" name="date_of_birth"
+                           value="{{ old('date_of_birth', $child?->date_of_birth?->format('Y-m-d')) }}"
+                           max="{{ now()->toDateString() }}"
                            class="w-full rounded-lg border border-orange-200 px-3 py-2">
                 </div>
                 <div>
@@ -175,7 +184,7 @@
                     theme="tailwind"
                     hint-field="nursery.child_attachments"
                     title="المرفقات الحالية"
-                    :existing="$child->attachments"
+                    :existing="$child->documentAttachments()"
                     :uploadable="false"
                     :allow-delete="true"
                     help-text="يمكنك حذف مرفق قديم. لإضافة ملفات جديدة استخدم حقل الرفع أدناه."

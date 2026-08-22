@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\TaxRate;
 use App\Support\AccountingLedgerOptions;
@@ -12,6 +13,8 @@ use Illuminate\View\View;
 
 class TaxRateController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('search', ''));
@@ -33,7 +36,7 @@ class TaxRateController extends Controller
 
     public function create(): View
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $liabilityOptions = AccountingLedgerOptions::liabilityLeafAccountsForUser($uid);
 
         return view('finance.tax-rates.create', compact('liabilityOptions'));
@@ -41,7 +44,7 @@ class TaxRateController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $this->validatedTax($request, $uid);
 
         $data['is_active'] = (bool) (int) $data['is_active'];
@@ -54,7 +57,7 @@ class TaxRateController extends Controller
 
     public function edit(TaxRate $taxRate): View
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $liabilityOptions = $this->liabilityOptionsIncluding($uid, (int) $taxRate->ledger_account_id);
 
         return view('finance.tax-rates.edit', compact('taxRate', 'liabilityOptions'));
@@ -62,7 +65,7 @@ class TaxRateController extends Controller
 
     public function update(Request $request, TaxRate $taxRate): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $this->validatedTax($request, $uid, $taxRate->id);
         $data['is_active'] = (bool) (int) $data['is_active'];
         $taxRate->update($data);

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Nursery;
 
 use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Controller;
+use App\Models\Nursery\AttendanceLog;
 use App\Models\Nursery\AttendanceWeekdaySetting;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\Classroom;
@@ -17,6 +18,7 @@ use App\Support\NurseryAccess;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use InvalidArgumentException;
 use RuntimeException;
@@ -137,6 +139,99 @@ final class NurseryAttendanceWebController extends Controller
         return back()->with('success', 'تم تسجيل الانصراف بنجاح.');
     }
 
+    public function bulkCheckIn(Request $request, NurseryAttendanceService $attendance): RedirectResponse
+    {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate([
+            'child_ids' => ['required', 'array', 'min:1'],
+            'child_ids.*' => ['integer'],
+            'classroom_id' => ['nullable', 'integer'],
+        ]);
+
+        $result = $attendance->checkInMany(
+            $tenantUserId,
+            $data['child_ids'],
+            (int) auth()->id(),
+            isset($data['classroom_id']) ? (int) $data['classroom_id'] : null,
+        );
+
+        return $this->bulkAttendanceFlash($result, 'حضور', 'طفل', 'أطفال');
+    }
+
+    public function bulkCheckOut(Request $request, NurseryAttendanceService $attendance): RedirectResponse
+    {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate([
+            'child_ids' => ['required', 'array', 'min:1'],
+            'child_ids.*' => ['integer'],
+            'classroom_id' => ['nullable', 'integer'],
+        ]);
+
+        $result = $attendance->checkOutMany(
+            $tenantUserId,
+            $data['child_ids'],
+            (int) auth()->id(),
+            isset($data['classroom_id']) ? (int) $data['classroom_id'] : null,
+        );
+
+        return $this->bulkAttendanceFlash($result, 'انصراف', 'طفل', 'أطفال');
+    }
+
+    public function correct(Request $request, AttendanceLog $log, NurseryAttendanceService $attendance): RedirectResponse
+    {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate([
+            'checked_in_at' => ['nullable', 'string', 'max:16'],
+            'checked_out_at' => ['nullable', 'string', 'max:16'],
+            'status' => ['required', Rule::in([
+                AttendanceLog::STATUS_PRESENT,
+                AttendanceLog::STATUS_LATE,
+                AttendanceLog::STATUS_ABSENT,
+            ])],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        try {
+            $attendance->correct($tenantUserId, $log, $data, (int) auth()->id());
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'تم تصحيح سجل الحضور.');
+    }
+
+    /**
+     * @param  array{ok: int, skipped: int}  $result
+     */
+    private function bulkAttendanceFlash(array $result, string $action, string $subjectSingular, string $subjectPlural): RedirectResponse
+    {
+        $ok = $result['ok'];
+        $skipped = $result['skipped'];
+
+        if ($ok > 0 && $skipped > 0) {
+            $okLabel = $ok === 1 ? $subjectSingular : $subjectPlural;
+            $skipLabel = $skipped === 1
+                ? $subjectSingular.' واحد'
+                : $skipped.' '.$subjectPlural;
+
+            return back()->with(
+                'success',
+                "تم تسجيل {$action} {$ok} {$okLabel}، وتم تخطي {$skipLabel} لأن حالتهم تغيرت."
+            );
+        }
+
+        if ($ok > 0) {
+            $okLabel = $ok === 1 ? $subjectSingular.'ًا' : $subjectPlural;
+
+            return back()->with('success', "تم تسجيل {$action} {$ok} {$okLabel} بنجاح.");
+        }
+
+        return back()->with(
+            'error',
+            "لم يُسجَّل {$action} — المحددون غير مؤهلين أو تغيرت حالتهم."
+        );
+    }
+
     public function staffCheckIn(Request $request, NurseryAttendanceService $attendance): RedirectResponse
     {
         $tenantUserId = $this->resolveOperationsTenantUserId();
@@ -161,6 +256,40 @@ final class NurseryAttendanceWebController extends Controller
         }
 
         return back()->with('success', 'تم تسجيل انصراف الموظف.');
+    }
+
+    public function staffBulkCheckIn(Request $request, NurseryAttendanceService $attendance): RedirectResponse
+    {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate([
+            'employee_ids' => ['required', 'array', 'min:1'],
+            'employee_ids.*' => ['integer'],
+        ]);
+
+        $result = $attendance->staffCheckInMany(
+            $tenantUserId,
+            $data['employee_ids'],
+            (int) auth()->id(),
+        );
+
+        return $this->bulkAttendanceFlash($result, 'حضور', 'موظف', 'موظفين');
+    }
+
+    public function staffBulkCheckOut(Request $request, NurseryAttendanceService $attendance): RedirectResponse
+    {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        $data = $request->validate([
+            'employee_ids' => ['required', 'array', 'min:1'],
+            'employee_ids.*' => ['integer'],
+        ]);
+
+        $result = $attendance->staffCheckOutMany(
+            $tenantUserId,
+            $data['employee_ids'],
+            (int) auth()->id(),
+        );
+
+        return $this->bulkAttendanceFlash($result, 'انصراف', 'موظف', 'موظفين');
     }
 
     public function storeWeekdays(Request $request, NurseryAttendanceListService $list): RedirectResponse

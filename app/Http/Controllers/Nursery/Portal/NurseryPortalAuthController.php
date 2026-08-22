@@ -16,7 +16,7 @@ use InvalidArgumentException;
 final class NurseryPortalAuthController extends Controller
 {
     /**
-     * يطلب رمز تحقق ويرسله (log-only في التطوير).
+     * يطلب رمز تحقق ويجدول إرساله عبر واتساب.
      */
     public function requestOtp(Request $request, NurseryPortalAuthService $auth): RedirectResponse
     {
@@ -38,7 +38,7 @@ final class NurseryPortalAuthController extends Controller
         return back()
             ->withInput()
             ->with('otp_sent', true)
-            ->with('success', 'تم إرسال رمز التحقق. راجع السجل في بيئة التطوير.');
+            ->with('success', 'تم إنشاء رمز التحقق. ستتم جدولة إرساله عبر واتساب.');
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersistsMorphAttachments;
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\JournalEntry;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ use Illuminate\View\View;
 class JournalEntryWebController extends Controller
 {
     use PersistsMorphAttachments;
+    use ResolvesOperationsTenant;
 
     public function index(Request $request): View
     {
@@ -64,7 +66,7 @@ class JournalEntryWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:50'],
@@ -131,10 +133,12 @@ class JournalEntryWebController extends Controller
                 ->withErrors(['balance' => 'القيد غير متوازن. يجب أن يكون إجمالي المدين مساوياً لإجمالي الدائن وأكبر من صفر.']);
         }
 
-        DB::transaction(function () use ($data, $lines, $totalDebit, $uid, $uploads) {
+        $actorId = (int) auth()->id();
+
+        DB::transaction(function () use ($data, $lines, $totalDebit, $uid, $uploads, $actorId) {
             $entry = JournalEntry::create([
                 'user_id' => $uid,
-                'created_by' => $uid,
+                'created_by' => $actorId,
                 'date' => $data['date'],
                 'reference' => $data['reference'] ?? null,
                 'description' => $data['description'] ?? null,
@@ -171,7 +175,7 @@ class JournalEntryWebController extends Controller
 
     public function update(Request $request, JournalEntry $journal): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'date' => ['required', 'date'],
             'reference' => ['nullable', 'string', 'max:50'],

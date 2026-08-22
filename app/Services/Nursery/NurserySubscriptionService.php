@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Nursery;
 
+use App\Models\AuditTrail;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\Subscription;
 use App\Models\Nursery\SubscriptionPlan;
@@ -48,7 +49,13 @@ final class NurserySubscriptionService
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{subscription: Subscription, finance_posted: bool, whatsapp_sent: bool}
+     * @return array{
+     *     subscription: Subscription,
+     *     finance_posted: bool,
+     *     finance_status: string,
+     *     whatsapp_dispatched: bool,
+     *     whatsapp_sent: bool
+     * }
      */
     public function create(int $tenantUserId, array $data, ?int $createdBy = null): array
     {
@@ -93,6 +100,10 @@ final class NurserySubscriptionService
         }
 
         $isPaid = filter_var($data['is_paid'] ?? false, FILTER_VALIDATE_BOOL);
+        $status = $isPaid
+            ? Subscription::STATUS_PAID
+            : ($endsOn < now()->toDateString() ? Subscription::STATUS_EXPIRED : Subscription::STATUS_UNPAID);
+        $paymentMethod = $isPaid ? $this->normalizePaymentMethod($data['payment_method'] ?? 'cash') : null;
 
         $subscription = Subscription::query()->create([
             'user_id' => $tenantUserId,
@@ -104,23 +115,84 @@ final class NurserySubscriptionService
             'discount_amount' => $discount,
             'notes' => $notes !== '' ? $notes : null,
             'is_paid' => $isPaid,
-            'status' => Subscription::STATUS_ACTIVE,
+            'status' => $status,
+            'paid_at' => $isPaid ? now() : null,
+            'payment_method' => $paymentMethod,
             'created_by' => $createdBy,
         ]);
 
         $financePosted = false;
-        $whatsappSent = false;
+        $financeStatus = 'not_enabled';
+        $whatsappDispatched = false;
 
         if ($isPaid) {
-            $financePosted = $this->tryRecordFinance($subscription, $tenantUserId);
+            [$financePosted, $financeStatus] = $this->attemptFinance($subscription, $tenantUserId, $paymentMethod ?? 'cash');
             $this->notifier->dispatchSubscriptionPaidConfirmation($tenantUserId, (int) $subscription->id);
-            $whatsappSent = true;
+            $whatsappDispatched = true;
         }
 
         return [
             'subscription' => $subscription->fresh(),
             'finance_posted' => $financePosted,
-            'whatsapp_sent' => $whatsappSent,
+            'finance_status' => $financeStatus,
+            'whatsapp_dispatched' => $whatsappDispatched,
+            'whatsapp_sent' => false,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     subscription: Subscription,
+     *     finance_posted: bool,
+     *     finance_status: string,
+     *     whatsapp_dispatched: bool,
+     *     already_paid: bool
+     * }
+     */
+    public function markPaid(Subscription $subscription, int $tenantUserId, string $paymentMethod = 'cash'): array
+    {
+        abort_unless((int) $subscription->user_id === $tenantUserId, 404);
+
+        if ($subscription->status === Subscription::STATUS_CANCELLED) {
+            throw new InvalidArgumentException('لا يمكن تسجيل دفع لاشتراك ملغى.');
+        }
+
+        $method = $this->normalizePaymentMethod($paymentMethod);
+
+        if ($subscription->isAlreadyPaid()) {
+            if ($subscription->status !== Subscription::STATUS_PAID) {
+                $subscription->forceFill([
+                    'status' => Subscription::STATUS_PAID,
+                    'is_paid' => true,
+                ])->save();
+            }
+
+            return [
+                'subscription' => $subscription->fresh(),
+                'finance_posted' => false,
+                'finance_status' => $subscription->journal_entry_id ? 'recorded' : 'skipped',
+                'whatsapp_dispatched' => false,
+                'already_paid' => true,
+            ];
+        }
+
+        $subscription->forceFill([
+            'is_paid' => true,
+            'status' => Subscription::STATUS_PAID,
+            'paid_at' => now(),
+            'payment_method' => $method,
+        ])->save();
+
+        [$financePosted, $financeStatus] = $this->attemptFinance($subscription, $tenantUserId, $method);
+
+        $this->notifier->dispatchSubscriptionPaidConfirmation($tenantUserId, (int) $subscription->id);
+
+        return [
+            'subscription' => $subscription->fresh(),
+            'finance_posted' => $financePosted,
+            'finance_status' => $financeStatus,
+            'whatsapp_dispatched' => true,
+            'already_paid' => false,
         ];
     }
 
@@ -128,42 +200,121 @@ final class NurserySubscriptionService
     {
         abort_unless((int) $subscription->user_id === $tenantUserId, 404);
 
-        $subscription->update(['status' => Subscription::STATUS_CANCELLED]);
+        $this->accounting->reversePaidSubscriptionIfNeeded($subscription, $tenantUserId);
+
+        $previousStatus = (string) $subscription->status;
+        if ($previousStatus !== Subscription::STATUS_CANCELLED) {
+            $subscription->update(['status' => Subscription::STATUS_CANCELLED]);
+            AuditTrail::log(
+                'update',
+                'nursery_subscriptions',
+                $subscription->id,
+                ['status' => $previousStatus],
+                ['status' => Subscription::STATUS_CANCELLED],
+            );
+        }
 
         return $subscription->fresh();
     }
 
     /**
-     * @return array{sent: int, skipped: int}
+     * Creates a new unpaid subscription period. Does not mutate the source row.
+     */
+    public function renew(Subscription $subscription, int $tenantUserId, ?int $createdBy = null): Subscription
+    {
+        abort_unless((int) $subscription->user_id === $tenantUserId, 404);
+
+        if ($subscription->isCancelled()) {
+            throw new InvalidArgumentException('لا يمكن تجديد اشتراك ملغى.');
+        }
+
+        $existing = Subscription::query()
+            ->where('user_id', $tenantUserId)
+            ->where('renewed_from_id', $subscription->id)
+            ->where('status', '!=', Subscription::STATUS_CANCELLED)
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $subscription->loadMissing('plan');
+        $durationDays = max(1, (int) $subscription->starts_on?->diffInDays($subscription->ends_on));
+        $startsOn = ($subscription->ends_on?->copy() ?? now())->addDay()->startOfDay();
+        if ($startsOn->lt(now()->startOfDay())) {
+            $startsOn = now()->startOfDay();
+        }
+        $endsOn = $startsOn->copy()->addDays($durationDays);
+
+        $result = $this->create($tenantUserId, [
+            'child_id' => (int) $subscription->child_id,
+            'plan_id' => (int) $subscription->plan_id,
+            'starts_on' => $startsOn->toDateString(),
+            'ends_on' => $endsOn->toDateString(),
+            'amount_after_tax' => (float) $subscription->amount_after_tax,
+            'discount_amount' => (float) $subscription->discount_amount,
+            'notes' => $subscription->notes,
+            'is_paid' => false,
+        ], $createdBy);
+
+        $renewed = $result['subscription'];
+        $renewed->forceFill(['renewed_from_id' => (int) $subscription->id])->save();
+
+        AuditTrail::log(
+            'create',
+            'nursery_subscriptions',
+            $renewed->id,
+            null,
+            [
+                'renewed_from_id' => (int) $subscription->id,
+                'status' => $renewed->status,
+                'is_paid' => false,
+            ],
+        );
+
+        return $renewed->fresh();
+    }
+
+    public function expireOverdueUnpaid(int $tenantUserId): int
+    {
+        return Subscription::query()
+            ->where('user_id', $tenantUserId)
+            ->whereNotIn('status', [Subscription::STATUS_CANCELLED, Subscription::STATUS_EXPIRED])
+            ->where('is_paid', false)
+            ->whereDate('ends_on', '<', now()->toDateString())
+            ->update(['status' => Subscription::STATUS_EXPIRED]);
+    }
+
+    /**
+     * @return array{queued: int, skipped: int, sent: int}
      */
     public function sendPaymentReminders(int $tenantUserId): array
     {
         $items = Subscription::query()
             ->where('user_id', $tenantUserId)
-            ->where('status', Subscription::STATUS_ACTIVE)
+            ->whereIn('status', Subscription::operationalStatuses())
             ->where('is_paid', false)
             ->where('ends_on', '>=', now()->toDateString())
             ->whereNull('payment_reminder_sent_at')
             ->get();
 
-        $sent = 0;
+        $queued = 0;
         $skipped = 0;
 
         foreach ($items as $subscription) {
             $this->notifier->dispatchPaymentReminder($tenantUserId, (int) $subscription->id);
+            $queued++;
 
-            if ($subscription->fresh()->payment_reminder_sent_at !== null) {
-                $sent++;
-            } else {
+            if ($subscription->fresh()->payment_reminder_sent_at === null) {
                 $skipped++;
             }
         }
 
-        return ['sent' => $sent, 'skipped' => $skipped];
+        return ['queued' => $queued, 'skipped' => $skipped, 'sent' => 0];
     }
 
     /**
-     * @return array{sent: int, skipped: int}
+     * @return array{queued: int, skipped: int, sent: int}
      */
     public function sendRenewalReminders(int $tenantUserId, ?int $withinDays = null): array
     {
@@ -172,29 +323,28 @@ final class NurserySubscriptionService
 
         $items = Subscription::query()
             ->where('user_id', $tenantUserId)
-            ->where('status', Subscription::STATUS_ACTIVE)
+            ->whereIn('status', Subscription::operationalStatuses())
             ->whereBetween('ends_on', [now()->toDateString(), $until])
             ->whereNull('renewal_reminder_sent_at')
             ->get();
 
-        $sent = 0;
+        $queued = 0;
         $skipped = 0;
 
         foreach ($items as $subscription) {
             $this->notifier->dispatchRenewalReminder($tenantUserId, (int) $subscription->id);
+            $queued++;
 
-            if ($subscription->fresh()->renewal_reminder_sent_at !== null) {
-                $sent++;
-            } else {
+            if ($subscription->fresh()->renewal_reminder_sent_at === null) {
                 $skipped++;
             }
         }
 
-        return ['sent' => $sent, 'skipped' => $skipped];
+        return ['queued' => $queued, 'skipped' => $skipped, 'sent' => 0];
     }
 
     /**
-     * @return array{total: int, paid: int, unpaid: int, cancelled: int}
+     * @return array{total: int, paid: int, unpaid: int, cancelled: int, expired: int}
      */
     public function stats(int $tenantUserId, ?Carbon $from = null, ?Carbon $to = null): array
     {
@@ -202,9 +352,10 @@ final class NurserySubscriptionService
 
         return [
             'total' => (clone $base)->count(),
-            'paid' => (clone $base)->where('status', Subscription::STATUS_ACTIVE)->where('is_paid', true)->count(),
-            'unpaid' => (clone $base)->where('status', Subscription::STATUS_ACTIVE)->where('is_paid', false)->count(),
+            'paid' => (clone $base)->whereIn('status', Subscription::operationalStatuses())->where('is_paid', true)->count(),
+            'unpaid' => (clone $base)->whereIn('status', Subscription::operationalStatuses())->where('is_paid', false)->count(),
             'cancelled' => (clone $base)->where('status', Subscription::STATUS_CANCELLED)->count(),
+            'expired' => (clone $base)->where('status', Subscription::STATUS_EXPIRED)->count(),
         ];
     }
 
@@ -218,13 +369,13 @@ final class NurserySubscriptionService
 
         $unpaid = Subscription::query()
             ->where('user_id', $tenantUserId)
-            ->where('status', Subscription::STATUS_ACTIVE)
+            ->whereIn('status', Subscription::operationalStatuses())
             ->where('is_paid', false)
             ->count();
 
         $expiring = Subscription::query()
             ->where('user_id', $tenantUserId)
-            ->where('status', Subscription::STATUS_ACTIVE)
+            ->whereIn('status', Subscription::operationalStatuses())
             ->whereBetween('ends_on', [now()->toDateString(), $until])
             ->count();
 
@@ -251,7 +402,7 @@ final class NurserySubscriptionService
         return Subscription::query()
             ->with(['child:id,name', 'plan:id,name'])
             ->where('user_id', $tenantUserId)
-            ->where('status', Subscription::STATUS_ACTIVE)
+            ->whereIn('status', Subscription::operationalStatuses())
             ->where('is_paid', false)
             ->where('ends_on', '>=', now()->toDateString())
             ->orderBy('ends_on')
@@ -269,7 +420,7 @@ final class NurserySubscriptionService
         return Subscription::query()
             ->with(['child:id,name', 'plan:id,name'])
             ->where('user_id', $tenantUserId)
-            ->where('status', Subscription::STATUS_ACTIVE)
+            ->whereIn('status', Subscription::operationalStatuses())
             ->whereBetween('ends_on', [now()->toDateString(), $until])
             ->orderBy('ends_on')
             ->limit(20)
@@ -306,23 +457,44 @@ final class NurserySubscriptionService
         };
     }
 
-    private function tryRecordFinance(Subscription $subscription, int $tenantUserId): bool
+    /**
+     * @return array{0: bool, 1: string}
+     */
+    private function attemptFinance(Subscription $subscription, int $tenantUserId, string $paymentMethod): array
     {
+        if ($subscription->journal_entry_id) {
+            return [false, 'recorded'];
+        }
+
         if (! $this->accounting->canRecord($tenantUserId)) {
-            return false;
+            return [false, 'not_enabled'];
         }
 
         try {
-            $this->accounting->recordPaidSubscription($subscription, $tenantUserId);
+            $this->accounting->recordPaidSubscription($subscription, $tenantUserId, $paymentMethod);
 
-            return true;
+            return [true, 'recorded'];
         } catch (RuntimeException|InvalidArgumentException $e) {
             Log::warning('Nursery subscription finance posting failed', [
                 'subscription_id' => $subscription->id,
                 'message' => $e->getMessage(),
             ]);
 
-            return false;
+            return [false, 'failed'];
         }
+    }
+
+    private function normalizePaymentMethod(mixed $method): string
+    {
+        $value = strtolower(trim((string) $method));
+        if ($value === '') {
+            $value = 'cash';
+        }
+
+        if (! in_array($value, Subscription::PAYMENT_METHODS, true)) {
+            throw new InvalidArgumentException('طريقة الدفع غير مدعومة.');
+        }
+
+        return $value;
     }
 }

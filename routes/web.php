@@ -1,58 +1,32 @@
 <?php
 
-use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AccountingDashboardController;
 use App\Http\Controllers\AccountWebController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ApAgingController;
 use App\Http\Controllers\Api\ProductSearchController;
-use App\Http\Controllers\ArAgingController;
 use App\Http\Controllers\ApiTokenWebController;
+use App\Http\Controllers\ArAgingController;
 use App\Http\Controllers\AttachmentWebController;
 use App\Http\Controllers\AuditLogWebController;
-use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
-use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
-use App\Http\Controllers\Clinic\ClinicApiController;
-use App\Http\Controllers\Clinic\ClinicAppointmentWebController;
-use App\Http\Controllers\Clinic\ClinicClinicalNoteWebController;
-use App\Http\Controllers\Clinic\ClinicDashboardController;
-use App\Http\Controllers\Clinic\ClinicMedicalAttachmentWebController;
-use App\Http\Controllers\Clinic\ClinicPatientWebController;
-use App\Http\Controllers\Clinic\ClinicPdfWebController;
-use App\Http\Controllers\Clinic\ClinicDoctorScheduleWebController;
-use App\Http\Controllers\Clinic\ClinicPrescriptionWebController;
-use App\Http\Controllers\Clinic\ClinicSettingsWebController;
-use App\Http\Controllers\Clinic\ClinicServiceWebController;
-use App\Http\Controllers\Clinic\Portal\ClinicPortalApiController;
-use App\Http\Controllers\Clinic\Portal\ClinicPortalWebController;
-use App\Http\Controllers\Nursery\NurseryAttendanceWebController;
-use App\Http\Controllers\Nursery\NurseryChildWebController;
-use App\Http\Controllers\Nursery\NurseryClassroomWebController;
-use App\Http\Controllers\Nursery\NurseryStaffWebController;
-use App\Http\Controllers\Nursery\NurseryUnitWebController;
-use App\Http\Controllers\Nursery\NurseryCalendarWebController;
-use App\Http\Controllers\Nursery\NurserySettingsWebController;
-use App\Http\Controllers\Nursery\NurserySubscriptionWebController;
-use App\Http\Controllers\Nursery\NurseryDashboardController;
-use App\Http\Controllers\Nursery\NurseryGuardianWebController;
-use App\Http\Controllers\Nursery\Portal\NurseryPortalAuthController;
-use App\Http\Controllers\Nursery\Portal\NurseryPortalCalendarWebController;
-use App\Http\Controllers\Nursery\Portal\NurseryPortalChildWebController;
-use App\Http\Controllers\Nursery\Portal\NurseryPortalFinanceWebController;
-use App\Http\Controllers\Nursery\Portal\NurseryPortalWebController;
-use App\Http\Controllers\Fleet\FleetAgentWebController;
-use App\Http\Controllers\Fleet\FleetCustomerWebController;
-use App\Http\Controllers\Fleet\FleetDashboardController;
-use App\Http\Controllers\Fleet\FleetStoreOrderWebController;
-use App\Http\Controllers\Fleet\FleetProductWebController;
-use App\Http\Controllers\Fleet\FleetRouteWebController;
-use App\Http\Controllers\Fleet\FleetCustodyWebController;
-use App\Http\Controllers\Fleet\FleetCustodyReturnWebController;
-use App\Http\Controllers\Fleet\FleetCollectionWebController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BomListWebController;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\ChequeController;
+use App\Http\Controllers\Clinic\ClinicApiController;
+use App\Http\Controllers\Clinic\ClinicAppointmentWebController;
+use App\Http\Controllers\Clinic\ClinicClinicalNoteWebController;
+use App\Http\Controllers\Clinic\ClinicDashboardController;
+use App\Http\Controllers\Clinic\ClinicDoctorScheduleWebController;
+use App\Http\Controllers\Clinic\ClinicMedicalAttachmentWebController;
+use App\Http\Controllers\Clinic\ClinicPatientWebController;
+use App\Http\Controllers\Clinic\ClinicPdfWebController;
+use App\Http\Controllers\Clinic\ClinicPrescriptionWebController;
+use App\Http\Controllers\Clinic\ClinicServiceWebController;
+use App\Http\Controllers\Clinic\ClinicSettingsWebController;
+use App\Http\Controllers\Clinic\Portal\ClinicPortalApiController;
+use App\Http\Controllers\Clinic\Portal\ClinicPortalWebController;
 use App\Http\Controllers\CommissionRuleWebController;
 use App\Http\Controllers\CommissionWebController;
 use App\Http\Controllers\CompanySettingsController;
@@ -71,13 +45,21 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DebitNoteController;
 use App\Http\Controllers\DeliveryOrderWebController;
 use App\Http\Controllers\DepartmentWebController;
-use App\Http\Controllers\ShiftWebController;
 use App\Http\Controllers\EinvoiceSettingsController;
 use App\Http\Controllers\EmployeeWebController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FixedAssetCategoryController;
 use App\Http\Controllers\FixedAssetController;
+use App\Http\Controllers\Fleet\FleetAgentWebController;
+use App\Http\Controllers\Fleet\FleetCollectionWebController;
+use App\Http\Controllers\Fleet\FleetCustodyReturnWebController;
+use App\Http\Controllers\Fleet\FleetCustodyWebController;
+use App\Http\Controllers\Fleet\FleetCustomerWebController;
+use App\Http\Controllers\Fleet\FleetDashboardController;
+use App\Http\Controllers\Fleet\FleetProductWebController;
+use App\Http\Controllers\Fleet\FleetRouteWebController;
+use App\Http\Controllers\Fleet\FleetStoreOrderWebController;
 use App\Http\Controllers\HRAttendanceImportController;
 use App\Http\Controllers\HRAttendanceWebController;
 use App\Http\Controllers\HRDashboardController;
@@ -93,34 +75,43 @@ use App\Http\Controllers\LedgerWebController;
 use App\Http\Controllers\MachineWebController;
 use App\Http\Controllers\ManufacturingWebController;
 use App\Http\Controllers\NotificationWebController;
+use App\Http\Controllers\Nursery\NurseryAttendanceWebController;
+use App\Http\Controllers\Nursery\NurseryCalendarWebController;
+use App\Http\Controllers\Nursery\NurseryChildDailyActivityWebController;
+use App\Http\Controllers\Nursery\NurseryChildWebController;
+use App\Http\Controllers\Nursery\NurseryClassroomWebController;
+use App\Http\Controllers\Nursery\NurseryDashboardController;
+use App\Http\Controllers\Nursery\NurseryGuardianWebController;
+use App\Http\Controllers\Nursery\NurserySettingsWebController;
+use App\Http\Controllers\Nursery\NurseryStaffWebController;
+use App\Http\Controllers\Nursery\NurserySubscriptionWebController;
+use App\Http\Controllers\Nursery\NurseryUnitWebController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalAuthController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalCalendarWebController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalChildWebController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalFinanceWebController;
+use App\Http\Controllers\Nursery\Portal\NurseryPortalWebController;
 use App\Http\Controllers\OperationsDashboardController;
 use App\Http\Controllers\OperationsShiftController;
 use App\Http\Controllers\PaymentMethodAccountController;
-use App\Http\Controllers\Pos\PosProductWebController;
-use App\Http\Controllers\Pos\PosTerminalApiController;
-use App\Http\Controllers\Pos\PosTerminalWebController;
-use App\Http\Controllers\Store\Portal\StorePortalApiController;
-use App\Http\Controllers\Store\Portal\StorePortalWebController;
-use App\Http\Controllers\StoreSettingsWebController;
-use App\Http\Controllers\PosDashboardController;
-use App\Http\Controllers\PosDeviceWebController;
-use App\Http\Controllers\Store\OrderManagementController;
-use App\Http\Controllers\Store\StorePaymobWebhookController;
-use App\Http\Controllers\Store\StorePosSalePdfWebController;
-use App\Http\Controllers\PosSaleWebController;
-use App\Http\Controllers\PosSessionWebController;
 use App\Http\Controllers\PaymentWebController;
 use App\Http\Controllers\PayrollItemController;
 use App\Http\Controllers\PayrollWebController;
+use App\Http\Controllers\Pos\PosProductWebController;
+use App\Http\Controllers\Pos\PosTerminalApiController;
+use App\Http\Controllers\Pos\PosTerminalWebController;
+use App\Http\Controllers\PosDashboardController;
+use App\Http\Controllers\PosDeviceWebController;
+use App\Http\Controllers\PosSaleWebController;
+use App\Http\Controllers\PosSessionWebController;
+use App\Http\Controllers\PricingController;
 use App\Http\Controllers\ProcurementDashboardController;
 use App\Http\Controllers\ProductionEntryWebController;
 use App\Http\Controllers\ProductionOrderWebController;
 use App\Http\Controllers\ProductionReportWebController;
-use App\Http\Controllers\PricingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfitLossReportWebController;
 use App\Http\Controllers\PurchaseInvoiceWebController;
-use App\Http\Controllers\SupplierPaymentWebController;
 use App\Http\Controllers\PurchaseOrderWebController;
 use App\Http\Controllers\PurchaseReportController;
 use App\Http\Controllers\PurchaseReturnWebController;
@@ -135,8 +126,18 @@ use App\Http\Controllers\SalesReturnWebController;
 use App\Http\Controllers\SalesTargetWebController;
 use App\Http\Controllers\ServiceOrderWebController;
 use App\Http\Controllers\ServicesDashboardController;
+use App\Http\Controllers\ShiftWebController;
 use App\Http\Controllers\StatementReportWebController;
 use App\Http\Controllers\StockInController;
+use App\Http\Controllers\Store\OrderManagementController;
+use App\Http\Controllers\Store\Portal\StorePortalApiController;
+use App\Http\Controllers\Store\Portal\StorePortalWebController;
+use App\Http\Controllers\Store\StorePaymobWebhookController;
+use App\Http\Controllers\Store\StorePosSalePdfWebController;
+use App\Http\Controllers\StoreSettingsWebController;
+use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
+use App\Http\Controllers\SupplierPaymentWebController;
 use App\Http\Controllers\SupplierWebController;
 use App\Http\Controllers\SystemMaintenanceController;
 use App\Http\Controllers\TaxRateController;
@@ -395,6 +396,150 @@ Route::middleware(['auth', 'worker.scope'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Nursery — outside role:admin so supervisor staff can login via linked_user_id.
+| Workers remain blocked by worker.scope. Capabilities still enforced server-side.
+|--------------------------------------------------------------------------
+*/
+Route::prefix('nursery')->name('nursery.')->middleware(['auth', 'worker.scope', 'module:nursery'])->group(function () {
+    Route::get('dashboard', [NurseryDashboardController::class, 'index'])
+        ->middleware('nursery.capability:view_daily')
+        ->name('dashboard');
+    Route::get('portal/qr-download', [NurseryDashboardController::class, 'downloadPortalQr'])
+        ->middleware(['nursery.capability:view_daily', 'feature:nursery_portal'])
+        ->name('portal.qr-download');
+
+    Route::middleware('nursery.capability:view_daily')->group(function () {
+        Route::get('attendance', [NurseryAttendanceWebController::class, 'index'])->name('attendance.index');
+        Route::get('attendance/report', [NurseryAttendanceWebController::class, 'report'])->name('attendance.report');
+
+        Route::get('children', [NurseryChildWebController::class, 'index'])->name('children.index');
+    });
+
+    Route::middleware('nursery.capability:manage_child_activity')->group(function () {
+        Route::post('children/{child}/daily-activities', [NurseryChildDailyActivityWebController::class, 'store'])->name('children.daily-activities.store');
+        Route::patch('children/{child}/daily-activities/{activity}', [NurseryChildDailyActivityWebController::class, 'update'])->name('children.daily-activities.update');
+        Route::delete('children/{child}/daily-activities/{activity}', [NurseryChildDailyActivityWebController::class, 'destroy'])->name('children.daily-activities.destroy');
+    });
+
+    Route::middleware('nursery.capability:manage_child_attendance')->group(function () {
+        Route::post('attendance/check-in', [NurseryAttendanceWebController::class, 'checkIn'])->name('attendance.check-in');
+        Route::post('attendance/check-out', [NurseryAttendanceWebController::class, 'checkOut'])->name('attendance.check-out');
+        Route::post('attendance/bulk-check-in', [NurseryAttendanceWebController::class, 'bulkCheckIn'])->name('attendance.bulk-check-in');
+        Route::post('attendance/bulk-check-out', [NurseryAttendanceWebController::class, 'bulkCheckOut'])->name('attendance.bulk-check-out');
+        Route::patch('attendance/{log}/correct', [NurseryAttendanceWebController::class, 'correct'])->name('attendance.correct');
+        Route::post('attendance/weekdays', [NurseryAttendanceWebController::class, 'storeWeekdays'])->name('attendance.weekdays');
+        Route::post('attendance/leaves', [NurseryAttendanceWebController::class, 'storeLeave'])->name('attendance.leaves.store');
+        Route::delete('attendance/leaves/{leave}', [NurseryAttendanceWebController::class, 'destroyLeave'])->name('attendance.leaves.destroy');
+    });
+
+    Route::middleware('nursery.capability:manage_staff_attendance')->group(function () {
+        Route::post('attendance/staff/check-in', [NurseryAttendanceWebController::class, 'staffCheckIn'])->name('attendance.staff.check-in');
+        Route::post('attendance/staff/check-out', [NurseryAttendanceWebController::class, 'staffCheckOut'])->name('attendance.staff.check-out');
+        Route::post('attendance/staff/bulk-check-in', [NurseryAttendanceWebController::class, 'staffBulkCheckIn'])->name('attendance.staff.bulk-check-in');
+        Route::post('attendance/staff/bulk-check-out', [NurseryAttendanceWebController::class, 'staffBulkCheckOut'])->name('attendance.staff.bulk-check-out');
+    });
+
+    Route::middleware('nursery.capability:manage_children')->group(function () {
+        Route::get('partials/city-select', [NurseryChildWebController::class, 'citySelectPartial'])->name('partials.city-select');
+        Route::get('children/create', [NurseryChildWebController::class, 'create'])->name('children.create');
+        Route::post('children', [NurseryChildWebController::class, 'store'])->name('children.store');
+        Route::get('children/{child}/edit', [NurseryChildWebController::class, 'edit'])->name('children.edit');
+        Route::put('children/{child}', [NurseryChildWebController::class, 'update'])->name('children.update');
+        Route::post('children/{child}/portal-invite', [NurseryChildWebController::class, 'sendPortalInvite'])->name('children.portal-invite');
+
+        Route::post('guardians/{guardian}/portal-invite', [NurseryGuardianWebController::class, 'sendPortalInvite'])->name('guardians.portal-invite');
+        Route::delete('guardians/{guardian}/revoke-portal', [NurseryGuardianWebController::class, 'revokePortalAccess'])->name('guardians.revoke-portal');
+    });
+
+    Route::middleware('nursery.capability:view_daily')->group(function () {
+        Route::get('guardians', [NurseryGuardianWebController::class, 'index'])->name('guardians.index');
+        Route::get('guardians/{guardian}', [NurseryGuardianWebController::class, 'show'])->name('guardians.show');
+        Route::get('children/{child}', [NurseryChildWebController::class, 'show'])->name('children.show');
+    });
+
+    Route::middleware('nursery.capability:view_daily')->group(function () {
+        Route::get('classrooms', [NurseryClassroomWebController::class, 'index'])->name('classrooms.index');
+        Route::get('classrooms/today', [NurseryClassroomWebController::class, 'todayRedirect'])->name('classrooms.today.redirect');
+        Route::get('classrooms/{classroom}/today', [NurseryClassroomWebController::class, 'today'])->name('classrooms.today');
+    });
+
+    Route::middleware('nursery.capability:manage_classrooms')->group(function () {
+        Route::get('classrooms/create', [NurseryClassroomWebController::class, 'create'])->name('classrooms.create');
+        Route::post('classrooms', [NurseryClassroomWebController::class, 'store'])->name('classrooms.store');
+        Route::get('classrooms/{classroom}/edit', [NurseryClassroomWebController::class, 'edit'])->name('classrooms.edit');
+        Route::put('classrooms/{classroom}', [NurseryClassroomWebController::class, 'update'])->name('classrooms.update');
+    });
+
+    Route::middleware('nursery.capability:view_staff')->group(function () {
+        Route::get('staff', [NurseryStaffWebController::class, 'index'])->name('staff.index');
+    });
+
+    Route::middleware('nursery.capability:manage_staff')->group(function () {
+        Route::get('staff/partials/city-select', [NurseryStaffWebController::class, 'citySelectPartial'])->name('staff.partials.city-select');
+        Route::get('staff/create', [NurseryStaffWebController::class, 'create'])->name('staff.create');
+        Route::post('staff', [NurseryStaffWebController::class, 'store'])->name('staff.store');
+        Route::get('staff/{employee}/edit', [NurseryStaffWebController::class, 'edit'])->name('staff.edit');
+        Route::put('staff/{employee}', [NurseryStaffWebController::class, 'update'])->name('staff.update');
+    });
+
+    Route::middleware('nursery.capability:view_units')->group(function () {
+        Route::get('units', [NurseryUnitWebController::class, 'index'])->name('units.index');
+    });
+
+    Route::middleware('nursery.capability:manage_units')->group(function () {
+        Route::get('units/create', [NurseryUnitWebController::class, 'create'])->name('units.create');
+        Route::post('units', [NurseryUnitWebController::class, 'store'])->name('units.store');
+        Route::get('units/{unit}/edit', [NurseryUnitWebController::class, 'edit'])->name('units.edit');
+        Route::put('units/{unit}', [NurseryUnitWebController::class, 'update'])->name('units.update');
+    });
+
+    Route::middleware('nursery.capability:view_calendar')->group(function () {
+        Route::get('calendar', [NurseryCalendarWebController::class, 'index'])->name('calendar.index');
+        Route::get('calendar/events', [NurseryCalendarWebController::class, 'events'])->name('calendar.events');
+    });
+
+    Route::middleware('nursery.capability:manage_calendar')->group(function () {
+        Route::get('calendar/create', [NurseryCalendarWebController::class, 'create'])->name('calendar.create');
+        Route::post('calendar', [NurseryCalendarWebController::class, 'store'])->name('calendar.store');
+        Route::get('calendar/lessons', [NurseryCalendarWebController::class, 'lessonOptions'])->name('calendar.lessons');
+        Route::get('calendar/{entry}/edit', [NurseryCalendarWebController::class, 'edit'])->name('calendar.edit');
+        Route::put('calendar/{entry}', [NurseryCalendarWebController::class, 'update'])->name('calendar.update');
+        Route::delete('calendar/{entry}', [NurseryCalendarWebController::class, 'destroy'])->name('calendar.destroy');
+    });
+
+    Route::middleware('nursery.capability:view_subscriptions')->group(function () {
+        Route::get('subscriptions', [NurserySubscriptionWebController::class, 'index'])->name('subscriptions.index');
+        Route::get('subscriptions/plan-amount', [NurserySubscriptionWebController::class, 'planAmount'])->name('subscriptions.plan-amount');
+    });
+
+    Route::middleware('nursery.capability:manage_subscriptions')->group(function () {
+        Route::post('subscriptions', [NurserySubscriptionWebController::class, 'store'])->name('subscriptions.store');
+        Route::patch('subscriptions/{subscription}/cancel', [NurserySubscriptionWebController::class, 'cancel'])->name('subscriptions.cancel');
+        Route::patch('subscriptions/{subscription}/mark-paid', [NurserySubscriptionWebController::class, 'markPaid'])->name('subscriptions.mark-paid');
+        Route::post('subscriptions/{subscription}/renew', [NurserySubscriptionWebController::class, 'renew'])->name('subscriptions.renew');
+        Route::post('subscriptions/reminders/payment', [NurserySubscriptionWebController::class, 'sendPaymentReminders'])->name('subscriptions.reminders.payment');
+    });
+
+    Route::middleware('nursery.capability:view_finance')->group(function () {
+        Route::get('finance', [\App\Http\Controllers\Nursery\NurseryFinanceWebController::class, 'index'])->name('finance.index');
+    });
+
+    Route::middleware('nursery.capability:manage_settings')->group(function () {
+        Route::get('settings', [NurserySettingsWebController::class, 'index'])->name('settings.index');
+        Route::get('settings/partials/city-select', [NurserySettingsWebController::class, 'citySelectPartial'])->name('settings.partials.city-select');
+        Route::put('settings/account', [NurserySettingsWebController::class, 'updateAccount'])->name('settings.account.update');
+        Route::put('settings/branding', [NurserySettingsWebController::class, 'updateBranding'])->name('settings.branding.update');
+        Route::post('settings/plans', [NurserySettingsWebController::class, 'storePlan'])->name('settings.plans.store');
+        Route::put('settings/plans/{plan}', [NurserySettingsWebController::class, 'updatePlan'])->name('settings.plans.update');
+        Route::delete('settings/plans/{plan}', [NurserySettingsWebController::class, 'destroyPlan'])->name('settings.plans.destroy');
+        Route::post('settings/shifts', [NurserySettingsWebController::class, 'storeShifts'])->name('settings.shifts.store');
+        Route::delete('settings/shifts/{shift}', [NurserySettingsWebController::class, 'destroyShift'])->name('settings.shifts.destroy');
+        Route::put('settings/features', [NurserySettingsWebController::class, 'updateFeatures'])->name('settings.features.update');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
 | Storage Access (Fallback for missing symlink)
 |--------------------------------------------------------------------------
 */
@@ -406,6 +551,92 @@ Route::get('/storage/{path}', function (string $path) {
 
     return \Illuminate\Support\Facades\Storage::disk('public')->response($path);
 })->where('path', '.*');
+
+/*
+|--------------------------------------------------------------------------
+| Finance — خارج role:admin حتى يصل محاسب الحضانة (supervisor) حسب الصلاحيات.
+| حماية: nursery.finance (admin لغير الحضانة / per-screen للحضانة).
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'worker.scope', 'module:finance', 'nursery.finance'])->group(function () {
+    Route::prefix('finance')->name('finance.')->group(function () {
+
+        Route::get('/', fn () => redirect()->route('finance.dashboard'))->name('index');
+        Route::get('dashboard', [AccountingDashboardController::class, 'index'])->name('dashboard');
+        Route::get('accounts', [AccountWebController::class, 'index'])->name('accounts.index');
+        Route::get('accounts/import/template', [AccountWebController::class, 'importTemplate'])->name('accounts.import-template');
+        Route::post('accounts/import', [AccountWebController::class, 'import'])->name('accounts.import');
+        Route::get('accounts/create', [AccountWebController::class, 'create'])->name('accounts.create');
+        Route::post('accounts', [AccountWebController::class, 'store'])->name('accounts.store');
+        Route::put('accounts/{account}', [AccountWebController::class, 'update'])->name('accounts.update');
+        Route::delete('accounts/{account}', [AccountWebController::class, 'destroy'])->name('accounts.destroy');
+        Route::post('accounts/{account}/purge', [AccountWebController::class, 'purge'])->name('accounts.purge');
+        Route::patch('accounts/{account}/toggle-active', [AccountWebController::class, 'toggleActive'])->name('accounts.toggle-active');
+        // القيود والدفاتر
+        Route::resource('journals', JournalEntryWebController::class);
+        Route::get('ledger', [LedgerWebController::class, 'index'])->name('ledger.index');
+
+        // سندات القبض والصرف
+        Route::resource('receipts', ReceiptWebController::class)->only(['index', 'create', 'store']);
+        Route::get('payments/supplier-purchase-invoices', [PaymentWebController::class, 'supplierPurchaseInvoices'])->name('payments.supplier-purchase-invoices');
+        Route::resource('payments', PaymentWebController::class)->only(['index', 'create', 'store']);
+
+        // الشيكات
+        Route::prefix('cheques')->name('cheques.')->group(function () {
+            Route::get('/', [ChequeController::class, 'index'])->name('index');
+            Route::get('create/incoming', [ChequeController::class, 'createIncoming'])->name('create-incoming');
+            Route::get('create/outgoing', [ChequeController::class, 'createOutgoing'])->name('create-outgoing');
+            Route::post('/', [ChequeController::class, 'store'])->name('store');
+            Route::resource('/', ChequeController::class)->except(['index', 'store', 'create']);
+        });
+
+        // موديول المصروفات (تم التحديث لدعم الطباعة والرفع)
+        Route::get('expenses/{expense}/print', [ExpenseController::class, 'print'])->name('expenses.print');
+        Route::get('expenses/{expense}/pdf', [ExpenseController::class, 'pdf'])->name('expenses.pdf');
+        Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+        Route::post('expenses/{expense}/back-to-draft', [ExpenseController::class, 'backToDraft'])->name('expenses.back-to-draft');
+        Route::get('expenses/import/template', [ExpenseController::class, 'importTemplate'])->name('expenses.import-template');
+        Route::post('expenses/import', [ExpenseController::class, 'import'])->name('expenses.import');
+        Route::post('expenses/destroy-all-matching', [ExpenseController::class, 'destroyAllMatchingFilters'])->name('expenses.destroy-all-matching');
+        // يجب تسجيله قبل resource('expenses') وإلا يُفسَّر «categories» كمعرّف مصروف ويُستدعى show غير الموجود
+        Route::resource('expenses/categories', ExpenseCategoryController::class)->names('expenses.categories');
+        Route::resource('expenses', ExpenseController::class);
+
+        // الأصول الثابتة، مراكز التكلفة، والحسابات البنكية
+        Route::resource('fixed-assets/categories', FixedAssetCategoryController::class)->names('fixed-assets.categories');
+        Route::resource('fixed-assets', FixedAssetController::class);
+        Route::resource('cost-centers', CostCenterController::class);
+        Route::resource('bank-accounts', BankAccountController::class);
+        Route::resource('tax-rates', TaxRateController::class)->except(['show']);
+        Route::get('payment-method-accounts/edit', [PaymentMethodAccountController::class, 'edit'])->name('payment-method-accounts.edit');
+        Route::put('payment-method-accounts', [PaymentMethodAccountController::class, 'update'])->name('payment-method-accounts.update');
+
+        // إشعارات الخصم والإضافة
+        Route::post('credit-notes/{creditNote}/approve', [CreditNoteController::class, 'approve'])->name('credit-notes.approve');
+        Route::post('credit-notes/{creditNote}/cancel', [CreditNoteController::class, 'cancel'])->name('credit-notes.cancel');
+        Route::resource('credit-notes', CreditNoteController::class);
+
+        Route::post('debit-notes/{debitNote}/approve', [DebitNoteController::class, 'approve'])->name('debit-notes.approve');
+        Route::post('debit-notes/{debitNote}/cancel', [DebitNoteController::class, 'cancel'])->name('debit-notes.cancel');
+        Route::resource('debit-notes', DebitNoteController::class);
+
+        // الموازنات والتقارير المالية
+        Route::post('budgets/{budget}/activate', [BudgetController::class, 'activate'])->name('budgets.activate');
+        Route::post('budgets/{budget}/close', [BudgetController::class, 'close'])->name('budgets.close');
+        Route::post('budgets/{budget}/archive', [BudgetController::class, 'archive'])->name('budgets.archive');
+        Route::get('budgets/{budget}/export', [BudgetController::class, 'export'])->name('budgets.export');
+        Route::resource('budgets', BudgetController::class);
+        Route::get('bank-reconciliations', [BankReconciliationController::class, 'index'])->name('bank-reconciliations.index');
+        Route::get('bank-reconciliations/create', [BankReconciliationController::class, 'create'])->name('bank-reconciliations.create');
+        Route::post('bank-reconciliations', [BankReconciliationController::class, 'store'])->name('bank-reconciliations.store');
+        Route::get('reports/trial-balance', [TrialBalanceController::class, 'index'])->name('reports.trial-balance');
+        Route::get('reports/ar-aging', [ArAgingController::class, 'index'])->name('reports.ar-aging');
+        Route::get('reports/ap-aging', [ApAgingController::class, 'index'])->name('reports.ap-aging');
+        Route::get('reports/profit-loss', [ProfitLossReportWebController::class, 'index'])->name('reports.profit-loss');
+    });
+
+    Route::get('reports/tax', [TaxReportWebController::class, 'index'])->name('reports.tax.index');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -532,126 +763,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         });
     });
 
-    // الحضانة (Nursery) — نيش nurseries
-    Route::prefix('nursery')->name('nursery.')->middleware('module:nursery')->group(function () {
-        Route::get('dashboard', [NurseryDashboardController::class, 'index'])
-            ->middleware('nursery.capability:view_daily')
-            ->name('dashboard');
-        Route::get('portal/qr-download', [NurseryDashboardController::class, 'downloadPortalQr'])
-            ->middleware(['nursery.capability:view_daily', 'feature:nursery_portal'])
-            ->name('portal.qr-download');
-
-        Route::middleware('nursery.capability:view_daily')->group(function () {
-            Route::get('attendance', [NurseryAttendanceWebController::class, 'index'])->name('attendance.index');
-            Route::post('attendance/check-in', [NurseryAttendanceWebController::class, 'checkIn'])->name('attendance.check-in');
-            Route::post('attendance/check-out', [NurseryAttendanceWebController::class, 'checkOut'])->name('attendance.check-out');
-            Route::get('attendance/report', [NurseryAttendanceWebController::class, 'report'])->name('attendance.report');
-
-            Route::get('children', [NurseryChildWebController::class, 'index'])->name('children.index');
-        });
-
-        Route::middleware('nursery.capability:manage_child_attendance')->group(function () {
-            Route::post('attendance/weekdays', [NurseryAttendanceWebController::class, 'storeWeekdays'])->name('attendance.weekdays');
-            Route::post('attendance/leaves', [NurseryAttendanceWebController::class, 'storeLeave'])->name('attendance.leaves.store');
-            Route::delete('attendance/leaves/{leave}', [NurseryAttendanceWebController::class, 'destroyLeave'])->name('attendance.leaves.destroy');
-        });
-
-        Route::middleware('nursery.capability:manage_staff_attendance')->group(function () {
-            Route::post('attendance/staff/check-in', [NurseryAttendanceWebController::class, 'staffCheckIn'])->name('attendance.staff.check-in');
-            Route::post('attendance/staff/check-out', [NurseryAttendanceWebController::class, 'staffCheckOut'])->name('attendance.staff.check-out');
-        });
-
-        Route::middleware('nursery.capability:manage_children')->group(function () {
-            Route::get('partials/city-select', [NurseryChildWebController::class, 'citySelectPartial'])->name('partials.city-select');
-            Route::get('children/create', [NurseryChildWebController::class, 'create'])->name('children.create');
-            Route::post('children', [NurseryChildWebController::class, 'store'])->name('children.store');
-            Route::get('children/{child}/edit', [NurseryChildWebController::class, 'edit'])->name('children.edit');
-            Route::put('children/{child}', [NurseryChildWebController::class, 'update'])->name('children.update');
-            Route::post('children/{child}/portal-invite', [NurseryChildWebController::class, 'sendPortalInvite'])->name('children.portal-invite');
-
-            Route::post('guardians/{guardian}/portal-invite', [NurseryGuardianWebController::class, 'sendPortalInvite'])->name('guardians.portal-invite');
-            Route::delete('guardians/{guardian}/revoke-portal', [NurseryGuardianWebController::class, 'revokePortalAccess'])->name('guardians.revoke-portal');
-        });
-
-        Route::middleware('nursery.capability:view_daily')->group(function () {
-            Route::get('guardians', [NurseryGuardianWebController::class, 'index'])->name('guardians.index');
-            Route::get('guardians/{guardian}', [NurseryGuardianWebController::class, 'show'])->name('guardians.show');
-            Route::get('children/{child}', [NurseryChildWebController::class, 'show'])->name('children.show');
-        });
-
-        Route::middleware('nursery.capability:view_daily')->group(function () {
-            Route::get('classrooms', [NurseryClassroomWebController::class, 'index'])->name('classrooms.index');
-        });
-
-        Route::middleware('nursery.capability:manage_classrooms')->group(function () {
-            Route::get('classrooms/create', [NurseryClassroomWebController::class, 'create'])->name('classrooms.create');
-            Route::post('classrooms', [NurseryClassroomWebController::class, 'store'])->name('classrooms.store');
-            Route::get('classrooms/{classroom}/edit', [NurseryClassroomWebController::class, 'edit'])->name('classrooms.edit');
-            Route::put('classrooms/{classroom}', [NurseryClassroomWebController::class, 'update'])->name('classrooms.update');
-        });
-
-        Route::middleware('nursery.capability:view_staff')->group(function () {
-            Route::get('staff', [NurseryStaffWebController::class, 'index'])->name('staff.index');
-        });
-
-        Route::middleware('nursery.capability:manage_staff')->group(function () {
-            Route::get('staff/partials/city-select', [NurseryStaffWebController::class, 'citySelectPartial'])->name('staff.partials.city-select');
-            Route::get('staff/create', [NurseryStaffWebController::class, 'create'])->name('staff.create');
-            Route::post('staff', [NurseryStaffWebController::class, 'store'])->name('staff.store');
-            Route::get('staff/{employee}/edit', [NurseryStaffWebController::class, 'edit'])->name('staff.edit');
-            Route::put('staff/{employee}', [NurseryStaffWebController::class, 'update'])->name('staff.update');
-        });
-
-        Route::middleware('nursery.capability:view_units')->group(function () {
-            Route::get('units', [NurseryUnitWebController::class, 'index'])->name('units.index');
-        });
-
-        Route::middleware('nursery.capability:manage_units')->group(function () {
-            Route::get('units/create', [NurseryUnitWebController::class, 'create'])->name('units.create');
-            Route::post('units', [NurseryUnitWebController::class, 'store'])->name('units.store');
-            Route::get('units/{unit}/edit', [NurseryUnitWebController::class, 'edit'])->name('units.edit');
-            Route::put('units/{unit}', [NurseryUnitWebController::class, 'update'])->name('units.update');
-        });
-
-        Route::middleware('nursery.capability:view_calendar')->group(function () {
-            Route::get('calendar', [NurseryCalendarWebController::class, 'index'])->name('calendar.index');
-            Route::get('calendar/events', [NurseryCalendarWebController::class, 'events'])->name('calendar.events');
-        });
-
-        Route::middleware('nursery.capability:manage_calendar')->group(function () {
-            Route::get('calendar/create', [NurseryCalendarWebController::class, 'create'])->name('calendar.create');
-            Route::post('calendar', [NurseryCalendarWebController::class, 'store'])->name('calendar.store');
-            Route::get('calendar/lessons', [NurseryCalendarWebController::class, 'lessonOptions'])->name('calendar.lessons');
-            Route::get('calendar/{entry}/edit', [NurseryCalendarWebController::class, 'edit'])->name('calendar.edit');
-            Route::put('calendar/{entry}', [NurseryCalendarWebController::class, 'update'])->name('calendar.update');
-            Route::delete('calendar/{entry}', [NurseryCalendarWebController::class, 'destroy'])->name('calendar.destroy');
-        });
-
-        Route::middleware('nursery.capability:view_subscriptions')->group(function () {
-            Route::get('subscriptions', [NurserySubscriptionWebController::class, 'index'])->name('subscriptions.index');
-            Route::get('subscriptions/plan-amount', [NurserySubscriptionWebController::class, 'planAmount'])->name('subscriptions.plan-amount');
-        });
-
-        Route::middleware('nursery.capability:manage_subscriptions')->group(function () {
-            Route::post('subscriptions', [NurserySubscriptionWebController::class, 'store'])->name('subscriptions.store');
-            Route::patch('subscriptions/{subscription}/cancel', [NurserySubscriptionWebController::class, 'cancel'])->name('subscriptions.cancel');
-            Route::post('subscriptions/reminders/payment', [NurserySubscriptionWebController::class, 'sendPaymentReminders'])->name('subscriptions.reminders.payment');
-        });
-
-        Route::middleware('nursery.capability:manage_settings')->group(function () {
-            Route::get('settings', [NurserySettingsWebController::class, 'index'])->name('settings.index');
-            Route::get('settings/partials/city-select', [NurserySettingsWebController::class, 'citySelectPartial'])->name('settings.partials.city-select');
-            Route::put('settings/account', [NurserySettingsWebController::class, 'updateAccount'])->name('settings.account.update');
-            Route::put('settings/branding', [NurserySettingsWebController::class, 'updateBranding'])->name('settings.branding.update');
-            Route::post('settings/plans', [NurserySettingsWebController::class, 'storePlan'])->name('settings.plans.store');
-            Route::put('settings/plans/{plan}', [NurserySettingsWebController::class, 'updatePlan'])->name('settings.plans.update');
-            Route::delete('settings/plans/{plan}', [NurserySettingsWebController::class, 'destroyPlan'])->name('settings.plans.destroy');
-            Route::post('settings/shifts', [NurserySettingsWebController::class, 'storeShifts'])->name('settings.shifts.store');
-            Route::delete('settings/shifts/{shift}', [NurserySettingsWebController::class, 'destroyShift'])->name('settings.shifts.destroy');
-            Route::put('settings/features', [NurserySettingsWebController::class, 'updateFeatures'])->name('settings.features.update');
-        });
-    });
-
     Route::prefix('fleet')->name('fleet.')->middleware(['module:fleet', 'fleet.access'])->group(function () {
         Route::get('dashboard', [FleetDashboardController::class, 'index'])
             ->middleware('fleet.capability:view_dashboard')
@@ -671,6 +782,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::post('customers', [FleetCustomerWebController::class, 'store'])->name('customers.store');
             Route::get('customers/{customer}/edit', [FleetCustomerWebController::class, 'edit'])->name('customers.edit');
             Route::put('customers/{customer}', [FleetCustomerWebController::class, 'update'])->name('customers.update');
+            Route::post('customers/{customer}/approve-location', [FleetCustomerWebController::class, 'approveLocation'])->name('customers.approve-location');
         });
 
         Route::middleware('fleet.capability:manage_products')->group(function () {
@@ -755,144 +867,68 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     // Inventory & Items
     Route::middleware('module:inventory')->group(function () {
-    Route::get('api/products/search', [ProductSearchController::class, 'search'])->name('api.products.search');
-    Route::get('items/{item}', [ItemWebController::class, 'show'])->whereNumber('item')->name('items.show');
-    Route::put('items/{item}/bom', [ItemBomController::class, 'update'])->whereNumber('item')->name('items.bom.update');
-    Route::resource('items', ItemWebController::class)->except('show');
-    Route::post('items/import', [ItemWebController::class, 'import'])->name('items.import');
-    Route::get('items/import/template', [ItemWebController::class, 'importTemplate'])->name('items.import-template');
-    Route::resource('warehouses', WarehouseWebController::class);
+        Route::get('api/products/search', [ProductSearchController::class, 'search'])->name('api.products.search');
+        Route::get('items/{item}', [ItemWebController::class, 'show'])->whereNumber('item')->name('items.show');
+        Route::put('items/{item}/bom', [ItemBomController::class, 'update'])->whereNumber('item')->name('items.bom.update');
+        Route::resource('items', ItemWebController::class)->except('show');
+        Route::post('items/import', [ItemWebController::class, 'import'])->name('items.import');
+        Route::get('items/import/template', [ItemWebController::class, 'importTemplate'])->name('items.import-template');
+        Route::resource('warehouses', WarehouseWebController::class);
 
-    // Inventory Management
-    Route::prefix('inventory')->name('inventory.')->group(function () {
-        Route::get('/', [InventoryDashboardController::class, 'index'])->name('dashboard');
-        Route::resource('item-categories', ItemCategoryController::class)->except(['show']);
-        Route::resource('transfers', \App\Http\Controllers\StockTransferController::class);
-        Route::get('transfers/items-by-warehouse', [\App\Http\Controllers\StockTransferController::class, 'itemsByWarehouse'])->name('transfers.items-by-warehouse');
-        Route::resource('adjustments', \App\Http\Controllers\StockAdjustmentController::class);
-        Route::get('adjustments/items-for-adjustment', [\App\Http\Controllers\StockAdjustmentController::class, 'itemsForAdjustment'])->name('adjustments.items-for-adjustment');
-        Route::resource('stock-in', StockInController::class);
-        Route::get('audits/items-for-audit', [\App\Http\Controllers\InventoryAuditController::class, 'itemsForAudit'])->name('audits.items-for-audit');
-        Route::resource('audits', \App\Http\Controllers\InventoryAuditController::class);
-        Route::post('audits/{audit}/approve', [\App\Http\Controllers\InventoryAuditController::class, 'approve'])->name('audits.approve');
-        Route::get('movements', [\App\Http\Controllers\StockMovementController::class, 'index'])->name('movements.index');
-        Route::get('reports/valuation', [\App\Http\Controllers\InventoryValuationReportWebController::class, 'index'])->name('reports.valuation');
-        Route::resource('price-lists', \App\Http\Controllers\PriceListController::class);
-    });
+        // Inventory Management
+        Route::prefix('inventory')->name('inventory.')->group(function () {
+            Route::get('/', [InventoryDashboardController::class, 'index'])->name('dashboard');
+            Route::resource('item-categories', ItemCategoryController::class)->except(['show']);
+            Route::resource('transfers', \App\Http\Controllers\StockTransferController::class);
+            Route::get('transfers/items-by-warehouse', [\App\Http\Controllers\StockTransferController::class, 'itemsByWarehouse'])->name('transfers.items-by-warehouse');
+            Route::resource('adjustments', \App\Http\Controllers\StockAdjustmentController::class);
+            Route::get('adjustments/items-for-adjustment', [\App\Http\Controllers\StockAdjustmentController::class, 'itemsForAdjustment'])->name('adjustments.items-for-adjustment');
+            Route::resource('stock-in', StockInController::class);
+            Route::get('audits/items-for-audit', [\App\Http\Controllers\InventoryAuditController::class, 'itemsForAudit'])->name('audits.items-for-audit');
+            Route::resource('audits', \App\Http\Controllers\InventoryAuditController::class);
+            Route::post('audits/{audit}/approve', [\App\Http\Controllers\InventoryAuditController::class, 'approve'])->name('audits.approve');
+            Route::get('movements', [\App\Http\Controllers\StockMovementController::class, 'index'])->name('movements.index');
+            Route::get('reports/valuation', [\App\Http\Controllers\InventoryValuationReportWebController::class, 'index'])->name('reports.valuation');
+            Route::resource('price-lists', \App\Http\Controllers\PriceListController::class);
+        });
     }); // module:inventory
 
     // Legacy production + manufacturing
     Route::middleware('module:manufacturing')->group(function () {
-    Route::redirect('production-lines', 'manufacturing', 301)->name('production-lines.index');
-    Route::redirect('production-lines/create', 'manufacturing', 301)->name('production-lines.create');
-    Route::get('production-lines/{any}', fn () => redirect()->route('manufacturing.dashboard'))
-        ->where('any', '.*')
-        ->name('production-lines.legacy');
-    Route::resource('machines', MachineWebController::class);
-    Route::prefix('production-orders')->name('production-orders.')->group(function () {
-        Route::redirect('/', '/manufacturing/runs', 301)->name('index');
-        Route::redirect('create', '/manufacturing/create', 301)->name('create');
-        Route::get('items/{item}/bom-suggestions', fn () => redirect()->route('manufacturing.runs.index', [], 301))->name('bom-suggestions');
-        Route::get('{production_order}/ingredient-shortage', fn () => redirect()->route('manufacturing.runs.index', [], 301))->name('ingredient-shortage');
-        Route::match(['post'], '{production_order}/prefill-purchase', fn () => redirect()->route('manufacturing.runs.index'))->name('prefill-purchase');
-        Route::post('{production_order}/complete', [ProductionOrderWebController::class, 'complete'])->name('complete');
-        Route::match(['post'], '/', fn () => redirect()->route('manufacturing.runs.index'))->name('store');
-        Route::get('{production_order}', [ProductionOrderWebController::class, 'show'])->name('show');
-    });
-
-    Route::prefix('manufacturing')->name('manufacturing.')->group(function () {
-        Route::get('/', [ManufacturingWebController::class, 'dashboard'])->name('dashboard');
-        Route::get('runs', [ManufacturingWebController::class, 'index'])->name('runs.index');
-        Route::prefix('bom-lists')->name('bom-lists.')->group(function () {
-            Route::get('/', [BomListWebController::class, 'index'])->name('index');
-            Route::get('create', [BomListWebController::class, 'create'])->name('create');
-            Route::post('/', [BomListWebController::class, 'store'])->name('store');
-            Route::get('{bom_list}', [BomListWebController::class, 'show'])->name('show');
+        Route::redirect('production-lines', 'manufacturing', 301)->name('production-lines.index');
+        Route::redirect('production-lines/create', 'manufacturing', 301)->name('production-lines.create');
+        Route::get('production-lines/{any}', fn () => redirect()->route('manufacturing.dashboard'))
+            ->where('any', '.*')
+            ->name('production-lines.legacy');
+        Route::resource('machines', MachineWebController::class);
+        Route::prefix('production-orders')->name('production-orders.')->group(function () {
+            Route::redirect('/', '/manufacturing/runs', 301)->name('index');
+            Route::redirect('create', '/manufacturing/create', 301)->name('create');
+            Route::get('items/{item}/bom-suggestions', fn () => redirect()->route('manufacturing.runs.index', [], 301))->name('bom-suggestions');
+            Route::get('{production_order}/ingredient-shortage', fn () => redirect()->route('manufacturing.runs.index', [], 301))->name('ingredient-shortage');
+            Route::match(['post'], '{production_order}/prefill-purchase', fn () => redirect()->route('manufacturing.runs.index'))->name('prefill-purchase');
+            Route::post('{production_order}/complete', [ProductionOrderWebController::class, 'complete'])->name('complete');
+            Route::match(['post'], '/', fn () => redirect()->route('manufacturing.runs.index'))->name('store');
+            Route::get('{production_order}', [ProductionOrderWebController::class, 'show'])->name('show');
         });
-        Route::get('create', [ManufacturingWebController::class, 'create'])->name('create');
-        Route::get('reports/production-variance', [ManufacturingWebController::class, 'productionVarianceReport'])->name('reports.production-variance');
-        Route::post('/', [ManufacturingWebController::class, 'store'])->name('store');
-        Route::post('{manufacturing_run}/post', [ManufacturingWebController::class, 'post'])->name('post');
-        Route::delete('{manufacturing_run}', [ManufacturingWebController::class, 'destroy'])->name('destroy');
-        Route::get('{manufacturing_run}', [ManufacturingWebController::class, 'show'])->name('show');
-    });
+
+        Route::prefix('manufacturing')->name('manufacturing.')->group(function () {
+            Route::get('/', [ManufacturingWebController::class, 'dashboard'])->name('dashboard');
+            Route::get('runs', [ManufacturingWebController::class, 'index'])->name('runs.index');
+            Route::prefix('bom-lists')->name('bom-lists.')->group(function () {
+                Route::get('/', [BomListWebController::class, 'index'])->name('index');
+                Route::get('create', [BomListWebController::class, 'create'])->name('create');
+                Route::post('/', [BomListWebController::class, 'store'])->name('store');
+                Route::get('{bom_list}', [BomListWebController::class, 'show'])->name('show');
+            });
+            Route::get('create', [ManufacturingWebController::class, 'create'])->name('create');
+            Route::get('reports/production-variance', [ManufacturingWebController::class, 'productionVarianceReport'])->name('reports.production-variance');
+            Route::post('/', [ManufacturingWebController::class, 'store'])->name('store');
+            Route::post('{manufacturing_run}/post', [ManufacturingWebController::class, 'post'])->name('post');
+            Route::delete('{manufacturing_run}', [ManufacturingWebController::class, 'destroy'])->name('destroy');
+            Route::get('{manufacturing_run}', [ManufacturingWebController::class, 'show'])->name('show');
+        });
     }); // module:manufacturing (legacy + runs)
-
-    // Finance (Start of the module)
-    Route::prefix('finance')->name('finance.')->middleware('module:finance')->group(function () {
-        Route::get('/', fn () => redirect()->route('finance.dashboard'))->name('index');
-        Route::get('dashboard', [AccountingDashboardController::class, 'index'])->name('dashboard');
-        Route::get('accounts', [AccountWebController::class, 'index'])->name('accounts.index');
-        Route::get('accounts/import/template', [AccountWebController::class, 'importTemplate'])->name('accounts.import-template');
-        Route::post('accounts/import', [AccountWebController::class, 'import'])->name('accounts.import');
-        Route::get('accounts/create', [AccountWebController::class, 'create'])->name('accounts.create');
-        Route::post('accounts', [AccountWebController::class, 'store'])->name('accounts.store');
-        Route::put('accounts/{account}', [AccountWebController::class, 'update'])->name('accounts.update');
-        Route::delete('accounts/{account}', [AccountWebController::class, 'destroy'])->name('accounts.destroy');
-        Route::post('accounts/{account}/purge', [AccountWebController::class, 'purge'])->name('accounts.purge');
-        Route::patch('accounts/{account}/toggle-active', [AccountWebController::class, 'toggleActive'])->name('accounts.toggle-active');
-        // القيود والدفاتر
-        Route::resource('journals', JournalEntryWebController::class);
-        Route::get('ledger', [LedgerWebController::class, 'index'])->name('ledger.index');
-
-        // سندات القبض والصرف
-        Route::resource('receipts', ReceiptWebController::class)->only(['index', 'create', 'store']);
-        Route::get('payments/supplier-purchase-invoices', [PaymentWebController::class, 'supplierPurchaseInvoices'])->name('payments.supplier-purchase-invoices');
-        Route::resource('payments', PaymentWebController::class)->only(['index', 'create', 'store']);
-
-        // الشيكات
-        Route::prefix('cheques')->name('cheques.')->group(function () {
-            Route::get('/', [ChequeController::class, 'index'])->name('index');
-            Route::get('create/incoming', [ChequeController::class, 'createIncoming'])->name('create-incoming');
-            Route::get('create/outgoing', [ChequeController::class, 'createOutgoing'])->name('create-outgoing');
-            Route::post('/', [ChequeController::class, 'store'])->name('store');
-            Route::resource('/', ChequeController::class)->except(['index', 'store', 'create']);
-        });
-
-        // موديول المصروفات (تم التحديث لدعم الطباعة والرفع)
-        Route::get('expenses/{expense}/print', [ExpenseController::class, 'print'])->name('expenses.print');
-        Route::get('expenses/{expense}/pdf', [ExpenseController::class, 'pdf'])->name('expenses.pdf');
-        Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
-        Route::post('expenses/{expense}/back-to-draft', [ExpenseController::class, 'backToDraft'])->name('expenses.back-to-draft');
-        Route::get('expenses/import/template', [ExpenseController::class, 'importTemplate'])->name('expenses.import-template');
-        Route::post('expenses/import', [ExpenseController::class, 'import'])->name('expenses.import');
-        Route::post('expenses/destroy-all-matching', [ExpenseController::class, 'destroyAllMatchingFilters'])->name('expenses.destroy-all-matching');
-        // يجب تسجيله قبل resource('expenses') وإلا يُفسَّر «categories» كمعرّف مصروف ويُستدعى show غير الموجود
-        Route::resource('expenses/categories', ExpenseCategoryController::class)->names('expenses.categories');
-        Route::resource('expenses', ExpenseController::class);
-
-        // الأصول الثابتة، مراكز التكلفة، والحسابات البنكية
-        Route::resource('fixed-assets/categories', FixedAssetCategoryController::class)->names('fixed-assets.categories');
-        Route::resource('fixed-assets', FixedAssetController::class);
-        Route::resource('cost-centers', CostCenterController::class);
-        Route::resource('bank-accounts', BankAccountController::class);
-        Route::resource('tax-rates', TaxRateController::class)->except(['show']);
-        Route::get('payment-method-accounts/edit', [PaymentMethodAccountController::class, 'edit'])->name('payment-method-accounts.edit');
-        Route::put('payment-method-accounts', [PaymentMethodAccountController::class, 'update'])->name('payment-method-accounts.update');
-
-        // إشعارات الخصم والإضافة
-        Route::post('credit-notes/{creditNote}/approve', [CreditNoteController::class, 'approve'])->name('credit-notes.approve');
-        Route::post('credit-notes/{creditNote}/cancel', [CreditNoteController::class, 'cancel'])->name('credit-notes.cancel');
-        Route::resource('credit-notes', CreditNoteController::class);
-
-        Route::post('debit-notes/{debitNote}/approve', [DebitNoteController::class, 'approve'])->name('debit-notes.approve');
-        Route::post('debit-notes/{debitNote}/cancel', [DebitNoteController::class, 'cancel'])->name('debit-notes.cancel');
-        Route::resource('debit-notes', DebitNoteController::class);
-
-        // الموازنات والتقارير المالية
-        Route::post('budgets/{budget}/activate', [BudgetController::class, 'activate'])->name('budgets.activate');
-        Route::post('budgets/{budget}/close', [BudgetController::class, 'close'])->name('budgets.close');
-        Route::post('budgets/{budget}/archive', [BudgetController::class, 'archive'])->name('budgets.archive');
-        Route::get('budgets/{budget}/export', [BudgetController::class, 'export'])->name('budgets.export');
-        Route::resource('budgets', BudgetController::class);
-        Route::get('bank-reconciliations', [BankReconciliationController::class, 'index'])->name('bank-reconciliations.index');
-        Route::get('bank-reconciliations/create', [BankReconciliationController::class, 'create'])->name('bank-reconciliations.create');
-        Route::post('bank-reconciliations', [BankReconciliationController::class, 'store'])->name('bank-reconciliations.store');
-        Route::get('reports/trial-balance', [TrialBalanceController::class, 'index'])->name('reports.trial-balance');
-        Route::get('reports/ar-aging', [ArAgingController::class, 'index'])->name('reports.ar-aging');
-        Route::get('reports/ap-aging', [ApAgingController::class, 'index'])->name('reports.ap-aging');
-        Route::get('reports/profit-loss', [ProfitLossReportWebController::class, 'index'])->name('reports.profit-loss');
-    });
 
     // الموارد البشرية (HR)
     Route::prefix('hr')->name('hr.')->middleware('module:hr')->group(function () {
@@ -1041,9 +1077,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::middleware('module:sales')->group(function () {
         Route::get('reports/statement', [StatementReportWebController::class, 'index'])->name('reports.statement.index');
     });
-    Route::middleware('module:finance')->group(function () {
-        Route::get('reports/tax', [TaxReportWebController::class, 'index'])->name('reports.tax.index');
-    });
     Route::middleware('module:manufacturing')->group(function () {
         Route::get('reports/production/{record}', [ProductionReportWebController::class, 'show'])->name('reports.production.show');
         Route::get('reports/production', [ProductionReportWebController::class, 'index'])->name('reports.production.index');
@@ -1126,4 +1159,3 @@ Route::get('/run-final-cleanup', function () {
         return '❌ Error: '.$e->getMessage();
     }
 });
-

@@ -2,13 +2,24 @@
 
 namespace App\Providers;
 
+use App\Contracts\Core\Checkout\OnlineStoreCheckoutInterface;
+use App\Contracts\Core\Payment\PaymentCredentialsProvider;
+use App\Contracts\Core\Payment\PaymentGatewayInterface;
+use App\Core\Messaging\PhoneNumberNormalizer;
+use App\Core\Messaging\WhatsAppChannelFactory;
+use App\Core\Messaging\WhatsAppConfigResolver;
+use App\Core\Metrics\MetricsQueryRegistry;
+use App\Core\Payment\ManualTransferGateway;
+use App\Core\Payment\PaymentGatewayRegistry;
+use App\Core\Payment\PaymobGateway;
+use App\Core\Payment\PaymobHmacVerifier;
+use App\Core\Payment\PaymobWebhookAuthenticator;
 use App\Events\Clinic\ClinicAppointmentBooked;
 use App\Listeners\Clinic\SendClinicAppointmentWhatsAppNotification;
 use App\Models\CompanySetting;
 use App\Models\JournalEntry;
-use App\Models\Nursery\NurserySetting;
-use App\Services\Tenant\TenantBrandingService;
 use App\Models\JournalItem;
+use App\Models\Nursery\NurserySetting;
 use App\Models\ProductionLog;
 use App\Models\ProductionRecord;
 use App\Models\StockMovement;
@@ -19,34 +30,24 @@ use App\Observers\ProductionLogObserver;
 use App\Observers\ProductionRecordObserver;
 use App\Observers\StockMovementObserver;
 use App\Services\ChartOfAccountsProvisioner;
+use App\Services\Store\Payment\StorePaymentCredentialsProvider;
+use App\Services\Store\StoreCheckoutService;
+use App\Services\Store\StoreMerchantMetricsService;
+use App\Services\Tenant\TenantBrandingService;
+use App\Services\Tenant\TenantContext;
+use App\Services\Tenant\TenantFeatureRegistry;
 use App\Services\Tenant\TenantModuleRegistry;
+use App\Services\Tenant\TenantNavigationService;
 use Filament\Notifications\Livewire\Notifications;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\VerticalAlignment;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Blade;
-use App\Services\Tenant\TenantContext;
-use App\Services\Tenant\TenantFeatureRegistry;
-use App\Contracts\Core\Checkout\OnlineStoreCheckoutInterface;
-use App\Core\Metrics\MetricsQueryRegistry;
-use App\Contracts\Core\Payment\PaymentCredentialsProvider;
-use App\Contracts\Core\Payment\PaymentGatewayInterface;
-use App\Core\Messaging\PhoneNumberNormalizer;
-use App\Core\Messaging\WhatsAppChannelFactory;
-use App\Core\Messaging\WhatsAppConfigResolver;
-use App\Core\Payment\ManualTransferGateway;
-use App\Core\Payment\PaymentGatewayRegistry;
-use App\Core\Payment\PaymobGateway;
-use App\Core\Payment\PaymobHmacVerifier;
-use App\Core\Payment\PaymobWebhookAuthenticator;
-use App\Services\Store\Payment\StorePaymentCredentialsProvider;
-use App\Services\Store\StoreCheckoutService;
-use App\Services\Store\StoreMerchantMetricsService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -122,6 +123,9 @@ class AppServiceProvider extends ServiceProvider
                 'defaultVatPercent' => CompanySetting::resolvedDefaultVatPercent(),
                 'erpCurrencyCode' => CompanySetting::resolvedCurrencyCode(),
                 'enabledModules' => $enabledModules,
+                'tenantNavigation' => auth()->check()
+                    ? app(TenantNavigationService::class)
+                    : null,
             ]);
         });
 

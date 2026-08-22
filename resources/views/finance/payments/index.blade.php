@@ -1,13 +1,13 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'سندات الصرف - ' . config('app.name'))
+@section('title', niche_label('finance.payment', 'سند صرف').' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
     <span class="mx-1 text-gray-400">›</span>
     <a href="{{ route('finance.dashboard') }}" class="text-gray-500 hover:text-indigo-600">المحاسبة</a>
     <span class="mx-1 text-gray-400">›</span>
-    <span class="text-indigo-900 font-semibold">سندات الصرف</span>
+    <span class="text-indigo-900 font-semibold">{{ niche_label('finance.payment', 'سند صرف') }}</span>
 @endsection
 
 @section('content')

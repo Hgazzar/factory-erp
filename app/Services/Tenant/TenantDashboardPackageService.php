@@ -19,6 +19,7 @@ final class TenantDashboardPackageService
         private readonly NicheLexiconService $lexiconService,
         private readonly NicheCatalog $nicheCatalog,
         private readonly PremiumFeatureCatalog $premiumCatalog,
+        private readonly TenantNavigationService $navigation,
     ) {}
 
     /**
@@ -89,79 +90,7 @@ final class TenantDashboardPackageService
             'niche_name' => $nicheName,
             'modules' => $modules,
             'premium_features' => $premiumFeatures,
-            'quick_links' => $this->quickLinksForNiche($nicheKey, $moduleKeys),
+            'quick_links' => $this->navigation->quickLinks($tenantUserId),
         ];
-    }
-
-    /**
-     * @param  list<string>  $moduleKeys
-     * @return list<array{label: string, route: string, hint: string}>
-     */
-        private function quickLinksForNiche(?string $nicheKey, array $moduleKeys): array
-    {
-        $has = static fn (string $m): bool => in_array($m, $moduleKeys, true);
-        $storeCaps = app(\App\Services\Store\StoreNicheCapabilities::class);
-        $features = app(\App\Services\Tenant\TenantFeatureRegistry::class);
-        $tenantId = app(\App\Services\Tenant\TenantContext::class)->resolveTenantUserId();
-        $onlineStore = $tenantId !== null
-            && $storeCaps->supportsOnlineStorePortal($nicheKey)
-            && $features->isEnabled(\App\Support\StoreFeatureKeys::ONLINE_STORE, $tenantId);
-
-        $storeLinks = $onlineStore && $has('pos')
-            ? array_filter([
-                ['label' => $storeCaps->ordersNavLabel($nicheKey), 'route' => 'pos.orders.index', 'hint' => 'طلبات أونلاين'],
-                ['label' => $storeCaps->settingsNavLabel($nicheKey), 'route' => 'settings.store.edit', 'hint' => 'طرق الدفع والمتجر'],
-            ])
-            : [];
-
-        $links = match ($nicheKey) {
-            'retail' => array_filter([
-                $has('pos') ? ['label' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'hint' => 'مبيعات اليوم والأجهزة'] : null,
-                $has('sales') ? ['label' => 'لوحة المبيعات', 'route' => 'sales.dashboard', 'hint' => 'فواتير وتحصيلات'] : null,
-                $has('crm') ? ['label' => 'لوحة CRM', 'route' => 'crm.dashboard', 'hint' => 'عملاء وفرص'] : null,
-                $has('inventory') ? ['label' => 'تقييم المخزون', 'route' => 'inventory.reports.valuation', 'hint' => 'قيمة المخزون الحالية'] : null,
-            ]),
-            'manufacturing' => array_filter([
-                $has('manufacturing') ? ['label' => 'تسجيل الإنتاج', 'route' => 'operations.production-entry.create', 'hint' => 'إدخال إنتاج لحظي'] : null,
-                $has('manufacturing') ? ['label' => 'لوحة التصنيع', 'route' => 'manufacturing.dashboard', 'hint' => 'أوامر تشغيل وBOM'] : null,
-                $has('manufacturing') ? ['label' => 'لوحة العمليات', 'route' => 'operations.dashboard.index', 'hint' => 'ورديات وإنجاز'] : null,
-                $has('inventory') ? ['label' => 'تقييم المخزون', 'route' => 'inventory.reports.valuation', 'hint' => 'قيمة المخزون'] : null,
-                $has('pos') ? ['label' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'hint' => 'كاشير المعرض'] : null,
-            ]),
-            'fleet_agents' => array_filter([
-                $has('fleet') ? ['label' => 'لوحة المناديب', 'route' => 'fleet.dashboard', 'hint' => 'مناديب وعملاء ميدان'] : null,
-                $has('pos') ? ['label' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'hint' => 'كاشير المندوب'] : null,
-                $has('sales') ? ['label' => 'لوحة المبيعات', 'route' => 'sales.dashboard', 'hint' => 'تحصيلات ميدانية'] : null,
-                $has('crm') ? ['label' => 'لوحة CRM', 'route' => 'crm.dashboard', 'hint' => 'عملاء المناديب'] : null,
-            ]),
-            'medical_clinics' => array_filter([
-                $has('clinic') ? ['label' => 'لوحة العيادة', 'route' => 'clinic.dashboard', 'hint' => 'مواعيد ومرضى'] : null,
-                $has('hr') ? ['label' => 'الموارد البشرية', 'route' => 'hr.dashboard', 'hint' => 'موظفون وحضور'] : null,
-                $has('pos') ? ['label' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'hint' => 'مستلزمات طبية'] : null,
-            ]),
-            'nurseries' => array_filter([
-                $has('nursery') ? ['label' => 'لوحة الحضانة', 'route' => 'nursery.dashboard', 'hint' => 'حضور اليوم والأطفال'] : null,
-                $has('hr') ? ['label' => 'معلمات وموظفون', 'route' => 'hr.dashboard', 'hint' => 'طاقم الحضانة'] : null,
-                $has('pos') ? ['label' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'hint' => 'متجر الحضانة'] : null,
-            ]),
-            'full_erp' => array_filter([
-                $has('pos') ? ['label' => 'لوحة نقاط البيع', 'route' => 'pos.dashboard', 'hint' => 'مبيعات وPOS'] : null,
-                $has('finance') ? ['label' => 'لوحة المحاسبة', 'route' => 'finance.dashboard', 'hint' => 'مالية'] : null,
-                $has('inventory') ? ['label' => 'لوحة المخزون', 'route' => 'inventory.dashboard', 'hint' => 'مخازن'] : null,
-            ]),
-            default => array_filter([
-                $has('finance') ? ['label' => 'لوحة المحاسبة', 'route' => 'finance.dashboard', 'hint' => 'مالية'] : null,
-                $has('inventory') ? ['label' => 'لوحة المخزون', 'route' => 'inventory.dashboard', 'hint' => 'مخازن'] : null,
-            ]),
-        };
-
-        $links = array_merge($links, $storeLinks);
-
-        $links[] = ['label' => 'سجل التدقيق', 'route' => 'system.audit.index', 'hint' => 'مراقبة التغييرات'];
-        if ($has('finance')) {
-            $links[] = ['label' => 'أرباح وخسائر', 'route' => 'finance.reports.profit-loss', 'hint' => 'تقرير مالي'];
-        }
-
-        return array_values($links);
     }
 }

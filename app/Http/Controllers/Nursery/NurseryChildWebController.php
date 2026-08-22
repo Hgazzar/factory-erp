@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Nursery\AttendanceLog;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\Classroom;
+use App\Services\Nursery\NurseryChildDailyActivityService;
 use App\Services\Nursery\NurseryChildService;
 use App\Services\Nursery\NurseryPortalInviteService;
 use App\Support\SaudiRegions;
@@ -60,7 +61,7 @@ final class NurseryChildWebController extends Controller
         ];
 
         $children = Child::query()
-            ->with(['guardian:id,name,phone', 'activeEnrollment.classroom:id,name'])
+            ->with(['guardian:id,name,phone', 'activeEnrollment.classroom:id,name', 'attachments'])
             ->where('user_id', $tenantUserId)
             ->when($classroomId > 0, function ($query) use ($classroomId): void {
                 $query->whereHas('activeEnrollment', fn ($e) => $e
@@ -110,6 +111,13 @@ final class NurseryChildWebController extends Controller
         if ($uploads !== []) {
             $this->persistMorphAttachments($child, $uploads, $tenantUserId, 'nursery/children');
         }
+        $this->persistAvatarUpload(
+            $child,
+            $request->file('avatar'),
+            $tenantUserId,
+            'nursery/children',
+            $request->boolean('remove_avatar')
+        );
 
         if ($request->boolean('send_portal_invite')) {
             $invite = app(NurseryPortalInviteService::class)->sendInvite($tenantUserId, $child);
@@ -131,7 +139,7 @@ final class NurseryChildWebController extends Controller
             ->with('success', 'تم تسجيل الطفل بنجاح.');
     }
 
-    public function show(Child $child): View
+    public function show(Request $request, Child $child, NurseryChildDailyActivityService $dailyActivities): View
     {
         $tenantUserId = $this->resolveOperationsTenantUserId();
         abort_unless((int) $child->user_id === $tenantUserId, 404);
@@ -147,12 +155,36 @@ final class NurseryChildWebController extends Controller
             ->limit(14)
             ->get();
 
+        $activityDate = trim((string) $request->query('date', now()->toDateString()));
+        if ($activityDate === '' || strtotime($activityDate) === false) {
+            $activityDate = now()->toDateString();
+        }
+        if ($activityDate > now()->toDateString()) {
+            $activityDate = now()->toDateString();
+        }
+
+        $todaysActivities = $dailyActivities->forChildOnDate($tenantUserId, (int) $child->id, $activityDate);
+        $dailySummary = $dailyActivities->summary($todaysActivities);
+
         $canEdit = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILDREN);
+        $canManageChildAttendance = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILD_ATTENDANCE);
+        $canManageChildActivity = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILD_ACTIVITY);
         $portalInviteUrl = $child->guardian !== null
             ? app(NurseryPortalInviteService::class)->inviteUrl($tenantUserId, $child->guardian)
             : null;
 
-        return view('nursery.children.show', compact('child', 'recentAttendance', 'relationshipLabels', 'canEdit', 'portalInviteUrl'));
+        return view('nursery.children.show', compact(
+            'child',
+            'recentAttendance',
+            'relationshipLabels',
+            'canEdit',
+            'canManageChildAttendance',
+            'canManageChildActivity',
+            'portalInviteUrl',
+            'activityDate',
+            'todaysActivities',
+            'dailySummary',
+        ));
     }
 
     public function edit(Child $child): View
@@ -185,6 +217,13 @@ final class NurseryChildWebController extends Controller
         if ($uploads !== []) {
             $this->persistMorphAttachments($child, $uploads, $tenantUserId, 'nursery/children');
         }
+        $this->persistAvatarUpload(
+            $child,
+            $request->file('avatar'),
+            $tenantUserId,
+            'nursery/children',
+            $request->boolean('remove_avatar')
+        );
 
         return redirect()
             ->route('nursery.children.show', $child)
@@ -235,7 +274,7 @@ final class NurseryChildWebController extends Controller
         $rules = [
             'name' => ['required', 'string', 'max:120'],
             'gender' => ['nullable', 'string', 'in:male,female'],
-            'date_of_birth' => ['nullable', 'date'],
+            'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
             'classroom_id' => ['nullable', 'integer', 'exists:nursery_classrooms,id'],
             'allergies' => ['nullable', 'string', 'max:2000'],
             'diseases' => ['nullable', 'string', 'max:2000'],
@@ -250,6 +289,8 @@ final class NurseryChildWebController extends Controller
             'guardian_city' => ['nullable', 'string', 'max:120'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:10240'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'remove_avatar' => ['nullable', 'boolean'],
             'medications' => ['nullable', 'array'],
             'medications.*.name' => ['nullable', 'string', 'max:120'],
             'medications.*.dosage' => ['nullable', 'string', 'max:64'],

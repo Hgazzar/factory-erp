@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\JournalItem;
 use App\Services\ChartOfAccountsProvisioner;
@@ -10,9 +11,11 @@ use Illuminate\View\View;
 
 class LedgerWebController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View
     {
-        $userId = (int) auth()->id();
+        $userId = $this->resolveOperationsTenantUserId();
         ChartOfAccountsProvisioner::ensureForUser($userId);
 
         $accounts = Account::orderBy('code')->get();

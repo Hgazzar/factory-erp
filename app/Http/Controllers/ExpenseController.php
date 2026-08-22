@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersistsMorphAttachments;
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\CompanySetting;
@@ -37,6 +38,7 @@ use Illuminate\View\View;
 class ExpenseController extends Controller
 {
     use PersistsMorphAttachments;
+    use ResolvesOperationsTenant;
 
     public function importTemplate(): Response
     {
@@ -194,7 +196,11 @@ class ExpenseController extends Controller
      */
     private function ledgerUserIdForExpense(Payment $expense): int
     {
-        return (int) auth()->id() === 1 ? (int) $expense->user_id : (int) auth()->id();
+        if ((int) auth()->id() === 1) {
+            return (int) $expense->user_id;
+        }
+
+        return $this->resolveOperationsTenantUserId();
     }
 
     /**
@@ -326,7 +332,7 @@ class ExpenseController extends Controller
             ->orderBy('name')
             ->get(['id', 'code', 'name']);
 
-        $nextExpenseNumber = Payment::generateNextExpenseNumberForUser((int) (auth()->id() ?? 1));
+        $nextExpenseNumber = Payment::generateNextExpenseNumberForUser($this->resolveOperationsTenantUserId());
 
         $bankAccounts = BankAccount::query()
             ->where('status', 'active')
@@ -341,7 +347,7 @@ class ExpenseController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
-        $uid = (int) ($user?->id ?? auth()->id() ?? 1);
+        $uid = $this->resolveOperationsTenantUserId();
         if (! in_array((string) $request->input('payment_method'), ['bank', 'check', 'card'], true)) {
             $request->merge(['bank_account_id' => null]);
         }
@@ -662,7 +668,7 @@ class ExpenseController extends Controller
             return back()->with('error', 'لا يوجد حساب مصروف/أصل صالح لهذا السند.');
         }
 
-        $uid = (int) ($request->user()?->id ?? auth()->id() ?? 1);
+        $uid = $this->ledgerUserIdForExpense($expense);
         $totalAmount = (float) $expense->amount + (float) ($expense->tax_amount ?? 0);
 
         DB::transaction(function () use ($expense, $expenseAccount, $totalAmount, $uid): void {

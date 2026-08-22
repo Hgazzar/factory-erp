@@ -178,8 +178,17 @@
         </div>
         @endif
 
+        @php
+            $dashNav = $tenantNavigation ?? null;
+            $dashModule = static fn (string $module): bool => $dashNav?->isDashboardModuleVisible($module) ?? true;
+            $dashLink = static fn (string $key): bool => $dashNav?->isDashboardQuickLinkVisible($key) ?? true;
+            $dashFullErp = $dashNav?->usesUnfilteredNavigation() ?? true;
+            $dashReports = $dashNav?->isDashboardReportsWidgetVisible() ?? true;
+            $dashAudit = $dashNav?->isLinkVisible('system.audit') ?? \App\Support\ErpRoles::hasFinanceAdminPanelAccess(auth()->user());
+        @endphp
+
         {{-- إحصائيات اليوم (Today's Statistics) - عرض أفقي: flex-row / grid --}}
-        @if(isset($totalProductionToday) || isset($productionOrdersToday) || isset($journalEntriesToday))
+        @if($dashModule('manufacturing') && (isset($totalProductionToday) || isset($productionOrdersToday) || isset($journalEntriesToday)))
         <div class="row g-2 mb-4 flex-row d-flex flex-wrap">
             <div class="col-6 col-md-4 col-lg-2">
                 <div class="ufuq-card ufuq-card--quick text-center py-2">
@@ -239,7 +248,7 @@
         @endif
 
         {{-- قيمة المخزون + التدفق النقدي (30 يوم) --}}
-        @if(isset($inventoryValueTotal))
+        @if($dashModule('inventory') && isset($inventoryValueTotal))
         <div class="row g-3 mb-4 flex-row d-flex flex-wrap" dir="rtl">
             <div class="col-12 col-lg-4">
                 <div class="ufuq-card ufuq-card--quick h-100 p-4 rounded-lg border-0 shadow-sm">
@@ -270,7 +279,7 @@
         </div>
         @endif
 
-        @if(auth()->user()->isAdminOrSuperAdmin() && isset($serviceOpenCount))
+        @if($dashModule('services') && auth()->user()->isAdminOrSuperAdmin() && isset($serviceOpenCount))
         <div class="row g-3 mb-4 flex-row d-flex flex-wrap" dir="rtl">
             <div class="col-6 col-md-4">
                 <a href="{{ route('services.orders.index') }}" class="text-decoration-none text-dark">
@@ -315,7 +324,7 @@
         @endif
         @endif
 
-        @if(auth()->user()->is_technician && ! auth()->user()->isAdminOrSuperAdmin())
+        @if($dashModule('services') && auth()->user()->is_technician && ! auth()->user()->isAdminOrSuperAdmin())
         <div class="row g-3 mb-4" dir="rtl">
             <div class="col-12 col-md-6">
                 <a href="{{ route('services.technician.index') }}" class="text-decoration-none text-dark">
@@ -381,6 +390,7 @@
 
         {{-- شبكة الوحدات بنفس ترتيب السكرين شوت: 4 أعمدة - عرض أفقي --}}
         <div class="row g-3 flex-row d-flex flex-wrap">
+            @if($dashModule('purchases'))
             {{-- 1. المشتريات --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-violet h-100 p-4">
@@ -404,14 +414,20 @@
                         </div>
                         @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
+                            @if($dashLink('purchases.suppliers'))
                             <a href="{{ route('purchases.suppliers.index') }}" class="ufuq-qbtn">الموردون</a>
+                            @endif
+                            @if($dashLink('purchases.invoices'))
                             <a href="{{ route('purchases.invoices.index') }}" class="ufuq-qbtn">فواتير</a>
+                            @endif
                             <a href="#" class="ufuq-qbtn">طلبات</a>
                         </div>
                         @endif
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashModule('inventory'))
             {{-- 2. المخزون --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-amber h-100 p-4">
@@ -435,14 +451,22 @@
                         </div>
                         @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
+                            @if($dashLink('inventory.dashboard'))
                             <a href="{{ route('inventory.dashboard') }}" class="ufuq-qbtn">لوحة</a>
+                            @endif
+                            @if($dashLink('inventory.items'))
                             <a href="{{ route('items.index') }}" class="ufuq-qbtn">منتجات</a>
+                            @endif
+                            @if($dashLink('inventory.warehouses'))
                             <a href="{{ route('warehouses.index') }}" class="ufuq-qbtn">مستودعات</a>
+                            @endif
                         </div>
                         @endif
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashModule('finance'))
             {{-- 3. المحاسبة --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-blue h-100 p-4">
@@ -464,16 +488,12 @@
                                 <p class="ufuq-card-sub">الحسابات والقيود والتقارير</p>
                             </div>
                         </div>
-                        @if(auth()->user()->isAdminOrSuperAdmin())
-                        <div class="ufuq-card-actions">
-                            <a href="{{ route('finance.dashboard') }}" class="ufuq-qbtn">لوحة</a>
-                            <a href="{{ route('finance.accounts.index') }}" class="ufuq-qbtn">دليل</a>
-                            <a href="{{ route('finance.journals.index') }}" class="ufuq-qbtn">قيود</a>
-                        </div>
-                        @endif
+                        <x-dashboard-widget-actions module="finance" />
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashModule('sales'))
             {{-- 4. المبيعات --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-emerald h-100 p-4">
@@ -505,8 +525,9 @@
                     </div>
                 </div>
             </div>
+            @endif
             {{-- 4b. الخدمات والصيانة --}}
-            @if(auth()->user()->isAdminOrSuperAdmin())
+            @if($dashModule('services') && auth()->user()->isAdminOrSuperAdmin())
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-blue h-100 p-4">
                     <a href="{{ route('services.dashboard') }}" class="ufuq-card-stretch" aria-label="فتح وحدة الخدمات والصيانة"></a>
@@ -533,7 +554,7 @@
                     </div>
                 </div>
             </div>
-            @elseif(auth()->user()->is_technician)
+            @elseif($dashModule('services') && auth()->user()->is_technician)
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-blue h-100 p-4">
                     <a href="{{ route('services.technician.index') }}" class="ufuq-card-stretch" aria-label="مهام الفني"></a>
@@ -559,6 +580,7 @@
                 </div>
             </div>
             @endif
+            @if($dashModule('manufacturing'))
             {{-- 5. التصنيع --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-slate h-100 p-4">
@@ -577,13 +599,21 @@
                             </div>
                         </div>
                         <div class="ufuq-card-actions">
+                            @if($dashLink('manufacturing.items'))
                             <a href="{{ route('items.index') }}" class="ufuq-qbtn">أصناف</a>
+                            @endif
+                            @if($dashLink('manufacturing.bom_lists'))
                             <a href="{{ route('manufacturing.bom-lists.index') }}" class="ufuq-qbtn">قوائم المواد</a>
+                            @endif
+                            @if($dashLink('manufacturing.runs'))
                             <a href="{{ route('manufacturing.runs.index') }}" class="ufuq-qbtn">أوامر العمل</a>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashModule('hr'))
             {{-- 6. الموارد البشرية --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-orange h-100 p-4">
@@ -613,6 +643,8 @@
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashModule('crm'))
             {{-- 7. إدارة العملاء (CRM — علاقة العميل، وليست عملاء المبيعات التشغيلية) --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-indigo h-100 p-4">
@@ -643,6 +675,8 @@
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashModule('pos'))
             {{-- 8. نقاط البيع --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-red h-100 p-4">
@@ -661,12 +695,18 @@
                             </div>
                         </div>
                         <div class="ufuq-card-actions">
+                            @if($dashLink('pos.dashboard'))
                             <a href="{{ route('pos.dashboard') }}" class="ufuq-qbtn">لوحة</a>
+                            @endif
+                            @if($dashLink('pos.receipts'))
                             <a href="{{ route('pos.receipts.index') }}" class="ufuq-qbtn">إيصالات</a>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashReports)
             {{-- 9. التقارير --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-violet h-100 p-4">
@@ -690,14 +730,22 @@
                         </div>
                         @if(auth()->user()->isAdminOrSuperAdmin())
                         <div class="ufuq-card-actions">
+                            @if($dashLink('sales.reports.statement'))
                             <a href="{{ route('reports.statement.index') }}" class="ufuq-qbtn">ميزان</a>
+                            @endif
+                            @if($dashLink('finance.reports.profit_loss'))
                             <a href="{{ route('finance.reports.profit-loss') }}" class="ufuq-qbtn">أرباح</a>
+                            @endif
+                            @if($dashLink('reports.tax'))
                             <a href="{{ route('reports.tax.index') }}" class="ufuq-qbtn">ضرائب</a>
+                            @endif
                         </div>
                         @endif
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashAudit)
             {{-- 10. التدقيق --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-slate h-100 p-4">
@@ -728,6 +776,8 @@
                     </div>
                 </div>
             </div>
+            @endif
+            @if($dashFullErp)
             {{-- 11. مكتبة المستندات --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-blue h-100 p-4">
@@ -768,6 +818,7 @@
                     </div>
                 </div>
             </div>
+            @endif
             {{-- 13. الإدارة --}}
             <div class="col-6 col-md-4 col-lg-3">
                 <div class="ufuq-card mod-slate h-100 p-4">
@@ -841,7 +892,7 @@
                                 <td>{{ $row->user?->name ?? '—' }}</td>
                                 <td>
                                     @php
-                                        $actionLabels = ['create' => 'إنشاء', 'update' => 'تحديث', 'delete' => 'حذف', 'complete' => 'إتمام إنتاج'];
+                                        $actionLabels = ['create' => 'إنشاء', 'update' => 'تحديث', 'delete' => 'حذف', 'complete' => 'إتمام إنتاج', 'approve_location' => 'اعتماد موقع'];
                                     @endphp
                                     {{ $actionLabels[$row->action] ?? $row->action }}
                                 </td>
@@ -855,6 +906,7 @@
                                             'purchase_invoices' => 'فاتورة مشتريات',
                                             'service_orders' => 'طلب خدمة',
                                             'accounts' => 'حساب محاسبي',
+                                            'fleet_customers' => 'عميل ميداني',
                                         ];
                                     @endphp
                                     {{ $tableLabels[$row->table_name] ?? $row->table_name }}

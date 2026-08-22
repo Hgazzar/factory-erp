@@ -68,6 +68,17 @@ return [
                 'subscriptions.manage' => 'إدارة',
             ],
         ],
+        'finance' => [
+            'label' => 'مالية الحضانة',
+            'permissions' => [
+                'finance.view' => 'ملخص المالية (تحصيلات ومستحقات وصافي)',
+                'finance.view_reports' => 'لوحة المالية والتقارير (أرباح/ميزان/ضريبة)',
+                'finance.manage_expenses' => 'المصروفات وتصنيفاتها',
+                'finance.manage_treasury' => 'سندات التحصيل والصرف والبنوك',
+                'finance.manage_ledger' => 'دليل الحسابات والقيود ودفتر الأستاذ',
+                'finance.admin' => 'إعدادات مالية متقدمة (تسوية، ضريبة، ربط دفع) — وتشمل التقارير والخزينة والمصروفات والدفاتر',
+            ],
+        ],
         'settings' => [
             'label' => 'إعدادات الحضانة',
             'permissions' => [

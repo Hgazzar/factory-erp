@@ -1,9 +1,9 @@
 <?php
 
+use App\Models\Account;
 use App\Models\Commission;
 use App\Models\Contract;
 use App\Models\Installment;
-use App\Models\Account;
 use App\Models\User;
 use App\Notifications\ContractReminderNotification;
 use App\Notifications\InstallmentDueNotification;
@@ -527,6 +527,7 @@ Schedule::command('contracts:create-draft-invoices')->daily();
 Schedule::command('system:scan-notifications')->everyFifteenMinutes();
 Schedule::command('clinic:send-whatsapp-reminders')->hourly();
 Schedule::command('nursery:send-whatsapp-reminders')->hourly();
+Schedule::command('nursery:expire-subscriptions')->daily();
 
 Artisan::command('accounts:rebuild-current-balance {--dry-run : Preview without updating rows}', function () {
     $dryRun = (bool) $this->option('dry-run');

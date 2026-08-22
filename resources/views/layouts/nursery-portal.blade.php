@@ -148,6 +148,39 @@
             padding: 1rem;
             background: var(--np-card-tint);
         }
+        .nursery-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.875rem;
+        }
+        .nursery-table thead th {
+            background: transparent;
+            color: #94a3b8;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-align: right;
+            padding: 0.85rem 0.9rem;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+            white-space: nowrap;
+        }
+        .nursery-table tbody td {
+            padding: 1rem 0.9rem;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.045);
+            color: #64748b;
+            vertical-align: middle;
+            background: #fff;
+        }
+        .nursery-table tbody tr:last-child td { border-bottom: none; }
+        .nursery-table tbody tr:hover td { background: #fafafa; }
+        .nursery-table tbody tr:nth-child(even) td { background: #fcfcfd; }
+        .nursery-table-name__title {
+            display: block;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.25;
+            font-size: 0.95rem;
+        }
         .np-bottom-nav {
             position: fixed;
             bottom: 0;

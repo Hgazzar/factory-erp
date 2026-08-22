@@ -105,13 +105,15 @@ final class NurseryPhase2Test extends NurseryTestCase
             'is_active' => true,
         ]);
 
-        $this->post(route('nursery.staff.store'), [
+        $response = $this->post(route('nursery.staff.store'), [
             'first_name' => 'نورة',
             'last_name' => 'أحمد',
             'email' => 'nora@example.com',
             'mobile' => '0551234567',
             'nursery_shift_id' => $shift->id,
-        ])->assertRedirect(route('nursery.staff.index'));
+        ]);
+
+        $response->assertRedirect(route('nursery.staff.index'));
 
         $this->assertDatabaseHas('employees', [
             'user_id' => $this->tenant->id,

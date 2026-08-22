@@ -52,15 +52,15 @@ final class NurserySendWhatsAppRemindersCommand extends Command
             $payment = $subscriptions->sendPaymentReminders($tenantId);
             $renewal = $subscriptions->sendRenewalReminders($tenantId);
 
-            $totalPayment += $payment['sent'];
-            $totalRenewal += $renewal['sent'];
+            $totalPayment += $payment['queued'];
+            $totalRenewal += $renewal['queued'];
 
-            if ($payment['sent'] > 0 || $renewal['sent'] > 0) {
-                $this->info("Tenant {$tenantId}: payment {$payment['sent']}, renewal {$renewal['sent']}");
+            if ($payment['queued'] > 0 || $renewal['queued'] > 0) {
+                $this->info("Tenant {$tenantId}: payment queued {$payment['queued']}, renewal queued {$renewal['queued']}");
             }
         }
 
-        $this->info("Done. Payment reminders sent: {$totalPayment}, renewal: {$totalRenewal}");
+        $this->info("Done. Payment reminders queued: {$totalPayment}, renewal: {$totalRenewal}");
 
         return self::SUCCESS;
     }

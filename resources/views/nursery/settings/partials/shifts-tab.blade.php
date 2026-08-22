@@ -6,25 +6,33 @@
         @endif
     </div>
 
-    <div class="nursery-card overflow-hidden">
+    <div class="nursery-card nursery-table-card">
+        <div class="nursery-table-card__toolbar">
+            <div>
+                <h2>قائمة المناوبات</h2>
+                <p>أوقات بداية ونهاية كل مناوبة</p>
+            </div>
+        </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm min-w-[480px]">
+            <table class="nursery-table min-w-[480px]">
                 <thead>
-                    <tr class="bg-orange-50/80 border-b border-orange-100">
-                        <th class="px-4 py-3 text-right font-bold text-orange-950">اسم المناوبة <x-info field="nursery.settings_shift_name" /></th>
-                        <th class="px-4 py-3 text-right font-bold text-orange-950">وقت البداية <x-info field="nursery.settings_shift_start" /></th>
-                        <th class="px-4 py-3 text-right font-bold text-orange-950">وقت النهاية <x-info field="nursery.settings_shift_end" /></th>
-                        @if($canManage)<th class="px-4 py-3 w-20"></th>@endif
+                    <tr>
+                        <th>اسم المناوبة <x-info field="nursery.settings_shift_name" /></th>
+                        <th>وقت البداية <x-info field="nursery.settings_shift_start" /></th>
+                        <th>وقت النهاية <x-info field="nursery.settings_shift_end" /></th>
+                        @if($canManage)<th class="text-center w-20">إجراءات</th>@endif
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($shifts as $shift)
-                        <tr class="border-b border-orange-50 hover:bg-orange-50/40">
-                            <td class="px-4 py-3 font-semibold">{{ $shift->name }}</td>
-                            <td class="px-4 py-3 tabular-nums">{{ $shift->start_time?->format('H:i') }}</td>
-                            <td class="px-4 py-3 tabular-nums">{{ $shift->end_time?->format('H:i') }}</td>
+                        <tr>
+                            <td>
+                                <span class="nursery-table-name__title">{{ $shift->name }}</span>
+                            </td>
+                            <td class="tabular-nums font-semibold text-slate-700">{{ $shift->start_time?->format('H:i') }}</td>
+                            <td class="tabular-nums font-semibold text-slate-700">{{ $shift->end_time?->format('H:i') }}</td>
                             @if($canManage)
-                                <td class="px-4 py-3 text-left">
+                                <td class="text-center">
                                     <form method="POST" action="{{ route('nursery.settings.shifts.destroy', $shift) }}" onsubmit="return confirm('حذف هذه المناوبة؟')">
                                         @csrf
                                         @method('DELETE')
@@ -35,7 +43,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 4 : 3 }}" class="px-4 py-10 text-center text-orange-700/70">لا توجد مناوبات — أضف مناوبة عمل.</td>
+                            <td colspan="{{ $canManage ? 4 : 3 }}" class="!py-10 text-center text-orange-700/70">لا توجد مناوبات — أضف مناوبة عمل.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\BankReconciliation;
 use Illuminate\Http\RedirectResponse;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class BankReconciliationController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View
     {
         $status = (string) $request->query('status', '');
@@ -46,10 +49,11 @@ class BankReconciliationController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'account_id' => [
                 'required',
-                Rule::exists('accounts', 'id')->where(fn ($query) => $query->where('is_bank', true)),
+                Rule::exists('accounts', 'id')->where(fn ($query) => $query->where('is_bank', true)->where('user_id', $tenantUserId)),
             ],
             'statement_date' => ['required', 'date'],
             'statement_balance' => ['required', 'numeric'],

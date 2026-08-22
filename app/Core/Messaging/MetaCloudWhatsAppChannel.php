@@ -10,11 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 final class MetaCloudWhatsAppChannel implements WhatsAppChannelInterface
 {
+    private static ?string $lastProviderMessageId = null;
+
     public function __construct(
         private readonly string $profile,
         private readonly WhatsAppConfigResolver $configResolver,
         private readonly PhoneNumberNormalizer $phoneNormalizer,
     ) {}
+
+    public static function lastProviderMessageId(): ?string
+    {
+        return self::$lastProviderMessageId;
+    }
 
     public function profile(): string
     {
@@ -36,11 +43,21 @@ final class MetaCloudWhatsAppChannel implements WhatsAppChannelInterface
 
         if ($to === '') {
             Log::warning("WhatsApp [{$this->profile}]: empty recipient phone.");
+            self::$lastProviderMessageId = null;
 
             return false;
         }
 
         if (! $this->isEnabled()) {
+            if ($this->profile === WhatsAppConfigResolver::PROFILE_NURSERY) {
+                Log::info("WhatsApp [{$this->profile}] skipped_config: channel disabled, not delivered", [
+                    'to' => $to,
+                ]);
+                self::$lastProviderMessageId = null;
+
+                return false;
+            }
+
             Log::info("WhatsApp [{$this->profile}] (dry-run): would send message", [
                 'to' => $to,
                 'message' => $message,
@@ -75,6 +92,15 @@ final class MetaCloudWhatsAppChannel implements WhatsAppChannelInterface
         }
 
         if (! $this->isEnabled()) {
+            if ($this->profile === WhatsAppConfigResolver::PROFILE_NURSERY) {
+                Log::info("WhatsApp [{$this->profile}] skipped_config: document not delivered", [
+                    'to' => $to,
+                    'filename' => $filename,
+                ]);
+
+                return false;
+            }
+
             Log::info("WhatsApp [{$this->profile}] (dry-run): would send document", [
                 'to' => $to,
                 'filename' => $filename,
@@ -112,6 +138,8 @@ final class MetaCloudWhatsAppChannel implements WhatsAppChannelInterface
             $config['phone_number_id'],
         );
 
+        self::$lastProviderMessageId = null;
+
         try {
             $response = Http::withToken($config['access_token'])
                 ->timeout(20)
@@ -128,6 +156,11 @@ final class MetaCloudWhatsAppChannel implements WhatsAppChannelInterface
                 ]);
 
                 return false;
+            }
+
+            $id = $response->json('messages.0.id');
+            if (is_string($id) && $id !== '') {
+                self::$lastProviderMessageId = $id;
             }
 
             return true;

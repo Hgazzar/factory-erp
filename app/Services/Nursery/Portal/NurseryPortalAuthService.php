@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Services\Nursery\Portal;
 
 use App\Models\Nursery\Guardian;
+use App\Models\Nursery\NurseryOutboundMessage;
+use App\Models\Nursery\NurserySetting;
+use App\Services\Nursery\NurseryWhatsAppOutboxService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 /**
- * مصادقة بوابة أولياء الأمور — OTP وهمي (session + log) مع جاهزية للربط بواتساب لاحقاً.
+ * مصادقة بوابة أولياء الأمور — OTP في الجلسة + جدولة واتساب عبر Outbox.
  */
 final class NurseryPortalAuthService
 {
@@ -58,7 +61,7 @@ final class NurseryPortalAuthService
             ]);
         }
 
-        // P2-C: app(NurseryWhatsAppNotificationService::class)->sendPortalOtp($tenantUserId, $phone, $code);
+        $this->enqueueOtpWhatsApp($tenantUserId, $guardian, $phone, $code, $ttlMinutes);
     }
 
     /**
@@ -234,6 +237,29 @@ final class NurseryPortalAuthService
         $nb = preg_replace('/\D+/', '', $b) ?? $b;
 
         return $na !== '' && $na === $nb;
+    }
+
+    private function enqueueOtpWhatsApp(int $tenantUserId, Guardian $guardian, string $phone, string $code, int $ttlMinutes): void
+    {
+        $nurseryName = NurserySetting::forTenant($tenantUserId)->nursery_name;
+        $message = implode("\n", [
+            "رمز التحقق لبوابة {$nurseryName}: {$code}",
+            "صالح لمدة {$ttlMinutes} دقائق.",
+        ]);
+
+        app(NurseryWhatsAppOutboxService::class)->enqueue(
+            $tenantUserId,
+            NurseryOutboundMessage::TYPE_GUARDIAN_OTP,
+            NurseryOutboundMessage::TYPE_GUARDIAN_OTP.':'.$tenantUserId.':'.$guardian->id,
+            NurseryOutboundMessage::RELATED_GUARDIAN,
+            (int) $guardian->id,
+            [
+                'phone' => $phone,
+                'message' => $message,
+                'guardian_id' => (int) $guardian->id,
+            ],
+            true,
+        );
     }
 
     private function generateOtpCode(): string

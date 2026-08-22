@@ -72,9 +72,11 @@
             const panel = this.$refs.dropdownPanel;
             if (!btn || !panel) return;
             const r = btn.getBoundingClientRect();
-            this.panelWidth = r.width;
+            const width = Math.max(r.width, 160);
+            const maxLeft = Math.max(8, window.innerWidth - width - 8);
+            this.panelWidth = width;
             this.panelTop = r.bottom + 4;
-            this.panelLeft = r.left;
+            this.panelLeft = Math.min(Math.max(8, r.left), maxLeft);
         },
         toggle() {
             this.open = !this.open;

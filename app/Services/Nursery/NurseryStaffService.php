@@ -12,43 +12,67 @@ use InvalidArgumentException;
 
 final class NurseryStaffService
 {
+    public function __construct(
+        private readonly NurseryStaffAccountService $accounts,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $data
      * @param  list<string>  $permissions
+     * @return array{employee: Employee, user: \App\Models\User, created: bool, temporary_password: ?string}
      */
-    public function create(int $tenantUserId, array $data, array $permissions): Employee
+    public function create(int $tenantUserId, array $data, array $permissions): array
     {
-        $payload = $this->buildPayload($data, $permissions);
+        $payload = $this->buildPayload($data, $permissions, true);
 
-        return DB::transaction(function () use ($tenantUserId, $payload): Employee {
+        return DB::transaction(function () use ($tenantUserId, $payload): array {
             $payload['user_id'] = $tenantUserId;
             $payload['code'] = $this->nextCode($tenantUserId);
             $payload['status'] = $payload['status'] ?? 'active';
 
-            return Employee::query()->create($payload);
+            $employee = Employee::query()->create($payload);
+            $account = $this->accounts->ensureLoginUser($employee);
+
+            return [
+                'employee' => $employee->fresh(),
+                'user' => $account['user'],
+                'created' => $account['created'],
+                'temporary_password' => $account['temporary_password'],
+            ];
         });
     }
 
     /**
      * @param  array<string, mixed>  $data
      * @param  list<string>  $permissions
+     * @return array{employee: Employee, user: \App\Models\User, created: bool, temporary_password: ?string}
      */
-    public function update(Employee $employee, int $tenantUserId, array $data, array $permissions): Employee
+    public function update(Employee $employee, int $tenantUserId, array $data, array $permissions): array
     {
         abort_unless((int) $employee->user_id === $tenantUserId, 404);
 
-        $payload = $this->buildPayload($data, $permissions);
-        $employee->fill($payload);
-        $employee->save();
+        return DB::transaction(function () use ($employee, $data, $permissions): array {
+            $payload = $this->buildPayload($data, $permissions, false);
+            $employee->fill($payload);
+            $employee->save();
 
-        return $employee->fresh(['attachments']);
+            $account = $this->accounts->ensureLoginUser($employee);
+
+            return [
+                'employee' => $employee->fresh(['attachments']),
+                'user' => $account['user'],
+                'created' => $account['created'],
+                'temporary_password' => $account['temporary_password'],
+            ];
+        });
     }
 
     /**
      * @param  array<string, mixed>  $data
+     * @param  list<string>  $permissions
      * @return array<string, mixed>
      */
-    private function buildPayload(array $data, array $permissions): array
+    private function buildPayload(array $data, array $permissions, bool $fillRoleTemplateWhenEmpty): array
     {
         $first = trim((string) ($data['first_name'] ?? ''));
         $last = trim((string) ($data['last_name'] ?? ''));
@@ -73,7 +97,7 @@ final class NurseryStaffService
             $systemRole = '';
         }
 
-        if ($permissions === [] && $systemRole !== '') {
+        if ($fillRoleTemplateWhenEmpty && $permissions === [] && $systemRole !== '') {
             $permissions = NurseryPermissionCatalog::templateForRole($systemRole);
         }
 

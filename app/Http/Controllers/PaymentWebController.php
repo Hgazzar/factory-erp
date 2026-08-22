@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\AuditLog;
 use App\Models\AuditTrail;
@@ -22,6 +23,8 @@ use RuntimeException;
 
 class PaymentWebController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View
     {
         $query = Payment::with(['supplier', 'expenseAccount', 'creator', 'purchaseInvoices'])
@@ -86,7 +89,7 @@ class PaymentWebController extends Controller
      */
     public function supplierPurchaseInvoices(Request $request): JsonResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $request->validate([
             'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('user_id', $uid)],
         ]);
@@ -113,7 +116,7 @@ class PaymentWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'type' => ['required', 'in:supplier,expense'],
             'supplier_id' => ['nullable', Rule::exists('suppliers', 'id')->where('user_id', $uid)],
@@ -204,7 +207,7 @@ class PaymentWebController extends Controller
                 ]);
 
                 $payment = Payment::query()->create([
-                    'user_id' => (int) $user->id,
+                    'user_id' => $uid,
                     'supplier_id' => $data['type'] === 'supplier' ? $data['supplier_id'] : null,
                     'expense_account_id' => $data['type'] === 'expense' ? $data['expense_account_id'] : null,
                     'date' => $data['date'],

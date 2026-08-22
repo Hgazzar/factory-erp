@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\BankAccount;
 use App\Models\Cheque;
@@ -15,6 +16,8 @@ use Illuminate\View\View;
 
 class BankAccountController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('search', ''));
@@ -47,7 +50,7 @@ class BankAccountController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate($this->rules());
-        $uid = (int) $request->user()->id;
+        $uid = $this->resolveOperationsTenantUserId();
 
         DB::transaction(function () use ($request, $data, $uid): void {
             $ledger = $this->createLedgerAccountForBank($uid, (string) $data['bank_name'], (string) $data['account_number']);
@@ -137,7 +140,7 @@ class BankAccountController extends Controller
 
     private function rules(?int $ignoreId = null): array
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
 
         return [
             'bank_name' => ['required', 'string', 'max:150'],

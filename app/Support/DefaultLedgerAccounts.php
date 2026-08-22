@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Models\Account;
+use App\Services\Tenant\TenantContext;
 
 /**
  * يضمن وجود حسابات دليل الحسابات القياسية (أكواد رباعية متوافقة مع AccountSeeder) لكل مستخدم.
@@ -62,6 +63,19 @@ final class DefaultLedgerAccounts
 
     private static function tenantUserId(): int
     {
+        if (auth()->check()) {
+            $tenantContext = app(TenantContext::class);
+            $tenantUserId = $tenantContext->resolveTenantUserId();
+
+            if ($tenantUserId !== null) {
+                return $tenantUserId;
+            }
+
+            if ($tenantContext->isPlatformOperator()) {
+                return (int) auth()->id();
+            }
+        }
+
         return (int) (auth()->id() ?? 1);
     }
 

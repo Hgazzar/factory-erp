@@ -79,6 +79,11 @@ class Child extends Model
         return $this->hasMany(ChildMedication::class, 'child_id')->orderBy('sort_order');
     }
 
+    public function dailyActivities(): HasMany
+    {
+        return $this->hasMany(ChildDailyActivity::class, 'child_id');
+    }
+
     public function isActive(): bool
     {
         return $this->status === self::STATUS_ACTIVE;

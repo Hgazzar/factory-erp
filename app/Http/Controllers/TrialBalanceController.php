@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TrialBalanceController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View|StreamedResponse
     {
         $validated = $request->validate([
@@ -20,7 +23,7 @@ class TrialBalanceController extends Controller
         $fromDate = $validated['from_date'] ?? null;
         $toDate = $validated['to_date'] ?? null;
 
-        $tenantId = (int) auth()->id();
+        $tenantId = $this->resolveOperationsTenantUserId();
 
         $periodRows = DB::table('journal_items as ji')
             ->join('journal_entries as je', 'je.id', '=', 'ji.journal_entry_id')

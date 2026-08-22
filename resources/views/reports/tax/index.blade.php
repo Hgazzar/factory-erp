@@ -1,11 +1,11 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'التقرير الضريبي - '.config('app.name'))
+@section('title', niche_label('finance.tax_report', 'التقرير الضريبي').' - '.config('app.name'))
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div>
-        <h1 class="h4 mb-1">التقرير الضريبي</h1>
+        <h1 class="h4 mb-1">{{ niche_label('finance.tax_report', 'التقرير الضريبي') }}</h1>
         <p class="text-muted mb-0 small">إجمالي ضريبة القيمة المضافة من المبيعات والمشتريات للفترة المحددة (المبالغ من الفواتير المسجّلة؛ النسبة المرجعية للنظام {{ erp_qty((float) $defaultVatPercent) }}%).</p>
     </div>
     <button type="button" class="btn btn-primary no-print" onclick="window.print()">

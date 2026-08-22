@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'الحسابات البنكية - '.config('app.name'))
+@section('title', niche_label('finance.bank_accounts', 'الحسابات البنكية').' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-blue-600">الرئيسية</a>
@@ -14,7 +14,7 @@
 <div dir="rtl" class="mx-auto w-full max-w-full space-y-6">
     <section class="flex flex-wrap items-start justify-between gap-4 rounded-lg bg-white p-4 md:p-5">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">الحسابات البنكية</h1>
+            <h1 class="text-3xl font-bold text-gray-900">{{ niche_label('finance.bank_accounts', 'الحسابات البنكية') }}</h1>
             <p class="mt-1 text-sm text-gray-500">إدارة الحسابات البنكية والأرصدة</p>
         </div>
         <a href="{{ route('finance.bank-accounts.create') }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">

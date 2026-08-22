@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[ScopedBy([BelongsToTenantContextScope::class])]
 class AttendanceLog extends Model
@@ -57,6 +58,11 @@ class AttendanceLog extends Model
     public function recorder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function corrections(): HasMany
+    {
+        return $this->hasMany(AttendanceCorrection::class, 'attendance_log_id')->orderByDesc('id');
     }
 
     public function isCheckedIn(): bool

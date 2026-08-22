@@ -7,7 +7,10 @@ namespace App\Http\Controllers\Nursery;
 use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Nursery\Classroom;
+use App\Services\Nursery\NurseryAttendanceService;
 use App\Services\Nursery\NurseryClassroomService;
+use App\Services\Nursery\NurseryShiftAttendanceService;
+use App\Support\NurseryAccess;
 use App\Support\NurseryClassroomAgeGroups;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,6 +99,77 @@ final class NurseryClassroomWebController extends Controller
         return redirect()
             ->route('nursery.classrooms.index')
             ->with('success', 'تم تحديث بيانات الفصل.');
+    }
+
+    public function todayRedirect(Request $request): RedirectResponse
+    {
+        $classroomId = (int) $request->query('classroom_id');
+        abort_if($classroomId < 1, 404);
+
+        return redirect()->route('nursery.classrooms.today', $classroomId);
+    }
+
+    public function today(Classroom $classroom, NurseryAttendanceService $attendance): View|RedirectResponse
+    {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        abort_unless((int) $classroom->user_id === $tenantUserId, 404);
+
+        if (! $classroom->is_active) {
+            return redirect()
+                ->route('nursery.classrooms.index')
+                ->with('error', 'الفصل مؤرشف — لا يمكن تشغيل يوم الفصل.');
+        }
+
+        $classroom->load(['teacher:id,name']);
+        $board = $attendance->todayBoard($tenantUserId, null, (int) $classroom->id);
+
+        $roster = collect();
+        foreach ($board['not_yet'] as $child) {
+            $roster->push(['child' => $child, 'state' => 'not_yet', 'log' => null]);
+        }
+        foreach ($board['checked_in'] as $row) {
+            $roster->push(['child' => $row['child'], 'state' => 'present', 'log' => $row['log']]);
+        }
+        foreach ($board['checked_out'] as $row) {
+            $roster->push(['child' => $row['child'], 'state' => 'checked_out', 'log' => $row['log']]);
+        }
+        $roster = $roster->sortBy(fn (array $row) => $row['child']->name)->values();
+
+        $shiftAttendance = app(NurseryShiftAttendanceService::class);
+        $roster = $roster->map(function (array $row) use ($tenantUserId, $shiftAttendance): array {
+            $log = $row['log'];
+            $row['is_late'] = $log !== null && $shiftAttendance->isChildLate($tenantUserId, $log);
+            $row['is_early'] = $log !== null && $shiftAttendance->isChildEarlyDeparture($tenantUserId, $log);
+
+            return $row;
+        });
+
+        $classroomOptions = Classroom::query()
+            ->where('user_id', $tenantUserId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Classroom $room) => ['value' => (string) $room->id, 'label' => $room->name])
+            ->all();
+
+        $enrolled = $roster->count();
+        $capacity = $classroom->capacity !== null ? (int) $classroom->capacity : null;
+        $access = app(NurseryAccess::class);
+
+        return view('nursery.classrooms.today', [
+            'classroom' => $classroom,
+            'board' => $board,
+            'roster' => $roster,
+            'classroomOptions' => $classroomOptions,
+            'enrolled' => $enrolled,
+            'capacity' => $capacity,
+            'canManageChildAttendance' => $access->allows(NurseryAccess::CAP_MANAGE_CHILD_ATTENDANCE),
+            'canManageChildActivity' => $access->allows(NurseryAccess::CAP_MANAGE_CHILD_ACTIVITY),
+            'correctionStatusOptions' => [
+                ['value' => 'present', 'label' => 'حاضر'],
+                ['value' => 'absent', 'label' => 'غائب'],
+            ],
+        ]);
     }
 
     /**

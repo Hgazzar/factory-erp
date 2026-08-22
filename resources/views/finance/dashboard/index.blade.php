@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'لوحة المحاسبة - '.config('app.name'))
+@section('title', niche_label('finance.dashboard', 'لوحة المحاسبة').' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -57,9 +57,9 @@
         <nav class="text-sm text-gray-500 mb-2" aria-label="مسار التنقل">
             <a href="{{ route('dashboard') }}" class="text-indigo-600 hover:underline">الرئيسية</a>
             <span class="mx-1">›</span>
-            <span>لوحة المحاسبة</span>
+            <span>{{ niche_label('finance.dashboard', 'لوحة المحاسبة') }}</span>
         </nav>
-        <h1 class="text-xl md:text-2xl font-bold text-gray-900">لوحة المحاسبة</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ niche_label('finance.dashboard', 'لوحة المحاسبة') }}</h1>
     </header>
 
     @php
@@ -193,7 +193,7 @@
             <div class="acc-widget-title flex justify-between items-center">
                 <span class="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/></svg>
-                    الإيرادات والمصروفات الشهرية
+                    {{ niche_label('finance.revenue', 'الإيرادات') }} و{{ niche_label('finance.expense', 'المصروفات') }} الشهرية
                 </span>
                 <span class="text-xs text-gray-500">آخر ٦ أشهر — من القيود</span>
             </div>
@@ -235,7 +235,7 @@
     {{-- لوحات الملخص: الحسابات البنكية، تقادم الدائنين، تقادم المدينين، آخر القيود --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="acc-widget-card">
-            <div class="acc-widget-title">النقدية والبنك (الأستاذ العام)</div>
+            <div class="acc-widget-title">{{ niche_label('finance.cash', 'النقدية') }} والبنك (الأستاذ العام)</div>
             <div class="flex-1 flex flex-col gap-3 py-3 text-sm text-right w-full">
                 <div class="flex justify-between items-center gap-2 border-b border-gray-100 pb-2">
                     <span class="text-gray-600"><x-info field="finance.dashboard_cash_ledger" /> صندوق النقدية (1010)</span>

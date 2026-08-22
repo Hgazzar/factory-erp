@@ -21,7 +21,9 @@ use App\Models\Warehouse;
 use App\Services\Tenant\TenantDashboardPackageService;
 use App\Support\ErpRoles;
 use App\Support\LedgerAccountBalance;
+use App\Services\Tenant\TenantNavigationService;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -30,12 +32,18 @@ class DashboardController extends Controller
 {
     public function __construct(
         private readonly TenantDashboardPackageService $tenantDashboardPackage,
+        private readonly TenantNavigationService $tenantNavigation,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        $today = Carbon::today();
         $viewer = $request->user();
+        $home = $this->tenantNavigation->defaultHomeRoute($viewer);
+        if ($home !== route('dashboard', absolute: false)) {
+            return redirect()->to($home);
+        }
+
+        $today = Carbon::today();
         $viewerId = (int) ($request->user()?->id ?? 0);
         $systemWide = $viewerId === 1;
         $isSuperAdmin = ErpRoles::isSuperAdmin($viewer);

@@ -66,6 +66,63 @@ final class NurseryDailyFlowTest extends NurseryTestCase
     }
 
     #[Test]
+    public function future_birth_date_is_rejected(): void
+    {
+        $this->post(route('nursery.children.store'), [
+            'name' => 'فهد',
+            'date_of_birth' => now()->addDays(8)->toDateString(),
+            'guardian_name' => 'ولي فهد',
+            'guardian_phone' => '0503333444',
+        ])->assertSessionHasErrors('date_of_birth');
+
+        $this->assertDatabaseMissing('nursery_children', [
+            'user_id' => $this->tenant->id,
+            'name' => 'فهد',
+            'guardian_phone' => '0503333444',
+        ]);
+    }
+
+    #[Test]
+    public function same_guardian_cannot_have_two_children_with_same_name(): void
+    {
+        $this->post(route('nursery.children.store'), [
+            'name' => 'فهد',
+            'guardian_name' => 'ولي الأشقاء',
+            'guardian_phone' => '0505555666',
+        ])->assertRedirect();
+
+        $this->post(route('nursery.children.store'), [
+            'name' => 'فهد',
+            'guardian_name' => 'ولي الأشقاء',
+            'guardian_phone' => '0505555666',
+        ])->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertSame(
+            1,
+            Child::query()
+                ->where('user_id', $this->tenant->id)
+                ->where('name', 'فهد')
+                ->count()
+        );
+
+        $this->post(route('nursery.children.store'), [
+            'name' => 'فهد الأصغر',
+            'guardian_name' => 'ولي الأشقاء',
+            'guardian_phone' => '0505555666',
+        ])->assertRedirect()
+            ->assertSessionMissing('error');
+
+        $this->assertSame(
+            2,
+            Child::query()
+                ->where('user_id', $this->tenant->id)
+                ->where('guardian_id', Child::query()->where('name', 'فهد')->value('guardian_id'))
+                ->count()
+        );
+    }
+
+    #[Test]
     public function admin_can_open_child_create_and_edit_forms(): void
     {
         $this->get(route('nursery.children.create'))

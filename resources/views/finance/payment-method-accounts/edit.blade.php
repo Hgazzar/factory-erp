@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'وسائل الدفع والدليل - '.config('app.name'))
+@section('title', niche_label('finance.payment_method_accounts', 'ربط طرق الدفع').' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>

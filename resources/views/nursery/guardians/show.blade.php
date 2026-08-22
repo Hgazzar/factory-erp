@@ -64,32 +64,49 @@
             </dl>
         </div>
 
-        <div class="nursery-card p-5 lg:col-span-2">
-            <h2 class="text-base font-bold text-orange-950 mb-4">
-                الأطفال المرتبطون
-                <x-info field="nursery.guardians_children_count" />
-                <span class="text-orange-600 tabular-nums">({{ $children->count() }})</span>
-            </h2>
+        <div class="nursery-card nursery-table-card lg:col-span-2">
+            <div class="nursery-table-card__toolbar">
+                <div>
+                    <h2>
+                        الأطفال المرتبطون
+                        <x-info field="nursery.guardians_children_count" />
+                    </h2>
+                    <p>{{ $children->count() }} طفل مرتبط بهذا ولي الأمر</p>
+                </div>
+            </div>
             @if($children->isEmpty())
-                <p class="text-sm text-orange-800/70">لا يوجد أطفال مرتبطون بهذا ولي الأمر.</p>
+                <p class="text-sm text-orange-800/70 px-4 py-8 text-center">لا يوجد أطفال مرتبطون بهذا ولي الأمر.</p>
             @else
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm min-w-[480px]">
+                    <table class="nursery-table min-w-[480px]">
                         <thead>
-                            <tr class="bg-orange-50/80 border-b border-orange-100">
-                                <th class="px-3 py-2 text-right font-bold text-orange-950">الطفل</th>
-                                <th class="px-3 py-2 text-right font-bold text-orange-950">الفصل</th>
-                                <th class="px-3 py-2 text-right font-bold text-orange-950">الحالة</th>
-                                <th class="px-3 py-2 w-24"></th>
+                            <tr>
+                                <th>الطفل</th>
+                                <th>الفصل</th>
+                                <th class="text-center">الحالة</th>
+                                <th class="text-center w-24">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($children as $child)
-                                <tr class="border-b border-orange-50 hover:bg-orange-50/40">
-                                    <td class="px-3 py-2 font-semibold text-orange-950">{{ $child->name }}</td>
-                                    <td class="px-3 py-2">{{ $child->activeEnrollment?->classroom?->name ?? '—' }}</td>
-                                    <td class="px-3 py-2">{{ $child->status === 'active' ? 'نشط' : 'مؤرشف' }}</td>
-                                    <td class="px-3 py-2">
+                                <tr>
+                                    <td>
+                                        <a href="{{ route('nursery.children.show', $child) }}" class="nursery-table-name no-underline text-inherit hover:opacity-90">
+                                            <x-nursery-person-avatar :name="$child->name" :src="$child->firstImageUrl()" />
+                                            <span class="nursery-table-name__text">
+                                                <span class="nursery-table-name__title">{{ $child->name }}</span>
+                                            </span>
+                                        </a>
+                                    </td>
+                                    <td>{{ $child->activeEnrollment?->classroom?->name ?? '—' }}</td>
+                                    <td class="text-center">
+                                        @if($child->status === 'active')
+                                            <span class="nursery-status-pill nursery-status-pill--success">نشط</span>
+                                        @else
+                                            <span class="nursery-status-pill nursery-status-pill--muted">مؤرشف</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
                                         <a href="{{ route('nursery.children.show', $child) }}" class="nursery-btn nursery-btn-soft text-xs py-1">الملف</a>
                                     </td>
                                 </tr>

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
 @section('title', 'تعديل ضريبة - '.config('app.name'))
 

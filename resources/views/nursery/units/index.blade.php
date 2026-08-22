@@ -17,28 +17,10 @@
         @endif
     </div>
 
-    <div class="grid gap-3 sm:grid-cols-3">
-        <div class="nursery-card p-4 text-center">
-            <p class="text-sm font-semibold text-orange-950">
-                إجمالي الوحدات
-                <x-info field="nursery.list_total_units" />
-            </p>
-            <p class="text-2xl font-extrabold text-orange-600 tabular-nums">{{ $listStats['total'] }}</p>
-        </div>
-        <div class="nursery-card p-4 text-center">
-            <p class="text-sm font-semibold text-orange-950">
-                الوحدات النشطة
-                <x-info field="nursery.list_active_units" />
-            </p>
-            <p class="text-2xl font-extrabold text-emerald-600 tabular-nums">{{ $listStats['active'] }}</p>
-        </div>
-        <div class="nursery-card p-4 text-center">
-            <p class="text-sm font-semibold text-orange-950">
-                الوحدات المؤرشفة
-                <x-info field="nursery.list_archived_units" />
-            </p>
-            <p class="text-2xl font-extrabold text-gray-500 tabular-nums">{{ $listStats['archived'] }}</p>
-        </div>
+    <div class="nursery-stats-row">
+        <x-nursery-stat-card title="إجمالي الوحدات" :value="$listStats['total']" info="nursery.list_total_units" tone="primary" hint="كل الوحدات" spark="bars" trend="up" />
+        <x-nursery-stat-card title="الوحدات النشطة" :value="$listStats['active']" info="nursery.list_active_units" tone="success" hint="منهج نشط" spark="ring" trend="up" />
+        <x-nursery-stat-card title="الوحدات المؤرشفة" :value="$listStats['archived']" info="nursery.list_archived_units" tone="muted" hint="غير نشطة" spark="line" trend="flat" />
     </div>
 
     <form method="get" class="nursery-card p-4 flex flex-wrap gap-3 items-end">
@@ -75,61 +57,73 @@
         </a>
     </div>
 
-    <section class="nursery-card overflow-hidden">
+    <section class="nursery-card nursery-table-card">
+        <div class="nursery-table-card__toolbar">
+            <div>
+                <h2>قائمة الوحدات</h2>
+                <p>{{ $tab === 'archived' ? 'الوحدات المؤرشفة' : 'الوحدات النشطة' }} · الأهداف والفئة العمرية</p>
+            </div>
+        </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-right min-w-[640px]">
+            <table class="nursery-table min-w-[640px]">
                 <thead>
-                    <tr class="border-b border-orange-100 bg-orange-50/80">
-                        <th class="px-4 py-3 font-bold text-orange-950">
+                    <tr>
+                        <th>
                             اسم الوحدة
                             <x-info field="nursery.unit_name" />
                         </th>
-                        <th class="px-4 py-3 font-bold text-orange-950">
+                        <th>
                             الفئة العمرية
                             <x-info field="nursery.unit_age_groups" />
                         </th>
-                        <th class="px-4 py-3 font-bold text-orange-950">
+                        <th>
                             الأهداف
                             <x-info field="nursery.unit_goals" />
                         </th>
-                        <th class="px-4 py-3 font-bold text-orange-950">
+                        <th class="text-center">
                             الحالة
                             <x-info field="nursery.unit_status" />
                         </th>
                         @if($canManage)
-                            <th class="px-4 py-3 font-bold text-orange-950 w-28">إجراءات</th>
+                            <th class="text-center w-14">إجراءات</th>
                         @endif
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($items as $item)
-                        <tr class="border-b border-orange-50 hover:bg-orange-50/40">
-                            <td class="px-4 py-3 font-semibold text-orange-950">{{ $item->name }}</td>
-                            <td class="px-4 py-3 text-orange-900/90 max-w-xs">
+                        <tr>
+                            <td>
+                                <span class="nursery-table-name__title">{{ $item->name }}</span>
+                            </td>
+                            <td class="max-w-xs">
                                 {{ \App\Support\NurseryClassroomAgeGroups::labelsFor($item->age_groups) }}
                             </td>
-                            <td class="px-4 py-3 text-orange-900/90">
-                                <span class="tabular-nums font-semibold">{{ count($item->goalLines()) }}</span>
-                                <span class="text-xs text-orange-700/75">هدف</span>
+                            <td>
+                                <span class="tabular-nums font-semibold text-slate-800">{{ count($item->goalLines()) }}</span>
+                                <span class="text-xs text-slate-400">هدف</span>
                             </td>
-                            <td class="px-4 py-3">
+                            <td class="text-center">
                                 @if($item->is_active)
-                                    <span class="text-emerald-700 font-medium">نشطة</span>
+                                    <span class="nursery-status-pill nursery-status-pill--success">نشطة</span>
                                 @else
-                                    <span class="text-gray-500 font-medium">مؤرشفة</span>
+                                    <span class="nursery-status-pill nursery-status-pill--muted">مؤرشفة</span>
                                 @endif
                             </td>
                             @if($canManage)
-                                <td class="px-4 py-3">
-                                    <a href="{{ route('nursery.units.edit', $item) }}" class="nursery-btn nursery-btn-soft text-xs py-1.5">تعديل</a>
+                                <td class="text-center">
+                                    <x-erp-actions-dropdown :menu-id="'nursery-unit-'.$item->id">
+                                        <x-erp-actions-menu-item :href="route('nursery.units.edit', $item)" icon="edit">
+                                            تعديل
+                                        </x-erp-actions-menu-item>
+                                    </x-erp-actions-dropdown>
                                 </td>
                             @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 5 : 4 }}" class="px-4 py-12 text-center">
-                                <p class="text-orange-800/80 font-medium">لا توجد وحدات لعرضها!</p>
-                                <p class="text-sm text-orange-700/70 mt-2">أضف أول وحدة منهجية لحضانتك.</p>
+                            <td colspan="{{ $canManage ? 5 : 4 }}" class="!py-12 text-center text-orange-800/70">
+                                <p class="font-medium">لا توجد وحدات لعرضها!</p>
+                                <p class="text-sm mt-2">أضف أول وحدة منهجية لحضانتك.</p>
                                 @if($canManage)
                                     <a href="{{ route('nursery.units.create') }}" class="nursery-btn nursery-btn-primary mt-4 inline-flex">+ إضافة وحدة</a>
                                 @endif
@@ -140,7 +134,7 @@
             </table>
         </div>
         @if($items->hasPages())
-            <div class="px-4 py-3 border-t border-orange-100">{{ $items->links() }}</div>
+            <div class="px-4 py-3 border-t border-slate-100">{{ $items->links() }}</div>
         @endif
     </section>
 </div>

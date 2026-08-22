@@ -38,6 +38,25 @@
     </section>
 
     <section class="np-card space-y-3">
+        <h3 class="font-bold text-orange-950">
+            يوم الطفل
+            <x-info field="nursery.portal_child_daily" />
+        </h3>
+        @forelse($dailySummary ?? [] as $group)
+            <div class="text-sm">
+                <p class="font-semibold text-orange-950">{{ $group['label'] }}</p>
+                <ul class="mt-1 space-y-1 text-orange-800/90">
+                    @foreach($group['lines'] as $line)
+                        <li>{{ $line }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @empty
+            <p class="text-sm text-orange-700/70">لا يوجد ملخص لليوم بعد.</p>
+        @endforelse
+    </section>
+
+    <section class="np-card space-y-3">
         <h3 class="font-bold text-orange-950">المعلومات الصحية</h3>
         <dl class="space-y-2 text-sm">
             <div><dt class="text-orange-800/70 inline">الحساسية: </dt><dd class="inline font-medium">{{ $child->allergies ?: '—' }}</dd></div>

@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +28,7 @@ class JournalEntry extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
     }
 
     protected function casts(): array

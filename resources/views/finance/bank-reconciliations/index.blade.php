@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'تسوية البنك - '.config('app.name'))
+@section('title', niche_label('finance.bank_reconciliation', 'التسوية البنكية').' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-blue-600">الرئيسية</a>

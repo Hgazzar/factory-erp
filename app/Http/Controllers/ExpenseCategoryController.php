@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\ExpenseCategory;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class ExpenseCategoryController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('search', ''));
@@ -34,14 +37,14 @@ class ExpenseCategoryController extends Controller
     public function create(): View
     {
         $parents = ExpenseCategory::query()->orderBy('code')->get(['id', 'code', 'name_ar']);
-        $nextCode = ExpenseCategory::generateNextCodeForUser((int) (auth()->id() ?? 1));
+        $nextCode = ExpenseCategory::generateNextCodeForUser($this->resolveOperationsTenantUserId());
 
         return view('finance.expenses.categories.create', compact('parents', 'nextCode'));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'name_ar' => ['required', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
@@ -73,7 +76,7 @@ class ExpenseCategoryController extends Controller
 
     public function update(Request $request, ExpenseCategory $category): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'name_ar' => ['required', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],

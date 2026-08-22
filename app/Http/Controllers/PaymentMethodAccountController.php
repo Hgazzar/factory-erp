@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\PaymentMethodAccount;
 use App\Support\AccountingLedgerOptions;
@@ -12,9 +13,11 @@ use Illuminate\View\View;
 
 class PaymentMethodAccountController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function edit(): View
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         PaymentMethodAccount::ensureDefaultsForUser($uid);
 
         $rows = PaymentMethodAccount::query()
@@ -39,7 +42,7 @@ class PaymentMethodAccountController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         PaymentMethodAccount::ensureDefaultsForUser($uid);
 
         $allowed = collect(AccountingLedgerOptions::cashEquivalentAssetAccountsForUser($uid))

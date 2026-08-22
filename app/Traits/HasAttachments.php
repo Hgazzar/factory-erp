@@ -16,9 +16,71 @@ use Illuminate\Support\Facades\Storage;
  */
 trait HasAttachments
 {
+    /**
+     * Prefix stored in attachment file_name to mark nursery avatar photos (no schema change).
+     */
+    public const AVATAR_FILE_PREFIX = '__avatar__:';
+
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function isAvatarAttachment(Attachment $attachment): bool
+    {
+        return str_starts_with((string) $attachment->file_name, self::AVATAR_FILE_PREFIX);
+    }
+
+    /**
+     * صورة الأفاتار إن وُجدت، وإلا أول مرفق صورة عام.
+     */
+    public function firstImageUrl(): ?string
+    {
+        $attachments = $this->relationLoaded('attachments')
+            ? $this->attachments
+            : $this->attachments()->orderBy('id')->get();
+
+        $avatar = $attachments->first(fn (Attachment $att): bool => $this->isAvatarAttachment($att) && filled($att->file_path));
+        if ($avatar) {
+            return asset('storage/'.ltrim((string) $avatar->file_path, '/'));
+        }
+
+        foreach ($attachments as $att) {
+            if ($this->isAvatarAttachment($att)) {
+                continue;
+            }
+            $mime = strtolower((string) ($att->file_type ?? ''));
+            $name = strtolower((string) ($att->file_name ?? ''));
+            $isImage = str_starts_with($mime, 'image/')
+                || (bool) preg_match('/\.(jpe?g|png|gif|webp|bmp)$/', $name);
+
+            if ($isImage && filled($att->file_path)) {
+                return asset('storage/'.ltrim((string) $att->file_path, '/'));
+            }
+        }
+
+        return null;
+    }
+
+    public function avatarAttachment(): ?Attachment
+    {
+        $attachments = $this->relationLoaded('attachments')
+            ? $this->attachments
+            : $this->attachments()->orderByDesc('id')->get();
+
+        return $attachments->first(fn (Attachment $att): bool => $this->isAvatarAttachment($att));
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Attachment>
+     */
+    public function documentAttachments()
+    {
+        $attachments = $this->relationLoaded('attachments')
+            ? $this->attachments
+            : $this->attachments()->orderBy('id')->get();
+
+        return $attachments->reject(fn (Attachment $att): bool => $this->isAvatarAttachment($att))->values();
     }
 
     protected static function bootHasAttachments(): void

@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'المصروفات - '.config('app.name'))
+@section('title', niche_label('finance.expense', 'المصروفات').' - '.config('app.name'))
 
 @push('styles')
 <style>
@@ -46,7 +46,7 @@
                 </svg>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">المصروفات</h1>
+                <h1 class="text-2xl font-bold text-gray-900">{{ niche_label('finance.expense', 'المصروفات') }}</h1>
                 <p class="mt-1 text-sm text-gray-500">إدارة طلبات المصروفات والتعويضات</p>
             </div>
         </div>
@@ -196,9 +196,9 @@
         </form>
     </section>
 
-    <section class="w-full min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-        <div class="w-full min-w-0 overflow-x-auto">
-            <table class="w-full min-w-[1100px] text-sm">
+    <section class="w-full min-w-0 rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div class="w-full min-w-0 overflow-x-auto rounded-lg">
+            <table class="w-full min-w-[1180px] border-separate border-spacing-0 text-sm">
                 <thead>
                     <tr class="bg-gray-50 text-gray-700">
                         <th scope="col" class="w-[6.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">رقم المصروف</th>
@@ -206,12 +206,14 @@
                         <th scope="col" class="w-[8.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_supplier" /> المورد</th>
                         <th scope="col" class="w-[7rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">التصنيف</th>
                         <th scope="col" class="w-[6.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_reference" /> رقم مرجعي</th>
-                        <th scope="col" class="min-w-0 border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_description" /> الوصف</th>
+                        <th scope="col" class="min-w-[8rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_description" /> الوصف</th>
                         <th scope="col" class="w-[5.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">المبلغ</th>
                         <th scope="col" class="w-[5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_tax_amount" /> الضريبة</th>
                         <th scope="col" class="w-[5.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="finance.expense_col_total_amount" /> الإجمالي</th>
                         <th scope="col" class="w-[5.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold"><x-info field="expense_col_workflow_status" /> الحالة</th>
-                        <th scope="col" class="w-[1%] whitespace-nowrap border-b border-gray-200 px-3 py-3 text-center font-semibold"><x-info field="expense_col_actions" /> إجراءات</th>
+                        <th scope="col" class="sticky left-0 z-20 min-w-[6.5rem] whitespace-nowrap border-b border-gray-200 bg-gray-50 px-4 py-3 text-center font-semibold shadow-[-6px_0_8px_-6px_rgba(15,23,42,0.12)]">
+                            <span class="inline-flex items-center justify-center gap-1"><x-info field="expense_col_actions" /> إجراءات</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -243,7 +245,7 @@
                                     <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">مسودة</span>
                                 @endif
                             </td>
-                            <td class="px-3 py-3 text-center align-middle">
+                            <td class="sticky left-0 z-10 bg-white px-4 py-3 text-center align-middle shadow-[-6px_0_8px_-6px_rgba(15,23,42,0.08)]">
                                 @php
                                     $expenseMenuId = 'expense-actions-'.$expense->id;
                                     $showPdf = $posted;

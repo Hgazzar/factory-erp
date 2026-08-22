@@ -51,7 +51,7 @@
                         <th class="px-4 py-3 font-semibold"><span class="inline-flex items-center gap-1">السماح (د) <x-info field="hr.shift_grace_minutes" /></span></th>
                         <th class="px-4 py-3 font-semibold"><span class="inline-flex items-center gap-1">الموظفون <x-info field="hr.shift_employees_count" /></span></th>
                         <th class="px-4 py-3 font-semibold"><span class="inline-flex items-center gap-1">الحالة <x-info field="hr.shift_status" /></span></th>
-                        <th class="px-4 py-3 font-semibold">إجراءات</th>
+                        <th class="px-4 py-3 font-semibold text-center w-14">إجراءات</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -73,14 +73,15 @@
                                     <span class="ms-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800">ليلية</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3">
+                            <td class="px-4 py-3 text-center">
                                 @php $menuId = 'hr-shift-'.$shift->id; @endphp
                                 <x-erp-actions-dropdown :menu-id="$menuId">
-                                    <a href="{{ route('hr.shifts.show', $shift) }}" class="erp-menu-item block px-3 py-2 text-sm hover:bg-gray-50">عرض</a>
-                                    <a href="{{ route('hr.shifts.edit', $shift) }}" class="erp-menu-item block px-3 py-2 text-sm hover:bg-gray-50">تعديل</a>
-                                    <form action="{{ route('hr.shifts.destroy', $shift) }}" method="POST" class="m-0" onsubmit="return confirm('حذف الوردية؟');">
+                                    <x-erp-actions-menu-item :href="route('hr.shifts.show', $shift)" icon="view">عرض</x-erp-actions-menu-item>
+                                    <x-erp-actions-menu-item :href="route('hr.shifts.edit', $shift)" icon="edit">تعديل</x-erp-actions-menu-item>
+                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                    <form action="{{ route('hr.shifts.destroy', $shift) }}" method="POST" class="m-0">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="erp-menu-item block w-full px-3 py-2 text-start text-sm text-red-700 hover:bg-red-50">حذف</button>
+                                        <x-erp-actions-menu-item type="submit" icon="delete" :danger="true" confirm="حذف الوردية؟">حذف</x-erp-actions-menu-item>
                                     </form>
                                 </x-erp-actions-dropdown>
                             </td>

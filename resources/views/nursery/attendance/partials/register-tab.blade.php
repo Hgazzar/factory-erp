@@ -23,8 +23,10 @@
                         <p class="text-xs text-orange-800/70">{{ $child->code }} · {{ $child->guardian?->phone }}</p>
                     </div>
                     <div class="flex gap-2">
+                        @if($canManageChildren)
                         <form method="post" action="{{ route('nursery.attendance.check-in') }}">@csrf<input type="hidden" name="child_id" value="{{ $child->id }}"><button type="submit" class="nursery-btn nursery-btn-primary text-sm">حضور</button></form>
                         <form method="post" action="{{ route('nursery.attendance.check-out') }}">@csrf<input type="hidden" name="child_id" value="{{ $child->id }}"><button type="submit" class="nursery-btn nursery-btn-soft text-sm">انصراف</button></form>
+                        @endif
                     </div>
                 </div>
             @endforeach
@@ -40,8 +42,10 @@
                 <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-orange-50 border border-orange-100">
                     <div><p class="font-semibold">{{ $employee->name }}</p><p class="text-xs text-orange-800/70">{{ $employee->code }}</p></div>
                     <div class="flex gap-2">
+                        @if($canManageStaff)
                         <form method="post" action="{{ route('nursery.attendance.staff.check-in') }}">@csrf<input type="hidden" name="employee_id" value="{{ $employee->id }}"><button type="submit" class="nursery-btn nursery-btn-primary text-sm">حضور</button></form>
                         <form method="post" action="{{ route('nursery.attendance.staff.check-out') }}">@csrf<input type="hidden" name="employee_id" value="{{ $employee->id }}"><button type="submit" class="nursery-btn nursery-btn-soft text-sm">انصراف</button></form>
+                        @endif
                     </div>
                 </div>
             @endforeach

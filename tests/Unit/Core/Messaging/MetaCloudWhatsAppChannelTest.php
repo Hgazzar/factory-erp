@@ -56,6 +56,51 @@ final class MetaCloudWhatsAppChannelTest extends TestCase
     }
 
     #[Test]
+    public function nursery_disabled_channel_does_not_count_as_delivered(): void
+    {
+        config([
+            'nursery.whatsapp.enabled' => false,
+            'nursery.whatsapp.access_token' => '',
+            'nursery.whatsapp.phone_number_id' => '',
+            'nursery.whatsapp.default_country_code' => '966',
+            'clinic.whatsapp.enabled' => true,
+            'clinic.whatsapp.access_token' => 'clinic-secret',
+            'clinic.whatsapp.phone_number_id' => 'clinic-phone',
+        ]);
+
+        Http::fake();
+
+        $channel = $this->nurseryChannel();
+
+        $this->assertFalse($channel->isEnabled());
+        $this->assertFalse($channel->sendText('0501111111', 'Hello nursery'));
+        Http::assertNothingSent();
+    }
+
+    #[Test]
+    public function nursery_config_does_not_fallback_to_clinic_credentials(): void
+    {
+        config([
+            'clinic.whatsapp.enabled' => true,
+            'clinic.whatsapp.access_token' => 'clinic-secret-token',
+            'clinic.whatsapp.phone_number_id' => 'clinic-phone-id',
+            'nursery.whatsapp.enabled' => true,
+            'nursery.whatsapp.access_token' => '',
+            'nursery.whatsapp.phone_number_id' => '',
+        ]);
+
+        $resolver = app(WhatsAppConfigResolver::class);
+        $nursery = $resolver->resolve(WhatsAppConfigResolver::PROFILE_NURSERY);
+        $clinic = $resolver->resolve(WhatsAppConfigResolver::PROFILE_CLINIC);
+
+        $this->assertSame('clinic-secret-token', $clinic['access_token']);
+        $this->assertTrue($clinic['enabled']);
+        $this->assertSame('', $nursery['access_token']);
+        $this->assertFalse($nursery['enabled']);
+        $this->assertStringNotContainsString('CLINIC_WHATSAPP', (string) file_get_contents(config_path('nursery.php')));
+    }
+
+    #[Test]
     public function send_text_posts_to_meta_when_enabled(): void
     {
         config([
@@ -73,6 +118,7 @@ final class MetaCloudWhatsAppChannelTest extends TestCase
         $channel = $this->storeChannel();
 
         $this->assertTrue($channel->sendText('0502222222', 'Order confirmed'));
+        $this->assertSame('wamid.1', MetaCloudWhatsAppChannel::lastProviderMessageId());
 
         Http::assertSent(function ($request): bool {
             return str_contains($request->url(), 'phone-id-99/messages')
@@ -97,6 +143,15 @@ final class MetaCloudWhatsAppChannelTest extends TestCase
     {
         return new MetaCloudWhatsAppChannel(
             WhatsAppConfigResolver::PROFILE_STORE,
+            app(WhatsAppConfigResolver::class),
+            app(PhoneNumberNormalizer::class),
+        );
+    }
+
+    private function nurseryChannel(): MetaCloudWhatsAppChannel
+    {
+        return new MetaCloudWhatsAppChannel(
+            WhatsAppConfigResolver::PROFILE_NURSERY,
             app(WhatsAppConfigResolver::class),
             app(PhoneNumberNormalizer::class),
         );

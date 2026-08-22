@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'technician_or_admin' => \App\Http\Middleware\EnsureUserIsTechnicianOrAdmin::class,
             'clinic.capability' => \App\Http\Middleware\EnsureClinicCapability::class,
             'nursery.capability' => \App\Http\Middleware\EnsureNurseryCapability::class,
+            'nursery.finance' => \App\Http\Middleware\EnsureNurseryStaffCanAccessFinance::class,
             'fleet.capability' => \App\Http\Middleware\EnsureFleetCapability::class,
             'fleet.access' => \App\Http\Middleware\EnsureFleetOperationsEnabled::class,
             'clinic.portal.tenant' => \App\Http\Middleware\ResolveClinicPortalTenant::class,

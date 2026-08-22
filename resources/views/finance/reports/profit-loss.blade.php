@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'تقرير الأرباح والخسائر - '.config('app.name'))
+@section('title', niche_label('finance.profit_loss', 'الأرباح والخسائر').' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>

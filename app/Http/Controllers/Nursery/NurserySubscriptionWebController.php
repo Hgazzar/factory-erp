@@ -33,7 +33,7 @@ final class NurserySubscriptionWebController extends Controller
         $stats = $subscriptions->stats($tenantUserId, $from, $to);
 
         $listQuery = Subscription::query()
-            ->with(['child:id,name', 'plan:id,name'])
+            ->with(['child:id,name', 'child.attachments', 'plan:id,name', 'renewedFrom:id,starts_on,ends_on'])
             ->where('user_id', $tenantUserId)
             ->orderByDesc('created_at');
 
@@ -102,11 +102,13 @@ final class NurserySubscriptionWebController extends Controller
         }
 
         $message = 'تم إضافة الاشتراك.';
-        if ($result['finance_posted']) {
+        if ($result['finance_status'] === 'recorded') {
             $message .= ' وتم ترحيل القيد المالي.';
+        } elseif ($result['finance_status'] === 'failed') {
+            $message .= ' تعذر ترحيل القيد المالي — الاشتراك مسجّل تشغيلًا.';
         }
-        if ($result['whatsapp_sent']) {
-            $message .= ' وتم إرسال تأكيد واتساب لولي الأمر.';
+        if ($result['whatsapp_dispatched']) {
+            $message .= ' وتمت جدولة رسالة التأكيد لولي الأمر.';
         }
 
         return redirect()->route('nursery.subscriptions.index')->with('success', $message);
@@ -119,14 +121,65 @@ final class NurserySubscriptionWebController extends Controller
         return back()->with('success', 'تم إلغاء الاشتراك.');
     }
 
+    public function markPaid(Request $request, Subscription $subscription, NurserySubscriptionService $subscriptions): RedirectResponse
+    {
+        $data = $request->validate([
+            'payment_method' => ['nullable', 'string', 'in:cash,transfer,card'],
+        ]);
+
+        try {
+            $result = $subscriptions->markPaid(
+                $subscription,
+                $this->resolveOperationsTenantUserId(),
+                (string) ($data['payment_method'] ?? 'cash'),
+            );
+        } catch (InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        if ($result['already_paid']) {
+            return back()->with('success', 'الاشتراك مسجّل كمدفوع مسبقاً.');
+        }
+
+        $message = 'تم تسجيل الدفع.';
+        $message .= match ($result['finance_status']) {
+            'recorded' => ' تم ترحيل القيد المالي.',
+            'failed' => ' تعذر ترحيل القيد المالي — الدفع مسجّل تشغيلًا.',
+            'not_enabled' => ' المحاسبة غير مفعّلة لهذا الاشتراك.',
+            default => '',
+        };
+        if ($result['whatsapp_dispatched']) {
+            $message .= ' تمت جدولة رسالة التأكيد لولي الأمر.';
+        }
+
+        return back()->with('success', $message);
+    }
+
+    public function renew(Subscription $subscription, NurserySubscriptionService $subscriptions): RedirectResponse
+    {
+        try {
+            $renewed = $subscriptions->renew(
+                $subscription,
+                $this->resolveOperationsTenantUserId(),
+                (int) auth()->id(),
+            );
+        } catch (InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('nursery.subscriptions.index')
+            ->with('success', 'تم إنشاء اشتراك تجديد للفترة '.$renewed->starts_on?->format('Y-m-d').' → '.$renewed->ends_on?->format('Y-m-d').'. الاشتراك السابق بقي كما هو.');
+    }
+
     public function sendPaymentReminders(NurserySubscriptionService $subscriptions): RedirectResponse
     {
         $result = $subscriptions->sendPaymentReminders($this->resolveOperationsTenantUserId());
 
-        return back()->with('success', $result['sent'] > 0
-            ? "تم إرسال تذكير بالدفع لـ {$result['sent']} اشتراك."
+        return back()->with('success', $result['queued'] > 0
+            ? "تمت جدولة تذكير بالدفع لـ {$result['queued']} اشتراك."
             : ($result['skipped'] > 0
-                ? 'لم يُرسل أي تذكير (تحقق من تفعيل واتساب الحضانة أو أرقام أولياء الأمور).'
+                ? 'تعذر جدولة التذكيرات (تحقق من تفعيل واتساب الحضانة أو أرقام أولياء الأمور، أو أن الرسائل قيد الإرسال).'
                 : 'لا توجد اشتراكات غير مدفوعة تحتاج تذكيراً.'));
     }
 

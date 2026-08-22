@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Nursery;
 
-use App\Jobs\Nursery\SendNurseryPaymentReminderWhatsAppJob;
-use App\Jobs\Nursery\SendNurseryRenewalReminderWhatsAppJob;
-use App\Jobs\Nursery\SendNurserySubscriptionPaidConfirmationWhatsAppJob;
+use App\Models\Nursery\NurseryOutboundMessage;
 use App\Models\Nursery\Subscription;
 use Illuminate\Support\Facades\Log;
 
@@ -14,21 +12,34 @@ final class NurseryWhatsAppNotifier
 {
     public function __construct(
         private readonly NurseryWhatsAppNotificationService $whatsapp,
+        private readonly NurseryWhatsAppOutboxService $outbox,
     ) {}
 
     public function dispatchSubscriptionPaidConfirmation(int $tenantUserId, int $subscriptionId): void
     {
-        SendNurserySubscriptionPaidConfirmationWhatsAppJob::dispatch($tenantUserId, $subscriptionId);
+        $this->outbox->enqueueSubscriptionMessage(
+            $tenantUserId,
+            $subscriptionId,
+            NurseryOutboundMessage::TYPE_SUBSCRIPTION_PAID_CONFIRMATION,
+        );
     }
 
     public function dispatchPaymentReminder(int $tenantUserId, int $subscriptionId): void
     {
-        SendNurseryPaymentReminderWhatsAppJob::dispatch($tenantUserId, $subscriptionId);
+        $this->outbox->enqueueSubscriptionMessage(
+            $tenantUserId,
+            $subscriptionId,
+            NurseryOutboundMessage::TYPE_PAYMENT_REMINDER,
+        );
     }
 
     public function dispatchRenewalReminder(int $tenantUserId, int $subscriptionId): void
     {
-        SendNurseryRenewalReminderWhatsAppJob::dispatch($tenantUserId, $subscriptionId);
+        $this->outbox->enqueueSubscriptionMessage(
+            $tenantUserId,
+            $subscriptionId,
+            NurseryOutboundMessage::TYPE_RENEWAL_REMINDER,
+        );
     }
 
     public function notifySubscriptionPaidConfirmation(int $tenantUserId, int $subscriptionId): bool
@@ -53,8 +64,12 @@ final class NurseryWhatsAppNotifier
     public function notifyPaymentReminder(int $tenantUserId, int $subscriptionId): bool
     {
         $subscription = $this->loadSubscription($tenantUserId, $subscriptionId);
-        if ($subscription === null || $subscription->payment_reminder_sent_at !== null) {
+        if ($subscription === null) {
             return false;
+        }
+
+        if ($subscription->payment_reminder_sent_at !== null) {
+            return true;
         }
 
         try {
@@ -78,8 +93,12 @@ final class NurseryWhatsAppNotifier
     public function notifyRenewalReminder(int $tenantUserId, int $subscriptionId): bool
     {
         $subscription = $this->loadSubscription($tenantUserId, $subscriptionId);
-        if ($subscription === null || $subscription->renewal_reminder_sent_at !== null) {
+        if ($subscription === null) {
             return false;
+        }
+
+        if ($subscription->renewal_reminder_sent_at !== null) {
+            return true;
         }
 
         try {

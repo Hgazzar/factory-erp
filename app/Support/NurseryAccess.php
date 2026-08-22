@@ -39,9 +39,31 @@ final class NurseryAccess
 
     public const CAP_MANAGE_STAFF_ATTENDANCE = 'manage_staff_attendance';
 
+    public const CAP_VIEW_CHILD_ACTIVITY = 'view_child_activity';
+
+    public const CAP_MANAGE_CHILD_ACTIVITY = 'manage_child_activity';
+
     public const CAP_VIEW_SUBSCRIPTIONS = 'view_subscriptions';
 
     public const CAP_MANAGE_SUBSCRIPTIONS = 'manage_subscriptions';
+
+    /** ملخص مالية الحضانة (Stage B) — finance.view */
+    public const CAP_VIEW_FINANCE = 'view_finance';
+
+    /** لوحة المالية + P&L + ميزان + تقرير ضريبة */
+    public const CAP_VIEW_FINANCE_REPORTS = 'view_finance_reports';
+
+    /** مصروفات وتصنيفاتها (اعتماد/إنشاء) */
+    public const CAP_MANAGE_FINANCE_EXPENSES = 'manage_finance_expenses';
+
+    /** سندات تحصيل/صرف + بنوك */
+    public const CAP_MANAGE_FINANCE_TREASURY = 'manage_finance_treasury';
+
+    /** دليل حسابات + قيود + دفتر أستاذ */
+    public const CAP_MANAGE_FINANCE_LEDGER = 'manage_finance_ledger';
+
+    /** تسوية بنكية + معدلات ضريبة + ربط طرق الدفع */
+    public const CAP_FINANCE_ADMIN = 'finance_admin';
 
     public const CAP_MANAGE_SETTINGS = 'manage_settings';
 
@@ -118,10 +140,27 @@ final class NurseryAccess
                 || in_array('login.app', $perms, true),
             self::CAP_MANAGE_CALENDAR => in_array('scheduling.manage', $perms, true),
             self::CAP_MANAGE_CHILD_ATTENDANCE => in_array('attendance.children', $perms, true),
+            self::CAP_VIEW_CHILD_ACTIVITY => in_array('login.app', $perms, true)
+                || in_array('attendance.children', $perms, true)
+                || in_array('children.manage', $perms, true)
+                || $employee->nursery_role !== null,
+            self::CAP_MANAGE_CHILD_ACTIVITY => in_array('attendance.children', $perms, true)
+                || in_array('children.manage', $perms, true),
             self::CAP_MANAGE_STAFF_ATTENDANCE => in_array('attendance.staff', $perms, true),
             self::CAP_VIEW_SUBSCRIPTIONS => in_array('subscriptions.manage', $perms, true)
                 || in_array('login.app', $perms, true),
             self::CAP_MANAGE_SUBSCRIPTIONS => in_array('subscriptions.manage', $perms, true),
+            self::CAP_VIEW_FINANCE => in_array('finance.view', $perms, true)
+                || in_array('finance.admin', $perms, true),
+            self::CAP_VIEW_FINANCE_REPORTS => in_array('finance.view_reports', $perms, true)
+                || in_array('finance.admin', $perms, true),
+            self::CAP_MANAGE_FINANCE_EXPENSES => in_array('finance.manage_expenses', $perms, true)
+                || in_array('finance.admin', $perms, true),
+            self::CAP_MANAGE_FINANCE_TREASURY => in_array('finance.manage_treasury', $perms, true)
+                || in_array('finance.admin', $perms, true),
+            self::CAP_MANAGE_FINANCE_LEDGER => in_array('finance.manage_ledger', $perms, true)
+                || in_array('finance.admin', $perms, true),
+            self::CAP_FINANCE_ADMIN => in_array('finance.admin', $perms, true),
             self::CAP_MANAGE_SETTINGS => in_array('settings.manage', $perms, true),
             default => false,
         };

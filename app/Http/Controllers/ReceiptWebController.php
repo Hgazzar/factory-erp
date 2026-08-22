@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Models\JournalEntry;
@@ -16,6 +17,8 @@ use Illuminate\View\View;
 
 class ReceiptWebController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function index(): View
     {
         $receipts = Receipt::with(['customer', 'creator'])
@@ -35,7 +38,7 @@ class ReceiptWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $uid = (int) auth()->id();
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'customer_id' => ['required', Rule::exists('customers', 'id')->where('user_id', $uid)],
             'date' => ['required', 'date'],
@@ -44,15 +47,16 @@ class ReceiptWebController extends Controller
         ]);
 
         $user = $request->user();
+        $tenantUserId = $uid;
 
-        DB::transaction(function () use ($data, $user) {
+        DB::transaction(function () use ($data, $user, $tenantUserId) {
             $amount = (float) $data['amount'];
 
             $cashAccount = DefaultLedgerAccounts::cashOnHand();
             $customersAccount = DefaultLedgerAccounts::accountsReceivable();
 
             $entry = JournalEntry::create([
-                'user_id' => (int) $user->id,
+                'user_id' => $tenantUserId,
                 'date' => $data['date'],
                 'reference' => 'RCPT',
                 'description' => 'سند قبض من العميل #' . $data['customer_id'],
@@ -78,7 +82,7 @@ class ReceiptWebController extends Controller
             ]);
 
             $receipt = Receipt::create([
-                'user_id' => (int) $user->id,
+                'user_id' => $tenantUserId,
                 'customer_id' => $data['customer_id'],
                 'date' => $data['date'],
                 'reference' => $data['reference'] ?? null,

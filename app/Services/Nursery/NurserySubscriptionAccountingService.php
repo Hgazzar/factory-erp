@@ -6,12 +6,14 @@ namespace App\Services\Nursery;
 
 use App\Models\CompanySetting;
 use App\Models\JournalEntry;
+use App\Models\JournalItem;
 use App\Models\Nursery\Subscription;
 use App\Services\FinancialRecordingService;
 use App\Services\Tenant\TenantFeatureRegistry;
 use App\Services\Tenant\TenantModuleRegistry;
 use App\Support\DefaultLedgerAccounts;
 use App\Support\PremiumFeatureKeys;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -110,5 +112,68 @@ final class NurserySubscriptionAccountingService
         ])->save();
 
         return $entry;
+    }
+
+    public function reversePaidSubscriptionIfNeeded(Subscription $subscription, int $tenantUserId): void
+    {
+        if ($subscription->reversal_journal_entry_id) {
+            return;
+        }
+
+        if (! $subscription->journal_entry_id) {
+            return;
+        }
+
+        if (! $this->canRecord($tenantUserId)) {
+            return;
+        }
+
+        try {
+            $original = JournalEntry::withoutGlobalScopes()
+                ->where('user_id', $tenantUserId)
+                ->whereKey((int) $subscription->journal_entry_id)
+                ->first();
+
+            if ($original === null) {
+                return;
+            }
+
+            $items = JournalItem::withoutGlobalScopes()
+                ->where('journal_entry_id', $original->id)
+                ->get();
+
+            if ($items->isEmpty()) {
+                return;
+            }
+
+            $lines = [];
+            foreach ($items as $item) {
+                $lines[] = [
+                    'account_id' => (int) $item->account_id,
+                    'debit' => (float) $item->credit,
+                    'credit' => (float) $item->debit,
+                    'description' => 'عكس تحصيل اشتراك حضانة — NUR-SUB-'.$subscription->id,
+                ];
+            }
+
+            $entry = $this->financial->recordBalancedJournal(
+                $tenantUserId,
+                now()->toDateString(),
+                'NUR-SUB-'.$subscription->id.'-REV',
+                'عكس اشتراك حضانة — NUR-SUB-'.$subscription->id,
+                $lines,
+                (int) ($subscription->created_by ?? $tenantUserId),
+            );
+
+            $subscription->forceFill([
+                'reversal_journal_entry_id' => $entry->id,
+            ])->save();
+        } catch (\Throwable $e) {
+            Log::warning('Nursery subscription journal reversal failed', [
+                'subscription_id' => $subscription->id,
+                'journal_entry_id' => $subscription->journal_entry_id,
+                'message' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends(niche_shell_layout())
 
-@section('title', 'سندات القبض - ' . config('app.name'))
+@section('title', niche_label('finance.receipt', 'سند قبض').' - '.config('app.name'))
 
 @section('breadcrumb')
     <a href="{{ route('dashboard') }}" class="text-gray-500 hover:text-indigo-600">الرئيسية</a>
@@ -35,7 +35,7 @@
                 <thead>
                     <tr class="bg-gray-50 text-gray-700">
                         <th class="w-[7rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">التاريخ</th>
-                        <th class="min-w-0 border-b border-gray-200 px-3 py-3 text-right font-semibold">العميل</th>
+                        <th class="min-w-0 border-b border-gray-200 px-3 py-3 text-right font-semibold">{{ niche_label('entities.customer', 'العميل') }}</th>
                         <th class="w-[8rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">المرجع</th>
                         <th class="w-[6.5rem] border-b border-gray-200 px-3 py-3 text-right font-semibold tabular-nums">المبلغ</th>
                         <th class="w-[9rem] border-b border-gray-200 px-3 py-3 text-right font-semibold">المستخدم</th>

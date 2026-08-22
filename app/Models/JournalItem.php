@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
-use App\Models\Scopes\BelongsToAuthenticatedUserScope;
+use App\Models\Scopes\BelongsToTenantContextScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,13 +25,13 @@ class JournalItem extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope(new BelongsToAuthenticatedUserScope);
+        static::addGlobalScope(new BelongsToTenantContextScope);
 
         static::creating(function (JournalItem $model): void {
             if (! $model->user_id && $model->journal_entry_id) {
                 $model->user_id = (int) (JournalEntry::withoutGlobalScopes()
                     ->where('id', $model->journal_entry_id)
-                    ->value('user_id') ?? auth()->id() ?? 1);
+                    ->value('user_id') ?? app(\App\Services\Tenant\TenantContext::class)->resolveTenantUserId() ?? auth()->id() ?? 1);
             }
         });
     }

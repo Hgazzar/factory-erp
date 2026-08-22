@@ -4,10 +4,19 @@
 
 @section('content')
 <div class="w-full space-y-6" dir="rtl">
+    @if(session('success'))
+        <div class="nursery-card px-4 py-3 text-sm text-emerald-800 bg-emerald-50">{{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+        <div class="nursery-card px-4 py-3 text-sm text-red-800 bg-red-50">{{ session('error') }}</div>
+    @endif
     <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">{{ $child->name }}</h1>
-            <p class="text-sm text-orange-800/80">كود: {{ $child->code }}</p>
+        <div class="flex items-center gap-3 min-w-0">
+            <x-nursery-person-avatar :name="$child->name" :src="$child->firstImageUrl()" size="lg" />
+            <div class="min-w-0">
+                <h1 class="text-2xl font-extrabold text-orange-950 truncate">{{ $child->name }}</h1>
+                <p class="text-sm text-orange-800/80">كود: {{ $child->code }}</p>
+            </div>
         </div>
         <div class="flex flex-wrap gap-2">
             @if($canEdit)
@@ -75,7 +84,7 @@
             theme="tailwind"
             hint-field="nursery.child_attachments"
             title="المرفقات"
-            :existing="$child->attachments"
+            :existing="$child->documentAttachments()"
             :uploadable="false"
             :allow-delete="$canEdit"
             help-text="معاينة وتحميل الملفات. الحذف والإضافة من شاشة التعديل."
@@ -88,7 +97,10 @@
         @endif
     </section>
 
+    @include('nursery.partials.child-daily-activity')
+
     <div class="flex flex-wrap gap-2">
+        @if($canManageChildAttendance)
         <form method="post" action="{{ route('nursery.attendance.check-in') }}">
             @csrf
             <input type="hidden" name="child_id" value="{{ $child->id }}">
@@ -99,6 +111,7 @@
             <input type="hidden" name="child_id" value="{{ $child->id }}">
             <button type="submit" class="nursery-btn nursery-btn-soft">تسجيل انصراف</button>
         </form>
+        @endif
     </div>
 
     <section class="nursery-card p-4">

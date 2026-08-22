@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Account;
 use App\Models\AuditLog;
 use App\Models\AuditTrail;
@@ -29,6 +30,8 @@ use RuntimeException;
 
 class AccountWebController extends Controller
 {
+    use ResolvesOperationsTenant;
+
     public function importTemplate(): Response
     {
         $csv = "\xEF\xBB\xBF";
@@ -81,7 +84,7 @@ class AccountWebController extends Controller
             ->orderBy('code')
             ->get(['id', 'code', 'name_ar', 'parent_id']);
 
-        $uid = (int) (auth()->id() ?? 1);
+        $uid = $this->resolveOperationsTenantUserId();
         $parentId = old('parent_id') ? (int) old('parent_id') : null;
         if ($parentId && ! Account::query()->whereKey($parentId)->exists()) {
             $parentId = null;
@@ -96,17 +99,17 @@ class AccountWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $uid = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'name_ar' => ['required', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],
-            'parent_id' => ['nullable', 'integer', Rule::exists('accounts', 'id')->where('user_id', auth()->id())],
+            'parent_id' => ['nullable', 'integer', Rule::exists('accounts', 'id')->where('user_id', $uid)],
             'type' => ['required', 'in:asset,liability,equity,expense,revenue'],
             'opening_balance' => ['nullable', 'numeric'],
             'is_bank' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $uid = (int) (auth()->id() ?? 1);
         $parentId = ! empty($data['parent_id']) ? (int) $data['parent_id'] : null;
         $data['user_id'] = $uid;
         $data['code'] = Account::generateNextNumericCodeForUser($uid, $parentId);
@@ -124,7 +127,7 @@ class AccountWebController extends Controller
 
     public function update(Request $request, Account $account): RedirectResponse
     {
-        $uid = (int) (auth()->id() ?? 0);
+        $uid = $this->resolveOperationsTenantUserId();
 
         $data = $request->validate([
             'name_ar' => ['required', 'string', 'max:255'],

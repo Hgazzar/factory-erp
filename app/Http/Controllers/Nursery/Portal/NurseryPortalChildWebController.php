@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * ملف الطفل في بوابة ولي الأمر — قراءة فقط (حضور، صحة، أدوية).
+ * ملف الطفل في بوابة ولي الأمر — قراءة فقط (حضور، يوم الطفل، صحة، أدوية).
  */
 final class NurseryPortalChildWebController extends Controller
 {
@@ -44,6 +44,7 @@ final class NurseryPortalChildWebController extends Controller
             'todayLog' => $profile['todayLog'],
             'todayStatus' => $profile['todayStatus'],
             'todayStatusLabel' => $profile['todayStatusLabel'],
+            'dailySummary' => $profile['dailySummary'],
             'relationshipLabels' => $relationshipLabels,
         ]));
     }

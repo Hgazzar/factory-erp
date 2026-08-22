@@ -75,7 +75,7 @@ final class NurseryGuardianWebController extends Controller
         abort_unless((int) $guardian->user_id === $tenantUserId, 404);
 
         $children = Child::query()
-            ->with(['activeEnrollment.classroom:id,name'])
+            ->with(['activeEnrollment.classroom:id,name', 'attachments'])
             ->where('user_id', $tenantUserId)
             ->where('guardian_id', $guardian->id)
             ->orderBy('name')

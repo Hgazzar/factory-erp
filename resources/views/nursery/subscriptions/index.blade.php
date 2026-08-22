@@ -28,69 +28,124 @@
         @endforeach
     </div>
 
-    <div class="grid gap-3 grid-cols-2 lg:grid-cols-4">
-        <div class="nursery-card p-4 text-center">
-            <p class="text-sm font-semibold text-orange-950">إجمالي الاشتراكات <x-info field="nursery.sub_stat_total" /></p>
-            <p class="text-2xl font-extrabold text-orange-600 tabular-nums">{{ $stats['total'] }}</p>
-        </div>
-        <div class="nursery-card p-4 text-center">
-            <p class="text-sm font-semibold text-orange-950">المدفوعة <x-info field="nursery.sub_stat_paid" /></p>
-            <p class="text-2xl font-extrabold text-emerald-600 tabular-nums">{{ $stats['paid'] }}</p>
-        </div>
-        <div class="nursery-card p-4 text-center">
-            <p class="text-sm font-semibold text-orange-950">غير المدفوعة <x-info field="nursery.sub_stat_unpaid" /></p>
-            <p class="text-2xl font-extrabold text-amber-600 tabular-nums">{{ $stats['unpaid'] }}</p>
-        </div>
-        <div class="nursery-card p-4 text-center">
-            <p class="text-sm font-semibold text-orange-950">الملغاة <x-info field="nursery.sub_stat_cancelled" /></p>
-            <p class="text-2xl font-extrabold text-gray-500 tabular-nums">{{ $stats['cancelled'] }}</p>
-        </div>
+    <div class="nursery-stats-row">
+        <x-nursery-stat-card title="إجمالي الاشتراكات" :value="$stats['total']" info="nursery.sub_stat_total" tone="primary" hint="كل الفترات" spark="bars" trend="up" />
+        <x-nursery-stat-card title="المدفوعة" :value="$stats['paid']" info="nursery.sub_stat_paid" tone="success" hint="تم التحصيل" spark="ring" trend="up" />
+        <x-nursery-stat-card title="غير المدفوعة" :value="$stats['unpaid']" info="nursery.sub_stat_unpaid" tone="warning" hint="بانتظار الدفع" spark="bars" trend="down" />
+    </div>
+
+    <div class="nursery-stats-row">
+        <x-nursery-stat-card title="المنتهية" :value="$stats['expired'] ?? 0" info="nursery.sub_stat_expired" tone="danger" hint="انتهت مدتها" spark="line" trend="down" />
+        <x-nursery-stat-card title="الملغاة" :value="$stats['cancelled']" info="nursery.sub_stat_cancelled" tone="muted" hint="ملغاة" spark="none" trend="flat" />
+        <x-nursery-stat-card title="إجمالي الاشتراكات" :value="$stats['total']" info="nursery.sub_stat_total" tone="primary" hint="كل الفترات" spark="bars" trend="up" />
     </div>
 
     <div class="grid gap-5 xl:grid-cols-3">
-        <section class="nursery-card overflow-hidden xl:col-span-2">
+        <section class="nursery-card nursery-table-card xl:col-span-2">
+            <div class="nursery-table-card__toolbar">
+                <div>
+                    <h2>قائمة الاشتراكات</h2>
+                    <p>الطفل والخطة والحالة المالية</p>
+                </div>
+            </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm min-w-[640px]">
+                <table class="nursery-table min-w-[640px]">
                     <thead>
-                        <tr class="bg-orange-50/80 border-b border-orange-100">
-                            <th class="px-4 py-3 text-right font-bold text-orange-950">الطفل <x-info field="nursery.sub_child" /></th>
-                            <th class="px-4 py-3 text-right font-bold text-orange-950">الخطة <x-info field="nursery.sub_plan" /></th>
-                            <th class="px-4 py-3 text-right font-bold text-orange-950">الفترة</th>
-                            <th class="px-4 py-3 text-right font-bold text-orange-950">القيمة <x-info field="nursery.sub_amount" /></th>
-                            <th class="px-4 py-3 text-right font-bold text-orange-950">الحالة</th>
-                            @if($canManage)<th class="px-4 py-3 w-24"></th>@endif
+                        <tr>
+                            <th>الطفل <x-info field="nursery.sub_child" /></th>
+                            <th>الخطة <x-info field="nursery.sub_plan" /></th>
+                            <th>الفترة</th>
+                            <th>القيمة <x-info field="nursery.sub_amount" /></th>
+                            <th class="text-center">الحالة <x-info field="nursery.sub_status" /></th>
+                            @if($canManage)<th class="text-center w-14">إجراءات</th>@endif
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($items as $sub)
-                            <tr class="border-b border-orange-50 hover:bg-orange-50/40">
-                                <td class="px-4 py-3 font-semibold">{{ $sub->child?->name }}</td>
-                                <td class="px-4 py-3">{{ $sub->plan?->name }}</td>
-                                <td class="px-4 py-3 text-xs tabular-nums">{{ $sub->starts_on?->format('Y-m-d') }} → {{ $sub->ends_on?->format('Y-m-d') }}</td>
-                                <td class="px-4 py-3 tabular-nums">{{ number_format($sub->finalAmount(), 2) }} ر.س</td>
-                                <td class="px-4 py-3">
+                            @php
+                                $hasSubActions = $sub->canBeMarkedPaid() || $sub->canBeRenewed() || $sub->isActive();
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="nursery-table-name">
+                                        <x-nursery-person-avatar :name="$sub->child?->name ?? '—'" :src="$sub->child?->firstImageUrl()" />
+                                        <span class="nursery-table-name__text">
+                                            <span class="nursery-table-name__title">{{ $sub->child?->name }}</span>
+                                            @if($sub->renewed_from_id)
+                                                <span class="nursery-table-name__sub">تجديد من {{ $sub->renewedFrom?->starts_on?->format('Y-m-d') }} → {{ $sub->renewedFrom?->ends_on?->format('Y-m-d') }}</span>
+                                            @endif
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>{{ $sub->plan?->name }}</td>
+                                <td class="text-xs tabular-nums text-slate-600">{{ $sub->starts_on?->format('Y-m-d') }} → {{ $sub->ends_on?->format('Y-m-d') }}</td>
+                                <td class="tabular-nums font-semibold text-slate-800">{{ number_format($sub->finalAmount(), 2) }} ر.س</td>
+                                <td class="text-center">
                                     @if($sub->status === 'cancelled')
-                                        <span class="text-gray-500 font-medium">ملغى</span>
-                                    @elseif($sub->is_paid)
-                                        <span class="text-emerald-700 font-medium">مدفوع</span>
+                                        <span class="nursery-status-pill nursery-status-pill--muted">ملغى</span>
+                                    @elseif($sub->status === 'expired')
+                                        <span class="nursery-status-pill nursery-status-pill--warning">منتهٍ</span>
+                                    @elseif($sub->is_paid || $sub->status === 'paid')
+                                        <span class="nursery-status-pill nursery-status-pill--success">مدفوع</span>
                                     @else
-                                        <span class="text-amber-700 font-medium">غير مدفوع</span>
+                                        <span class="nursery-status-pill nursery-status-pill--warning">غير مدفوع</span>
                                     @endif
                                 </td>
                                 @if($canManage)
-                                    <td class="px-4 py-3">
-                                        @if($sub->isActive())
-                                            <form method="post" action="{{ route('nursery.subscriptions.cancel', $sub) }}" onsubmit="return confirm('إلغاء هذا الاشتراك؟')">
-                                                @csrf @method('PATCH')
-                                                <button type="submit" class="text-xs text-red-700 hover:underline">إلغاء</button>
-                                            </form>
+                                    <td class="text-center">
+                                        @if($hasSubActions)
+                                            <x-erp-actions-dropdown :menu-id="'nursery-sub-'.$sub->id">
+                                                @if($sub->canBeMarkedPaid())
+                                                    <form method="post" action="{{ route('nursery.subscriptions.mark-paid', $sub) }}" class="m-0">
+                                                        @csrf @method('PATCH')
+                                                        <input type="hidden" name="payment_method" value="cash">
+                                                        <x-erp-actions-menu-item type="submit" icon="pay">
+                                                            تسجيل الدفع · نقدي
+                                                        </x-erp-actions-menu-item>
+                                                    </form>
+                                                    <form method="post" action="{{ route('nursery.subscriptions.mark-paid', $sub) }}" class="m-0">
+                                                        @csrf @method('PATCH')
+                                                        <input type="hidden" name="payment_method" value="transfer">
+                                                        <x-erp-actions-menu-item type="submit" icon="pay">
+                                                            تسجيل الدفع · تحويل
+                                                        </x-erp-actions-menu-item>
+                                                    </form>
+                                                    <form method="post" action="{{ route('nursery.subscriptions.mark-paid', $sub) }}" class="m-0">
+                                                        @csrf @method('PATCH')
+                                                        <input type="hidden" name="payment_method" value="card">
+                                                        <x-erp-actions-menu-item type="submit" icon="pay">
+                                                            تسجيل الدفع · بطاقة
+                                                        </x-erp-actions-menu-item>
+                                                    </form>
+                                                @endif
+                                                @if($sub->canBeRenewed())
+                                                    <form method="post" action="{{ route('nursery.subscriptions.renew', $sub) }}" class="m-0">
+                                                        @csrf
+                                                        <x-erp-actions-menu-item type="submit" icon="renew">
+                                                            تجديد
+                                                        </x-erp-actions-menu-item>
+                                                    </form>
+                                                @endif
+                                                @if($sub->isActive())
+                                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                                    <form method="post" action="{{ route('nursery.subscriptions.cancel', $sub) }}" class="m-0">
+                                                        @csrf @method('PATCH')
+                                                        <x-erp-actions-menu-item type="submit" icon="cancel" :danger="true"
+                                                            confirm="إلغاء هذا الاشتراك؟">
+                                                            إلغاء الاشتراك
+                                                        </x-erp-actions-menu-item>
+                                                    </form>
+                                                @endif
+                                            </x-erp-actions-dropdown>
+                                        @else
+                                            <span class="text-slate-400">—</span>
                                         @endif
                                     </td>
                                 @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $canManage ? 6 : 5 }}" class="px-4 py-14 text-center text-orange-800/70">
+                                <td colspan="{{ $canManage ? 6 : 5 }}" class="!py-14 text-center text-orange-800/70">
                                     لا يوجد أي بيانات لعرضها!
                                     @if($canManage)
                                         <div class="mt-3"><button type="button" @click="showAdd = true" class="nursery-btn nursery-btn-primary">+ إضافة اشتراك</button></div>

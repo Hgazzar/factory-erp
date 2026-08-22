@@ -53,7 +53,7 @@ class EnsureTenantModuleEnabled
         }
 
         return redirect()
-            ->route('dashboard')
+            ->to(app(\App\Services\Tenant\TenantNavigationService::class)->defaultHomeRoute($user))
             ->with('error', "موديول «{$label}» غير مفعّل في باقتك.");
     }
 }

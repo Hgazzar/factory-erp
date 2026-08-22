@@ -30,9 +30,14 @@ final class NurseryWhatsAppNotificationService
         );
     }
 
+    public function wouldSkipConfig(int $tenantUserId): bool
+    {
+        return ! $this->featureEnabled($tenantUserId) || ! $this->isEnabled();
+    }
+
     public function sendPaymentReminder(int $tenantUserId, Subscription $subscription): bool
     {
-        if (! $this->featureEnabled($tenantUserId)) {
+        if (! $this->featureEnabled($tenantUserId) || ! $this->isEnabled()) {
             return false;
         }
 
@@ -51,7 +56,7 @@ final class NurseryWhatsAppNotificationService
 
         $message = implode("\n", [
             "تذكير بالدفع — {$nurseryName}",
-            "مرحباً،",
+            'مرحباً،',
             '',
             "اشتراك {$childName} ({$planName}) لم يُسدَّد بعد.",
             "المبلغ المستحق: {$amount} ر.س",
@@ -65,7 +70,7 @@ final class NurseryWhatsAppNotificationService
 
     public function sendRenewalReminder(int $tenantUserId, Subscription $subscription): bool
     {
-        if (! $this->featureEnabled($tenantUserId)) {
+        if (! $this->featureEnabled($tenantUserId) || ! $this->isEnabled()) {
             return false;
         }
 
@@ -83,7 +88,7 @@ final class NurseryWhatsAppNotificationService
 
         $message = implode("\n", [
             "تذكير بتجديد الاشتراك — {$nurseryName}",
-            "مرحباً،",
+            'مرحباً،',
             '',
             "اشتراك {$childName} ({$planName}) يقترب من الانتهاء.",
             $endsOn !== '' ? "تاريخ الانتهاء: {$endsOn}" : '',
@@ -96,7 +101,7 @@ final class NurseryWhatsAppNotificationService
 
     public function sendSubscriptionPaidConfirmation(int $tenantUserId, Subscription $subscription): bool
     {
-        if (! $this->featureEnabled($tenantUserId)) {
+        if (! $this->featureEnabled($tenantUserId) || ! $this->isEnabled()) {
             return false;
         }
 

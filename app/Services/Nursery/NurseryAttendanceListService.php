@@ -94,7 +94,8 @@ final class NurseryAttendanceListService
 
         $logs = AttendanceLog::query()
             ->where('user_id', $tenantUserId)
-            ->whereBetween('attendance_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->whereDate('attendance_date', '>=', $weekStart->toDateString())
+            ->whereDate('attendance_date', '<=', $weekEnd->toDateString())
             ->when($childIds !== [], fn ($q) => $q->whereIn('child_id', $childIds))
             ->get()
             ->keyBy(fn (AttendanceLog $log) => $log->child_id.'|'.$log->attendance_date->toDateString());
@@ -124,11 +125,14 @@ final class NurseryAttendanceListService
                     $leaves->get($child->id, collect())
                 );
 
+                if ($state['state'] === 'present') {
+                    $dayPresentCounts[$day['date']]++;
+                }
+
                 if ($day['is_expected']) {
                     $expectedCount++;
                     if ($state['state'] === 'present') {
                         $presentCount++;
-                        $dayPresentCounts[$day['date']]++;
                     }
                 }
 
@@ -187,7 +191,8 @@ final class NurseryAttendanceListService
 
         $logs = StaffAttendanceLog::query()
             ->where('user_id', $tenantUserId)
-            ->whereBetween('attendance_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->whereDate('attendance_date', '>=', $weekStart->toDateString())
+            ->whereDate('attendance_date', '<=', $weekEnd->toDateString())
             ->when($employeeIds !== [], fn ($q) => $q->whereIn('employee_id', $employeeIds))
             ->get()
             ->keyBy(fn (StaffAttendanceLog $log) => $log->employee_id.'|'.$log->attendance_date->toDateString());
@@ -218,11 +223,14 @@ final class NurseryAttendanceListService
                     $shiftAttendance,
                 );
 
+                if ($state['state'] === 'present') {
+                    $dayPresentCounts[$day['date']]++;
+                }
+
                 if ($day['is_expected']) {
                     $expectedCount++;
                     if ($state['state'] === 'present') {
                         $presentCount++;
-                        $dayPresentCounts[$day['date']]++;
                     }
                 }
 
@@ -391,7 +399,8 @@ final class NurseryAttendanceListService
 
             $logs = AttendanceLog::query()
                 ->where('user_id', $tenantUserId)
-                ->whereBetween('attendance_date', [$fromDate->toDateString(), $toDate->toDateString()])
+                ->whereDate('attendance_date', '>=', $fromDate->toDateString())
+                ->whereDate('attendance_date', '<=', $toDate->toDateString())
                 ->whereIn('child_id', $subjects->pluck('id'))
                 ->get()
                 ->keyBy(fn (AttendanceLog $l) => $l->child_id.'|'.$l->attendance_date->toDateString());
@@ -437,7 +446,8 @@ final class NurseryAttendanceListService
 
             $logs = StaffAttendanceLog::query()
                 ->where('user_id', $tenantUserId)
-                ->whereBetween('attendance_date', [$fromDate->toDateString(), $toDate->toDateString()])
+                ->whereDate('attendance_date', '>=', $fromDate->toDateString())
+                ->whereDate('attendance_date', '<=', $toDate->toDateString())
                 ->whereIn('employee_id', $subjects->pluck('id'))
                 ->get()
                 ->keyBy(fn (StaffAttendanceLog $l) => $l->employee_id.'|'.$l->attendance_date->toDateString());
@@ -515,10 +525,6 @@ final class NurseryAttendanceListService
      */
     private function resolveChildDayState(int $childId, array $day, Collection $logs, Collection $leaves): array
     {
-        if (! $day['is_expected']) {
-            return ['date' => $day['date'], 'state' => 'off', 'label' => '—', 'detail' => null];
-        }
-
         $leave = $leaves->first(fn (LeaveRecord $r) => $r->coversDate($day['date']));
         if ($leave !== null) {
             return ['date' => $day['date'], 'state' => 'leave', 'label' => 'إجازة', 'detail' => $leave->name];
@@ -529,6 +535,10 @@ final class NurseryAttendanceListService
             $time = $log->checked_in_at->format('H:i');
 
             return ['date' => $day['date'], 'state' => 'present', 'label' => 'حاضر', 'detail' => $time];
+        }
+
+        if (! $day['is_expected']) {
+            return ['date' => $day['date'], 'state' => 'off', 'label' => '—', 'detail' => null];
         }
 
         if ($day['date'] > now()->toDateString()) {
@@ -551,10 +561,6 @@ final class NurseryAttendanceListService
         Collection $leaves,
         NurseryShiftAttendanceService $shiftAttendance,
     ): array {
-        if (! $day['is_expected']) {
-            return ['date' => $day['date'], 'state' => 'off', 'label' => '—', 'detail' => null];
-        }
-
         $leave = $leaves->first(fn (LeaveRecord $r) => $r->coversDate($day['date']));
         if ($leave !== null) {
             return ['date' => $day['date'], 'state' => 'leave', 'label' => 'إجازة', 'detail' => $leave->name];
@@ -569,6 +575,10 @@ final class NurseryAttendanceListService
             }
 
             return ['date' => $day['date'], 'state' => 'present', 'label' => 'حاضر', 'detail' => $detail];
+        }
+
+        if (! $day['is_expected']) {
+            return ['date' => $day['date'], 'state' => 'off', 'label' => '—', 'detail' => null];
         }
 
         if ($day['date'] > now()->toDateString()) {

@@ -6,6 +6,7 @@ namespace App\Services\Nursery;
 
 use App\Models\Nursery\Child;
 use App\Models\Nursery\Guardian;
+use App\Models\Nursery\NurseryOutboundMessage;
 use App\Models\Nursery\NurserySetting;
 use App\Models\TenantProfile;
 use App\Models\User;
@@ -14,12 +15,13 @@ use App\Support\PremiumFeatureKeys;
 use Illuminate\Support\Facades\Log;
 
 /**
- * دعوة ولي الأمر لبوابة الحضانة — رابط magic link (+ واتساب لاحقاً).
+ * دعوة ولي الأمر لبوابة الحضانة — رابط magic link + جدولة واتساب عبر Outbox.
  */
 final class NurseryPortalInviteService
 {
     public function __construct(
         private readonly NurseryPortalAuthService $portalAuth,
+        private readonly NurseryWhatsAppOutboxService $outbox,
     ) {}
 
     public function isPortalEnabled(int $tenantUserId): bool
@@ -74,18 +76,12 @@ final class NurseryPortalInviteService
             $url,
         ]));
 
-        Log::info('Nursery portal invite (dev/log)', [
-            'tenant_user_id' => $tenantUserId,
-            'guardian_id' => $guardian->id,
-            'phone' => $guardian->phone,
-            'url' => $url,
-            'message' => $message,
-        ]);
+        $this->enqueueInviteWhatsApp($tenantUserId, $guardian, $message);
 
         return [
             'sent' => true,
             'url' => $url,
-            'message' => 'تم إرسال رابط الدعوة (واتساب وهمي — يُسجَّل في الـ log).',
+            'message' => 'تمت جدولة إرسال رابط الدعوة عبر واتساب.',
         ];
     }
 
@@ -128,20 +124,12 @@ final class NurseryPortalInviteService
             "تابع {$child->name}: {$url}",
         ]);
 
-        Log::info('Nursery portal invite (dev/log)', [
-            'tenant_user_id' => $tenantUserId,
-            'guardian_id' => $guardian->id,
-            'phone' => $guardian->phone,
-            'url' => $url,
-            'message' => $message,
-        ]);
-
-        // P2-C: NurseryWhatsAppNotificationService::sendPortalInvite(...)
+        $this->enqueueInviteWhatsApp($tenantUserId, $guardian, $message);
 
         return [
             'sent' => true,
             'url' => $url,
-            'message' => 'تم توليد رابط الدعوة. في التطوير يُسجَّل الرابط في الـ log.',
+            'message' => 'تمت جدولة إرسال رابط الدعوة عبر واتساب.',
         ];
     }
 
@@ -152,6 +140,29 @@ final class NurseryPortalInviteService
         return $slug !== null
             ? route('nursery.portal.login', ['tenant_slug' => $slug])
             : null;
+    }
+
+    private function enqueueInviteWhatsApp(int $tenantUserId, Guardian $guardian, string $message): void
+    {
+        Log::info('Nursery portal invite queued', [
+            'tenant_user_id' => $tenantUserId,
+            'guardian_id' => $guardian->id,
+            'phone' => $guardian->phone,
+        ]);
+
+        $this->outbox->enqueue(
+            $tenantUserId,
+            NurseryOutboundMessage::TYPE_GUARDIAN_INVITE,
+            NurseryOutboundMessage::TYPE_GUARDIAN_INVITE.':'.$tenantUserId.':'.$guardian->id,
+            NurseryOutboundMessage::RELATED_GUARDIAN,
+            (int) $guardian->id,
+            [
+                'phone' => (string) $guardian->phone,
+                'message' => $message,
+                'guardian_id' => (int) $guardian->id,
+            ],
+            true,
+        );
     }
 
     private function tenantSlug(int $tenantUserId): ?string

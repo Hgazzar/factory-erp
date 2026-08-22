@@ -30,6 +30,7 @@ final class NurseryChildService
 
         return DB::transaction(function () use ($tenantUserId, $data, $name, $guardianName, $guardianPhone): Child {
             $guardian = $this->resolveGuardian($tenantUserId, $guardianName, $guardianPhone, $data);
+            $this->assertUniqueNameForGuardian($tenantUserId, (int) $guardian->id, $name);
 
             $child = Child::query()->create([
                 'user_id' => $tenantUserId,
@@ -117,6 +118,7 @@ final class NurseryChildService
 
         return DB::transaction(function () use ($child, $tenantUserId, $data, $name, $guardianName, $guardianPhone): Child {
             $guardian = $this->resolveGuardian($tenantUserId, $guardianName, $guardianPhone, $data);
+            $this->assertUniqueNameForGuardian($tenantUserId, (int) $guardian->id, $name, (int) $child->id);
 
             $child->fill([
                 'name' => $name,
@@ -161,6 +163,28 @@ final class NurseryChildService
 
             return $child->fresh(['guardian', 'activeEnrollment.classroom', 'attachments', 'medications']);
         });
+    }
+
+    private function assertUniqueNameForGuardian(
+        int $tenantUserId,
+        int $guardianId,
+        string $name,
+        ?int $exceptChildId = null,
+    ): void {
+        $normalized = mb_strtolower(preg_replace('/\s+/u', ' ', trim($name)) ?? trim($name));
+
+        $siblings = Child::query()
+            ->where('user_id', $tenantUserId)
+            ->where('guardian_id', $guardianId)
+            ->when($exceptChildId !== null, fn ($q) => $q->where('id', '!=', $exceptChildId))
+            ->get(['id', 'name']);
+
+        foreach ($siblings as $sibling) {
+            $siblingName = mb_strtolower(preg_replace('/\s+/u', ' ', trim((string) $sibling->name)) ?? '');
+            if ($siblingName !== '' && $siblingName === $normalized) {
+                throw new InvalidArgumentException('لا يمكن تسجيل أخوين لنفس ولي الأمر بنفس الاسم. ميّز الاسم (مثل فهد الأكبر / فهد الأصغر).');
+            }
+        }
     }
 
     private function nextChildCode(int $tenantUserId): string
