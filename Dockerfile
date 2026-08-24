@@ -79,5 +79,4 @@ EXPOSE 8000
 # تشغيل الإنتاج: كاش Laravel بعد حقن متغيرات البيئة (Railway)، ثم خادم PHP المدمج على PORT المنظّف
 # ملاحظة: لا نضع config/route/view cache في طبقة RUN لأن البناء غالبًا لا يملك APP_KEY/DB_URL؛ الكاش وقت التشغيل يضمن قيم الإنتاج الصحيحة.
 # Composer أعلاه يستخدم بالفعل --no-dev و --optimize-autoloader
-CMD ["sh", "-c", "PORT_CLEAN=$(echo \"${PORT:-8000}\" | sed 's/[^0-9].*//'); PORT_CLEAN=${PORT_CLEAN:-8000}; if [ -f artisan ]; then php artisan config:clear 2>/dev/null || true; if [ \"${MIGRATE_ON_START:-true}\" = \"true\" ]; then php artisan migrate --force || echo \"WARN: artisan migrate failed\"; fi; php artisan config:cache || echo \"WARN: artisan config:cache failed\"; php artisan route:cache || echo \"WARN: artisan route:cache failed\"; php artisan view:cache || echo \"WARN: artisan view:cache failed\"; fi; exec php -d opcache.enable_cli=1 -d opcache.validate_timestamps=0 -S 0.0.0.0:${PORT_CLEAN} -t public"]
-
+CMD ["sh", "-c", "exec php -d opcache.enable_cli=1 -d opcache.validate_timestamps=0 -S 0.0.0.0:${PORT:-8080} -t public"]
