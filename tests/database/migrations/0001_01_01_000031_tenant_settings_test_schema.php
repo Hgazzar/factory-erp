@@ -16,6 +16,8 @@ return new class extends Migration
                 $table->foreignId('tenant_user_id')->unique()->constrained('users')->cascadeOnDelete();
                 $table->string('display_name', 120)->nullable();
                 $table->string('logo_path', 500)->nullable();
+                $table->string('logo_mime', 64)->nullable();
+                $table->longText('logo_data')->nullable();
                 $table->string('theme_primary_color', 7)->nullable();
                 $table->string('theme_secondary_color', 7)->nullable();
                 $table->string('nursery_theme_primary_color', 7)->nullable();

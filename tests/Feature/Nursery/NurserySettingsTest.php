@@ -97,11 +97,29 @@ final class NurserySettingsTest extends NurseryTestCase
         $setting = \App\Models\TenantSetting::query()->where('tenant_user_id', $this->tenant->id)->first();
         $this->assertNotNull($setting);
         $this->assertNotEmpty($setting->logo_path);
+        $this->assertNotEmpty($setting->logo_data);
         $this->assertTrue(\Illuminate\Support\Facades\Storage::disk('public')->exists($setting->logo_path));
 
         $logoUrl = app(\App\Services\Tenant\TenantBrandingService::class)->logoUrl($setting);
         $this->assertNotNull($logoUrl);
+        $this->assertStringContainsString('branding/logo/', $logoUrl);
         $this->assertStringContainsString('?v=', $logoUrl);
+
+        // Simulate Railway redeploy wiping the public disk — logo must still stream from DB.
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($setting->logo_path);
+        $this->assertFalse(\Illuminate\Support\Facades\Storage::disk('public')->exists($setting->logo_path));
+
+        $this->get(route('tenant.branding.logo', ['tenantUserId' => $this->tenant->id]))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png');
+
+        // Serving from DB also rematerializes the file; wipe again to assert the artisan restore path.
+        \Illuminate\Support\Facades\Storage::disk('public')->delete($setting->logo_path);
+        $this->assertFalse(\Illuminate\Support\Facades\Storage::disk('public')->exists($setting->logo_path));
+
+        $restored = app(\App\Services\Tenant\TenantBrandingService::class)->restoreLogosToDisk();
+        $this->assertGreaterThanOrEqual(1, $restored);
+        $this->assertTrue(\Illuminate\Support\Facades\Storage::disk('public')->exists($setting->logo_path));
 
         $firstPath = $setting->logo_path;
         $logo2 = \Illuminate\Http\UploadedFile::fake()->image('logo2.png', 100, 100);
@@ -116,5 +134,6 @@ final class NurserySettingsTest extends NurseryTestCase
         $this->assertNotSame($firstPath, $setting->logo_path);
         $this->assertTrue(\Illuminate\Support\Facades\Storage::disk('public')->exists($setting->logo_path));
         $this->assertFalse(\Illuminate\Support\Facades\Storage::disk('public')->exists($firstPath));
+        $this->assertNotEmpty($setting->logo_data);
     }
 }

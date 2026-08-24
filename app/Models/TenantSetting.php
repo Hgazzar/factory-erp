@@ -13,6 +13,8 @@ class TenantSetting extends Model
         'tenant_user_id',
         'display_name',
         'logo_path',
+        'logo_mime',
+        'logo_data',
         'theme_primary_color',
         'theme_secondary_color',
         'nursery_theme_primary_color',
@@ -21,6 +23,10 @@ class TenantSetting extends Model
         'clinic_theme_secondary_color',
         'store_theme_primary_color',
         'store_theme_secondary_color',
+    ];
+
+    protected $hidden = [
+        'logo_data',
     ];
 
     public function tenantUser(): BelongsTo

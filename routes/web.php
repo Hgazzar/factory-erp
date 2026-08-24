@@ -30,6 +30,7 @@ use App\Http\Controllers\Clinic\Portal\ClinicPortalWebController;
 use App\Http\Controllers\CommissionRuleWebController;
 use App\Http\Controllers\CommissionWebController;
 use App\Http\Controllers\CompanySettingsController;
+use App\Http\Controllers\Tenant\TenantBrandingLogoController;
 use App\Http\Controllers\ContractWebController;
 use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\CreditNoteController;
@@ -191,6 +192,11 @@ Route::get('/__deploy', function () {
         'time' => now()->toIso8601String(),
     ]);
 });
+
+// شعار المستأجر (من القرص أو نسخة قاعدة البيانات — يبقى بعد Redeploy بدون Volume)
+Route::get('/branding/logo/{tenantUserId}', TenantBrandingLogoController::class)
+    ->whereNumber('tenantUserId')
+    ->name('tenant.branding.logo');
 
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 

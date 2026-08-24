@@ -8,8 +8,8 @@ PORT="${PORT:-8080}"
 export PORT
 
 echo "==> Preparing storage / bootstrap cache"
-# ملاحظة: ملفات الشعارات تحت storage/app/public تُفقد عند كل Redeploy
-# ما لم يُربط Volume ثابت على Railway لمسار /var/www/html/storage/app/public
+# الشعارات تُحفظ أيضاً في DB (logo_data) وتُعاد كتابتها هنا بعد كل Redeploy.
+# Volume على /var/www/html/storage/app/public ما زال مفيداً للملفات الأخرى.
 mkdir -p storage/app/public/tenant \
   storage/framework/cache \
   storage/framework/sessions \
@@ -32,6 +32,9 @@ if [ "${MIGRATE_ON_START:-false}" = "true" ]; then
   echo "==> Running migrations (MIGRATE_ON_START=true)"
   php artisan migrate --force --no-interaction || true
 fi
+
+echo "==> Restoring tenant logos from database (if any)"
+php artisan tenant:restore-logos --no-interaction 2>/dev/null || true
 
 echo "==> Building Laravel production caches (config / route / view)"
 # لا optimize:clear في كل إقلاع — يبطّئ كل طلب

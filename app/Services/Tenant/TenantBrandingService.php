@@ -8,6 +8,7 @@ use App\Models\CompanySetting;
 use App\Models\TenantSetting;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 final class TenantBrandingService
@@ -108,7 +109,11 @@ final class TenantBrandingService
 
         if ($remove) {
             $previous = $setting->logo_path;
-            $setting->forceFill(['logo_path' => null])->save();
+            $setting->forceFill([
+                'logo_path' => null,
+                'logo_mime' => null,
+                'logo_data' => null,
+            ])->save();
             $this->deleteStoredLogo($previous);
             $this->forgetBrandingCache($tenantUserId);
 
@@ -128,8 +133,18 @@ final class TenantBrandingService
             throw new \RuntimeException('فشل رفع الشعار إلى التخزين.');
         }
 
-        // Persist the new path first so a failed delete cannot leave the tenant without a logo.
-        $setting->forceFill(['logo_path' => $path])->save();
+        $bytes = @file_get_contents($file->getRealPath() ?: $file->getPathname());
+        if ($bytes === false || $bytes === '') {
+            $bytes = Storage::disk('public')->get($path);
+        }
+        $mime = $file->getMimeType() ?: (string) (Storage::disk('public')->mimeType($path) ?: 'image/png');
+
+        // Persist path + DB blob so redeploys without a Volume do not lose the logo.
+        $setting->forceFill([
+            'logo_path' => $path,
+            'logo_mime' => $mime,
+            'logo_data' => base64_encode($bytes),
+        ])->save();
 
         if (is_string($previous) && $previous !== '' && $previous !== $path) {
             $this->deleteStoredLogo($previous);
@@ -142,49 +157,132 @@ final class TenantBrandingService
 
     public function logoUrl(?TenantSetting $setting): ?string
     {
-        $path = trim((string) ($setting?->logo_path ?? ''));
-        if ($path === '') {
+        if ($setting === null) {
             return null;
+        }
+
+        $hasPath = $this->isAllowedLogoPath($setting->logo_path);
+        $hasBlob = is_string($setting->logo_data) && $setting->logo_data !== '';
+        if (! $hasPath && ! $hasBlob) {
+            return null;
+        }
+
+        $version = $setting->updated_at?->getTimestamp() ?? time();
+
+        return route('tenant.branding.logo', ['tenantUserId' => (int) $setting->tenant_user_id]).'?v='.$version;
+    }
+
+    /**
+     * @return array{bytes: string, mime: string}|null
+     */
+    public function resolveLogoBinary(TenantSetting $setting): ?array
+    {
+        $path = trim((string) ($setting->logo_path ?? ''));
+        if ($this->isAllowedLogoPath($path) && Storage::disk('public')->exists($path)) {
+            $bytes = Storage::disk('public')->get($path);
+            if (is_string($bytes) && $bytes !== '') {
+                $mime = trim((string) ($setting->logo_mime ?? '')) ?: (string) (Storage::disk('public')->mimeType($path) ?: 'image/png');
+
+                return ['bytes' => $bytes, 'mime' => $mime];
+            }
+        }
+
+        $encoded = trim((string) ($setting->logo_data ?? ''));
+        if ($encoded === '') {
+            return null;
+        }
+
+        $bytes = base64_decode($encoded, true);
+        if ($bytes === false || $bytes === '') {
+            return null;
+        }
+
+        $mime = trim((string) ($setting->logo_mime ?? ''));
+        if ($mime === '') {
+            $mime = 'image/png';
+        }
+
+        // Best-effort restore to disk for nginx/static consumers.
+        if ($this->isAllowedLogoPath($path)) {
+            $this->writeLogoToDisk($path, $bytes);
+        }
+
+        return ['bytes' => $bytes, 'mime' => $mime];
+    }
+
+    /**
+     * Re-materialize DB-backed logos onto the local public disk (after redeploy).
+     */
+    public function restoreLogosToDisk(): int
+    {
+        $restored = 0;
+        TenantSetting::query()
+            ->whereNotNull('logo_data')
+            ->where('logo_data', '!=', '')
+            ->orderBy('id')
+            ->chunkById(50, function ($rows) use (&$restored): void {
+                foreach ($rows as $setting) {
+                    /** @var TenantSetting $setting */
+                    $path = trim((string) ($setting->logo_path ?? ''));
+                    if (! $this->isAllowedLogoPath($path)) {
+                        continue;
+                    }
+                    if (Storage::disk('public')->exists($path)) {
+                        continue;
+                    }
+
+                    $bytes = base64_decode((string) $setting->logo_data, true);
+                    if ($bytes === false || $bytes === '') {
+                        continue;
+                    }
+
+                    if ($this->writeLogoToDisk($path, $bytes)) {
+                        $restored++;
+                    }
+                }
+            });
+
+        return $restored;
+    }
+
+    private function writeLogoToDisk(string $path, string $bytes): bool
+    {
+        try {
+            $dir = dirname($path);
+            if ($dir !== '' && $dir !== '.') {
+                Storage::disk('public')->makeDirectory($dir);
+            }
+
+            return Storage::disk('public')->put($path, $bytes);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    private function isAllowedLogoPath(?string $path): bool
+    {
+        $path = trim((string) $path);
+        if ($path === '' || str_contains($path, '..')) {
+            return false;
         }
 
         $allowed = config('tenant.branding.legacy_logo_prefixes', ['tenant/', 'nursery/']);
-        $ok = false;
         foreach ($allowed as $prefix) {
             if (str_starts_with($path, (string) $prefix)) {
-                $ok = true;
-                break;
+                return true;
             }
         }
-        if (! $ok) {
-            return null;
-        }
 
-        // Avoid Storage::exists() on every page render (sidebar branding) — that FS hit
-        // slows nursery navigation. Trust logo_path; broken <img> is preferable to lag.
-        $version = $setting?->updated_at?->getTimestamp() ?? time();
-
-        return asset('storage/'.$path).'?v='.$version;
+        return false;
     }
 
     private function deleteStoredLogo(?string $path): void
     {
+        if (! $this->isAllowedLogoPath($path)) {
+            return;
+        }
+
         $path = trim((string) $path);
-        if ($path === '') {
-            return;
-        }
-
-        $allowed = config('tenant.branding.legacy_logo_prefixes', ['tenant/', 'nursery/']);
-        $ok = false;
-        foreach ($allowed as $prefix) {
-            if (str_starts_with($path, (string) $prefix)) {
-                $ok = true;
-                break;
-            }
-        }
-        if (! $ok) {
-            return;
-        }
-
         if (Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);
         }
@@ -214,7 +312,7 @@ final class TenantBrandingService
             self::MODULE_FLEET,
             self::MODULE_TENANT,
         ] as $module) {
-            \Illuminate\Support\Facades\Cache::forget('tenant.branding.'.$module.'.'.$tenantUserId);
+            Cache::forget('tenant.branding.'.$module.'.'.$tenantUserId);
         }
     }
 }
