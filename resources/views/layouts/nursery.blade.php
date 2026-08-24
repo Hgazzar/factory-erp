@@ -89,8 +89,10 @@
             padding: 1rem 0.5rem;
         }
         .nursery-brand-mark--sidebar {
+            display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
+            text-align: center;
             gap: .65rem;
             margin-bottom: 0;
             width: 100%;
@@ -109,6 +111,7 @@
             justify-content: center;
             overflow: hidden;
             padding: .25rem;
+            margin-inline: auto;
         }
         .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__logo-wrap {
             width: 2.75rem;
