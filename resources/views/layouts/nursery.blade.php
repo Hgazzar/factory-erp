@@ -76,6 +76,7 @@
         .nursery-shell.is-sidebar-collapsed .module-sidebar {
             width: 84px;
             min-width: 84px;
+            align-items: center;
         }
         .module-sidebar-header {
             padding: 1rem 1.1rem;
@@ -83,10 +84,12 @@
             min-height: 5.25rem;
             display: flex;
             align-items: center;
+            box-sizing: border-box;
         }
         .nursery-shell.is-sidebar-collapsed .module-sidebar-header {
+            width: 100%;
             justify-content: center;
-            padding: 1rem 0.5rem;
+            padding: 0.85rem 0;
         }
         .nursery-brand-mark--sidebar {
             display: flex;
@@ -98,7 +101,10 @@
             width: 100%;
         }
         .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar {
+            width: auto;
+            max-width: 100%;
             align-items: center;
+            justify-content: center;
         }
         .nursery-brand-mark--sidebar .nursery-brand-mark__logo-wrap {
             width: 3.25rem;
@@ -112,11 +118,15 @@
             overflow: hidden;
             padding: .25rem;
             margin-inline: auto;
+            flex-shrink: 0;
+            box-sizing: border-box;
         }
         .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__logo-wrap {
-            width: 2.75rem;
-            height: 2.75rem;
-            border-radius: 0.85rem;
+            /* نفس مقاس أزرار القائمة المطوية حتى يتوسّط مع العمود */
+            width: 3.15rem;
+            height: 3.15rem;
+            border-radius: 0.95rem;
+            margin-inline: 0;
         }
         .nursery-brand-mark--sidebar .nursery-brand-mark__logo {
             max-width: 100%;
@@ -130,9 +140,10 @@
             margin: 0;
             line-height: 1.2;
         }
+        .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__text,
         .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__name,
         .nursery-shell.is-sidebar-collapsed .module-sidebar-title {
-            display: none;
+            display: none !important;
         }
         .module-sidebar-icon-wrap {
             width: 52px; height: 52px; border-radius: 1rem;
@@ -141,7 +152,7 @@
             font-size: 1.5rem; margin-bottom: 0;
         }
         .nursery-shell.is-sidebar-collapsed .module-sidebar-icon-wrap {
-            width: 2.75rem; height: 2.75rem; font-size: 1.15rem; border-radius: 0.85rem;
+            width: 3.15rem; height: 3.15rem; font-size: 1.15rem; border-radius: 0.95rem;
         }
         .module-sidebar-title { font-size: 1.125rem; font-weight: 800; color: var(--nursery-text); margin: 0; }
         .module-nav {
@@ -152,11 +163,18 @@
             overflow-x: hidden;
         }
         .nursery-shell.is-sidebar-collapsed .module-nav {
-            padding: 0.65rem 0.5rem;
+            width: 100%;
+            padding: 0.65rem 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 0.35rem;
+            /* لا تسرق مساحة من التوسيط بسبب شريط التمرير */
+            scrollbar-width: none;
+        }
+        .nursery-shell.is-sidebar-collapsed .module-nav::-webkit-scrollbar {
+            width: 0;
+            height: 0;
         }
         .module-nav-link {
             display: flex;
