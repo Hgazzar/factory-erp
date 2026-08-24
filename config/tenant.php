@@ -17,7 +17,7 @@ return [
                 'secondary' => '#ccfbf1',
             ],
             'nurseries' => [
-                'primary' => '#0F766E',
+                'primary' => '#069494',
                 'secondary' => '#F0FDFA',
             ],
             'retail' => [

@@ -7,7 +7,7 @@
     $canManage = $canManage ?? true;
     $accent = $accent ?? 'orange';
     $isTeal = $accent === 'teal';
-    $defaultPrimary = $isTeal ? '#0F766E' : '#f97316';
+    $defaultPrimary = $isTeal ? '#069494' : '#f97316';
     $defaultSecondary = $isTeal ? '#F0FDFA' : '#ffedd5';
     $themePrimary = old('theme_primary_color', $branding['theme_primary'] ?? $defaultPrimary);
     $themeSecondary = old('theme_secondary_color', $branding['theme_secondary'] ?? $defaultSecondary);
@@ -148,7 +148,7 @@
                     <input type="checkbox" name="reset_theme_colors" value="1" class="rounded {{ $c['checkbox'] }}">
                     إعادة الألوان الافتراضية للنيش
                 </label>
-                <div class="mt-4 p-4 rounded-xl border {{ $c['border'] }}" :style="`background: linear-gradient(160deg, ${secondary} 0%, #fff 100%)`">
+                <div class="mt-4 p-4 rounded-xl border {{ $c['border'] }}" :style="`background: ${secondary}`">
                     <p class="text-xs font-semibold {{ $c['title'] }} mb-3">معاينة سريعة</p>
                     <div class="flex flex-wrap gap-2 items-center">
                         <button type="button" class="px-4 py-2 rounded-lg text-sm font-bold shadow-sm"

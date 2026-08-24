@@ -23,12 +23,12 @@ final class TenantThemeService
 
     public const MODULE_TENANT = 'tenant';
 
-    public const DEFAULT_PRIMARY = '#0F766E';
+    public const DEFAULT_PRIMARY = '#069494';
 
     public const DEFAULT_SECONDARY = '#F0FDFA';
 
-    /** @var list<string> previous system nursery oranges — treat as unset so tenants pick up Teal/Mint */
-    private const LEGACY_NURSERY_PRIMARIES = ['#f97316', '#ea580c', '#c2410c'];
+    /** @var list<string> previous system nursery oranges/teals — treat as unset so tenants pick up current default */
+    private const LEGACY_NURSERY_PRIMARIES = ['#f97316', '#ea580c', '#c2410c', '#0f766e'];
 
     /** @var list<string> */
     private const LEGACY_NURSERY_SECONDARIES = ['#ffedd5', '#fff7ed', '#fed7aa'];

@@ -110,7 +110,7 @@ final class NurseryPortalCalendarService
                     'title' => $entry->title,
                     'type' => $entry->entry_type,
                     'type_label' => $typeLabels[$entry->entry_type] ?? $entry->entry_type,
-                    'color' => $colors[$entry->entry_type] ?? '#0F766E',
+                    'color' => $colors[$entry->entry_type] ?? '#069494',
                     'time' => $entry->starts_at?->format('H:i').' — '.$entry->ends_at?->format('H:i'),
                     'notes' => $entry->notes,
                 ];

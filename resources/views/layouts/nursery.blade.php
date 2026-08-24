@@ -125,7 +125,7 @@
             width: 3.25rem;
             height: 3.25rem;
             border-radius: 1rem;
-            background: linear-gradient(135deg, var(--nursery-bg-mid), #fff);
+            background: #fff;
             border: 1px solid var(--nursery-border);
             display: flex;
             align-items: center;
@@ -162,7 +162,7 @@
         }
         .module-sidebar-icon-wrap {
             width: 52px; height: 52px; border-radius: 1rem;
-            background: linear-gradient(135deg, var(--nursery-primary), var(--nursery-primary-dark));
+            background: var(--nursery-primary);
             color: var(--nursery-on-primary); display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; margin-bottom: 0;
         }
@@ -314,7 +314,7 @@
         }
         a.nursery-admina-stat__menu:hover {
             background: var(--nursery-secondary, #F0FDFA);
-            color: var(--nursery-primary, #0F766E);
+            color: var(--nursery-primary, #069494);
         }
         .nursery-admina-stat__body {
             display: flex;
@@ -420,7 +420,7 @@
             justify-content: center;
             flex-shrink: 0;
             background: var(--nursery-secondary, #F0FDFA);
-            color: var(--nursery-primary, #0F766E);
+            color: var(--nursery-primary, #069494);
         }
         .nursery-panel-head__title {
             margin: 0;
@@ -598,7 +598,7 @@
         .nursery-table .erp-actions-trigger:hover {
             background: var(--nursery-secondary, #F0FDFA);
             border-color: rgba(15, 118, 110, 0.25);
-            color: var(--nursery-primary, #0F766E);
+            color: var(--nursery-primary, #069494);
         }
         .nursery-table td.tabular-nums,
         .nursery-table .tabular-nums {
@@ -642,7 +642,7 @@
             justify-content: center;
             flex-shrink: 0;
             background: var(--nursery-secondary, #F0FDFA);
-            color: var(--nursery-primary, #0F766E);
+            color: var(--nursery-primary, #069494);
         }
         .nursery-chart-panel__title {
             margin: 0;
@@ -831,7 +831,7 @@
             margin-top: 1rem;
             padding-top: 0.5rem;
             padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-            background: linear-gradient(to top, #f7f6f3 70%, transparent);
+            background: #f7f6f3;
             max-width: 100%;
         }
         .nursery-today-bulk-bar__inner {
@@ -951,8 +951,8 @@
             border-color: var(--nursery-border);
         }
         .nursery-attendance-tab.is-active {
-            background: linear-gradient(135deg, var(--nursery-primary), var(--nursery-primary-dark));
-            border-color: var(--nursery-primary-dark);
+            background: var(--nursery-primary);
+            border-color: var(--nursery-primary);
             box-shadow: 0 4px 14px var(--nursery-shadow);
             color: var(--nursery-on-primary);
         }
@@ -1051,8 +1051,8 @@
             border-color: var(--nursery-border);
         }
         .nursery-settings-tab.is-active {
-            background: linear-gradient(135deg, var(--nursery-primary), var(--nursery-primary-dark));
-            border-color: var(--nursery-primary-dark);
+            background: var(--nursery-primary);
+            border-color: var(--nursery-primary);
             box-shadow: 0 4px 14px var(--nursery-shadow);
             color: var(--nursery-on-primary);
         }

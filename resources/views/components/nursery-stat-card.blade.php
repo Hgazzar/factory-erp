@@ -14,10 +14,10 @@
 @php
     $tones = [
         'primary' => [
-            'hint' => '#0F766E',
+            'hint' => '#069494',
             'spark' => '#14B8A6',
             'sparkSoft' => '#99F6E4',
-            'sparkActive' => '#0F766E',
+            'sparkActive' => '#069494',
         ],
         'success' => [
             'hint' => '#059669',

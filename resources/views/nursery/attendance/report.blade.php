@@ -37,7 +37,7 @@
     </style>
 </head>
 <body>
-    <button class="no-print" onclick="window.print()" style="margin-bottom:1rem;padding:0.55rem 1.1rem;background:#0F766E;color:#fff;border:0;border-radius:0.75rem;cursor:pointer;font-weight:700;">طباعة</button>
+    <button class="no-print" onclick="window.print()" style="margin-bottom:1rem;padding:0.55rem 1.1rem;background:#069494;color:#fff;border:0;border-radius:0.75rem;cursor:pointer;font-weight:700;">طباعة</button>
     <h1>تقرير حضور {{ $report['scope'] === 'children' ? 'الأطفال' : 'طاقم العمل' }}</h1>
     <p class="meta">من {{ $report['from'] }} إلى {{ $report['to'] }}</p>
 

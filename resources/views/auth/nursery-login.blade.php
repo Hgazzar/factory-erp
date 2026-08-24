@@ -17,10 +17,7 @@
             margin: 0;
             min-height: 100vh;
             color: var(--nursery-text);
-            background:
-                radial-gradient(1200px 600px at 100% -10%, color-mix(in srgb, var(--nursery-primary) 22%, transparent), transparent 55%),
-                radial-gradient(900px 500px at -10% 110%, color-mix(in srgb, var(--nursery-secondary) 80%, transparent), transparent 50%),
-                linear-gradient(160deg, var(--nursery-bg) 0%, var(--nursery-bg-mid) 45%, var(--nursery-secondary) 100%);
+            background: var(--nursery-bg, #F0FDFA);
         }
         .nl-shell {
             min-height: 100vh;
@@ -43,7 +40,7 @@
             align-items: center;
             justify-content: center;
             font-size: 2rem;
-            background: linear-gradient(135deg, var(--nursery-primary), var(--nursery-primary-dark));
+            background: var(--nursery-primary);
             color: var(--nursery-on-primary);
             box-shadow: 0 10px 28px var(--nursery-shadow);
         }
@@ -162,7 +159,7 @@
             font-size: 1rem;
             font-weight: 800;
             cursor: pointer;
-            background: linear-gradient(135deg, var(--nursery-primary), var(--nursery-primary-dark));
+            background: var(--nursery-primary);
             color: var(--nursery-on-primary);
             box-shadow: 0 8px 20px var(--nursery-shadow);
             transition: filter .15s, transform .15s;

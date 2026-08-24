@@ -70,7 +70,7 @@ class CalendarEntry extends Model
     public static function typeColors(): array
     {
         return [
-            self::TYPE_LESSON => '#0F766E',
+            self::TYPE_LESSON => '#069494',
             self::TYPE_ACTIVITY => '#34d399',
             self::TYPE_ANNOUNCEMENT => '#60a5fa',
         ];

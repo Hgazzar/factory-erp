@@ -16,7 +16,7 @@
         body {
             font-family: 'Cairo', sans-serif;
             margin: 0;
-            background: linear-gradient(160deg, var(--np-bg) 0%, var(--np-bg-mid) 55%, var(--np-secondary) 100%);
+            background: var(--np-bg, #F0FDFA);
             color: var(--np-text);
             min-height: 100vh;
         }
