@@ -20,7 +20,9 @@ server {
     location /storage/ {
         try_files $uri =404;
         access_log off;
-        expires 1d;
+        # Short TTL + query-string busting (?v=) so logo replacements show immediately
+        expires 1h;
+        add_header Cache-Control "public, must-revalidate";
     }
 
     location / {

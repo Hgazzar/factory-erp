@@ -115,8 +115,9 @@ final class TenantBrandingService
         $setting = TenantSetting::forTenant($tenantUserId);
 
         if ($remove) {
-            $this->deleteStoredLogo($setting->logo_path);
+            $previous = $setting->logo_path;
             $setting->forceFill(['logo_path' => null])->save();
+            $this->deleteStoredLogo($previous);
 
             return $setting->fresh();
         }
@@ -125,7 +126,7 @@ final class TenantBrandingService
             return $setting;
         }
 
-        $this->deleteStoredLogo($setting->logo_path);
+        $previous = $setting->logo_path;
         $dir = trim((string) config('tenant.branding.logo_directory', 'tenant'), '/');
         $relativeDir = $dir.'/'.(int) $tenantUserId;
         Storage::disk('public')->makeDirectory($relativeDir);
@@ -133,7 +134,13 @@ final class TenantBrandingService
         if ($path === false || $path === '') {
             throw new \RuntimeException('فشل رفع الشعار إلى التخزين.');
         }
+
+        // Persist the new path first so a failed delete cannot leave the tenant without a logo.
         $setting->forceFill(['logo_path' => $path])->save();
+
+        if (is_string($previous) && $previous !== '' && $previous !== $path) {
+            $this->deleteStoredLogo($previous);
+        }
 
         return $setting->fresh();
     }
@@ -157,11 +164,11 @@ final class TenantBrandingService
             return null;
         }
 
-        if (! Storage::disk('public')->exists($path)) {
-            return null;
-        }
+        // Avoid Storage::exists() on every page render (sidebar branding) — that FS hit
+        // slows nursery navigation. Trust logo_path; broken <img> is preferable to lag.
+        $version = $setting?->updated_at?->getTimestamp() ?? time();
 
-        return asset('storage/'.$path);
+        return asset('storage/'.$path).'?v='.$version;
     }
 
     private function deleteStoredLogo(?string $path): void

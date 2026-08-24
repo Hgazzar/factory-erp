@@ -98,5 +98,23 @@ final class NurserySettingsTest extends NurseryTestCase
         $this->assertNotNull($setting);
         $this->assertNotEmpty($setting->logo_path);
         $this->assertTrue(\Illuminate\Support\Facades\Storage::disk('public')->exists($setting->logo_path));
+
+        $logoUrl = app(\App\Services\Tenant\TenantBrandingService::class)->logoUrl($setting);
+        $this->assertNotNull($logoUrl);
+        $this->assertStringContainsString('?v=', $logoUrl);
+
+        $firstPath = $setting->logo_path;
+        $logo2 = \Illuminate\Http\UploadedFile::fake()->image('logo2.png', 100, 100);
+        $this->put(route('nursery.settings.branding.update'), [
+            'display_name' => 'حضانة الشعار',
+            'theme_primary_color' => '#ea580c',
+            'theme_secondary_color' => '#ffedd5',
+            'logo_file' => $logo2,
+        ])->assertRedirect(route('nursery.settings.index', ['tab' => 'branding']));
+
+        $setting->refresh();
+        $this->assertNotSame($firstPath, $setting->logo_path);
+        $this->assertTrue(\Illuminate\Support\Facades\Storage::disk('public')->exists($setting->logo_path));
+        $this->assertFalse(\Illuminate\Support\Facades\Storage::disk('public')->exists($firstPath));
     }
 }

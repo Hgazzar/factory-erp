@@ -8,6 +8,8 @@ PORT="${PORT:-8080}"
 export PORT
 
 echo "==> Preparing storage / bootstrap cache"
+# ملاحظة: ملفات الشعارات تحت storage/app/public تُفقد عند كل Redeploy
+# ما لم يُربط Volume ثابت على Railway لمسار /var/www/html/storage/app/public
 mkdir -p storage/app/public/tenant \
   storage/framework/cache \
   storage/framework/sessions \
