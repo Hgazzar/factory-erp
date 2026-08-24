@@ -10,6 +10,13 @@ cd /var/www/html
 echo "==> Clearing Laravel caches (optimize:clear)"
 php artisan optimize:clear --no-interaction 2>/dev/null || true
 
+# تخزين الشعارات والمرفقات (القرص public)
+mkdir -p storage/app/public/tenant storage/framework/{cache,sessions,views} bootstrap/cache 2>/dev/null || true
+chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || true
+if [ ! -e public/storage ]; then
+  php artisan storage:link --no-interaction 2>/dev/null || ln -sfn ../storage/app/public public/storage 2>/dev/null || true
+fi
+
 if [ "${MIGRATE_ON_START:-false}" = "true" ]; then
   echo "==> Running migrations (MIGRATE_ON_START=true)"
   php artisan migrate --force --no-interaction 2>/dev/null || true

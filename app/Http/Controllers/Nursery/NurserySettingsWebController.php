@@ -136,15 +136,21 @@ final class NurserySettingsWebController extends Controller
 
         try {
             $settingsService->updateBranding($tenantUserId, $data);
-        } catch (InvalidArgumentException $e) {
+            $settingsService->updateLogo(
+                $tenantUserId,
+                $request->file('logo_file'),
+                $request->boolean('remove_logo'),
+            );
+        } catch (InvalidArgumentException|\RuntimeException $e) {
             return back()->withInput()->with('error', $e->getMessage());
-        }
+        } catch (\Throwable $e) {
+            report($e);
 
-        $settingsService->updateLogo(
-            $tenantUserId,
-            $request->file('logo_file'),
-            $request->boolean('remove_logo'),
-        );
+            return back()->withInput()->with(
+                'error',
+                'تعذّر حفظ الهوية البصرية. إن استمر الخطأ راجع صلاحيات التخزين أو سجلات السيرفر.',
+            );
+        }
 
         return redirect()
             ->route('nursery.settings.index', ['tab' => 'branding'])

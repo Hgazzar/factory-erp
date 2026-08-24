@@ -127,7 +127,12 @@ final class TenantBrandingService
 
         $this->deleteStoredLogo($setting->logo_path);
         $dir = trim((string) config('tenant.branding.logo_directory', 'tenant'), '/');
-        $path = $file->store($dir.'/'.(int) $tenantUserId, 'public');
+        $relativeDir = $dir.'/'.(int) $tenantUserId;
+        Storage::disk('public')->makeDirectory($relativeDir);
+        $path = $file->store($relativeDir, 'public');
+        if ($path === false || $path === '') {
+            throw new \RuntimeException('فشل رفع الشعار إلى التخزين.');
+        }
         $setting->forceFill(['logo_path' => $path])->save();
 
         return $setting->fresh();

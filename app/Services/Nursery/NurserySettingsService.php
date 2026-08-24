@@ -7,7 +7,10 @@ namespace App\Services\Nursery;
 use App\Models\Nursery\NurserySetting;
 use App\Models\User;
 use App\Services\Tenant\TenantBrandingService;
+use Illuminate\Http\UploadedFile;
 use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 final class NurserySettingsService
 {
@@ -64,7 +67,15 @@ final class NurserySettingsService
 
     public function updateLogo(int $tenantUserId, ?UploadedFile $file, bool $remove = false): NurserySetting
     {
-        $this->tenantBranding->updateLogo($tenantUserId, $file, $remove);
+        try {
+            $this->tenantBranding->updateLogo($tenantUserId, $file, $remove);
+        } catch (Throwable $e) {
+            throw new RuntimeException(
+                'تعذّر حفظ الشعار. تأكد أن التخزين public قابل للكتابة ثم أعد المحاولة.',
+                0,
+                $e,
+            );
+        }
 
         return NurserySetting::forTenant($tenantUserId)->fresh();
     }

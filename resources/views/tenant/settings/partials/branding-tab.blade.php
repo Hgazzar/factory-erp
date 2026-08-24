@@ -25,7 +25,25 @@
         'checkbox' => 'border-orange-300', 'fileBtn' => 'file:bg-orange-500 hover:file:bg-orange-600',
     ];
 @endphp
-<section class="{{ $cardClass }} p-5 space-y-6" x-data="{ primary: @js($themePrimary), secondary: @js($themeSecondary) }">
+<section class="{{ $cardClass }} p-5 space-y-6" x-data="{
+    primary: @js($themePrimary),
+    secondary: @js($themeSecondary),
+    previewUrl: @js($branding['logo_url'] ?? null),
+    fileLabel: '',
+    onLogoPick(event) {
+        const file = event.target.files && event.target.files[0];
+        if (this.previewUrl && this.previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(this.previewUrl);
+        }
+        if (!file) {
+            this.previewUrl = @js($branding['logo_url'] ?? null);
+            this.fileLabel = '';
+            return;
+        }
+        this.fileLabel = file.name;
+        this.previewUrl = URL.createObjectURL(file);
+    }
+}">
     <div class="border-b {{ $c['border'] }} pb-3">
         <h2 class="text-lg font-bold {{ $c['title'] }}">الهوية البصرية ل{{ $entityLabel }}</h2>
         <p class="text-sm {{ $c['text'] }} mt-1">
@@ -38,13 +56,15 @@
         <div class="shrink-0 text-center">
             <p class="text-xs font-semibold {{ $c['title'] }} mb-2">معاينة الشعار</p>
             <div class="w-24 h-24 rounded-2xl border-2 {{ $c['border2'] }} bg-white shadow-sm flex items-center justify-center overflow-hidden p-2 mx-auto">
-                @if(!empty($branding['logo_url']))
-                    <img src="{{ $branding['logo_url'] }}" alt="" class="max-w-full max-h-full object-contain">
-                @else
+                <template x-if="previewUrl">
+                    <img :src="previewUrl" alt="" class="max-w-full max-h-full object-contain">
+                </template>
+                <template x-if="!previewUrl">
                     <span class="text-4xl" aria-hidden="true">{{ $previewEmoji }}</span>
-                @endif
+                </template>
             </div>
             <p class="text-xs {{ $c['muted2'] }} mt-2 max-w-[9rem]">{{ $branding['display_name'] ?? $entityLabel }}</p>
+            <p class="text-xs {{ $c['muted'] }} mt-1" x-show="fileLabel" x-text="'تم اختيار: ' + fileLabel"></p>
         </div>
         <div class="flex-1 min-w-[200px] text-sm {{ $c['textSm'] }} space-y-2">
             <p><strong>أين يظهر؟</strong></p>
@@ -54,11 +74,12 @@
                 @endif
                 <li>القائمة الجانبية في لوحة {{ $entityLabel }}</li>
             </ul>
-            @if(empty($branding['logo_url']))
-                <p class="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs mt-2">
-                    لم يُرفع شعار بعد — اختر صورة ثم احفظ.
-                </p>
-            @endif
+            <p class="text-xs {{ $c['muted'] }} mt-2">
+                اختر صورة الشعار ثم اضغط <strong>حفظ الهوية البصرية</strong> لتأكيد الرفع — لا يوجد زر منفصل للرفع.
+            </p>
+            <p class="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs mt-2" x-show="!previewUrl">
+                لم يُرفع شعار بعد — اختر صورة ثم احفظ.
+            </p>
         </div>
     </div>
 
@@ -66,6 +87,8 @@
         <form method="POST" action="{{ $submitRoute }}" enctype="multipart/form-data" class="space-y-5">
             @csrf
             @method('PUT')
+            <input type="hidden" name="theme_primary_color" :value="primary">
+            <input type="hidden" name="theme_secondary_color" :value="secondary">
             <div>
                 <label class="block text-sm font-semibold {{ $c['title'] }} mb-1">
                     الاسم الظاهر في البوابة
@@ -91,8 +114,9 @@
                     </label>
                 @endif
                 <input type="file" name="logo_file" accept="image/png,image/jpeg,image/webp,image/gif"
+                       @change="onLogoPick($event)"
                        class="w-full max-w-lg text-sm file:mr-3 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-white file:font-bold {{ $c['fileBtn'] }}">
-                <p class="text-xs {{ $c['muted'] }} mt-2">PNG أو JPG أو WebP — حتى 2 ميجا.</p>
+                <p class="text-xs {{ $c['muted'] }} mt-2">PNG أو JPG أو WebP — حتى 2 ميجا. بعد الاختيار اضغط «حفظ الهوية البصرية».</p>
                 @error('logo_file')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
             </div>
             <div class="border-t {{ $c['border'] }} pt-5">
@@ -104,7 +128,7 @@
                     <div>
                         <label class="block text-sm font-semibold {{ $c['title'] }} mb-2">اللون الأساسي</label>
                         <div class="flex items-center gap-3">
-                            <input type="color" name="theme_primary_color" x-model="primary" class="h-11 w-14 rounded-lg border {{ $c['border2'] }} cursor-pointer p-0.5 bg-white">
+                            <input type="color" x-model="primary" class="h-11 w-14 rounded-lg border {{ $c['border2'] }} cursor-pointer p-0.5 bg-white">
                             <input type="text" x-model="primary" maxlength="7" dir="ltr" class="flex-1 rounded-lg border {{ $c['border2'] }} px-3 py-2 text-sm font-mono">
                         </div>
                         @error('theme_primary_color')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
@@ -112,7 +136,7 @@
                     <div>
                         <label class="block text-sm font-semibold {{ $c['title'] }} mb-2">اللون الثانوي</label>
                         <div class="flex items-center gap-3">
-                            <input type="color" name="theme_secondary_color" x-model="secondary" class="h-11 w-14 rounded-lg border {{ $c['border2'] }} cursor-pointer p-0.5 bg-white">
+                            <input type="color" x-model="secondary" class="h-11 w-14 rounded-lg border {{ $c['border2'] }} cursor-pointer p-0.5 bg-white">
                             <input type="text" x-model="secondary" maxlength="7" dir="ltr" class="flex-1 rounded-lg border {{ $c['border2'] }} px-3 py-2 text-sm font-mono">
                         </div>
                         @error('theme_secondary_color')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror

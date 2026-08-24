@@ -85,5 +85,18 @@ final class NurserySettingsTest extends NurseryTestCase
             'nursery_theme_primary_color' => null,
             'nursery_theme_secondary_color' => null,
         ]);
+
+        $logo = \Illuminate\Http\UploadedFile::fake()->image('logo.png', 120, 120);
+        $this->put(route('nursery.settings.branding.update'), [
+            'display_name' => 'حضانة الشعار',
+            'theme_primary_color' => '#ea580c',
+            'theme_secondary_color' => '#ffedd5',
+            'logo_file' => $logo,
+        ])->assertRedirect(route('nursery.settings.index', ['tab' => 'branding']));
+
+        $setting = \App\Models\TenantSetting::query()->where('tenant_user_id', $this->tenant->id)->first();
+        $this->assertNotNull($setting);
+        $this->assertNotEmpty($setting->logo_path);
+        $this->assertTrue(\Illuminate\Support\Facades\Storage::disk('public')->exists($setting->logo_path));
     }
 }
