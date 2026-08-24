@@ -4,6 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('nurserySidebarCollapsed') === '1') {
+                    document.documentElement.classList.add('nursery-sidebar-collapsed');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <title>@yield('title', niche_module_label('nursery').' — '.config('app.name'))</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -73,7 +82,11 @@
             transition: width .22s ease, min-width .22s ease;
             overflow: hidden;
         }
-        .nursery-shell.is-sidebar-collapsed .module-sidebar {
+        /* أثناء التحميل الأول: بدون أنيميشن حتى لا يومض السايدبار عند التنقل */
+        html.nursery-sidebar-collapsed:not([data-nursery-shell-ready]) .module-sidebar {
+            transition: none !important;
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-sidebar , .nursery-shell.is-sidebar-collapsed .module-sidebar {
             width: 84px;
             min-width: 84px;
             align-items: center;
@@ -86,7 +99,7 @@
             align-items: center;
             box-sizing: border-box;
         }
-        .nursery-shell.is-sidebar-collapsed .module-sidebar-header {
+        html.nursery-sidebar-collapsed .nursery-shell .module-sidebar-header , .nursery-shell.is-sidebar-collapsed .module-sidebar-header {
             width: 100%;
             justify-content: center;
             padding: 0.85rem 0;
@@ -100,7 +113,7 @@
             margin-bottom: 0;
             width: 100%;
         }
-        .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar {
+        html.nursery-sidebar-collapsed .nursery-shell .nursery-brand-mark--sidebar , .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar {
             width: auto;
             max-width: 100%;
             align-items: center;
@@ -121,7 +134,7 @@
             flex-shrink: 0;
             box-sizing: border-box;
         }
-        .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__logo-wrap {
+        html.nursery-sidebar-collapsed .nursery-shell .nursery-brand-mark--sidebar .nursery-brand-mark__logo-wrap , .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__logo-wrap {
             /* نفس مقاس أزرار القائمة المطوية حتى يتوسّط مع العمود */
             width: 3.15rem;
             height: 3.15rem;
@@ -140,9 +153,9 @@
             margin: 0;
             line-height: 1.2;
         }
-        .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__text,
-        .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__name,
-        .nursery-shell.is-sidebar-collapsed .module-sidebar-title {
+        html.nursery-sidebar-collapsed .nursery-shell .nursery-brand-mark--sidebar .nursery-brand-mark__text, .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__text,
+        html.nursery-sidebar-collapsed .nursery-shell .nursery-brand-mark--sidebar .nursery-brand-mark__name, .nursery-shell.is-sidebar-collapsed .nursery-brand-mark--sidebar .nursery-brand-mark__name,
+        html.nursery-sidebar-collapsed .nursery-shell .module-sidebar-title , .nursery-shell.is-sidebar-collapsed .module-sidebar-title {
             display: none !important;
         }
         .module-sidebar-icon-wrap {
@@ -151,7 +164,7 @@
             color: var(--nursery-on-primary); display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; margin-bottom: 0;
         }
-        .nursery-shell.is-sidebar-collapsed .module-sidebar-icon-wrap {
+        html.nursery-sidebar-collapsed .nursery-shell .module-sidebar-icon-wrap , .nursery-shell.is-sidebar-collapsed .module-sidebar-icon-wrap {
             width: 3.15rem; height: 3.15rem; font-size: 1.15rem; border-radius: 0.95rem;
         }
         .module-sidebar-title { font-size: 1.125rem; font-weight: 800; color: var(--nursery-text); margin: 0; }
@@ -162,7 +175,7 @@
             overflow-y: auto;
             overflow-x: hidden;
         }
-        .nursery-shell.is-sidebar-collapsed .module-nav {
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav , .nursery-shell.is-sidebar-collapsed .module-nav {
             width: 100%;
             padding: 0.65rem 0;
             display: flex;
@@ -172,7 +185,7 @@
             /* لا تسرق مساحة من التوسيط بسبب شريط التمرير */
             scrollbar-width: none;
         }
-        .nursery-shell.is-sidebar-collapsed .module-nav::-webkit-scrollbar {
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav::-webkit-scrollbar , .nursery-shell.is-sidebar-collapsed .module-nav::-webkit-scrollbar {
             width: 0;
             height: 0;
         }
@@ -211,15 +224,15 @@
             font-weight: 700;
             box-shadow: inset -3px 0 0 var(--nursery-primary);
         }
-        .nursery-shell.is-sidebar-collapsed .module-nav-link {
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav-link , .nursery-shell.is-sidebar-collapsed .module-nav-link {
             width: 3.15rem;
             height: 3.15rem;
             padding: 0;
             justify-content: center;
             border-radius: 0.95rem;
         }
-        .nursery-shell.is-sidebar-collapsed .module-nav-label { display: none; }
-        .nursery-shell.is-sidebar-collapsed .module-nav-link.active {
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav-label , .nursery-shell.is-sidebar-collapsed .module-nav-label { display: none; }
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav-link.active , .nursery-shell.is-sidebar-collapsed .module-nav-link.active {
             background: var(--nursery-primary);
             color: var(--nursery-on-primary);
             box-shadow: none;
@@ -1084,12 +1097,15 @@
 <body>
     <div class="flex flex-col min-h-screen"
          x-data="{
-            sidebarCollapsed: localStorage.getItem('nurserySidebarCollapsed') === '1',
+            sidebarCollapsed: document.documentElement.classList.contains('nursery-sidebar-collapsed')
+                || localStorage.getItem('nurserySidebarCollapsed') === '1',
             toggleSidebar() {
                 this.sidebarCollapsed = !this.sidebarCollapsed;
                 localStorage.setItem('nurserySidebarCollapsed', this.sidebarCollapsed ? '1' : '0');
+                document.documentElement.classList.toggle('nursery-sidebar-collapsed', this.sidebarCollapsed);
             }
-         }">
+         }"
+         x-init="document.documentElement.setAttribute('data-nursery-shell-ready', '1')">
         @include('layouts.partials.erp-global-navbar')
         <div class="nursery-shell" :class="{ 'is-sidebar-collapsed': sidebarCollapsed }">
             <aside class="module-sidebar hidden md:flex shrink-0 flex-col" :aria-expanded="(!sidebarCollapsed).toString()">
