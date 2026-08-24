@@ -44,7 +44,6 @@ final class NurserySettingsWebController extends Controller
         $data = [
             'tab' => $tab,
             'settings' => $settings,
-            'joinedAt' => $settingsService->joinedAt($tenantUserId),
             'canManage' => app(NurseryAccess::class)->allows(NurseryAccess::CAP_MANAGE_SETTINGS),
             'regionOptions' => SaudiRegions::regionSelectOptions(),
             'cityOptions' => SaudiRegions::citySelectOptions($settings->region),
