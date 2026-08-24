@@ -59,6 +59,9 @@ RUN composer install \
 # نسخ بقية كود التطبيق
 COPY . .
 
+# اكتشاف الحزم بعد نسخ الكود (composer install كان --no-scripts)
+RUN php artisan package:discover --ansi || true
+
 # استبدال public/build بمخرجات Vite من مرحلة Node (متسقة مع package-lock)
 COPY --from=frontend /app/public/build ./public/build
 RUN rm -f public/hot

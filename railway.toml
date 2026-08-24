@@ -1,10 +1,6 @@
 # إعدادات Railway (انظر: https://docs.railway.com/reference/config-as-code)
 #
-# مهم: المفتاح الصحيح لأوامر ما قبل التشغيل هو preDeployCommand وليس releaseCommand.
-#
-# Docker: ENTRYPOINT (scripts/railway-entrypoint.sh) يشغّل optimize:clear عند كل إقلاع.
-# preDeployCommand يمسح الكاش أيضاً قبل تبديل النسخة الحية.
+# preDeployCommand: لا تستخدم && الصارم على أوامر غير حرجة — فشلها يوقف الـDeploy بالكامل.
+# Docker ENTRYPOINT يمسح الكاش عند كل إقلاع ويشغّل السيرفر بـ public/index.php كـ router.
 [deploy]
-preDeployCommand = "bash -lc \"php artisan optimize:clear && php artisan migrate --force && php artisan system:set-super-admins\""
-# مع Dockerfile + ENTRYPOINT: اترك startCommand فارغاً أو علّقه حتى لا يستبدل إقلاع الحاوية.
-# startCommand = "php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"
+preDeployCommand = "bash -lc \"php artisan optimize:clear || true; php artisan migrate --force; php artisan system:set-super-admins || true\""

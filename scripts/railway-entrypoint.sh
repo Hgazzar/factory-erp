@@ -1,24 +1,28 @@
 #!/usr/bin/env sh
-# Railway / Docker entrypoint: امسح كاش Laravel مع كل إقلاع حاوية (Deploy).
-# يمنع بقاء routes/config/views القديمة بعد تحديث الكود.
+# Railway / Docker entrypoint:
+# 1) امسح كاش Laravel مع كل إقلاع
+# 2) شغّل السيرفر بطريقة توصل كل المسارات إلى public/index.php
+#    (php -S -t public بدون router يكسر /login و /admin ويعرض فقط /)
 set -eu
 
 cd /var/www/html
 
 echo "==> Clearing Laravel caches (optimize:clear)"
-php artisan optimize:clear --no-interaction || true
+php artisan optimize:clear --no-interaction 2>/dev/null || true
 
 if [ "${MIGRATE_ON_START:-false}" = "true" ]; then
   echo "==> Running migrations (MIGRATE_ON_START=true)"
-  php artisan migrate --force --no-interaction || true
+  php artisan migrate --force --no-interaction 2>/dev/null || true
 fi
 
-# إذا مرّر Railway startCommand كـ args لـ ENTRYPOINT، نفّذه بعد مسح الكاش
+PORT="${PORT:-8080}"
+echo "==> Starting PHP server on 0.0.0.0:${PORT} (Laravel router)"
+
+# إذا مرّر Railway أوامر إضافية، نفّذها بعد المسح
 if [ "$#" -gt 0 ]; then
   echo "==> Executing start command: $*"
   exec "$@"
 fi
 
-PORT="${PORT:-8080}"
-echo "==> Starting app on 0.0.0.0:${PORT}"
-exec php artisan serve --host=0.0.0.0 --port="${PORT}"
+# Router script = public/index.php حتى تعمل /login و /admin وكل routes التطبيق
+exec php -d opcache.enable_cli=1 -S "0.0.0.0:${PORT}" -t public public/index.php
