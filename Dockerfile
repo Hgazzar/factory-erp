@@ -1,6 +1,5 @@
 # -----------------------------------------------------------------------------
-# مرحلة Node: بناء Vite (manifest + assets). بدونها قد يطلب المتصفح ملف JS غير موجود
-# فيُرجع Laravel صفحة HTML → Uncaught SyntaxError: Unexpected token '<'
+# مرحلة Node: بناء Vite (manifest + assets)
 # -----------------------------------------------------------------------------
 FROM node:22-bookworm-slim AS frontend
 WORKDIR /app
@@ -10,27 +9,28 @@ COPY vite.config.js postcss.config.js tailwind.config.js ./
 COPY resources ./resources
 RUN mkdir -p public && npm run build
 
-FROM php:8.2-fpm
+# -----------------------------------------------------------------------------
+# مرحلة PHP: Nginx + PHP-FPM (إنتاج) — ليس php -S
+# -----------------------------------------------------------------------------
+FROM php:8.2-fpm-bookworm
 
 LABEL maintainer="factory-erp"
 
-# إعداد متغيرات البيئة الأساسية للـ Laravel
-# CACHE_STORE/SESSION_DRIVER=file: RateLimiter على تسجيل الدخول يعتمد على الـ cache؛ بدون جدول cache في Postgres يحدث 500.
-# يمكن تجاوزها من Railway Variables إذا كنت تفضّل database بعد تشغيل migrations كاملة.
 ENV APP_ENV=production \
     APP_DEBUG=false \
-    APP_PORT=8000 \
+    APP_PORT=8080 \
     CACHE_STORE=file \
     SESSION_DRIVER=file \
     MIGRATE_ON_START=true
 
 WORKDIR /var/www/html
 
-# تثبيت الحزم اللازمة لبناء الامتدادات (gd, zip, bcmath, pgsql) وبعض الأدوات الأساسية
-# في PHP 8.x لا يوجد --with-png؛ دعم PNG يُفعّل تلقائياً عند وجود libpng-dev
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
+    curl \
+    nginx \
+    gettext-base \
     libpng-dev \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
@@ -38,16 +38,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2-dev \
     libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd zip bcmath pdo pdo_pgsql pgsql \
+    && docker-php-ext-install -j$(nproc) gd zip bcmath pdo pdo_pgsql pgsql opcache \
     && rm -rf /var/lib/apt/lists/*
 
-# إضافة Composer من صورة رسمية خفيفة
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# نسخ ملفات composer أولاً للاستفادة من الـ cache في طبقة الـ dependencies
 COPY composer.json composer.lock* ./
-
-# تثبيت مكتبات PHP الخاصة بالتطبيق
 RUN composer install \
     --no-dev \
     --prefer-dist \
@@ -56,35 +52,42 @@ RUN composer install \
     --no-scripts \
     --ignore-platform-reqs
 
-# نسخ بقية كود التطبيق
 COPY . .
 
-# اكتشاف الحزم بعد نسخ الكود (composer install كان --no-scripts)
 RUN php artisan package:discover --ansi || true
 
-# استبدال public/build بمخرجات Vite من مرحلة Node (متسقة مع package-lock)
 COPY --from=frontend /app/public/build ./public/build
 RUN rm -f public/hot
 
-# علامة نشر ظاهرة على /__deploy و public/deploy-marker.txt
 ARG RAILWAY_GIT_COMMIT_SHA=local
-RUN printf '%s\nbuilt_at=%s\n' "${RAILWAY_GIT_COMMIT_SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/deploy-marker.txt
+RUN printf '%s\nbuilt_at=%s\nstack=nginx-php-fpm\n' "${RAILWAY_GIT_COMMIT_SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    > public/deploy-marker.txt
 
-# رابط public/storage أثناء البناء (root) — تشغيل storage:link وقت الـ deploy يفشل كثيراً بـ Permission denied على Railway
 RUN mkdir -p storage/app/public \
     && rm -rf public/storage \
     && ln -sfn ../storage/app/public public/storage
 
-# Entrypoint: optimize:clear (+ migrate اختياري) مع كل إقلاع حاوية على Railway
+# PHP / Opcache / FPM
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-railway.conf
+
+# Nginx template (PORT substituted at runtime)
+RUN mkdir -p /etc/nginx/templates \
+    && rm -f /etc/nginx/sites-enabled/default
+COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+
+# Entrypoint
 COPY scripts/railway-entrypoint.sh /usr/local/bin/railway-entrypoint.sh
-RUN chmod +x /usr/local/bin/railway-entrypoint.sh \
-    && chown www-data:www-data /usr/local/bin/railway-entrypoint.sh
+RUN chmod +x /usr/local/bin/railway-entrypoint.sh
 
-# التأكد من صلاحيات التخزين
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/storage \
-    && chmod -R ug+rwx /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R ug+rwx /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/lib/nginx /var/log/nginx \
+    && mkdir -p /run/nginx \
+    && chown -R www-data:www-data /run/nginx
 
-USER www-data
+# root: entrypoint يشغّل php-fpm + nginx (الـ workers كـ www-data)
+USER root
 
 EXPOSE 8080
 

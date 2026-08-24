@@ -182,6 +182,12 @@ Route::get('/__deploy', function () {
         'env' => config('app.env'),
         'marker' => is_file($marker) ? trim((string) file_get_contents($marker)) : null,
         'git' => env('RAILWAY_GIT_COMMIT_SHA', env('GITHUB_SHA')),
+        'sapi' => PHP_SAPI,
+        'caches' => [
+            'config' => app()->configurationIsCached(),
+            'routes' => app()->routesAreCached(),
+            'events' => app()->eventsAreCached(),
+        ],
         'time' => now()->toIso8601String(),
     ]);
 });

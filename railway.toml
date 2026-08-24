@@ -1,13 +1,12 @@
-# إعدادات Railway (انظر: https://docs.railway.com/reference/config-as-code)
-#
-# مهم: استخدم Dockerfile (مش Nixpacks) حتى ENTRYPOINT يمسح الكاش ويوجّه كل الطلبات لـ Laravel.
-# preDeployCommand: لا تستخدم && الصارم على أوامر غير حرجة — فشلها يوقف الـDeploy بالكامل.
+# Railway production (Nginx + PHP-FPM). See scripts/railway-entrypoint.sh
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# لا تضع startCommand — ENTRYPOINT يتجاهل أي أمر مخصّص ويشغّل public/router.php
-# (بدونها /build/manifest.json يتحوّل إلى /login وتختفي CSS)
-preDeployCommand = "bash -lc \"php artisan optimize:clear || true; php artisan migrate --force || true; php artisan system:set-super-admins || true\""
+# لا تمسح الكاش هنا — الإقلاع يبني config/route/view cache.
+# لا تضع startCommand (php -S / npm) — ENTRYPOINT يشغّل Nginx+FPM.
+preDeployCommand = "bash -lc \"php artisan migrate --force || true; php artisan system:set-super-admins || true\""
 restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/up"
+healthcheckTimeout = 30

@@ -1,0 +1,43 @@
+# Railway / production — Laravel behind Nginx + PHP-FPM
+# PORT is substituted by the entrypoint (envsubst) from Railway $PORT.
+server {
+    listen       ${PORT} default_server;
+    listen       [::]:${PORT} default_server;
+    server_name  _;
+    root         /var/www/html/public;
+    index        index.php;
+
+    client_max_body_size 32m;
+
+    # Static assets (Vite build, logos, etc.) — served by Nginx, not PHP
+    location /build/ {
+        try_files $uri =404;
+        access_log off;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
+    location /storage/ {
+        try_files $uri =404;
+        access_log off;
+        expires 1d;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT $realpath_root;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_read_timeout 120s;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
