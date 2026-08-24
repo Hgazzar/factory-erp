@@ -26,25 +26,32 @@
     </div>
 
     <div class="nursery-stats-row">
-        <x-nursery-stat-card title="التحصيلات" :value="number_format($s['collected_amount'], 2)" info="nursery.finance_collected" tone="success" :hint="$s['collected_count'].' اشتراك مدفوع'" spark="bars" trend="up"
+        <x-nursery-stat-card title="التحصيلات" :value="number_format($s['collected_amount'], 2)" info="nursery.finance_collected" tone="success" :hint="$s['collected_count'].' اشتراك مدفوع'" spark="bars"
+            :percent="$spark['collected']['percent']" :trend="$spark['collected']['trend']"
             :href="route('nursery.subscriptions.index')" link-label="الاشتراكات" />
-        <x-nursery-stat-card title="المستحقات" :value="number_format($s['outstanding_amount'], 2)" info="nursery.finance_outstanding" tone="warning" :hint="$s['outstanding_count'].' غير مدفوع نشط'" spark="line" trend="down"
+        <x-nursery-stat-card title="المستحقات" :value="number_format($s['outstanding_amount'], 2)" info="nursery.finance_outstanding" tone="warning" :hint="$s['outstanding_count'].' غير مدفوع نشط'" spark="line"
+            :percent="$spark['outstanding']['percent']" :trend="$spark['outstanding']['trend']"
             :href="route('nursery.subscriptions.index')" link-label="المستحقات" />
-        <x-nursery-stat-card title="المصروفات" :value="number_format($s['expense_amount'], 2)" info="nursery.finance_expenses" tone="primary" :hint="$s['expense_count'].' حركة'" spark="bars" trend="flat"
+        <x-nursery-stat-card title="المصروفات" :value="number_format($s['expense_amount'], 2)" info="nursery.finance_expenses" tone="primary" :hint="$s['expense_count'].' حركة'" spark="bars"
+            :percent="$spark['expenses']['percent']" :trend="$spark['expenses']['trend']"
             :href="!empty($canOpenExpenses) ? route('finance.expenses.index') : null" :link-label="!empty($canOpenExpenses) ? 'المصروفات' : null" />
     </div>
 
     <div class="nursery-stats-row">
-        <x-nursery-stat-card title="صافي الفترة" :value="number_format($s['net_period'], 2)" info="nursery.finance_net" :tone="$s['net_period'] >= 0 ? 'success' : 'danger'" hint="تحصيلات − مصروفات" spark="ring" :trend="$s['net_period'] >= 0 ? 'up' : 'down'" />
-        <x-nursery-stat-card title="منتهية الاستحقاق" :value="number_format($s['overdue_amount'], 2)" info="nursery.finance_overdue" tone="danger" :hint="$s['overdue_count'].' اشتراك'" spark="line" trend="down"
+        <x-nursery-stat-card title="صافي الفترة" :value="number_format($s['net_period'], 2)" info="nursery.finance_net" :tone="$s['net_period'] >= 0 ? 'success' : 'danger'" hint="تحصيلات − مصروفات" spark="ring"
+            :percent="$spark['net_period']['percent']" :trend="$spark['net_period']['trend']" />
+        <x-nursery-stat-card title="منتهية الاستحقاق" :value="number_format($s['overdue_amount'], 2)" info="nursery.finance_overdue" tone="danger" :hint="$s['overdue_count'].' اشتراك'" spark="line"
+            :percent="$spark['overdue']['percent']" :trend="$spark['overdue']['trend']"
             :href="route('nursery.subscriptions.index')" link-label="الاشتراكات" />
-        <x-nursery-stat-card title="منتهٍ (حالة)" :value="number_format($s['expired_unpaid_amount'], 2)" info="nursery.finance_expired" tone="warning" :hint="$s['expired_unpaid_count'].' اشتراك'" spark="bars" trend="down"
+        <x-nursery-stat-card title="منتهٍ (حالة)" :value="number_format($s['expired_unpaid_amount'], 2)" info="nursery.finance_expired" tone="warning" :hint="$s['expired_unpaid_count'].' اشتراك'" spark="bars"
+            :percent="$spark['expired_unpaid']['percent']" :trend="$spark['expired_unpaid']['trend']"
             :href="route('nursery.subscriptions.index')" link-label="الاشتراكات" />
     </div>
 
     @if($s['ledger_net_profit'] !== null)
         <div class="nursery-stats-row">
-            <x-nursery-stat-card title="صافي دفتر الأرباح" :value="number_format($s['ledger_net_profit'], 2)" info="nursery.finance_ledger_net" :tone="$s['ledger_net_profit'] >= 0 ? 'info' : 'danger'" hint="من قيود المحاسبة" spark="ring" :trend="$s['ledger_net_profit'] >= 0 ? 'up' : 'down'"
+            <x-nursery-stat-card title="صافي دفتر الأرباح" :value="number_format($s['ledger_net_profit'], 2)" info="nursery.finance_ledger_net" :tone="$s['ledger_net_profit'] >= 0 ? 'info' : 'danger'" hint="من قيود المحاسبة" spark="ring"
+                :percent="$spark['ledger_net_profit']['percent']" :trend="$spark['ledger_net_profit']['trend']"
                 :href="!empty($canOpenProfitLoss) ? route('finance.reports.profit-loss', array_filter(['from_date' => $s['from']?->toDateString(), 'to_date' => $s['to']?->toDateString()])) : null"
                 :link-label="!empty($canOpenProfitLoss) ? 'الأرباح والخسائر' : null" />
         </div>

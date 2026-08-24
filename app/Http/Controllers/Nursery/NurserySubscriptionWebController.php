@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\Subscription;
 use App\Models\Nursery\SubscriptionPlan;
+use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurserySubscriptionService;
 use App\Support\NurseryAccess;
 use Illuminate\Http\JsonResponse;
@@ -71,6 +72,7 @@ final class NurserySubscriptionWebController extends Controller
         return view('nursery.subscriptions.index', [
             'items' => $items,
             'stats' => $stats,
+            'spark' => app(NurseryDashboardService::class)->subscriptionsSparkMeta($stats),
             'period' => $period,
             'reminderTab' => $reminderTab,
             'paymentReminders' => $subscriptions->paymentReminders($tenantUserId),

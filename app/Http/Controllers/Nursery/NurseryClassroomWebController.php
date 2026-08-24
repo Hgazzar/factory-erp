@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Nursery\Classroom;
 use App\Services\Nursery\NurseryAttendanceService;
 use App\Services\Nursery\NurseryClassroomService;
+use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryShiftAttendanceService;
 use App\Support\NurseryAccess;
 use App\Support\NurseryClassroomAgeGroups;
@@ -42,7 +43,12 @@ final class NurseryClassroomWebController extends Controller
 
         $canManage = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CLASSROOMS);
 
-        return view('nursery.classrooms.index', compact('items', 'listStats', 'canManage'));
+        return view('nursery.classrooms.index', [
+            'items' => $items,
+            'listStats' => $listStats,
+            'spark' => app(NurseryDashboardService::class)->listSparkMeta($listStats),
+            'canManage' => $canManage,
+        ]);
     }
 
     public function create(): View

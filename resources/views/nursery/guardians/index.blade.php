@@ -25,9 +25,12 @@
     @endunless
 
     <div class="nursery-stats-row">
-        <x-nursery-stat-card title="إجمالي أولياء الأمور" :value="$listStats['total']" info="nursery.guardians_total" tone="primary" hint="كل السجلات" spark="bars" trend="up" />
-        <x-nursery-stat-card title="بوابة مفعّلة" :value="$listStats['portal_active']" info="nursery.guardians_portal_active" tone="success" hint="لديهم وصول" spark="ring" trend="up" />
-        <x-nursery-stat-card title="دخلوا البوابة" :value="$listStats['logged_in']" info="nursery.guardians_logged_in" tone="info" hint="سجّلوا دخولاً" spark="line" trend="up" />
+        <x-nursery-stat-card title="إجمالي أولياء الأمور" :value="$listStats['total']" info="nursery.guardians_total" tone="primary" hint="كل السجلات" spark="bars"
+            :percent="$spark['total']['percent']" :trend="$spark['total']['trend']" />
+        <x-nursery-stat-card title="بوابة مفعّلة" :value="$listStats['portal_active']" info="nursery.guardians_portal_active" tone="success" hint="لديهم وصول" spark="ring"
+            :percent="$spark['portal_active']['percent']" :trend="$spark['portal_active']['trend']" />
+        <x-nursery-stat-card title="دخلوا البوابة" :value="$listStats['logged_in']" info="nursery.guardians_logged_in" tone="info" hint="سجّلوا دخولاً" spark="line"
+            :percent="$spark['logged_in']['percent']" :trend="$spark['logged_in']['trend']" />
     </div>
 
     <form method="get" class="nursery-card p-4 flex flex-wrap gap-3 items-end">

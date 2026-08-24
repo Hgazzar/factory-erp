@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Nursery;
 
 use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Controller;
+use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryFinanceSummaryService;
 use App\Services\Tenant\TenantModuleRegistry;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ final class NurseryFinanceWebController extends Controller
 
         return view('nursery.finance.index', [
             'summary' => $summary,
+            'spark' => app(NurseryDashboardService::class)->financeSparkMeta($summary),
             'period' => $period,
             'financeModuleOn' => $financeModuleOn,
             'canOpenExpenses' => $financeModuleOn && \Illuminate\Support\Facades\Route::has('finance.expenses.index'),

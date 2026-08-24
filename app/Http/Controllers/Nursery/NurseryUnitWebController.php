@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Nursery;
 use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Nursery\Unit;
+use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryUnitService;
 use App\Support\NurseryAccess;
 use App\Support\NurseryClassroomAgeGroups;
@@ -45,7 +46,15 @@ final class NurseryUnitWebController extends Controller
 
         $canManage = app(NurseryAccess::class)->allows(NurseryAccess::CAP_MANAGE_UNITS);
 
-        return view('nursery.units.index', compact('items', 'listStats', 'q', 'tab', 'sort', 'canManage'));
+        return view('nursery.units.index', [
+            'items' => $items,
+            'listStats' => $listStats,
+            'spark' => app(NurseryDashboardService::class)->listSparkMeta($listStats),
+            'q' => $q,
+            'tab' => $tab,
+            'sort' => $sort,
+            'canManage' => $canManage,
+        ]);
     }
 
     public function create(): View

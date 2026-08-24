@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\Guardian;
 use App\Models\User;
+use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryPortalInviteService;
 use App\Support\NurseryAccess;
 use App\Support\PremiumFeatureKeys;
@@ -62,6 +63,7 @@ final class NurseryGuardianWebController extends Controller
         return view('nursery.guardians.index', [
             'guardians' => $guardians,
             'listStats' => $listStats,
+            'spark' => app(NurseryDashboardService::class)->guardiansSparkMeta($listStats),
             'q' => $q,
             'canManage' => $canManage,
             'portalEnabled' => $portalEnabled,

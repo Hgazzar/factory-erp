@@ -12,6 +12,7 @@ use App\Models\Nursery\Child;
 use App\Models\Nursery\Classroom;
 use App\Services\Nursery\NurseryChildDailyActivityService;
 use App\Services\Nursery\NurseryChildService;
+use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryPortalInviteService;
 use App\Support\SaudiRegions;
 use Illuminate\Http\RedirectResponse;
@@ -86,7 +87,14 @@ final class NurseryChildWebController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return view('nursery.children.index', compact('children', 'q', 'listStats', 'classrooms', 'classroomId'));
+        return view('nursery.children.index', [
+            'children' => $children,
+            'q' => $q,
+            'listStats' => $listStats,
+            'classrooms' => $classrooms,
+            'classroomId' => $classroomId,
+            'spark' => app(NurseryDashboardService::class)->listSparkMeta($listStats),
+        ]);
     }
 
     public function create(): View

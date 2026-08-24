@@ -74,13 +74,14 @@ final class NurseryDashboardService
     /**
      * Share of whole as 0–100 for spark visuals.
      */
-    public function sharePercent(int $part, int $whole): float
+    public function sharePercent(int|float $part, int|float $whole): float
     {
-        if ($whole <= 0) {
+        $whole = (float) $whole;
+        if ($whole <= 0.0) {
             return 0.0;
         }
 
-        return round(min(100, max(0, ($part / $whole) * 100)), 1);
+        return round(min(100, max(0, ((float) $part / $whole) * 100)), 1);
     }
 
     /**
@@ -107,6 +108,142 @@ final class NurseryDashboardService
     }
 
     /**
+     * @return array{percent: float, trend: string}
+     */
+    public function sparkMeta(int|float $part, int|float $whole, bool $higherIsGood = true): array
+    {
+        $percent = $this->sharePercent($part, $whole);
+
+        return [
+            'percent' => $percent,
+            'trend' => $this->trendFromShare($percent, $higherIsGood),
+        ];
+    }
+
+    /**
+     * Count/amount cards with no natural denominator.
+     *
+     * @return array{percent: float, trend: string}
+     */
+    public function existenceSparkMeta(int|float $value, bool $higherIsGood = true): array
+    {
+        $value = (float) $value;
+        if ($value == 0.0) {
+            return ['percent' => 0.0, 'trend' => 'flat'];
+        }
+
+        return [
+            'percent' => 100.0,
+            'trend' => $higherIsGood ? 'up' : 'down',
+        ];
+    }
+
+    /**
+     * Signed totals (net / profit): fill when non-zero; arrow follows sign.
+     *
+     * @return array{percent: float, trend: string}
+     */
+    public function signedSparkMeta(float $value, ?float $reference = null): array
+    {
+        if ($value == 0.0) {
+            return ['percent' => 0.0, 'trend' => 'flat'];
+        }
+
+        $ref = $reference !== null && abs($reference) > 0.0
+            ? abs($reference)
+            : abs($value);
+
+        $percent = $this->sharePercent(abs($value), $ref);
+
+        return [
+            'percent' => max(8.0, $percent),
+            'trend' => $value > 0 ? 'up' : 'down',
+        ];
+    }
+
+    /**
+     * Standard list KPIs: total / active / archived.
+     *
+     * @param  array{total?: int, active?: int, archived?: int}  $listStats
+     * @return array{total: array{percent: float, trend: string}, active: array{percent: float, trend: string}, archived: array{percent: float, trend: string}}
+     */
+    public function listSparkMeta(array $listStats): array
+    {
+        $total = (int) ($listStats['total'] ?? 0);
+
+        return [
+            'total' => $this->existenceSparkMeta($total),
+            'active' => $this->sparkMeta((int) ($listStats['active'] ?? 0), $total, true),
+            'archived' => $this->sparkMeta((int) ($listStats['archived'] ?? 0), $total, false),
+        ];
+    }
+
+    /**
+     * @param  array{total?: int, portal_active?: int, logged_in?: int}  $listStats
+     * @return array{total: array{percent: float, trend: string}, portal_active: array{percent: float, trend: string}, logged_in: array{percent: float, trend: string}}
+     */
+    public function guardiansSparkMeta(array $listStats): array
+    {
+        $total = (int) ($listStats['total'] ?? 0);
+
+        return [
+            'total' => $this->existenceSparkMeta($total),
+            'portal_active' => $this->sparkMeta((int) ($listStats['portal_active'] ?? 0), $total, true),
+            'logged_in' => $this->sparkMeta((int) ($listStats['logged_in'] ?? 0), $total, true),
+        ];
+    }
+
+    /**
+     * @param  array{total?: int, paid?: int, unpaid?: int, expired?: int, cancelled?: int}  $stats
+     * @return array<string, array{percent: float, trend: string}>
+     */
+    public function subscriptionsSparkMeta(array $stats): array
+    {
+        $total = (int) ($stats['total'] ?? 0);
+
+        return [
+            'total' => $this->existenceSparkMeta($total),
+            'paid' => $this->sparkMeta((int) ($stats['paid'] ?? 0), $total, true),
+            'unpaid' => $this->sparkMeta((int) ($stats['unpaid'] ?? 0), $total, false),
+            'expired' => $this->sparkMeta((int) ($stats['expired'] ?? 0), $total, false),
+            'cancelled' => $this->sparkMeta((int) ($stats['cancelled'] ?? 0), $total, false),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $summary
+     * @return array<string, array{percent: float, trend: string}>
+     */
+    public function financeSparkMeta(array $summary): array
+    {
+        $collected = (float) ($summary['collected_amount'] ?? 0);
+        $outstanding = (float) ($summary['outstanding_amount'] ?? 0);
+        $expenses = (float) ($summary['expense_amount'] ?? 0);
+        $net = (float) ($summary['net_period'] ?? 0);
+        $overdue = (float) ($summary['overdue_amount'] ?? 0);
+        $expiredUnpaid = (float) ($summary['expired_unpaid_amount'] ?? 0);
+        $ledger = isset($summary['ledger_net_profit']) && $summary['ledger_net_profit'] !== null
+            ? (float) $summary['ledger_net_profit']
+            : null;
+
+        $receivablesPool = $collected + $outstanding;
+        $cashflowPool = $collected + $expenses;
+        $riskPool = $outstanding + $overdue + $expiredUnpaid;
+
+        return [
+            'collected' => $this->sparkMeta($collected, $receivablesPool, true),
+            'outstanding' => $this->sparkMeta($outstanding, $receivablesPool, false),
+            'expenses' => $this->sparkMeta($expenses, $cashflowPool, false),
+            'net_period' => $this->signedSparkMeta($net, $cashflowPool > 0 ? $cashflowPool : null),
+            'overdue' => $this->sparkMeta($overdue, $riskPool > 0 ? $riskPool : $receivablesPool, false),
+            'expired_unpaid' => $this->sparkMeta($expiredUnpaid, $riskPool > 0 ? $riskPool : $receivablesPool, false),
+            'ledger_net_profit' => $ledger === null
+                ? ['percent' => 0.0, 'trend' => 'flat']
+                : $this->signedSparkMeta($ledger, abs($collected) > 0 ? abs($collected) : null),
+        ];
+    }
+
+    /**
      * @param  array{children: int, staff: int, classrooms: int, classrooms_total: int, units: int, units_total: int, activities: int}  $overview
      * @param  array{present_today: int, left_today: int, waiting_today: int}  $stats
      * @param  array{unpaid_active: int, expiring_soon: int, operational_total?: int}  $subscriptionKpis
@@ -119,61 +256,21 @@ final class NurseryDashboardService
         $unitsTotal = max(0, (int) ($overview['units_total'] ?? $overview['units']));
         $opsTotal = max(0, (int) ($subscriptionKpis['operational_total'] ?? 0));
 
-        $presentPct = $this->sharePercent((int) $stats['present_today'], $children);
-        $waitingPct = $this->sharePercent((int) $stats['waiting_today'], $children);
-        $leftPct = $this->sharePercent((int) $stats['left_today'], $children);
-        $classroomsPct = $this->sharePercent((int) $overview['classrooms'], $classroomsTotal);
-        $unitsPct = $this->sharePercent((int) $overview['units'], $unitsTotal);
-        $unpaidPct = $this->sharePercent((int) ($subscriptionKpis['unpaid_active'] ?? 0), $opsTotal);
-        $expiringPct = $this->sharePercent((int) ($subscriptionKpis['expiring_soon'] ?? 0), $opsTotal);
-
-        // Count-only cards: full spark when > 0, empty when 0
-        $childrenPct = $children > 0 ? 100.0 : 0.0;
-        $staffPct = ((int) $overview['staff']) > 0 ? 100.0 : 0.0;
-        $activitiesPct = ((int) $overview['activities']) > 0
-            ? min(100.0, ((int) $overview['activities']) * 12.5)
-            : 0.0;
+        $activities = (int) $overview['activities'];
 
         return [
-            'children' => [
-                'percent' => $childrenPct,
-                'trend' => $children > 0 ? 'up' : 'flat',
-            ],
-            'staff' => [
-                'percent' => $staffPct,
-                'trend' => ((int) $overview['staff']) > 0 ? 'up' : 'flat',
-            ],
-            'classrooms' => [
-                'percent' => $classroomsPct,
-                'trend' => $this->trendFromShare($classroomsPct, true),
-            ],
-            'present_today' => [
-                'percent' => $presentPct,
-                'trend' => $this->trendFromShare($presentPct, true),
-            ],
-            'waiting_today' => [
-                'percent' => $waitingPct,
-                'trend' => $this->trendFromShare($waitingPct, false),
-            ],
-            'left_today' => [
-                'percent' => $leftPct,
-                'trend' => $this->trendFromShare($leftPct, true),
-            ],
-            'unpaid_active' => [
-                'percent' => $unpaidPct,
-                'trend' => $this->trendFromShare($unpaidPct, false),
-            ],
-            'expiring_soon' => [
-                'percent' => $expiringPct,
-                'trend' => $this->trendFromShare($expiringPct, false),
-            ],
-            'units' => [
-                'percent' => $unitsPct,
-                'trend' => $this->trendFromShare($unitsPct, true),
-            ],
+            'children' => $this->existenceSparkMeta($children),
+            'staff' => $this->existenceSparkMeta((int) $overview['staff']),
+            'classrooms' => $this->sparkMeta((int) $overview['classrooms'], $classroomsTotal, true),
+            'present_today' => $this->sparkMeta((int) $stats['present_today'], $children, true),
+            'waiting_today' => $this->sparkMeta((int) $stats['waiting_today'], $children, false),
+            'left_today' => $this->sparkMeta((int) $stats['left_today'], $children, true),
+            'unpaid_active' => $this->sparkMeta((int) ($subscriptionKpis['unpaid_active'] ?? 0), $opsTotal, false),
+            'expiring_soon' => $this->sparkMeta((int) ($subscriptionKpis['expiring_soon'] ?? 0), $opsTotal, false),
+            'units' => $this->sparkMeta((int) $overview['units'], $unitsTotal, true),
             'activities' => [
-                'percent' => $activitiesPct,
-                'trend' => ((int) $overview['activities']) > 0 ? 'up' : 'flat',
+                'percent' => $activities > 0 ? min(100.0, $activities * 12.5) : 0.0,
+                'trend' => $activities > 0 ? 'up' : 'flat',
             ],
         ];
     }

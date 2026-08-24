@@ -9,6 +9,7 @@ use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\Nursery\NurseryShift;
+use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryStaffService;
 use App\Support\NurseryAccess;
 use App\Support\NurseryPermissionCatalog;
@@ -60,6 +61,7 @@ final class NurseryStaffWebController extends Controller
         return view('nursery.staff.index', [
             'items' => $items,
             'listStats' => $listStats,
+            'spark' => app(NurseryDashboardService::class)->listSparkMeta($listStats),
             'q' => $q,
             'jobRole' => $jobRole,
             'status' => $status,

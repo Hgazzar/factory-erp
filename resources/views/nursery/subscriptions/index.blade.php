@@ -29,15 +29,21 @@
     </div>
 
     <div class="nursery-stats-row">
-        <x-nursery-stat-card title="إجمالي الاشتراكات" :value="$stats['total']" info="nursery.sub_stat_total" tone="primary" hint="كل الفترات" spark="bars" trend="up" />
-        <x-nursery-stat-card title="المدفوعة" :value="$stats['paid']" info="nursery.sub_stat_paid" tone="success" hint="تم التحصيل" spark="ring" trend="up" />
-        <x-nursery-stat-card title="غير المدفوعة" :value="$stats['unpaid']" info="nursery.sub_stat_unpaid" tone="warning" hint="بانتظار الدفع" spark="bars" trend="down" />
+        <x-nursery-stat-card title="إجمالي الاشتراكات" :value="$stats['total']" info="nursery.sub_stat_total" tone="primary" hint="كل الفترات" spark="bars"
+            :percent="$spark['total']['percent']" :trend="$spark['total']['trend']" />
+        <x-nursery-stat-card title="المدفوعة" :value="$stats['paid']" info="nursery.sub_stat_paid" tone="success" hint="تم التحصيل" spark="ring"
+            :percent="$spark['paid']['percent']" :trend="$spark['paid']['trend']" />
+        <x-nursery-stat-card title="غير المدفوعة" :value="$stats['unpaid']" info="nursery.sub_stat_unpaid" tone="warning" hint="بانتظار الدفع" spark="bars"
+            :percent="$spark['unpaid']['percent']" :trend="$spark['unpaid']['trend']" />
     </div>
 
     <div class="nursery-stats-row">
-        <x-nursery-stat-card title="المنتهية" :value="$stats['expired'] ?? 0" info="nursery.sub_stat_expired" tone="danger" hint="انتهت مدتها" spark="line" trend="down" />
-        <x-nursery-stat-card title="الملغاة" :value="$stats['cancelled']" info="nursery.sub_stat_cancelled" tone="muted" hint="ملغاة" spark="none" trend="flat" />
-        <x-nursery-stat-card title="إجمالي الاشتراكات" :value="$stats['total']" info="nursery.sub_stat_total" tone="primary" hint="كل الفترات" spark="bars" trend="up" />
+        <x-nursery-stat-card title="المنتهية" :value="$stats['expired'] ?? 0" info="nursery.sub_stat_expired" tone="danger" hint="انتهت مدتها" spark="line"
+            :percent="$spark['expired']['percent']" :trend="$spark['expired']['trend']" />
+        <x-nursery-stat-card title="الملغاة" :value="$stats['cancelled']" info="nursery.sub_stat_cancelled" tone="muted" hint="ملغاة" spark="none"
+            :percent="$spark['cancelled']['percent']" :trend="$spark['cancelled']['trend']" />
+        <x-nursery-stat-card title="إجمالي الاشتراكات" :value="$stats['total']" info="nursery.sub_stat_total" tone="primary" hint="كل الفترات" spark="bars"
+            :percent="$spark['total']['percent']" :trend="$spark['total']['trend']" />
     </div>
 
     <div class="grid gap-5 xl:grid-cols-3">

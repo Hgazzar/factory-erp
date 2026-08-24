@@ -18,9 +18,12 @@
     </div>
 
     <div class="nursery-stats-row">
-        <x-nursery-stat-card title="إجمالي الوحدات" :value="$listStats['total']" info="nursery.list_total_units" tone="primary" hint="كل الوحدات" spark="bars" trend="up" />
-        <x-nursery-stat-card title="الوحدات النشطة" :value="$listStats['active']" info="nursery.list_active_units" tone="success" hint="منهج نشط" spark="ring" trend="up" />
-        <x-nursery-stat-card title="الوحدات المؤرشفة" :value="$listStats['archived']" info="nursery.list_archived_units" tone="muted" hint="غير نشطة" spark="line" trend="flat" />
+        <x-nursery-stat-card title="إجمالي الوحدات" :value="$listStats['total']" info="nursery.list_total_units" tone="primary" hint="كل الوحدات" spark="bars"
+            :percent="$spark['total']['percent']" :trend="$spark['total']['trend']" />
+        <x-nursery-stat-card title="الوحدات النشطة" :value="$listStats['active']" info="nursery.list_active_units" tone="success" hint="منهج نشط" spark="ring"
+            :percent="$spark['active']['percent']" :trend="$spark['active']['trend']" />
+        <x-nursery-stat-card title="الوحدات المؤرشفة" :value="$listStats['archived']" info="nursery.list_archived_units" tone="muted" hint="غير نشطة" spark="line"
+            :percent="$spark['archived']['percent']" :trend="$spark['archived']['trend']" />
     </div>
 
     <form method="get" class="nursery-card p-4 flex flex-wrap gap-3 items-end">
