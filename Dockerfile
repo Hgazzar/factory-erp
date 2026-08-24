@@ -68,12 +68,17 @@ RUN mkdir -p storage/app/public \
     && rm -rf public/storage \
     && ln -sfn ../storage/app/public public/storage
 
+# Entrypoint: optimize:clear (+ migrate اختياري) مع كل إقلاع حاوية على Railway
+COPY scripts/railway-entrypoint.sh /usr/local/bin/railway-entrypoint.sh
+RUN chmod +x /usr/local/bin/railway-entrypoint.sh \
+    && chown www-data:www-data /usr/local/bin/railway-entrypoint.sh
+
 # التأكد من صلاحيات التخزين
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/storage \
     && chmod -R ug+rwx /var/www/html/storage /var/www/html/bootstrap/cache
 
-    USER www-data
+USER www-data
 
-    EXPOSE 8080
-    
-    CMD ["sh", "-c", "exec php -d opcache.enable_cli=1 -d opcache.validate_timestamps=0 -S 0.0.0.0:${PORT:-8080} -t public"]
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/railway-entrypoint.sh"]

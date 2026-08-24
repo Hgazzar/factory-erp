@@ -1,9 +1,10 @@
 # إعدادات Railway (انظر: https://docs.railway.com/reference/config-as-code)
 #
-# مهم: المفتاح الصحيح لأوامر ما قبل التشغيل هو preDeployCommand وليس releaseCommand
-# (releaseCommand غير موجود في railway.schema.json → قد يُتجاهل الميجرشن/المزامنة).
+# مهم: المفتاح الصحيح لأوامر ما قبل التشغيل هو preDeployCommand وليس releaseCommand.
 #
-# startCommand: تجنّب php -S -t public فقط لأن مسارات Livewire ليست ملفات ثابتة.
+# Docker: ENTRYPOINT (scripts/railway-entrypoint.sh) يشغّل optimize:clear عند كل إقلاع.
+# preDeployCommand يمسح الكاش أيضاً قبل تبديل النسخة الحية.
 [deploy]
-preDeployCommand = "bash -lc \"if command -v npm >/dev/null 2>&1; then npm ci && npm run build; fi && php artisan migrate --force && php artisan optimize:clear && php artisan system:set-super-admins\""
-startCommand = "bash -lc \"exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\""
+preDeployCommand = "bash -lc \"php artisan optimize:clear && php artisan migrate --force && php artisan system:set-super-admins\""
+# مع Dockerfile + ENTRYPOINT: اترك startCommand فارغاً أو علّقه حتى لا يستبدل إقلاع الحاوية.
+# startCommand = "php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"
