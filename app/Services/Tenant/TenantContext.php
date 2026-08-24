@@ -14,6 +14,9 @@ use App\Support\ErpRoles;
  */
 final class TenantContext
 {
+    /** @var array<int, User|null> */
+    private array $tenantByAuthUserId = [];
+
     public function resolveTenantUser(?User $user = null): ?User
     {
         $user ??= auth()->user();
@@ -22,12 +25,17 @@ final class TenantContext
             return null;
         }
 
+        $authId = (int) $user->id;
+        if (array_key_exists($authId, $this->tenantByAuthUserId)) {
+            return $this->tenantByAuthUserId[$authId];
+        }
+
         if ($this->isPlatformOperator($user)) {
-            return null;
+            return $this->tenantByAuthUserId[$authId] = null;
         }
 
         if ($user->role === 'admin') {
-            return $user;
+            return $this->tenantByAuthUserId[$authId] = $user;
         }
 
         $employee = Employee::query()
@@ -36,10 +44,10 @@ final class TenantContext
             ->first();
 
         if ($employee === null) {
-            return null;
+            return $this->tenantByAuthUserId[$authId] = null;
         }
 
-        return User::query()->find($employee->user_id);
+        return $this->tenantByAuthUserId[$authId] = User::query()->find($employee->user_id);
     }
 
     public function resolveTenantUserId(?User $user = null): ?int

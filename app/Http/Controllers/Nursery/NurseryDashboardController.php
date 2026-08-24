@@ -13,7 +13,6 @@ use App\Services\Nursery\NurseryAttendanceService;
 use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryPortalInviteService;
 use App\Services\Nursery\NurserySubscriptionService;
-use App\Services\Store\StoreOnlineDashboardPresenter;
 use App\Support\NurseryAccess;
 use App\Support\PremiumFeatureKeys;
 use Illuminate\Http\Response;
@@ -50,7 +49,11 @@ final class NurseryDashboardController extends Controller
         if ($tenant->hasFeature(PremiumFeatureKeys::NURSERY_PORTAL)) {
             $portalUrl = $portalInvite->portalLoginUrl($tenantUserId);
             if ($portalUrl !== null) {
-                $qrDataUri = app(ClinicPortalQrCodeService::class)->pngDataUri($portalUrl);
+                $qrDataUri = \Illuminate\Support\Facades\Cache::remember(
+                    'nursery.portal.qr.'.md5($portalUrl),
+                    86400,
+                    static fn () => app(ClinicPortalQrCodeService::class)->pngDataUri($portalUrl),
+                );
             }
         }
 
@@ -59,10 +62,8 @@ final class NurseryDashboardController extends Controller
         $canManage = $access->allows(NurseryAccess::CAP_MANAGE_SETTINGS);
         $canManageChildAttendance = $access->allows(NurseryAccess::CAP_MANAGE_CHILD_ATTENDANCE);
 
-        $storeOnlinePanel = app(StoreOnlineDashboardPresenter::class)->present(
-            $tenantUserId,
-            StoreOnlineDashboardPresenter::VARIANT_COMPACT,
-        );
+        // لا تحمّل لوحة المتجر على داشبورد الحضانة — تكلفة بلا فائدة لمعظم المستأجرين
+        $storeOnlinePanel = null;
 
         return view('nursery.dashboard', compact(
             'overview',

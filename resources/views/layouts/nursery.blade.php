@@ -14,19 +14,18 @@
         })();
     </script>
     <title>@yield('title', niche_module_label('nursery').' — '.config('app.name'))</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    @filamentStyles
-    @livewireStyles
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- بدون Filament/Livewire: الحضانة Blade فقط — يوفر مئات الكيلوبايت في كل تنقّل --}}
     @if(file_exists(public_path('hot')))
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css'])
     @elseif(file_exists(public_path('build/manifest.json')))
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css'])
     @endif
-    @unless(file_exists(public_path('hot')) || file_exists(public_path('build/manifest.json')))
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
-    @endunless
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     @include('nursery.partials.theme-css-vars')
     <style>
         *, *::before, *::after { box-sizing: border-box; }
@@ -1189,7 +1188,6 @@
         </div>
     </div>
 
-    @include('layouts.partials.erp-shell-footer-scripts')
-    @stack('scripts')
+    @include('layouts.partials.nursery-shell-footer-scripts')
 </body>
 </html>

@@ -107,6 +107,8 @@ final class TenantBrandingService
 
         $setting->save();
 
+        $this->forgetBrandingCache($tenantUserId);
+
         return $setting->fresh();
     }
 
@@ -118,6 +120,7 @@ final class TenantBrandingService
             $previous = $setting->logo_path;
             $setting->forceFill(['logo_path' => null])->save();
             $this->deleteStoredLogo($previous);
+            $this->forgetBrandingCache($tenantUserId);
 
             return $setting->fresh();
         }
@@ -141,6 +144,8 @@ final class TenantBrandingService
         if (is_string($previous) && $previous !== '' && $previous !== $path) {
             $this->deleteStoredLogo($previous);
         }
+
+        $this->forgetBrandingCache($tenantUserId);
 
         return $setting->fresh();
     }
@@ -208,5 +213,18 @@ final class TenantBrandingService
         }
 
         return (string) (User::query()->whereKey($tenantUserId)->value('name') ?? config('app.name'));
+    }
+
+    private function forgetBrandingCache(int $tenantUserId): void
+    {
+        foreach ([
+            self::MODULE_NURSERY,
+            self::MODULE_CLINIC,
+            self::MODULE_STORE,
+            self::MODULE_FLEET,
+            self::MODULE_TENANT,
+        ] as $module) {
+            \Illuminate\Support\Facades\Cache::forget('tenant.branding.'.$module.'.'.$tenantUserId);
+        }
     }
 }

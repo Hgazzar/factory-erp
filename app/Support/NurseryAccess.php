@@ -67,6 +67,12 @@ final class NurseryAccess
 
     public const CAP_MANAGE_SETTINGS = 'manage_settings';
 
+    /** @var array<int, Employee|null> */
+    private array $employeeByUserId = [];
+
+    /** @var array<string, bool> */
+    private array $allowsCache = [];
+
     public function __construct(
         private readonly TenantContext $tenantContext,
     ) {}
@@ -83,17 +89,7 @@ final class NurseryAccess
             return null;
         }
 
-        $tenantUserId = $this->tenantContext->resolveTenantUserId($user);
-
-        if ($tenantUserId === null) {
-            return null;
-        }
-
-        $employee = Employee::query()
-            ->where('linked_user_id', $user->id)
-            ->where('user_id', $tenantUserId)
-            ->first();
-
+        $employee = $this->resolveEmployee($user);
         $role = $employee?->nursery_role;
 
         return in_array($role, [self::ROLE_RECEPTION, self::ROLE_TEACHER], true) ? $role : null;
@@ -111,6 +107,19 @@ final class NurseryAccess
     }
 
     public function allows(string $capability, ?User $user = null): bool
+    {
+        $user ??= auth()->user();
+        $userId = $user instanceof User ? (int) $user->id : 0;
+        $cacheKey = $userId.'|'.$capability;
+
+        if (array_key_exists($cacheKey, $this->allowsCache)) {
+            return $this->allowsCache[$cacheKey];
+        }
+
+        return $this->allowsCache[$cacheKey] = $this->computeAllows($capability, $user);
+    }
+
+    private function computeAllows(string $capability, ?User $user): bool
     {
         if ($this->isTenantOwner($user)) {
             return true;
@@ -174,13 +183,18 @@ final class NurseryAccess
             return null;
         }
 
+        $userId = (int) $user->id;
+        if (array_key_exists($userId, $this->employeeByUserId)) {
+            return $this->employeeByUserId[$userId];
+        }
+
         $tenantUserId = $this->tenantContext->resolveTenantUserId($user);
 
         if ($tenantUserId === null) {
-            return null;
+            return $this->employeeByUserId[$userId] = null;
         }
 
-        return Employee::query()
+        return $this->employeeByUserId[$userId] = Employee::query()
             ->where('linked_user_id', $user->id)
             ->where('user_id', $tenantUserId)
             ->first();

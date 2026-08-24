@@ -81,6 +81,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(WhatsAppConfigResolver::class);
         $this->app->singleton(PhoneNumberNormalizer::class);
         $this->app->singleton(WhatsAppChannelFactory::class);
+
+        $this->app->singleton(TenantContext::class);
+        $this->app->singleton(\App\Support\NurseryAccess::class);
     }
 
     public function boot(): void
@@ -123,18 +126,24 @@ class AppServiceProvider extends ServiceProvider
         );
 
         View::composer('*', function (\Illuminate\View\View $view): void {
-            $enabledModules = auth()->check()
-                ? app(TenantModuleRegistry::class)->enabledKeys()
-                : ['core'];
+            static $shared = null;
 
-            $view->with([
-                'defaultVatPercent' => CompanySetting::resolvedDefaultVatPercent(),
-                'erpCurrencyCode' => CompanySetting::resolvedCurrencyCode(),
-                'enabledModules' => $enabledModules,
-                'tenantNavigation' => auth()->check()
-                    ? app(TenantNavigationService::class)
-                    : null,
-            ]);
+            if ($shared === null) {
+                $enabledModules = auth()->check()
+                    ? app(TenantModuleRegistry::class)->enabledKeys()
+                    : ['core'];
+
+                $shared = [
+                    'defaultVatPercent' => CompanySetting::resolvedDefaultVatPercent(),
+                    'erpCurrencyCode' => CompanySetting::resolvedCurrencyCode(),
+                    'enabledModules' => $enabledModules,
+                    'tenantNavigation' => auth()->check()
+                        ? app(TenantNavigationService::class)
+                        : null,
+                ];
+            }
+
+            $view->with($shared);
         });
 
         View::share('erpMoneyDecimals', (int) config('accounting.display_money_decimal_places', 2));
@@ -261,7 +270,12 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        $branding = app(TenantBrandingService::class)->branding($tenantUserId, $fallbackName, $module);
+        $cacheKey = 'tenant.branding.'.$module.'.'.$tenantUserId;
+        $branding = \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            300,
+            static fn () => app(TenantBrandingService::class)->branding($tenantUserId, $fallbackName, $module),
+        );
 
         $view->with([
             'tenantBrand' => $branding,

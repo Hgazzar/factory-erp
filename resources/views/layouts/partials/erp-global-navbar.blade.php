@@ -55,7 +55,12 @@
             <div class="flex items-center gap-5 shrink-0">
                 @auth
                     @php
-                        $unreadCount = Auth::user()->unreadNotifications()->count();
+                        $notifUserId = (int) Auth::id();
+                        $unreadCount = (int) \Illuminate\Support\Facades\Cache::remember(
+                            'navbar.unread.'.$notifUserId,
+                            45,
+                            static fn () => Auth::user()->unreadNotifications()->count(),
+                        );
                         $recentNotifications = Auth::user()->notifications()->latest()->limit(8)->get();
                     @endphp
                     {{-- التنبيهات: Bootstrap dropdown (موثوق مع Livewire/Filament على السيرفر) — نفس التنسيق السابق --}}
