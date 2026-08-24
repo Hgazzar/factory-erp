@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models\Nursery;
 
+use App\Models\CompanySetting;
 use App\Models\User;
 use App\Services\Tenant\TenantBrandingService;
 use Illuminate\Database\Eloquent\Model;
@@ -43,8 +44,24 @@ class NurserySetting extends Model
 
         return static::query()->firstOrCreate(
             ['user_id' => $tenantUserId],
-            ['nursery_name' => User::query()->whereKey($tenantUserId)->value('name') ?? 'حضانتي'],
+            [
+                'nursery_name' => self::defaultNurseryName($tenantUserId),
+                'manager_name' => User::query()->whereKey($tenantUserId)->value('name'),
+            ],
         );
+    }
+
+    /**
+     * اسم الحضانة الافتراضي: اسم الشركة إن وُجد، وإلا اسم المستخدم.
+     */
+    public static function defaultNurseryName(int $tenantUserId): string
+    {
+        $company = CompanySetting::query()->where('user_id', $tenantUserId)->value('name');
+        if (is_string($company) && trim($company) !== '') {
+            return trim($company);
+        }
+
+        return (string) (User::query()->whereKey($tenantUserId)->value('name') ?? 'حضانتي');
     }
 
     /** الاسم الظاهر في البوابة ولوحة الحضانة. */

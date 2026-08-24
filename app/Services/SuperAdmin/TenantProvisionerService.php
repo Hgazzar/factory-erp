@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\SuperAdmin;
 
 use App\Models\CompanySetting;
+use App\Models\Nursery\NurserySetting;
 use App\Models\TenantProfile;
 use App\Models\User;
 use App\Services\ChartOfAccountsProvisioner;
@@ -61,6 +62,16 @@ final class TenantProvisionerService
                 'name' => trim((string) $data['company_name']),
             ]);
 
+            if ($nicheKey === 'nurseries') {
+                NurserySetting::query()->create([
+                    'user_id' => $tenant->id,
+                    'nursery_name' => trim((string) $data['company_name']),
+                    'manager_name' => trim((string) $data['owner_name']),
+                    'manager_email' => strtolower(trim((string) $data['email'])),
+                    'contact_email' => strtolower(trim((string) $data['email'])),
+                ]);
+            }
+
             TenantProfile::query()->create([
                 'tenant_user_id' => $tenant->id,
                 'niche_key' => $nicheKey,
@@ -75,6 +86,11 @@ final class TenantProvisionerService
             ChartOfAccountsProvisioner::ensureForUser((int) $tenant->id);
 
             $this->tenantBranding->ensureForTenant((int) $tenant->id);
+            if ($nicheKey === 'nurseries') {
+                $this->tenantBranding->updateBranding((int) $tenant->id, [
+                    'display_name' => trim((string) $data['company_name']),
+                ], TenantBrandingService::MODULE_NURSERY);
+            }
 
             $this->syncInitialPremiumFeatures((int) $tenant->id, $nicheKey, $data);
 
