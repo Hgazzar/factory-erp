@@ -116,24 +116,6 @@
                     <p class="text-xs text-orange-700/70 mt-1">تم الانضمام في {{ $joinedAt->locale('ar')->translatedFormat('j F Y') }}</p>
                 @endif
             </div>
-            <div class="grid grid-cols-2 gap-2">
-                <div class="nursery-card p-3 text-center">
-                    <p class="text-xs font-semibold text-orange-950">الأطفال</p>
-                    <p class="text-xl font-extrabold text-orange-600 tabular-nums">{{ $overview['children'] }}</p>
-                </div>
-                <div class="nursery-card p-3 text-center">
-                    <p class="text-xs font-semibold text-orange-950">طاقم العمل</p>
-                    <p class="text-xl font-extrabold text-orange-600 tabular-nums">{{ $overview['staff'] }}</p>
-                </div>
-                <div class="nursery-card p-3 text-center">
-                    <p class="text-xs font-semibold text-orange-950">الفصول</p>
-                    <p class="text-xl font-extrabold text-orange-600 tabular-nums">{{ $overview['classrooms'] }}</p>
-                </div>
-                <div class="nursery-card p-3 text-center">
-                    <p class="text-xs font-semibold text-orange-950">الوحدات</p>
-                    <p class="text-xl font-extrabold text-orange-600 tabular-nums">{{ $overview['units'] }}</p>
-                </div>
-            </div>
         </aside>
     </div>
 </div>

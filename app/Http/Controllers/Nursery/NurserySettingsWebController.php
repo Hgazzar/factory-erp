@@ -10,7 +10,6 @@ use App\Models\Nursery\NurserySetting;
 use App\Models\Nursery\NurseryShift;
 use App\Models\Nursery\SubscriptionPlan;
 use App\Models\TenantProfile;
-use App\Services\Nursery\NurseryDashboardService;
 use App\Services\Nursery\NurseryPortalInviteService;
 use App\Services\Nursery\NurserySettingsService;
 use App\Services\Nursery\NurseryShiftService;
@@ -31,7 +30,6 @@ final class NurserySettingsWebController extends Controller
     public function index(
         Request $request,
         NurserySettingsService $settingsService,
-        NurseryDashboardService $dashboard,
         NurserySubscriptionPlanService $planService,
         NurseryShiftService $shiftService,
         NurserySubscriptionService $subscriptions,
@@ -47,7 +45,6 @@ final class NurserySettingsWebController extends Controller
             'tab' => $tab,
             'settings' => $settings,
             'joinedAt' => $settingsService->joinedAt($tenantUserId),
-            'overview' => $dashboard->overviewStats($tenantUserId),
             'canManage' => app(NurseryAccess::class)->allows(NurseryAccess::CAP_MANAGE_SETTINGS),
             'regionOptions' => SaudiRegions::regionSelectOptions(),
             'cityOptions' => SaudiRegions::citySelectOptions($settings->region),
