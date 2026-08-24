@@ -77,8 +77,8 @@
     <div data-nursery-today-pane="care" class="space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-extrabold text-orange-950">يوم الفصل</h1>
-                <p class="text-sm text-orange-800/80 mt-1">
+                <h1 class="text-2xl font-extrabold text-teal-950">يوم الفصل</h1>
+                <p class="text-sm text-teal-800/80 mt-1">
                     {{ $classroom->name }}
                     <x-info field="nursery.classroom_today" />
                 </p>
@@ -88,7 +88,7 @@
 
         <form method="get" action="{{ route('nursery.classrooms.today.redirect') }}" class="nursery-card p-4 flex flex-wrap gap-3 items-end">
             <div class="flex-1 min-w-[180px]">
-                <label class="block text-sm font-semibold text-orange-950 mb-1">الفصل</label>
+                <label class="block text-sm font-semibold text-teal-950 mb-1">الفصل</label>
                 <x-custom-select name="classroom_id" :options="$classroomOptions"
                     :value="(string) $classroom->id" placeholder="اختر الفصل" :searchable="count($classroomOptions) > 6" />
             </div>
@@ -109,25 +109,25 @@
                 <p class="mt-1 text-xl font-extrabold text-sky-600 tabular-nums">{{ $board['checked_out']->count() }}</p>
             </div>
             <div class="nursery-card px-3 py-3.5 text-center">
-                <p class="text-xs font-semibold text-orange-950/90">السعة <x-info field="nursery.classroom_capacity" /></p>
-                <p class="mt-1 text-xl font-extrabold text-orange-600 tabular-nums">{{ $capacity ?? '—' }}</p>
+                <p class="text-xs font-semibold text-teal-950/90">السعة <x-info field="nursery.classroom_capacity" /></p>
+                <p class="mt-1 text-xl font-extrabold text-teal-600 tabular-nums">{{ $capacity ?? '—' }}</p>
             </div>
             <div class="nursery-card px-3 py-3.5 text-center col-span-2 sm:col-span-1">
-                <p class="text-xs font-semibold text-orange-950/90">النسبة <x-info field="nursery.classroom_today_ratio" /></p>
+                <p class="text-xs font-semibold text-teal-950/90">النسبة <x-info field="nursery.classroom_today_ratio" /></p>
                 @if($capacity)
-                    <p class="mt-1 text-xl font-extrabold text-orange-600 tabular-nums">{{ $enrolled }}/{{ $capacity }}</p>
+                    <p class="mt-1 text-xl font-extrabold text-teal-600 tabular-nums">{{ $enrolled }}/{{ $capacity }}</p>
                 @else
-                    <p class="mt-1 text-xl font-extrabold text-orange-600 tabular-nums">{{ $enrolled }}</p>
+                    <p class="mt-1 text-xl font-extrabold text-teal-600 tabular-nums">{{ $enrolled }}</p>
                 @endif
                 @if($classroom->teacher?->name)
-                    <p class="text-[11px] text-orange-700/70 mt-1 truncate">{{ $classroom->teacher->name }}</p>
+                    <p class="text-[11px] text-teal-700/70 mt-1 truncate">{{ $classroom->teacher->name }}</p>
                 @endif
             </div>
         </div>
 
         <section class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-base sm:text-lg font-bold text-orange-950">
+                <h2 class="text-base sm:text-lg font-bold text-teal-950">
                     الأطفال
                     <x-info field="nursery.classroom_today_roster" />
                 </h2>
@@ -160,33 +160,33 @@
                     $correctStatus = $log?->status === 'absent' ? 'absent' : 'present';
                 @endphp
                 <article class="nursery-child-card"
-                         :class="selected[{{ (int) $child->id }}] ? 'border-orange-400 bg-orange-50/40' : ''">
+                         :class="selected[{{ (int) $child->id }}] ? 'border-teal-400 bg-teal-50/40' : ''">
                     <div class="flex flex-wrap items-center gap-3">
                         @if($selectable)
                             <button type="button"
-                                    class="shrink-0 w-9 h-9 rounded-lg border border-orange-200 flex items-center justify-center bg-white"
-                                    :class="selected[{{ (int) $child->id }}] ? 'bg-orange-50 border-orange-400' : ''"
+                                    class="shrink-0 w-9 h-9 rounded-lg border border-teal-200 flex items-center justify-center bg-white"
+                                    :class="selected[{{ (int) $child->id }}] ? 'bg-teal-50 border-teal-400' : ''"
                                     @click="toggle({{ (int) $child->id }})"
                                     :aria-pressed="!!selected[{{ (int) $child->id }}]"
                                     aria-label="تحديد {{ $child->name }}">
-                                <span class="block w-4 h-4 rounded border-2 border-orange-300 bg-white"
-                                      :class="selected[{{ (int) $child->id }}] ? 'bg-orange-600 border-orange-600' : 'border-orange-300 bg-white'"></span>
+                                <span class="block w-4 h-4 rounded border-2 border-teal-300 bg-white"
+                                      :class="selected[{{ (int) $child->id }}] ? 'bg-teal-600 border-teal-600' : 'border-teal-300 bg-white'"></span>
                             </button>
                         @endif
 
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                <a href="{{ route('nursery.children.show', $child) }}" class="font-bold text-orange-950 text-base hover:underline">{{ $child->name }}</a>
+                                <a href="{{ route('nursery.children.show', $child) }}" class="font-bold text-teal-950 text-base hover:underline">{{ $child->name }}</a>
                                 @if($child->code)
-                                    <span class="text-[11px] text-orange-800/55 tabular-nums">{{ $child->code }}</span>
+                                    <span class="text-[11px] text-teal-800/55 tabular-nums">{{ $child->code }}</span>
                                 @endif
                             </div>
                             @if($state === 'checked_out' && $log?->checked_in_at)
-                                <p class="text-xs text-orange-800/70 mt-0.5">
+                                <p class="text-xs text-teal-800/70 mt-0.5">
                                     حضور {{ $log->checked_in_at->format('H:i') }}
                                     @if($log->checked_out_at) · انصراف {{ $log->checked_out_at->format('H:i') }} @endif
                                     @if($isLate) · <span class="font-semibold text-amber-700">متأخر</span> @endif
-                                    @if($isEarly) · <span class="font-semibold text-orange-800">مغادرة مبكرة</span> @endif
+                                    @if($isEarly) · <span class="font-semibold text-teal-800">مغادرة مبكرة</span> @endif
                                 </p>
                             @elseif($state === 'present' && $isLate)
                                 <p class="text-xs font-semibold text-amber-700 mt-0.5">
@@ -210,7 +210,7 @@
                     </div>
 
                     @if($canManageChildAttendance || $canManageChildActivity)
-                        <div class="mt-3 pt-3 border-t border-orange-100/80 flex flex-wrap items-center gap-2">
+                        <div class="mt-3 pt-3 border-t border-teal-100/80 flex flex-wrap items-center gap-2">
                             @if($canManageChildAttendance)
                                 @if($state === 'not_yet')
                                     <form method="post" action="{{ route('nursery.attendance.check-in') }}" class="shrink-0">
@@ -225,7 +225,7 @@
                                         <button type="submit" class="nursery-btn nursery-btn-soft min-w-[6.5rem] px-5 py-2.5 text-sm">انصراف</button>
                                     </form>
                                 @else
-                                    <span class="inline-flex items-center rounded-lg border border-orange-100 bg-orange-50/60 px-3 py-2 text-xs font-semibold text-orange-800/75">تم الانصراف</span>
+                                    <span class="inline-flex items-center rounded-lg border border-teal-100 bg-teal-50/60 px-3 py-2 text-xs font-semibold text-teal-800/75">تم الانصراف</span>
                                 @endif
 
                                 @if($log)
@@ -250,7 +250,7 @@
                 </article>
             @empty
                 <div class="nursery-card p-8 text-center">
-                    <p class="text-orange-800/80 font-medium">لا يوجد أطفال مسجّلون في هذا الفصل.</p>
+                    <p class="text-teal-800/80 font-medium">لا يوجد أطفال مسجّلون في هذا الفصل.</p>
                 </div>
             @endforelse
         </section>
@@ -259,7 +259,7 @@
     @if($canManageChildAttendance)
         <div x-show="count() > 0" x-cloak class="nursery-today-bulk-bar">
             <div class="nursery-today-bulk-bar__inner nursery-card px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-orange-950 min-w-0">
+                <p class="text-sm font-semibold text-teal-950 min-w-0">
                     تم تحديد <span class="tabular-nums" x-text="count()"></span> أطفال
                 </p>
                 <div class="flex flex-wrap items-center gap-2 shrink-0">

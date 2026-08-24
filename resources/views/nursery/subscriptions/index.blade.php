@@ -6,8 +6,8 @@
 <div class="w-full space-y-5" dir="rtl" x-data="{ showAdd: {{ $errors->any() ? 'true' : 'false' }} }">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">الاشتراكات</h1>
-            <p class="text-sm text-orange-800/80 mt-1"><x-info field="nursery.nav_subscriptions" /> خطط الأطفال والمدفوعات</p>
+            <h1 class="text-2xl font-extrabold text-teal-950">الاشتراكات</h1>
+            <p class="text-sm text-teal-800/80 mt-1"><x-info field="nursery.nav_subscriptions" /> خطط الأطفال والمدفوعات</p>
         </div>
         @if($canManage)
             <button type="button" @click="showAdd = true" class="nursery-btn nursery-btn-primary">+ إضافة اشتراك</button>
@@ -151,7 +151,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $canManage ? 6 : 5 }}" class="!py-14 text-center text-orange-800/70">
+                                <td colspan="{{ $canManage ? 6 : 5 }}" class="!py-14 text-center text-teal-800/70">
                                     لا يوجد أي بيانات لعرضها!
                                     @if($canManage)
                                         <div class="mt-3"><button type="button" @click="showAdd = true" class="nursery-btn nursery-btn-primary">+ إضافة اشتراك</button></div>
@@ -163,13 +163,13 @@
                 </table>
             </div>
             @if($items->hasPages())
-                <div class="px-4 py-3 border-t border-orange-100">{{ $items->links() }}</div>
+                <div class="px-4 py-3 border-t border-teal-100">{{ $items->links() }}</div>
             @endif
         </section>
 
         <aside class="nursery-card p-4 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-lg font-bold text-orange-950">التذكيرات <x-info field="nursery.sub_reminders" /></h2>
+                <h2 class="text-lg font-bold text-teal-950">التذكيرات <x-info field="nursery.sub_reminders" /></h2>
                 @if($canManage && $reminderTab === 'payment')
                     <form method="post" action="{{ route('nursery.subscriptions.reminders.payment') }}">
                         @csrf
@@ -185,13 +185,13 @@
             </div>
             <ul class="space-y-2 max-h-80 overflow-y-auto">
                 @forelse($reminderTab === 'payment' ? $paymentReminders : $renewalReminders as $rem)
-                    <li class="p-3 rounded-lg bg-orange-50 border border-orange-100 text-sm">
-                        <p class="font-semibold text-orange-950">{{ $rem->child?->name }}</p>
-                        <p class="text-xs text-orange-800/75">{{ $rem->plan?->name }} · ينتهي {{ $rem->ends_on?->format('Y-m-d') }}</p>
+                    <li class="p-3 rounded-lg bg-teal-50 border border-teal-100 text-sm">
+                        <p class="font-semibold text-teal-950">{{ $rem->child?->name }}</p>
+                        <p class="text-xs text-teal-800/75">{{ $rem->plan?->name }} · ينتهي {{ $rem->ends_on?->format('Y-m-d') }}</p>
                         <p class="text-xs tabular-nums mt-1">{{ number_format($rem->finalAmount(), 2) }} ر.س @if(!$rem->is_paid)<span class="text-amber-700">· غير مدفوع</span>@endif</p>
                     </li>
                 @empty
-                    <li class="text-sm text-orange-800/70 text-center py-8">لا يوجد أي بيانات لعرضها!</li>
+                    <li class="text-sm text-teal-800/70 text-center py-8">لا يوجد أي بيانات لعرضها!</li>
                 @endforelse
             </ul>
         </aside>
@@ -201,8 +201,8 @@
     <div x-show="showAdd" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" @keydown.escape.window="showAdd = false">
         <div class="nursery-card w-full max-w-lg p-5 space-y-4 max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between gap-2">
-                <h3 class="text-lg font-bold text-orange-950">إضافة اشتراك</h3>
-                <button type="button" @click="showAdd = false" class="text-orange-800 text-xl leading-none">&times;</button>
+                <h3 class="text-lg font-bold text-teal-950">إضافة اشتراك</h3>
+                <button type="button" @click="showAdd = false" class="text-teal-800 text-xl leading-none">&times;</button>
             </div>
             @include('nursery.subscriptions.partials.form')
         </div>

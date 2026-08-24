@@ -10,8 +10,8 @@
 <div class="space-y-6" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">قائمة {{ niche_label('entities.child', 'الأطفال') }}</h1>
-            <p class="text-sm text-orange-800/80">
+            <h1 class="text-2xl font-extrabold text-teal-950">قائمة {{ niche_label('entities.child', 'الأطفال') }}</h1>
+            <p class="text-sm text-teal-800/80">
                 سجل الأطفال المسجّلين في الحضانة
                 <x-info field="nursery.nav_children" />
             </p>
@@ -32,16 +32,16 @@
 
     <form method="get" class="nursery-card p-4 flex flex-wrap gap-3 items-end">
         <div class="flex-1 min-w-[180px]">
-            <label class="block text-sm font-semibold text-orange-950 mb-1">
+            <label class="block text-sm font-semibold text-teal-950 mb-1">
                 بحث
                 <x-info field="nursery.filter_attendance_person" />
             </label>
             <input type="search" name="q" value="{{ $q }}"
-                   class="w-full rounded-xl border border-orange-200 px-3 py-2 text-sm"
+                   class="w-full rounded-xl border border-teal-200 px-3 py-2 text-sm"
                    placeholder="اسم الطفل، الكود، أو ولي الأمر">
         </div>
         <div class="min-w-[160px]">
-            <label class="block text-sm font-semibold text-orange-950 mb-1">
+            <label class="block text-sm font-semibold text-teal-950 mb-1">
                 الفصل
                 <x-info field="nursery.filter_classroom" />
             </label>
@@ -125,7 +125,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="!py-12 text-center text-orange-800/70">
+                            <td colspan="6" class="!py-12 text-center text-teal-800/70">
                                 <p class="font-medium">لا يوجد أي بيانات لعرضها</p>
                                 <p class="text-sm mt-2">أضف أول طفل داخل حضانتك من هذا القسم.</p>
                                 @if($canManageChildren)

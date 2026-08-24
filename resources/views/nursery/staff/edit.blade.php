@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="w-full space-y-4" dir="rtl">
-    <h1 class="text-2xl font-extrabold text-orange-950">تعديل الموظف</h1>
-    <p class="text-sm text-orange-800/80">{{ $employee->code }}</p>
+    <h1 class="text-2xl font-extrabold text-teal-950">تعديل الموظف</h1>
+    <p class="text-sm text-teal-800/80">{{ $employee->code }}</p>
     @include('nursery.partials.staff-form', [
         'employee' => $employee,
         'formAction' => route('nursery.staff.update', $employee),

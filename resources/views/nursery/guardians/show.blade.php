@@ -6,9 +6,9 @@
 <div class="w-full space-y-6" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <a href="{{ route('nursery.guardians.index') }}" class="text-sm text-orange-600 font-semibold hover:underline">← أولياء الأمور</a>
-            <h1 class="text-2xl font-extrabold text-orange-950 mt-1">{{ $guardian->name }}</h1>
-            <p class="text-sm text-orange-800/80"><x-info field="nursery.guardians_profile_intro" /></p>
+            <a href="{{ route('nursery.guardians.index') }}" class="text-sm text-teal-600 font-semibold hover:underline">← أولياء الأمور</a>
+            <h1 class="text-2xl font-extrabold text-teal-950 mt-1">{{ $guardian->name }}</h1>
+            <p class="text-sm text-teal-800/80"><x-info field="nursery.guardians_profile_intro" /></p>
         </div>
         @if($canManage && $portalEnabled)
             <div class="flex flex-wrap gap-2">
@@ -31,18 +31,18 @@
 
     <div class="grid gap-4 lg:grid-cols-3">
         <div class="nursery-card p-5 lg:col-span-1 space-y-3">
-            <h2 class="text-base font-bold text-orange-950">بيانات التواصل</h2>
+            <h2 class="text-base font-bold text-teal-950">بيانات التواصل</h2>
             <dl class="space-y-2 text-sm">
                 <div>
-                    <dt class="font-semibold text-orange-950">الجوال <x-info field="nursery.guardian_phone" /></dt>
-                    <dd class="text-orange-800/90 tabular-nums" dir="ltr">{{ $guardian->phone ?: '—' }}</dd>
+                    <dt class="font-semibold text-teal-950">الجوال <x-info field="nursery.guardian_phone" /></dt>
+                    <dd class="text-teal-800/90 tabular-nums" dir="ltr">{{ $guardian->phone ?: '—' }}</dd>
                 </div>
                 <div>
-                    <dt class="font-semibold text-orange-950">البريد <x-info field="nursery.guardian_email" /></dt>
-                    <dd class="text-orange-800/90" dir="ltr">{{ $guardian->email ?: '—' }}</dd>
+                    <dt class="font-semibold text-teal-950">البريد <x-info field="nursery.guardian_email" /></dt>
+                    <dd class="text-teal-800/90" dir="ltr">{{ $guardian->email ?: '—' }}</dd>
                 </div>
                 <div>
-                    <dt class="font-semibold text-orange-950">حالة البوابة <x-info field="nursery.guardians_portal_status" /></dt>
+                    <dt class="font-semibold text-teal-950">حالة البوابة <x-info field="nursery.guardians_portal_status" /></dt>
                     <dd>
                         @if($portalActive)
                             <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">مفعّل</span>
@@ -52,13 +52,13 @@
                     </dd>
                 </div>
                 <div>
-                    <dt class="font-semibold text-orange-950">آخر دخول <x-info field="nursery.guardians_last_login" /></dt>
-                    <dd class="text-orange-800/90">{{ $guardian->portal_last_login_at?->format('Y-m-d H:i') ?? '—' }}</dd>
+                    <dt class="font-semibold text-teal-950">آخر دخول <x-info field="nursery.guardians_last_login" /></dt>
+                    <dd class="text-teal-800/90">{{ $guardian->portal_last_login_at?->format('Y-m-d H:i') ?? '—' }}</dd>
                 </div>
                 @if($guardian->portal_invited_at)
                     <div>
-                        <dt class="font-semibold text-orange-950">تاريخ الدعوة</dt>
-                        <dd class="text-orange-800/90">{{ $guardian->portal_invited_at->format('Y-m-d H:i') }}</dd>
+                        <dt class="font-semibold text-teal-950">تاريخ الدعوة</dt>
+                        <dd class="text-teal-800/90">{{ $guardian->portal_invited_at->format('Y-m-d H:i') }}</dd>
                     </div>
                 @endif
             </dl>
@@ -75,7 +75,7 @@
                 </div>
             </div>
             @if($children->isEmpty())
-                <p class="text-sm text-orange-800/70 px-4 py-8 text-center">لا يوجد أطفال مرتبطون بهذا ولي الأمر.</p>
+                <p class="text-sm text-teal-800/70 px-4 py-8 text-center">لا يوجد أطفال مرتبطون بهذا ولي الأمر.</p>
             @else
                 <div class="overflow-x-auto">
                     <table class="nursery-table min-w-[480px]">

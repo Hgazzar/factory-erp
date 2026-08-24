@@ -8,7 +8,7 @@
     @csrf
 
     <div>
-        <label class="block text-sm font-semibold text-orange-950 mb-1">
+        <label class="block text-sm font-semibold text-teal-950 mb-1">
             اسم الطفل <span class="text-red-600">*</span>
             <x-info field="nursery.sub_child" />
         </label>
@@ -17,7 +17,7 @@
     </div>
 
     <div>
-        <label class="block text-sm font-semibold text-orange-950 mb-1">
+        <label class="block text-sm font-semibold text-teal-950 mb-1">
             اسم الخطة <span class="text-red-600">*</span>
             <x-info field="nursery.sub_plan" />
         </label>
@@ -26,43 +26,43 @@
     </div>
 
     <div>
-        <label class="block text-sm font-semibold text-orange-950 mb-1">
+        <label class="block text-sm font-semibold text-teal-950 mb-1">
             القيمة بعد الضريبة
             <x-info field="nursery.sub_amount_after_tax" />
         </label>
         <input type="number" name="amount_after_tax" id="subscription_amount_after_tax" step="0.01" min="0"
                value="{{ old('amount_after_tax') }}"
-               class="w-full rounded-lg border border-orange-200 px-3 py-2" dir="ltr" placeholder="تُملأ تلقائياً من الخطة">
+               class="w-full rounded-lg border border-teal-200 px-3 py-2" dir="ltr" placeholder="تُملأ تلقائياً من الخطة">
         @error('amount_after_tax')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div x-data="{ showDiscount: {{ old('discount_amount') ? 'true' : 'false' }} }">
-        <button type="button" @click="showDiscount = !showDiscount" class="text-sm font-semibold text-orange-600 hover:underline">+ إضافة خصم</button>
+        <button type="button" @click="showDiscount = !showDiscount" class="text-sm font-semibold text-teal-600 hover:underline">+ إضافة خصم</button>
         <div x-show="showDiscount" x-cloak class="mt-2">
-            <label class="block text-sm font-semibold text-orange-950 mb-1">قيمة الخصم <x-info field="nursery.sub_discount" /></label>
+            <label class="block text-sm font-semibold text-teal-950 mb-1">قيمة الخصم <x-info field="nursery.sub_discount" /></label>
             <input type="number" name="discount_amount" step="0.01" min="0" value="{{ old('discount_amount', 0) }}"
-                   class="w-full rounded-lg border border-orange-200 px-3 py-2" dir="ltr">
+                   class="w-full rounded-lg border border-teal-200 px-3 py-2" dir="ltr">
         </div>
     </div>
 
     <div>
-        <label class="block text-sm font-semibold text-orange-950 mb-1">ملاحظة <x-info field="nursery.sub_notes" /></label>
+        <label class="block text-sm font-semibold text-teal-950 mb-1">ملاحظة <x-info field="nursery.sub_notes" /></label>
         <textarea name="notes" rows="3" maxlength="500" placeholder="اكتب شيئاً..."
-                  class="w-full rounded-lg border border-orange-200 px-3 py-2 text-sm">{{ old('notes') }}</textarea>
+                  class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm">{{ old('notes') }}</textarea>
         @error('notes')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
     <div class="grid grid-cols-2 gap-3">
         <div>
-            <label class="block text-sm font-semibold text-orange-950 mb-1">تاريخ البداية <span class="text-red-600">*</span></label>
+            <label class="block text-sm font-semibold text-teal-950 mb-1">تاريخ البداية <span class="text-red-600">*</span></label>
             <input type="date" name="starts_on" value="{{ old('starts_on', now()->format('Y-m-d')) }}" required
-                   class="w-full rounded-lg border border-orange-200 px-3 py-2">
+                   class="w-full rounded-lg border border-teal-200 px-3 py-2">
             @error('starts_on')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
         </div>
         <div>
-            <label class="block text-sm font-semibold text-orange-950 mb-1">تاريخ الانتهاء <span class="text-red-600">*</span></label>
+            <label class="block text-sm font-semibold text-teal-950 mb-1">تاريخ الانتهاء <span class="text-red-600">*</span></label>
             <input type="date" name="ends_on" value="{{ old('ends_on') }}" required
-                   class="w-full rounded-lg border border-orange-200 px-3 py-2">
+                   class="w-full rounded-lg border border-teal-200 px-3 py-2">
             @error('ends_on')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
         </div>
     </div>
@@ -72,7 +72,7 @@
             <input type="checkbox" name="is_paid" value="1" class="nursery-switch-input" @checked(old('is_paid'))>
             <span class="nursery-switch-track"></span>
         </label>
-        <span class="text-sm font-semibold text-orange-950">الاشتراك مدفوع <x-info field="nursery.sub_is_paid" /></span>
+        <span class="text-sm font-semibold text-teal-950">الاشتراك مدفوع <x-info field="nursery.sub_is_paid" /></span>
     </div>
 
     <div class="flex gap-2 justify-end pt-2">

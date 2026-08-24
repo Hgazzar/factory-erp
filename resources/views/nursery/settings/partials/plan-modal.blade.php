@@ -1,6 +1,6 @@
 <div x-show="showAdd" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" @keydown.escape.window="showAdd = false">
     <div class="nursery-card w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 space-y-4" @click.outside="showAdd = false">
-        <h3 class="text-lg font-bold text-orange-950" x-text="editPlan ? 'تعديل خطة اشتراك' : 'إضافة خطة اشتراك'"></h3>
+        <h3 class="text-lg font-bold text-teal-950" x-text="editPlan ? 'تعديل خطة اشتراك' : 'إضافة خطة اشتراك'"></h3>
 
         @foreach($plans as $plan)
             <template x-if="editPlan === {{ $plan->id }}">

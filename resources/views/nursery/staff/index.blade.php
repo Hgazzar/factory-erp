@@ -7,8 +7,8 @@
 <div class="w-full space-y-6" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">طاقم العمل</h1>
-            <p class="text-sm text-orange-800/80"><x-info field="nursery.nav_staff" /> إدارة الموظفين وصلاحياتهم</p>
+            <h1 class="text-2xl font-extrabold text-teal-950">طاقم العمل</h1>
+            <p class="text-sm text-teal-800/80"><x-info field="nursery.nav_staff" /> إدارة الموظفين وصلاحياتهم</p>
         </div>
         @if($canManage)
             <a href="{{ route('nursery.staff.create') }}" class="nursery-btn nursery-btn-primary">+ إضافة موظف</a>
@@ -26,16 +26,16 @@
 
     <form method="get" class="nursery-card p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
         <div class="lg:col-span-2">
-            <label class="block text-sm font-semibold text-orange-950 mb-1">بحث <x-info field="nursery.staff_search" /></label>
+            <label class="block text-sm font-semibold text-teal-950 mb-1">بحث <x-info field="nursery.staff_search" /></label>
             <input type="search" name="q" value="{{ $q }}" placeholder="الاسم، البريد، الجوال، الكود"
-                   class="w-full rounded-xl border border-orange-200 px-3 py-2 text-sm">
+                   class="w-full rounded-xl border border-teal-200 px-3 py-2 text-sm">
         </div>
         <div>
-            <label class="block text-sm font-semibold text-orange-950 mb-1">الدور الوظيفي <x-info field="nursery.staff_job_role" /></label>
+            <label class="block text-sm font-semibold text-teal-950 mb-1">الدور الوظيفي <x-info field="nursery.staff_job_role" /></label>
             <x-custom-select name="job_role" :options="$jobRoleOptions" :value="$jobRole" :searchable="true" :fixed-panel="true" empty-label="— كل الأدوار —" />
         </div>
         <div>
-            <label class="block text-sm font-semibold text-orange-950 mb-1">الحالة <x-info field="nursery.staff_status" /></label>
+            <label class="block text-sm font-semibold text-teal-950 mb-1">الحالة <x-info field="nursery.staff_status" /></label>
             <x-custom-select name="status"
                 :options="[['value' => 'active', 'label' => 'نشط'], ['value' => 'inactive', 'label' => 'مؤرشف']]"
                 :value="$status" :searchable="false" :fixed-panel="true" empty-label="الجميع" />
@@ -113,10 +113,10 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 6 : 5 }}" class="!py-12 text-center text-orange-800/70">
+                            <td colspan="{{ $canManage ? 6 : 5 }}" class="!py-12 text-center text-teal-800/70">
                                 لا يوجد موظفون.
                                 @if($canManage)
-                                    <a href="{{ route('nursery.staff.create') }}" class="text-orange-600 font-semibold underline">إضافة موظف</a>
+                                    <a href="{{ route('nursery.staff.create') }}" class="text-teal-600 font-semibold underline">إضافة موظف</a>
                                 @endif
                             </td>
                         </tr>

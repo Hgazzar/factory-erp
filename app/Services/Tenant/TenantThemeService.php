@@ -23,9 +23,15 @@ final class TenantThemeService
 
     public const MODULE_TENANT = 'tenant';
 
-    public const DEFAULT_PRIMARY = '#f97316';
+    public const DEFAULT_PRIMARY = '#0F766E';
 
-    public const DEFAULT_SECONDARY = '#ffedd5';
+    public const DEFAULT_SECONDARY = '#F0FDFA';
+
+    /** @var list<string> previous system nursery oranges — treat as unset so tenants pick up Teal/Mint */
+    private const LEGACY_NURSERY_PRIMARIES = ['#f97316', '#ea580c', '#c2410c'];
+
+    /** @var list<string> */
+    private const LEGACY_NURSERY_SECONDARIES = ['#ffedd5', '#fff7ed', '#fed7aa'];
 
     public function __construct(
         private readonly NicheCatalog $nicheCatalog,
@@ -99,6 +105,11 @@ final class TenantThemeService
             $storedSecondary ??= $setting?->theme_secondary_color;
         }
 
+        if ($module === self::MODULE_NURSERY) {
+            $storedPrimary = $this->nullIfLegacyNurseryColor($storedPrimary, self::LEGACY_NURSERY_PRIMARIES);
+            $storedSecondary = $this->nullIfLegacyNurseryColor($storedSecondary, self::LEGACY_NURSERY_SECONDARIES);
+        }
+
         return $this->cssVariables(
             $storedPrimary,
             $storedSecondary,
@@ -106,6 +117,25 @@ final class TenantThemeService
             $defaults['secondary'],
             $this->cssPrefixesForModule($module),
         );
+    }
+
+    /**
+     * @param  list<string>  $legacy
+     */
+    private function nullIfLegacyNurseryColor(?string $hex, array $legacy): ?string
+    {
+        $normalized = self::normalizeHex($hex);
+        if ($normalized === null) {
+            return null;
+        }
+
+        foreach ($legacy as $old) {
+            if (strcasecmp($normalized, $old) === 0) {
+                return null;
+            }
+        }
+
+        return $normalized;
     }
 
     /**

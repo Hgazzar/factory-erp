@@ -7,14 +7,14 @@
     $otpStep = session('otp_sent') ? 'verify' : 'phone';
 @endphp
 <div class="np-card">
-    <h2 class="text-lg font-bold text-orange-950 mb-1">مرحباً بك</h2>
-    <p class="text-sm text-orange-800/80 mb-4">
+    <h2 class="text-lg font-bold text-teal-950 mb-1">مرحباً بك</h2>
+    <p class="text-sm text-teal-800/80 mb-4">
         سجّل دخولك برقم الجوال المسجّل لدى الحضانة.
         <x-info field="nursery.portal_login_phone" />
     </p>
 
     @if($otpLogOnly)
-        <p class="text-xs bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 mb-4 text-orange-800">
+        <p class="text-xs bg-teal-50 border border-teal-100 rounded-lg px-3 py-2 mb-4 text-teal-800">
             بيئة التطوير: رمز OTP ثابت <strong dir="ltr">{{ config('nursery.portal.dev_otp_code', '123456') }}</strong> — يُسجَّل أيضاً في الـ log.
         </p>
     @endif

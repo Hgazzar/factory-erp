@@ -23,7 +23,7 @@
         td { color: #475569; }
         tr:last-child td { border-bottom: none; }
         .present { color: #15803d; font-weight: 700; }
-        .leave { color: #c2410c; font-weight: 700; }
+        .leave { color: #115E59; font-weight: 700; }
         .absent { color: #b91c1c; font-weight: 700; }
         .pill {
             display: inline-flex; align-items: center; justify-content: center;
@@ -31,13 +31,13 @@
             border: 1px solid transparent;
         }
         .pill-present { background: #dcfce7; color: #15803d; border-color: #86efac; }
-        .pill-leave { background: #ffedd5; color: #c2410c; border-color: #fdba74; }
+        .pill-leave { background: #F0FDFA; color: #115E59; border-color: #5EEAD4; }
         .pill-absent { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
         @media print { body { padding: 0; background: #fff; } .no-print { display: none; } .card { box-shadow: none; } }
     </style>
 </head>
 <body>
-    <button class="no-print" onclick="window.print()" style="margin-bottom:1rem;padding:0.55rem 1.1rem;background:#f97316;color:#fff;border:0;border-radius:0.75rem;cursor:pointer;font-weight:700;">طباعة</button>
+    <button class="no-print" onclick="window.print()" style="margin-bottom:1rem;padding:0.55rem 1.1rem;background:#0F766E;color:#fff;border:0;border-radius:0.75rem;cursor:pointer;font-weight:700;">طباعة</button>
     <h1>تقرير حضور {{ $report['scope'] === 'children' ? 'الأطفال' : 'طاقم العمل' }}</h1>
     <p class="meta">من {{ $report['from'] }} إلى {{ $report['to'] }}</p>
 

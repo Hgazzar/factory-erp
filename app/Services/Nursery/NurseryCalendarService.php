@@ -76,7 +76,7 @@ final class NurseryCalendarService
     public function toFullCalendarEvents(Collection $entries): array
     {
         return $entries->map(function (CalendarEntry $entry): array {
-            $color = CalendarEntry::typeColors()[$entry->entry_type] ?? '#f97316';
+            $color = CalendarEntry::typeColors()[$entry->entry_type] ?? '#0F766E';
 
             return [
                 'id' => (string) $entry->id,

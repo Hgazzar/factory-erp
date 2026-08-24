@@ -6,8 +6,8 @@
 <div class="w-full space-y-6" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">أولياء الأمور</h1>
-            <p class="text-sm text-orange-800/80">
+            <h1 class="text-2xl font-extrabold text-teal-950">أولياء الأمور</h1>
+            <p class="text-sm text-teal-800/80">
                 <x-info field="nursery.guardians_admin_intro" />
                 إدارة بوابة أولياء الأمور والدعوات
             </p>
@@ -20,7 +20,7 @@
     @unless($portalEnabled)
         <div class="nursery-card p-4 border-amber-200 bg-amber-50/60 text-sm text-amber-950">
             ميزة بوابة أولياء الأمور غير مفعّلة.
-            <a href="{{ route('nursery.settings.index', ['tab' => 'features']) }}" class="font-semibold text-orange-700 underline">فعّلها من إعدادات الحضانة → مزايا الحضانة</a>
+            <a href="{{ route('nursery.settings.index', ['tab' => 'features']) }}" class="font-semibold text-teal-700 underline">فعّلها من إعدادات الحضانة → مزايا الحضانة</a>
         </div>
     @endunless
 
@@ -35,13 +35,13 @@
 
     <form method="get" class="nursery-card p-4 flex flex-wrap gap-3 items-end">
         <div class="flex-1 min-w-[200px]">
-            <label class="block text-sm font-semibold text-orange-950 mb-1">
+            <label class="block text-sm font-semibold text-teal-950 mb-1">
                 بحث
                 <x-info field="nursery.guardians_search" />
             </label>
             <input type="search" name="q" value="{{ $q }}"
                    placeholder="اسم ولي الأمر أو رقم الجوال"
-                   class="w-full rounded-lg border border-orange-200 px-3 py-2 text-sm">
+                   class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm">
         </div>
         <button type="submit" class="nursery-btn nursery-btn-soft">تطبيق</button>
         @if($q !== '')
@@ -127,10 +127,10 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="!py-12 text-center text-orange-800/70">
+                            <td colspan="7" class="!py-12 text-center text-teal-800/70">
                                 لا يوجد أولياء أمور مسجّلون.
                                 @if($canManage)
-                                    <a href="{{ route('nursery.children.create') }}" class="text-orange-600 font-semibold underline">سجّل طفلاً جديداً</a>
+                                    <a href="{{ route('nursery.children.create') }}" class="text-teal-600 font-semibold underline">سجّل طفلاً جديداً</a>
                                 @endif
                             </td>
                         </tr>

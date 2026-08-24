@@ -6,8 +6,8 @@
 <div class="w-full space-y-6" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">الوحدات</h1>
-            <p class="text-sm text-orange-800/80">
+            <h1 class="text-2xl font-extrabold text-teal-950">الوحدات</h1>
+            <p class="text-sm text-teal-800/80">
                 وحدات المنهج والأهداف التعليمية
                 <x-info field="nursery.nav_units" />
             </p>
@@ -29,15 +29,15 @@
     <form method="get" class="nursery-card p-4 flex flex-wrap gap-3 items-end">
         <input type="hidden" name="tab" value="{{ $tab }}">
         <div class="flex-1 min-w-[12rem]">
-            <label class="block text-sm font-semibold text-orange-950 mb-1">
+            <label class="block text-sm font-semibold text-teal-950 mb-1">
                 بحث
                 <x-info field="nursery.unit_search" />
             </label>
             <input type="search" name="q" value="{{ $q }}" placeholder="اسم الوحدة"
-                   class="w-full rounded-lg border border-orange-200 px-3 py-2 text-sm">
+                   class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm">
         </div>
         <div class="w-full sm:w-48">
-            <label class="block text-sm font-semibold text-orange-950 mb-1">
+            <label class="block text-sm font-semibold text-teal-950 mb-1">
                 الترتيب
                 <x-info field="nursery.unit_sort" />
             </label>
@@ -124,7 +124,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 5 : 4 }}" class="!py-12 text-center text-orange-800/70">
+                            <td colspan="{{ $canManage ? 5 : 4 }}" class="!py-12 text-center text-teal-800/70">
                                 <p class="font-medium">لا توجد وحدات لعرضها!</p>
                                 <p class="text-sm mt-2">أضف أول وحدة منهجية لحضانتك.</p>
                                 @if($canManage)

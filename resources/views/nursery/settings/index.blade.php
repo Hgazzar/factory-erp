@@ -39,8 +39,8 @@
 @endphp
 <div class="w-full space-y-5" dir="rtl">
     <div>
-        <h1 class="text-2xl font-extrabold text-orange-950">الإعدادات</h1>
-        <p class="text-sm text-orange-800/80 mt-1">
+        <h1 class="text-2xl font-extrabold text-teal-950">الإعدادات</h1>
+        <p class="text-sm text-teal-800/80 mt-1">
             <x-info field="nursery.nav_settings" />
             إعدادات خاصة بحضانتك فقط — {{ $settings->portalDisplayName() }}
         </p>

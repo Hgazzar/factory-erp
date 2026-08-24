@@ -6,8 +6,8 @@
 <div class="w-full space-y-4" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">التقويم</h1>
-            <p class="text-sm text-orange-800/80"><x-info field="nursery.nav_calendar" /> جدولة الدروس والأنشطة والإعلانات</p>
+            <h1 class="text-2xl font-extrabold text-teal-950">التقويم</h1>
+            <p class="text-sm text-teal-800/80"><x-info field="nursery.nav_calendar" /> جدولة الدروس والأنشطة والإعلانات</p>
         </div>
         @if($canManage)
             <a href="{{ route('nursery.calendar.create') }}" class="nursery-btn nursery-btn-primary">+ إضافة للتقويم</a>
@@ -20,7 +20,7 @@
 
     <form method="get" id="nurseryCalendarFilters" class="nursery-card p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
         <div>
-            <label class="block text-sm font-semibold text-orange-950 mb-1">
+            <label class="block text-sm font-semibold text-teal-950 mb-1">
                 الفصل
                 <x-info field="nursery.calendar_filter_classroom" />
             </label>
@@ -28,7 +28,7 @@
                 :value="(string) ($classroomFilter ?? '')" :searchable="true" />
         </div>
         <div>
-            <label class="block text-sm font-semibold text-orange-950 mb-1">
+            <label class="block text-sm font-semibold text-teal-950 mb-1">
                 فرز بحسب
                 <x-info field="nursery.calendar_filter_type" />
             </label>

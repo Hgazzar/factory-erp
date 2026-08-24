@@ -3,8 +3,8 @@
     <div class="nursery-card w-full max-w-md p-5 space-y-4" @click.outside="closeBulkConfirm()">
         <div class="flex items-start justify-between gap-2">
             <div>
-                <h3 class="text-lg font-bold text-orange-950" x-text="bulkAction === 'check-out' ? 'تأكيد الانصراف' : 'تأكيد الحضور'"></h3>
-                <p class="text-sm text-orange-800/80 mt-1"
+                <h3 class="text-lg font-bold text-teal-950" x-text="bulkAction === 'check-out' ? 'تأكيد الانصراف' : 'تأكيد الحضور'"></h3>
+                <p class="text-sm text-teal-800/80 mt-1"
                    x-text="bulkAction === 'check-out'
                        ? ('هل تريد تسجيل انصراف ' + selectedCheckOutIds().length + ' طفلًا؟')
                        : ('هل تريد تسجيل حضور ' + selectedCheckInIds().length + ' طفلًا؟')"></p>

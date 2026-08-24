@@ -2,7 +2,7 @@
     'branding' => $settings->branding(),
     'hintPrefix' => 'nursery',
     'entityLabel' => 'الحضانة',
-    'accent' => 'orange',
+    'accent' => 'teal',
     'submitRoute' => route('nursery.settings.branding.update'),
     'canManage' => $canManage,
     'portalUrl' => $portalUrl ?? null,

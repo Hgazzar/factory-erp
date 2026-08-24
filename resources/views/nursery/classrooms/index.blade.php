@@ -6,8 +6,8 @@
 <div class="w-full space-y-6" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">{{ niche_label('entities.classroom', 'الفصول') }}</h1>
-            <p class="text-sm text-orange-800/80">
+            <h1 class="text-2xl font-extrabold text-teal-950">{{ niche_label('entities.classroom', 'الفصول') }}</h1>
+            <p class="text-sm text-teal-800/80">
                 إدارة {{ niche_label('entities.classroom', 'الفصول') }}
                 <x-info field="nursery.nav_classrooms" />
             </p>
@@ -107,7 +107,7 @@
                         </tr>
                     @empty
                         <tr>
-                                <td colspan="6" class="!py-12 text-center text-orange-800/70">
+                                <td colspan="6" class="!py-12 text-center text-teal-800/70">
                                 <p class="font-medium">لا يوجد أي فصول لعرضها!</p>
                                 <p class="text-sm mt-2">أضف أول فصل لحضانتك داخل هذا القسم.</p>
                                 @if($canManage)

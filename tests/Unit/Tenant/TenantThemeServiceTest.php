@@ -21,8 +21,8 @@ final class TenantThemeServiceTest extends TestCase
             ['clinic', 'cp'],
         );
         $nurseryVars = app(TenantThemeService::class)->cssVariables(
-            '#f97316',
-            '#ffedd5',
+            '#0F766E',
+            '#F0FDFA',
             null,
             null,
             ['nursery', 'np'],
@@ -31,7 +31,7 @@ final class TenantThemeServiceTest extends TestCase
         $this->assertSame('#0d9488', $clinicVars['--clinic-primary']);
         $this->assertSame('#0d9488', $clinicVars['--cp-primary']);
         $this->assertArrayNotHasKey('--nursery-primary', $clinicVars);
-        $this->assertSame('#f97316', $nurseryVars['--nursery-primary']);
+        $this->assertSame('#0f766e', $nurseryVars['--nursery-primary']);
         $this->assertArrayNotHasKey('--clinic-primary', $nurseryVars);
         $this->assertContains($clinicVars['--clinic-on-primary'], ['#ffffff', '#1c1917']);
     }
@@ -43,5 +43,16 @@ final class TenantThemeServiceTest extends TestCase
 
         $this->assertSame('#2563eb', $vars['--tenant-primary']);
         $this->assertSame('#dbeafe', $vars['--tenant-secondary']);
+    }
+
+    #[Test]
+    public function nursery_config_defaults_are_teal_mint(): void
+    {
+        $pair = config('tenant.branding.defaults.nurseries');
+
+        $this->assertSame('#0F766E', $pair['primary']);
+        $this->assertSame('#F0FDFA', $pair['secondary']);
+        $this->assertSame('#0F766E', TenantThemeService::DEFAULT_PRIMARY);
+        $this->assertSame('#F0FDFA', TenantThemeService::DEFAULT_SECONDARY);
     }
 }

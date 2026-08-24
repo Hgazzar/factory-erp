@@ -20,12 +20,12 @@
 <div class="w-full space-y-6" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">لوحة التحكم</h1>
-            <p class="mt-1 text-sm text-orange-800/80">
+            <h1 class="text-2xl font-extrabold text-teal-950">لوحة التحكم</h1>
+            <p class="mt-1 text-sm text-teal-800/80">
                 ملخص يوم الحضانة والأرقام الأساسية
                 <x-info field="nursery.dashboard_intro" />
             </p>
-            <p class="text-xs text-orange-700/70 mt-1">تاريخ اليوم: {{ $board['date'] }}</p>
+            <p class="text-xs text-teal-700/70 mt-1">تاريخ اليوم: {{ $board['date'] }}</p>
         </div>
         <a href="{{ route('nursery.attendance.index') }}" class="nursery-btn nursery-btn-primary">
             تسجيل حضور سريع
@@ -99,17 +99,17 @@
             @if(!empty($portalUrl))
                 <div class="flex flex-col sm:flex-row sm:items-stretch gap-4">
                     @if(!empty($qrDataUri))
-                        <div class="shrink-0 flex flex-col items-center gap-2 rounded-2xl border border-orange-100 bg-orange-50/40 p-3 self-start">
+                        <div class="shrink-0 flex flex-col items-center gap-2 rounded-2xl border border-teal-100 bg-teal-50/40 p-3 self-start">
                             <img src="{{ $qrDataUri }}" alt="QR بوابة أولياء الأمور" class="h-24 w-24 sm:h-28 sm:w-28 rounded-md">
                             <a href="{{ route('nursery.portal.qr-download') }}" class="nursery-btn nursery-btn-soft text-xs py-1.5 px-3 w-full justify-center">تحميل QR</a>
                         </div>
                     @endif
 
                     <div class="min-w-0 flex-1 flex flex-col gap-3" x-data="{ copied: false }">
-                        <div class="rounded-2xl border border-orange-100 bg-orange-50/30 p-3">
-                            <p class="text-[11px] font-semibold text-orange-800/70 mb-2">رابط البوابة</p>
-                            <div class="flex flex-wrap items-center gap-2 rounded-xl border border-orange-100 bg-white px-3 py-2">
-                                <p class="min-w-0 flex-1 text-sm text-orange-950 font-medium break-all leading-relaxed" dir="ltr">{{ $portalUrl }}</p>
+                        <div class="rounded-2xl border border-teal-100 bg-teal-50/30 p-3">
+                            <p class="text-[11px] font-semibold text-teal-800/70 mb-2">رابط البوابة</p>
+                            <div class="flex flex-wrap items-center gap-2 rounded-xl border border-teal-100 bg-white px-3 py-2">
+                                <p class="min-w-0 flex-1 text-sm text-teal-950 font-medium break-all leading-relaxed" dir="ltr">{{ $portalUrl }}</p>
                                 <button type="button"
                                         class="nursery-btn nursery-btn-soft text-xs py-2 px-3 shrink-0 relative"
                                         title="نسخ الرابط"
@@ -161,8 +161,8 @@
                 <div class="nursery-list-row">
                     <x-nursery-person-avatar :name="$child->name" />
                     <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-orange-950 truncate">{{ $child->name }}</p>
-                        <p class="text-xs text-orange-800/70 truncate">
+                        <p class="font-semibold text-teal-950 truncate">{{ $child->name }}</p>
+                        <p class="text-xs text-teal-800/70 truncate">
                             الفصل: {{ $child->activeEnrollment?->classroom?->name ?? 'غير معين لفصل' }}
                         </p>
                     </div>
@@ -175,7 +175,7 @@
                     @endif
                 </div>
             @empty
-                <p class="text-sm text-orange-800/60 py-6 text-center">كل الأطفال سجّلوا حضوراً</p>
+                <p class="text-sm text-teal-800/60 py-6 text-center">كل الأطفال سجّلوا حضوراً</p>
             @endforelse
         </section>
 
@@ -195,7 +195,7 @@
                 <div class="nursery-list-row">
                     <x-nursery-person-avatar :name="$row['child']->name" class="bg-emerald-100 text-emerald-700" />
                     <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-orange-950 truncate">{{ $row['child']->name }}</p>
+                        <p class="font-semibold text-teal-950 truncate">{{ $row['child']->name }}</p>
                         <p class="text-xs text-emerald-700">وقت الحضور: {{ $row['log']->checked_in_at?->format('H:i') }}</p>
                     </div>
                     @if($canManageChildAttendance)
@@ -207,7 +207,7 @@
                     @endif
                 </div>
             @empty
-                <p class="text-sm text-orange-800/60 py-6 text-center">لا يوجد أطفال داخل الحضانة.</p>
+                <p class="text-sm text-teal-800/60 py-6 text-center">لا يوجد أطفال داخل الحضانة.</p>
             @endforelse
         </section>
 
@@ -227,14 +227,14 @@
                 <div class="nursery-list-row">
                     <x-nursery-person-avatar :name="$row['child']->name" class="bg-sky-100 text-sky-700" />
                     <div class="min-w-0 flex-1">
-                        <p class="font-semibold text-orange-950 truncate">{{ $row['child']->name }}</p>
+                        <p class="font-semibold text-teal-950 truncate">{{ $row['child']->name }}</p>
                         <p class="text-xs text-sky-700">
                             انصراف: {{ $row['log']->checked_out_at?->format('H:i') ?? '—' }}
                         </p>
                     </div>
                 </div>
             @empty
-                <p class="text-sm text-orange-800/60 py-6 text-center">لا يوجد انصراف مسجّل بعد.</p>
+                <p class="text-sm text-teal-800/60 py-6 text-center">لا يوجد انصراف مسجّل بعد.</p>
             @endforelse
         </section>
     </div>

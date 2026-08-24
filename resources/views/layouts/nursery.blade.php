@@ -313,8 +313,8 @@
             text-decoration: none;
         }
         a.nursery-admina-stat__menu:hover {
-            background: #fff7ed;
-            color: #ea580c;
+            background: var(--nursery-secondary, #F0FDFA);
+            color: var(--nursery-primary, #0F766E);
         }
         .nursery-admina-stat__body {
             display: flex;
@@ -419,8 +419,8 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            background: #FFF1E8;
-            color: #EA580C;
+            background: var(--nursery-secondary, #F0FDFA);
+            color: var(--nursery-primary, #0F766E);
         }
         .nursery-panel-head__title {
             margin: 0;
@@ -581,8 +581,8 @@
             color: #64748b;
         }
         .nursery-status-pill--warning {
-            background: #fff7ed;
-            color: #ea580c;
+            background: #fffbeb;
+            color: #d97706;
         }
         .nursery-table-card .erp-actions-trigger,
         .nursery-table .erp-actions-trigger {
@@ -596,9 +596,9 @@
         }
         .nursery-table-card .erp-actions-trigger:hover,
         .nursery-table .erp-actions-trigger:hover {
-            background: #fff7ed;
-            border-color: rgba(249, 115, 22, 0.25);
-            color: #ea580c;
+            background: var(--nursery-secondary, #F0FDFA);
+            border-color: rgba(15, 118, 110, 0.25);
+            color: var(--nursery-primary, #0F766E);
         }
         .nursery-table td.tabular-nums,
         .nursery-table .tabular-nums {
@@ -641,8 +641,8 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            background: #FFF1E8;
-            color: #EA580C;
+            background: var(--nursery-secondary, #F0FDFA);
+            color: var(--nursery-primary, #0F766E);
         }
         .nursery-chart-panel__title {
             margin: 0;
@@ -665,7 +665,7 @@
             text-decoration: none;
             padding: 0.35rem 0.7rem;
             border-radius: 999px;
-            background: #FFF1E8;
+            background: var(--nursery-secondary, #F0FDFA);
         }
         .nursery-chart-panel__link:hover { text-decoration: underline; }
         .nursery-chart-panel__split {
@@ -1158,8 +1158,8 @@
                         </svg>
                     </button>
                     <div class="min-w-0 flex-1">
-                        <p class="text-sm font-bold text-orange-950 truncate">{{ niche_module_label('nursery') }}</p>
-                        <p class="text-xs text-orange-800/70 truncate">@yield('topbar_subtitle', 'إدارة الحضانة اليومية')</p>
+                        <p class="text-sm font-bold text-teal-950 truncate">{{ niche_module_label('nursery') }}</p>
+                        <p class="text-xs text-teal-800/70 truncate">@yield('topbar_subtitle', 'إدارة الحضانة اليومية')</p>
                     </div>
                 </div>
                 <div class="md:hidden flex items-center gap-3 px-4 py-2 bg-white shrink-0" style="border-bottom: 1px solid var(--nursery-border);">

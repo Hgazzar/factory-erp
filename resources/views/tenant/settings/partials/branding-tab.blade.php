@@ -1,7 +1,5 @@
 @php
     $branding = $branding ?? [];
-    $themePrimary = old('theme_primary_color', $branding['theme_primary'] ?? '#f97316');
-    $themeSecondary = old('theme_secondary_color', $branding['theme_secondary'] ?? '#ffedd5');
     $hintPrefix = $hintPrefix ?? 'tenant';
     $entityLabel = $entityLabel ?? 'المنشأة';
     $portalUrl = $portalUrl ?? null;
@@ -9,6 +7,10 @@
     $canManage = $canManage ?? true;
     $accent = $accent ?? 'orange';
     $isTeal = $accent === 'teal';
+    $defaultPrimary = $isTeal ? '#0F766E' : '#f97316';
+    $defaultSecondary = $isTeal ? '#F0FDFA' : '#ffedd5';
+    $themePrimary = old('theme_primary_color', $branding['theme_primary'] ?? $defaultPrimary);
+    $themeSecondary = old('theme_secondary_color', $branding['theme_secondary'] ?? $defaultSecondary);
     $cardClass = $cardClass ?? ($isTeal ? 'clinic-card' : 'nursery-card');
     $btnPrimaryClass = $btnPrimaryClass ?? ($isTeal ? 'clinic-btn clinic-btn-primary' : 'nursery-btn nursery-btn-primary');
     $btnSoftClass = $btnSoftClass ?? ($isTeal ? 'clinic-btn clinic-btn-outline' : 'nursery-btn nursery-btn-soft');

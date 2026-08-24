@@ -49,30 +49,20 @@ final class TenantBrandingService
         $setting = TenantSetting::query()->where('tenant_user_id', $tenantUserId)->first();
         $defaults = $this->themeService->defaultColorsForModule($module, $tenantUserId);
         $fallbackName = $this->resolveFallbackName($tenantUserId, $fallbackName);
-        [$primaryCol, $secondaryCol] = $this->themeService->moduleColorColumns($module);
 
         $display = trim((string) ($setting?->display_name ?? ''));
         $displayName = $display !== '' ? $display : $fallbackName;
 
-        $storedPrimary = $setting?->{$primaryCol} ?? ($module === self::MODULE_TENANT ? $setting?->theme_primary_color : null);
-        $storedSecondary = $setting?->{$secondaryCol} ?? ($module === self::MODULE_TENANT ? $setting?->theme_secondary_color : null);
-
-        $primary = TenantThemeService::normalizeHex($storedPrimary) ?? $defaults['primary'];
-        $secondary = TenantThemeService::normalizeHex($storedSecondary) ?? $defaults['secondary'];
+        $themeVars = $this->themeService->cssVariablesForTenant($tenantUserId, $module);
+        $prefix = $this->themeService->cssPrefixesForModule($module)[0] ?? 'tenant';
 
         return [
             'display_name' => $displayName,
             'logo_url' => $this->logoUrl($setting),
             'fallback_name' => $fallbackName,
-            'theme_vars' => $this->themeService->cssVariables(
-                $storedPrimary,
-                $storedSecondary,
-                $defaults['primary'],
-                $defaults['secondary'],
-                $this->themeService->cssPrefixesForModule($module),
-            ),
-            'theme_primary' => $primary,
-            'theme_secondary' => $secondary,
+            'theme_vars' => $themeVars,
+            'theme_primary' => $themeVars["--{$prefix}-primary"] ?? $defaults['primary'],
+            'theme_secondary' => $themeVars["--{$prefix}-secondary"] ?? $defaults['secondary'],
             'module' => $module,
         ];
     }

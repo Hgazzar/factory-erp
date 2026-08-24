@@ -24,8 +24,8 @@
      }">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">الحضور والانصراف</h1>
-            <p class="text-sm text-orange-800/80 mt-1"><x-info field="nursery.nav_attendance" /> تسجيل يومي ومتابعة أسبوعية</p>
+            <h1 class="text-2xl font-extrabold text-teal-950">الحضور والانصراف</h1>
+            <p class="text-sm text-teal-800/80 mt-1"><x-info field="nursery.nav_attendance" /> تسجيل يومي ومتابعة أسبوعية</p>
         </div>
     </div>
 

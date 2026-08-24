@@ -62,17 +62,17 @@
         <section class="nursery-card p-4 lg:col-span-1">
             <h2 class="font-bold text-amber-700 mb-2">بانتظار الحضور ({{ $staffBoard['not_yet']->count() }})</h2>
             @forelse($staffBoard['not_yet'] as $employee)
-                <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-orange-50 text-sm"
-                     @if($canPostStaffAttendance) :class="selected[{{ (int) $employee->id }}] ? 'bg-orange-50/80' : ''" @endif>
+                <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-teal-50 text-sm"
+                     @if($canPostStaffAttendance) :class="selected[{{ (int) $employee->id }}] ? 'bg-teal-50/80' : ''" @endif>
                     <div class="flex items-center gap-2 min-w-0">
                         @if($canPostStaffAttendance)
                             <button type="button"
-                                    class="shrink-0 w-9 h-9 rounded-lg border border-orange-200 flex items-center justify-center bg-white"
+                                    class="shrink-0 w-9 h-9 rounded-lg border border-teal-200 flex items-center justify-center bg-white"
                                     @click="toggle({{ (int) $employee->id }})"
                                     :aria-pressed="!!selected[{{ (int) $employee->id }}]"
                                     aria-label="تحديد {{ $employee->name }}">
-                                <span class="block w-4 h-4 rounded border-2 border-orange-300"
-                                      :class="selected[{{ (int) $employee->id }}] ? 'bg-orange-600 border-orange-600' : 'bg-white'"></span>
+                                <span class="block w-4 h-4 rounded border-2 border-teal-300"
+                                      :class="selected[{{ (int) $employee->id }}] ? 'bg-teal-600 border-teal-600' : 'bg-white'"></span>
                             </button>
                         @endif
                         <span class="font-medium">{{ $employee->name }}</span>
@@ -86,23 +86,23 @@
                     @endif
                 </div>
             @empty
-                <p class="text-sm text-orange-700/60">—</p>
+                <p class="text-sm text-teal-700/60">—</p>
             @endforelse
         </section>
         <section class="nursery-card p-4 lg:col-span-1">
             <h2 class="font-bold text-emerald-700 mb-2">حاضرون ({{ $staffBoard['checked_in']->count() }})</h2>
             @forelse($staffBoard['checked_in'] as $row)
-                <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-orange-50 text-sm"
-                     @if($canPostStaffAttendance) :class="selected[{{ (int) $row['employee']->id }}] ? 'bg-orange-50/80' : ''" @endif>
+                <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-teal-50 text-sm"
+                     @if($canPostStaffAttendance) :class="selected[{{ (int) $row['employee']->id }}] ? 'bg-teal-50/80' : ''" @endif>
                     <div class="flex items-center gap-2 min-w-0">
                         @if($canPostStaffAttendance)
                             <button type="button"
-                                    class="shrink-0 w-9 h-9 rounded-lg border border-orange-200 flex items-center justify-center bg-white"
+                                    class="shrink-0 w-9 h-9 rounded-lg border border-teal-200 flex items-center justify-center bg-white"
                                     @click="toggle({{ (int) $row['employee']->id }})"
                                     :aria-pressed="!!selected[{{ (int) $row['employee']->id }}]"
                                     aria-label="تحديد {{ $row['employee']->name }}">
-                                <span class="block w-4 h-4 rounded border-2 border-orange-300"
-                                      :class="selected[{{ (int) $row['employee']->id }}] ? 'bg-orange-600 border-orange-600' : 'bg-white'"></span>
+                                <span class="block w-4 h-4 rounded border-2 border-teal-300"
+                                      :class="selected[{{ (int) $row['employee']->id }}] ? 'bg-teal-600 border-teal-600' : 'bg-white'"></span>
                             </button>
                         @endif
                         <div>
@@ -119,18 +119,18 @@
                     @endif
                 </div>
             @empty
-                <p class="text-sm text-orange-700/60">—</p>
+                <p class="text-sm text-teal-700/60">—</p>
             @endforelse
         </section>
         <section class="nursery-card p-4 lg:col-span-1">
             <h2 class="font-bold text-sky-700 mb-2">انصرفوا ({{ $staffBoard['checked_out']->count() }})</h2>
             @forelse($staffBoard['checked_out'] as $row)
-                <div class="py-2 border-b border-orange-50 text-sm">
+                <div class="py-2 border-b border-teal-50 text-sm">
                     <span class="font-medium">{{ $row['employee']->name }}</span>
                     <span class="text-xs text-sky-600 ms-1">{{ $row['log']->checked_out_at?->format('H:i') }}</span>
                 </div>
             @empty
-                <p class="text-sm text-orange-700/60">—</p>
+                <p class="text-sm text-teal-700/60">—</p>
             @endforelse
         </section>
     </div>
@@ -138,7 +138,7 @@
     @if($canPostStaffAttendance)
         <div x-show="count() > 0" x-cloak class="nursery-today-bulk-bar">
             <div class="nursery-today-bulk-bar__inner nursery-card px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-orange-950 min-w-0">
+                <p class="text-sm font-semibold text-teal-950 min-w-0">
                     تم تحديد <span class="tabular-nums" x-text="count()"></span> موظفين
                 </p>
                 <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -163,8 +163,8 @@
             <div class="nursery-card w-full max-w-md p-5 space-y-4" @click.outside="closeBulkConfirm()">
                 <div class="flex items-start justify-between gap-2">
                     <div>
-                        <h3 class="text-lg font-bold text-orange-950" x-text="bulkAction === 'check-out' ? 'تأكيد الانصراف' : 'تأكيد الحضور'"></h3>
-                        <p class="text-sm text-orange-800/80 mt-1"
+                        <h3 class="text-lg font-bold text-teal-950" x-text="bulkAction === 'check-out' ? 'تأكيد الانصراف' : 'تأكيد الحضور'"></h3>
+                        <p class="text-sm text-teal-800/80 mt-1"
                            x-text="bulkAction === 'check-out'
                                ? ('هل تريد تسجيل انصراف ' + selectedCheckOutIds().length + ' موظفًا؟')
                                : ('هل تريد تسجيل حضور ' + selectedCheckInIds().length + ' موظفًا؟')"></p>

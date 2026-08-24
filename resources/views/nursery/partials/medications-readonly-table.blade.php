@@ -3,7 +3,7 @@
     @var \Illuminate\Support\Collection<int, \App\Models\Nursery\ChildMedication>|\Illuminate\Database\Eloquent\Collection $medications
 --}}
 @if($medications->isEmpty())
-    <p class="text-sm text-orange-700/70">{{ $emptyMessage ?? 'لا توجد أدوية مسجّلة.' }}</p>
+    <p class="text-sm text-teal-700/70">{{ $emptyMessage ?? 'لا توجد أدوية مسجّلة.' }}</p>
 @else
     <div class="overflow-x-auto -mx-1">
         <table class="nursery-table min-w-[520px]">

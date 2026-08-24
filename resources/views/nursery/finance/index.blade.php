@@ -9,8 +9,8 @@
 <div class="w-full space-y-5" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-extrabold text-orange-950">{{ niche_label('finance.summary', 'ملخص المالية') }}</h1>
-            <p class="text-sm text-orange-800/80 mt-1">
+            <h1 class="text-2xl font-extrabold text-teal-950">{{ niche_label('finance.summary', 'ملخص المالية') }}</h1>
+            <p class="text-sm text-teal-800/80 mt-1">
                 تحصيلات، مستحقات، مصروفات، وصافي الفترة
                 <x-info field="nursery.finance_intro" />
             </p>
@@ -59,7 +59,7 @@
 
     @if($financeModuleOn)
         <section class="nursery-card p-5">
-            <h2 class="text-base font-bold text-orange-950 mb-3">التقارير والمصروفات <x-info field="nursery.finance_reports" /></h2>
+            <h2 class="text-base font-bold text-teal-950 mb-3">التقارير والمصروفات <x-info field="nursery.finance_reports" /></h2>
             <div class="flex flex-wrap gap-2">
                 @if($canOpenExpenses)
                     <a href="{{ route('finance.expenses.index') }}" class="nursery-btn nursery-btn-primary text-sm">تسجيل / عرض المصروفات</a>
@@ -72,7 +72,7 @@
                 @endif
                 <a href="{{ route('nursery.subscriptions.index', ['period' => $period === 'all' ? 'all' : $period]) }}" class="nursery-btn nursery-btn-soft text-sm">قائمة الاشتراكات</a>
             </div>
-            <p class="text-xs text-orange-700/70 mt-3">المصروفات والأرباح تُدار عبر المحاسبة الحالية — بدون دفتر موازٍ داخل الحضانة.</p>
+            <p class="text-xs text-teal-700/70 mt-3">المصروفات والأرباح تُدار عبر المحاسبة الحالية — بدون دفتر موازٍ داخل الحضانة.</p>
         </section>
     @else
         <div class="nursery-card px-4 py-3 text-sm text-amber-900 bg-amber-50">
@@ -108,7 +108,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="!py-10 text-center text-orange-800/70">لا مستحقات حالياً</td>
+                                <td colspan="3" class="!py-10 text-center text-teal-800/70">لا مستحقات حالياً</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -143,7 +143,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="!py-10 text-center text-orange-800/70">لا اشتراكات غير مدفوعة</td>
+                                <td colspan="3" class="!py-10 text-center text-teal-800/70">لا اشتراكات غير مدفوعة</td>
                             </tr>
                         @endforelse
                     </tbody>

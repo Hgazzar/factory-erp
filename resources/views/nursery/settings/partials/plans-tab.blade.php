@@ -1,6 +1,6 @@
 <section class="space-y-4" x-data="{ showAdd: {{ $errors->has('name') || $errors->has('amount') ? 'true' : 'false' }}, editPlan: null }">
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-lg font-bold text-orange-950">خطط الاشتراك <x-info field="nursery.settings_plans_intro" /></h2>
+        <h2 class="text-lg font-bold text-teal-950">خطط الاشتراك <x-info field="nursery.settings_plans_intro" /></h2>
         @if($canManage)
             <button type="button" @click="showAdd = true; editPlan = null" class="nursery-btn nursery-btn-primary text-sm">+ إضافة خطة اشتراك</button>
         @endif
@@ -49,7 +49,7 @@
                             </td>
                             <td class="tabular-nums font-semibold text-slate-700 whitespace-nowrap">{{ number_format((float) $plan->amount, 2) }}</td>
                             <td class="tabular-nums whitespace-nowrap">{{ number_format((float) $plan->tax_rate, 0) }}%</td>
-                            <td class="tabular-nums font-semibold text-orange-700 whitespace-nowrap">{{ number_format($plan->amountAfterTax(), 2) }}</td>
+                            <td class="tabular-nums font-semibold text-teal-700 whitespace-nowrap">{{ number_format($plan->amountAfterTax(), 2) }}</td>
                             <td class="whitespace-nowrap">
                                 <span class="font-semibold text-slate-700">{{ $currencyCode }}</span>
                             </td>
@@ -74,7 +74,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canManage ? 6 : 5 }}" class="!py-10 text-center text-orange-700/70">لا توجد خطط — أضف خطة اشتراك.</td>
+                            <td colspan="{{ $canManage ? 6 : 5 }}" class="!py-10 text-center text-teal-700/70">لا توجد خطط — أضف خطة اشتراك.</td>
                         </tr>
                     @endforelse
                 </tbody>

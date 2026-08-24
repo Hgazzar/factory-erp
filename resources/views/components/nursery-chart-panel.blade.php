@@ -11,7 +11,7 @@
 ])
 
 @php
-    $palette = ['#FB923C', '#10B981', '#0EA5E9', '#F43F5E', '#A855F7', '#F59E0B', '#64748B'];
+    $palette = ['#14B8A6', '#10B981', '#0EA5E9', '#F43F5E', '#A855F7', '#F59E0B', '#64748B'];
     $normalized = [];
     foreach (array_values($items) as $i => $item) {
         $normalized[] = [

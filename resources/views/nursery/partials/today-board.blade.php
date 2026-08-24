@@ -62,20 +62,20 @@
         <section class="nursery-card p-4 lg:col-span-1">
             <h2 class="font-bold text-amber-700 mb-2">بانتظار الحضور ({{ $board['not_yet']->count() }})</h2>
             @forelse($board['not_yet'] as $child)
-                <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-orange-50 text-sm"
-                     @if($canPostChildAttendance) :class="selected[{{ (int) $child->id }}] ? 'bg-orange-50/80' : ''" @endif>
+                <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-teal-50 text-sm"
+                     @if($canPostChildAttendance) :class="selected[{{ (int) $child->id }}] ? 'bg-teal-50/80' : ''" @endif>
                     <div class="flex items-center gap-2 min-w-0">
                         @if($canPostChildAttendance)
                             <button type="button"
-                                    class="shrink-0 w-9 h-9 rounded-lg border border-orange-200 flex items-center justify-center bg-white"
+                                    class="shrink-0 w-9 h-9 rounded-lg border border-teal-200 flex items-center justify-center bg-white"
                                     @click="toggle({{ (int) $child->id }})"
                                     :aria-pressed="!!selected[{{ (int) $child->id }}]"
                                     aria-label="تحديد {{ $child->name }}">
-                                <span class="block w-4 h-4 rounded border-2 border-orange-300"
-                                      :class="selected[{{ (int) $child->id }}] ? 'bg-orange-600 border-orange-600' : 'bg-white'"></span>
+                                <span class="block w-4 h-4 rounded border-2 border-teal-300"
+                                      :class="selected[{{ (int) $child->id }}] ? 'bg-teal-600 border-teal-600' : 'bg-white'"></span>
                             </button>
                         @endif
-                        <a href="{{ route('nursery.children.show', $child) }}" class="font-medium text-orange-900 hover:underline truncate">{{ $child->name }}</a>
+                        <a href="{{ route('nursery.children.show', $child) }}" class="font-medium text-teal-900 hover:underline truncate">{{ $child->name }}</a>
                     </div>
                     @if($canPostChildAttendance)
                     <form method="post" action="{{ route('nursery.attendance.check-in') }}">
@@ -86,27 +86,27 @@
                     @endif
                 </div>
             @empty
-                <p class="text-sm text-orange-700/60">—</p>
+                <p class="text-sm text-teal-700/60">—</p>
             @endforelse
         </section>
         <section class="nursery-card p-4 lg:col-span-1">
             <h2 class="font-bold text-emerald-700 mb-2">حاضرون ({{ $board['checked_in']->count() }})</h2>
             @forelse($board['checked_in'] as $row)
-                <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-orange-50 text-sm"
-                     @if($canPostChildAttendance) :class="selected[{{ (int) $row['child']->id }}] ? 'bg-orange-50/80' : ''" @endif>
+                <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-teal-50 text-sm"
+                     @if($canPostChildAttendance) :class="selected[{{ (int) $row['child']->id }}] ? 'bg-teal-50/80' : ''" @endif>
                     <div class="flex items-center gap-2 min-w-0">
                         @if($canPostChildAttendance)
                             <button type="button"
-                                    class="shrink-0 w-9 h-9 rounded-lg border border-orange-200 flex items-center justify-center bg-white"
+                                    class="shrink-0 w-9 h-9 rounded-lg border border-teal-200 flex items-center justify-center bg-white"
                                     @click="toggle({{ (int) $row['child']->id }})"
                                     :aria-pressed="!!selected[{{ (int) $row['child']->id }}]"
                                     aria-label="تحديد {{ $row['child']->name }}">
-                                <span class="block w-4 h-4 rounded border-2 border-orange-300"
-                                      :class="selected[{{ (int) $row['child']->id }}] ? 'bg-orange-600 border-orange-600' : 'bg-white'"></span>
+                                <span class="block w-4 h-4 rounded border-2 border-teal-300"
+                                      :class="selected[{{ (int) $row['child']->id }}] ? 'bg-teal-600 border-teal-600' : 'bg-white'"></span>
                             </button>
                         @endif
                         <div class="min-w-0">
-                            <a href="{{ route('nursery.children.show', $row['child']) }}" class="font-medium text-orange-900 hover:underline">{{ $row['child']->name }}</a>
+                            <a href="{{ route('nursery.children.show', $row['child']) }}" class="font-medium text-teal-900 hover:underline">{{ $row['child']->name }}</a>
                             <span class="text-xs text-emerald-600 ms-1">{{ $row['log']->checked_in_at?->format('H:i') }}</span>
                         </div>
                     </div>
@@ -119,18 +119,18 @@
                     @endif
                 </div>
             @empty
-                <p class="text-sm text-orange-700/60">—</p>
+                <p class="text-sm text-teal-700/60">—</p>
             @endforelse
         </section>
         <section class="nursery-card p-4 lg:col-span-1">
             <h2 class="font-bold text-sky-700 mb-2">انصرفوا ({{ $board['checked_out']->count() }})</h2>
             @forelse($board['checked_out'] as $row)
-                <div class="py-2 border-b border-orange-50 text-sm">
-                    <a href="{{ route('nursery.children.show', $row['child']) }}" class="font-medium text-orange-900 hover:underline">{{ $row['child']->name }}</a>
+                <div class="py-2 border-b border-teal-50 text-sm">
+                    <a href="{{ route('nursery.children.show', $row['child']) }}" class="font-medium text-teal-900 hover:underline">{{ $row['child']->name }}</a>
                     <span class="text-xs text-sky-600 ms-1">{{ $row['log']->checked_out_at?->format('H:i') }}</span>
                 </div>
             @empty
-                <p class="text-sm text-orange-700/60">—</p>
+                <p class="text-sm text-teal-700/60">—</p>
             @endforelse
         </section>
     </div>
@@ -138,7 +138,7 @@
     @if($canPostChildAttendance)
         <div x-show="count() > 0" x-cloak class="nursery-today-bulk-bar">
             <div class="nursery-today-bulk-bar__inner nursery-card px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-orange-950 min-w-0">
+                <p class="text-sm font-semibold text-teal-950 min-w-0">
                     تم تحديد <span class="tabular-nums" x-text="count()"></span> أطفال
                 </p>
                 <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -163,8 +163,8 @@
             <div class="nursery-card w-full max-w-md p-5 space-y-4" @click.outside="closeBulkConfirm()">
                 <div class="flex items-start justify-between gap-2">
                     <div>
-                        <h3 class="text-lg font-bold text-orange-950" x-text="bulkAction === 'check-out' ? 'تأكيد الانصراف' : 'تأكيد الحضور'"></h3>
-                        <p class="text-sm text-orange-800/80 mt-1"
+                        <h3 class="text-lg font-bold text-teal-950" x-text="bulkAction === 'check-out' ? 'تأكيد الانصراف' : 'تأكيد الحضور'"></h3>
+                        <p class="text-sm text-teal-800/80 mt-1"
                            x-text="bulkAction === 'check-out'
                                ? ('هل تريد تسجيل انصراف ' + selectedCheckOutIds().length + ' طفلًا؟')
                                : ('هل تريد تسجيل حضور ' + selectedCheckInIds().length + ' طفلًا؟')"></p>

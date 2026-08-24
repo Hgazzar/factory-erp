@@ -5,8 +5,8 @@
 @section('content')
 <div class="w-full space-y-4" dir="rtl">
     <div>
-        <h1 class="text-2xl font-extrabold text-orange-950">إضافة فصل</h1>
-        <p class="text-sm text-orange-800/80 mt-1">بيانات الفصل — الاسم، السعة، والفئة العمرية</p>
+        <h1 class="text-2xl font-extrabold text-teal-950">إضافة فصل</h1>
+        <p class="text-sm text-teal-800/80 mt-1">بيانات الفصل — الاسم، السعة، والفئة العمرية</p>
     </div>
 
     @include('nursery.partials.classroom-form', [

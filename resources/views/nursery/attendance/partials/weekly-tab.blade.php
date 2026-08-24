@@ -13,7 +13,7 @@
         <div class="flex flex-wrap items-center gap-2">
             <a href="{{ route('nursery.attendance.index', array_merge(request()->except('week'), ['tab' => $scope === 'children' ? 'children' : 'staff', 'week' => $prevWeek])) }}"
                class="nursery-btn nursery-btn-soft px-3">‹</a>
-            <span class="text-sm font-semibold text-orange-950 tabular-nums">{{ $weekLabel }}</span>
+            <span class="text-sm font-semibold text-teal-950 tabular-nums">{{ $weekLabel }}</span>
             <a href="{{ route('nursery.attendance.index', array_merge(request()->except('week'), ['tab' => $scope === 'children' ? 'children' : 'staff', 'week' => $nextWeek])) }}"
                class="nursery-btn nursery-btn-soft px-3">›</a>
             @if($canManage)
@@ -27,13 +27,13 @@
         <input type="hidden" name="tab" value="{{ $scope === 'children' ? 'children' : 'staff' }}">
         <input type="hidden" name="week" value="{{ $weekStart->toDateString() }}">
         <div class="{{ $showClassroomFilter ? '' : 'lg:col-span-2' }}">
-            <label class="block text-sm font-semibold text-orange-950 mb-1">بحث</label>
+            <label class="block text-sm font-semibold text-teal-950 mb-1">بحث</label>
             <input type="search" name="q" value="{{ $q }}" placeholder="{{ $searchPlaceholder }}"
-                   class="w-full rounded-lg border border-orange-200 px-3 py-2 text-sm">
+                   class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm">
         </div>
         @if($showClassroomFilter)
             <div>
-                <label class="block text-sm font-semibold text-orange-950 mb-1">
+                <label class="block text-sm font-semibold text-teal-950 mb-1">
                     الفصل <x-info field="nursery.filter_classroom" />
                 </label>
                 <x-custom-select name="classroom_id" :options="$classroomOptions"
@@ -58,7 +58,7 @@
                             {{ $scope === 'children' ? niche_label('entities.child', 'الطفل') : 'الموظف' }}
                         </th>
                         @foreach($grid['days'] as $day)
-                            <th class="text-center min-w-[5.5rem] {{ $day['date'] === now()->toDateString() ? '!bg-orange-50' : '' }}">
+                            <th class="text-center min-w-[5.5rem] {{ $day['date'] === now()->toDateString() ? '!bg-teal-50' : '' }}">
                                 <div class="text-xs leading-tight font-bold text-slate-700">{{ $day['label'] }}</div>
                                 @php $summary = collect($grid['day_summaries'])->firstWhere('date', $day['date']); @endphp
                                 <div class="text-[10px] font-normal text-slate-400 mt-1 tabular-nums">
@@ -79,7 +79,7 @@
                                 @if($row['subtitle'])
                                     <span class="nursery-table-name__sub">{{ $row['subtitle'] }}</span>
                                 @endif
-                                <span class="block text-xs text-orange-600 mt-1 tabular-nums font-semibold">
+                                <span class="block text-xs text-teal-600 mt-1 tabular-nums font-semibold">
                                     الحضور {{ $row['present_count'] }}/{{ $row['expected_count'] }} أيام
                                 </span>
                             </td>
@@ -92,7 +92,7 @@
                                         default => 'text-slate-400',
                                     };
                                 @endphp
-                                <td class="text-center {{ $cellClass }} {{ $cell['date'] === now()->toDateString() ? 'ring-1 ring-inset ring-orange-200' : '' }}">
+                                <td class="text-center {{ $cellClass }} {{ $cell['date'] === now()->toDateString() ? 'ring-1 ring-inset ring-teal-200' : '' }}">
                                     <span class="text-xs font-semibold">{{ $cell['label'] }}</span>
                                     @if($cell['detail'])
                                         <div class="text-[10px] opacity-80">{{ $cell['detail'] }}</div>
@@ -117,19 +117,19 @@
                                          role="menu"
                                          dir="rtl">
                                         <button type="button"
-                                                class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-orange-50"
+                                                class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-teal-50"
                                                 role="menuitem"
                                                 @click="open=false; report{{ $scope === 'children' ? 'Child' : 'Employee' }}Id='{{ $row['id'] }}'; openModal('report-{{ $scope }}-single')">
-                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-700">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/></svg>
                                             </span>
                                             <span class="flex-1 leading-snug">إنشاء تقرير</span>
                                         </button>
                                         <button type="button"
-                                                class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-orange-50"
+                                                class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-teal-50"
                                                 role="menuitem"
                                                 @click="open=false; leave{{ $scope === 'children' ? 'Child' : 'Employee' }}Id='{{ $row['id'] }}'; openModal('leave-{{ $scope }}-single')">
-                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-700">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/></svg>
                                             </span>
                                             <span class="flex-1 leading-snug">{{ $scope === 'children' ? 'تعديل إجازات الطفل' : 'تعديل إجازات الموظف' }}</span>
@@ -140,7 +140,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ count($grid['days']) + ($canManage ? 2 : 1) }}" class="!py-12 text-center text-orange-800/70">
+                            <td colspan="{{ count($grid['days']) + ($canManage ? 2 : 1) }}" class="!py-12 text-center text-teal-800/70">
                                 لا توجد سجلات لعرضها في هذا الأسبوع.
                             </td>
                         </tr>

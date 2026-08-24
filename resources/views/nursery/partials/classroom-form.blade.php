@@ -19,54 +19,54 @@
 
     <div class="grid gap-5 lg:grid-cols-2">
         <section class="nursery-card p-5 space-y-4 lg:col-span-2">
-            <h2 class="text-lg font-bold text-orange-950 border-b border-orange-100 pb-2">بيانات الفصل</h2>
+            <h2 class="text-lg font-bold text-teal-950 border-b border-teal-100 pb-2">بيانات الفصل</h2>
 
             <div class="grid gap-4 lg:grid-cols-2">
                 <div>
-                    <label class="block text-sm font-semibold text-orange-950 mb-1">
+                    <label class="block text-sm font-semibold text-teal-950 mb-1">
                         اسم الفصل <span class="text-red-600">*</span>
                         <x-info field="nursery.classroom_name" />
                     </label>
                     <input type="text" name="name" value="{{ old('name', $classroom?->name) }}" required
-                           class="w-full rounded-lg border border-orange-200 px-3 py-2"
+                           class="w-full rounded-lg border border-teal-200 px-3 py-2"
                            placeholder="مثال: البراعم">
                     @error('name')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-orange-950 mb-1">
+                    <label class="block text-sm font-semibold text-teal-950 mb-1">
                         سعة الفصل <span class="text-red-600">*</span>
                         <x-info field="nursery.classroom_capacity" />
                     </label>
-                    <div class="flex items-stretch gap-0 rounded-lg border border-orange-200 overflow-hidden bg-white" dir="ltr">
-                        <button type="button" class="nursery-capacity-step px-3 py-2 text-orange-700 bg-orange-50 hover:bg-orange-100 font-bold border-0"
+                    <div class="flex items-stretch gap-0 rounded-lg border border-teal-200 overflow-hidden bg-white" dir="ltr">
+                        <button type="button" class="nursery-capacity-step px-3 py-2 text-teal-700 bg-teal-50 hover:bg-teal-100 font-bold border-0"
                                 data-step="-1" aria-label="إنقاص">−</button>
                         <div class="flex-1 flex items-center justify-center gap-2 px-2 min-w-0">
                             <input type="number" name="capacity" id="classroom_capacity_input" value="{{ $capacityValue }}"
                                    min="1" max="200" step="1" inputmode="numeric" required
-                                   class="nursery-capacity-input w-full text-center border-0 focus:ring-0 py-2 text-orange-950 font-semibold">
-                            <span class="text-sm text-orange-800/70 shrink-0" dir="rtl">طفل</span>
+                                   class="nursery-capacity-input w-full text-center border-0 focus:ring-0 py-2 text-teal-950 font-semibold">
+                            <span class="text-sm text-teal-800/70 shrink-0" dir="rtl">طفل</span>
                         </div>
-                        <button type="button" class="nursery-capacity-step px-3 py-2 text-orange-700 bg-orange-50 hover:bg-orange-100 font-bold border-0"
+                        <button type="button" class="nursery-capacity-step px-3 py-2 text-teal-700 bg-teal-50 hover:bg-teal-100 font-bold border-0"
                                 data-step="1" aria-label="زيادة">+</button>
                     </div>
                     @error('capacity')<p class="text-sm text-red-600 mt-1" dir="rtl">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="lg:col-span-2">
-                    <label class="block text-sm font-semibold text-orange-950 mb-1">
+                    <label class="block text-sm font-semibold text-teal-950 mb-1">
                         الفئة العمرية <span class="text-red-600">*</span>
                         <x-info field="nursery.classroom_age_groups" />
                     </label>
                     <div class="nursery-age-group-list max-h-[min(22rem,55vh)] overflow-y-auto">
                         <label class="nursery-age-row nursery-age-row--header">
-                            <input type="checkbox" id="nursery_age_groups_select_all" class="rounded border-orange-300 text-orange-600 focus:ring-orange-500 shrink-0">
+                            <input type="checkbox" id="nursery_age_groups_select_all" class="rounded border-teal-300 text-teal-600 focus:ring-teal-500 shrink-0">
                             <span class="flex-1">تحديد الكل</span>
                         </label>
                         @foreach($ageGroupLabels as $key => $label)
                             <label class="nursery-age-row {{ $loop->iteration % 2 === 0 ? 'nursery-age-row--stripe' : '' }}">
                                 <input type="checkbox" name="age_groups[]" value="{{ $key }}"
-                                       class="nursery-age-group-cb rounded border-orange-300 text-orange-600 focus:ring-orange-500 shrink-0"
+                                       class="nursery-age-group-cb rounded border-teal-300 text-teal-600 focus:ring-teal-500 shrink-0"
                                        @checked(in_array($key, $selectedAgeGroups, true))>
                                 <span class="flex-1 leading-snug">{{ $label }}</span>
                             </label>
@@ -78,7 +78,7 @@
 
                 @if($classroom !== null)
                     <div class="max-w-xs">
-                        <label class="block text-sm font-semibold text-orange-950 mb-1">
+                        <label class="block text-sm font-semibold text-teal-950 mb-1">
                             حالة الفصل
                             <x-info field="nursery.classroom_status" />
                         </label>
@@ -95,7 +95,7 @@
     <div class="flex flex-wrap gap-2">
         <button type="submit" name="submit_action" value="save" class="nursery-btn nursery-btn-primary">{{ $submitLabel }}</button>
         @if($classroom === null)
-            <button type="submit" name="submit_action" value="save_and_new" class="nursery-btn nursery-btn-soft border-orange-300">حفظ وإضافة جديد</button>
+            <button type="submit" name="submit_action" value="save_and_new" class="nursery-btn nursery-btn-soft border-teal-300">حفظ وإضافة جديد</button>
         @endif
         <a href="{{ route('nursery.classrooms.index') }}" class="nursery-btn nursery-btn-soft">إلغاء</a>
     </div>

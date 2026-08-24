@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="w-full space-y-4" dir="rtl">
-    <h1 class="text-2xl font-extrabold text-orange-950">إضافة موظف</h1>
+    <h1 class="text-2xl font-extrabold text-teal-950">إضافة موظف</h1>
     @include('nursery.partials.staff-form', [
         'employee' => null,
         'formAction' => route('nursery.staff.store'),
