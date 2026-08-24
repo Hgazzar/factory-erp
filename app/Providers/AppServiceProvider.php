@@ -47,6 +47,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -91,13 +92,20 @@ class AppServiceProvider extends ServiceProvider
         Notifications::alignment(Alignment::Center);
         Notifications::verticalAlignment(VerticalAlignment::End);
 
-        if (config('app.env') === 'production' || env('FORCE_HTTPS', false)) {
+        // Production behind Railway: never hard-pin a stale APP_URL (e.g. old
+        // factory-erp-production.up.railway.app) — that 404s CSS/JS and breaks forms.
+        if (config('app.env') === 'production' || filter_var(env('FORCE_HTTPS', false), FILTER_VALIDATE_BOOLEAN)) {
             URL::forceScheme('https');
-            $appUrl = trim((string) config('app.url'));
-            if ($appUrl !== '') {
-                URL::forceRootUrl(rtrim($appUrl, '/'));
+            $rootUrl = $this->resolvePublicRootUrl();
+            if ($rootUrl !== '') {
+                URL::forceRootUrl($rootUrl);
             }
         }
+
+        // Same-origin asset URLs so a wrong ASSET_URL/APP_URL cannot blank the UI.
+        Vite::createAssetPathsUsing(
+            static fn (string $path, ?bool $secure = null): string => '/'.ltrim($path, '/')
+        );
 
         ProductionRecord::observe(ProductionRecordObserver::class);
         ProductionLog::observe(ProductionLogObserver::class);
@@ -205,6 +213,32 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('tenantBrand', $branding);
             }
         });
+    }
+
+    /**
+     * Public HTTPS origin for URL generation.
+     * Prefer the live request host / Railway domain over a stale APP_URL
+     * (Railway regenerates *.up.railway.app hostnames).
+     */
+    private function resolvePublicRootUrl(): string
+    {
+        if (! $this->app->runningInConsole()) {
+            try {
+                $host = request()->getHost();
+                if ($host !== '' && ! in_array($host, ['localhost', '127.0.0.1'], true)) {
+                    return 'https://'.$host;
+                }
+            } catch (\Throwable) {
+                // fall through
+            }
+        }
+
+        $railwayDomain = trim((string) env('RAILWAY_PUBLIC_DOMAIN', ''));
+        if ($railwayDomain !== '') {
+            return 'https://'.preg_replace('#^https?://#i', '', $railwayDomain);
+        }
+
+        return rtrim(trim((string) config('app.url')), '/');
     }
 
     private function resolveBrandingTenantUserId(): ?int
