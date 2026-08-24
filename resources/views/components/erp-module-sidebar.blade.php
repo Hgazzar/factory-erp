@@ -8,7 +8,7 @@
 
 @if($meta)
 <aside class="module-sidebar min-h-0 hidden md:flex no-print shrink-0 flex-col">
-    <div class="module-sidebar-header">
+    <div class="module-sidebar-header shrink-0">
         <div class="module-sidebar-icon-wrap" style="background: {{ $meta['iconBg'] }}; color: {{ $meta['iconColor'] }};">
             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">{!! $meta['icon'] !!}</svg>
         </div>
@@ -19,10 +19,10 @@
         </a>
         <input type="search" class="module-sidebar-search" placeholder="بحث" aria-label="بحث في القسم">
     </div>
-    <nav class="module-nav flex-1 overflow-y-auto">
+    <nav class="module-nav flex-1 min-h-0 overflow-y-auto">
         <x-nav-shell-links :shell="$module" />
     </nav>
-    <div class="module-sidebar-footer">
+    <div class="module-sidebar-footer shrink-0">
         <span class="d-block mb-1 text-gray-400">{{ config('app.name') }}</span>
         <a href="#"><span>طي</span> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg></a>
     </div>

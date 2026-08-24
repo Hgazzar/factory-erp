@@ -81,6 +81,8 @@
             flex-direction: column;
             transition: width .22s ease, min-width .22s ease;
             overflow: hidden;
+            min-height: 0;
+            align-self: stretch;
         }
         /* أثناء التحميل الأول: بدون أنيميشن حتى لا يومض السايدبار عند التنقل */
         html.nursery-sidebar-collapsed:not([data-nursery-shell-ready]) .module-sidebar {
@@ -98,6 +100,7 @@
             display: flex;
             align-items: center;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
         html.nursery-sidebar-collapsed .nursery-shell .module-sidebar-header , .nursery-shell.is-sidebar-collapsed .module-sidebar-header {
             width: 100%;
@@ -172,8 +175,14 @@
             padding: 0.75rem;
             list-style: none;
             margin: 0;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-gutter: stable;
         }
         html.nursery-sidebar-collapsed .nursery-shell .module-nav , .nursery-shell.is-sidebar-collapsed .module-nav {
             width: 100%;
@@ -182,6 +191,12 @@
             flex-direction: column;
             align-items: center;
             gap: 0.35rem;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
             /* لا تسرق مساحة من التوسيط بسبب شريط التمرير */
             scrollbar-width: none;
         }
@@ -1089,13 +1104,18 @@
             .module-sidebar { display: none !important; }
         }
         #nurseryMobileSidebar { max-width: min(20rem, 100vw); }
-        #nurseryMobileSidebar .offcanvas-body { overflow-x: hidden; }
+        #nurseryMobileSidebar .offcanvas-body {
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
     @include('nursery.partials.finance-shell-colors')
     @stack('styles')
 </head>
 <body>
-    <div class="flex flex-col min-h-screen"
+    <div class="flex flex-col h-screen overflow-hidden"
          x-data="{
             sidebarCollapsed: document.documentElement.classList.contains('nursery-sidebar-collapsed')
                 || localStorage.getItem('nurserySidebarCollapsed') === '1',
@@ -1108,7 +1128,7 @@
          x-init="document.documentElement.setAttribute('data-nursery-shell-ready', '1')">
         @include('layouts.partials.erp-global-navbar')
         <div class="nursery-shell" :class="{ 'is-sidebar-collapsed': sidebarCollapsed }">
-            <aside class="module-sidebar hidden md:flex shrink-0 flex-col" :aria-expanded="(!sidebarCollapsed).toString()">
+            <aside class="module-sidebar hidden md:flex shrink-0 flex-col min-h-0" :aria-expanded="(!sidebarCollapsed).toString()">
                 <div class="module-sidebar-header">
                     @isset($nurseryBrand)
                         @include('nursery.partials.brand-mark', ['variant' => 'sidebar'])
@@ -1119,7 +1139,7 @@
                         </div>
                     @endisset
                 </div>
-                <nav class="module-nav flex-1" aria-label="قائمة الحضانة">
+                <nav class="module-nav flex-1 min-h-0" aria-label="قائمة الحضانة">
                     <x-nursery-sidebar-nav />
                 </nav>
             </aside>

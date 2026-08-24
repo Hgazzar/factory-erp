@@ -26,19 +26,19 @@
         /* Fallback when Tailwind/Vite is not loaded - keeps layout from collapsing */
         body { font-family: 'Cairo', sans-serif; background-color: #f5f7fb; min-height: 100vh; display: flex; flex-direction: column; }
         .content-wrap { max-width: 80rem; margin-left: auto; margin-right: auto; width: 100%; }
-        .module-sidebar { width: 280px; min-width: 280px; background: #fff; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; overflow-y: auto; }
-        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid #f3f4f6; }
+        .module-sidebar { width: 280px; min-width: 280px; background: #fff; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; overflow: hidden; min-height: 0; align-self: stretch; }
+        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid #f3f4f6; flex-shrink: 0; }
         .module-sidebar-icon-wrap { width: 48px; height: 48px; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; }
         .module-sidebar-title { font-size: 1.125rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem 0; }
         .module-sidebar-back { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; color: #6b7280; text-decoration: none; font-size: 0.875rem; background: #f9fafb; border: 1px solid #e5e7eb; transition: background 0.15s, color 0.15s; }
         .module-sidebar-back:hover { background: #f3f4f6; color: #374151; }
-        .module-nav { padding: 0.75rem; list-style: none; margin: 0; }
+        .module-nav { padding: 0.75rem; list-style: none; margin: 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
         .module-nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 0.5rem; color: #4b5563; text-decoration: none; font-size: 0.9375rem; transition: background 0.15s, color 0.15s; }
         .module-nav-link:hover { background: #f3f4f6; color: #111827; }
         .module-nav-link.active { background: #2563eb; color: #fff; font-weight: 500; }
         .module-nav-link.active .module-nav-icon { color: #fff; opacity: 1; }
         .module-nav-icon { width: 20px; height: 20px; flex-shrink: 0; color: #6b7280; opacity: 0.9; }
-        .module-sidebar-footer { margin-top: auto; padding: 0.75rem 1rem; border-top: 1px solid #f3f4f6; font-size: 0.8rem; color: #9ca3af; }
+        .module-sidebar-footer { margin-top: 0; padding: 0.75rem 1rem; border-top: 1px solid #f3f4f6; font-size: 0.8rem; color: #9ca3af; flex-shrink: 0; }
         html[dir="rtl"] .fi-no { direction: rtl; }
         .fi-no-notification-title { font-weight: 700 !important; }
         #info-hint-popup { position: fixed; z-index: 9999; max-width: 20rem; padding: 0.75rem 1rem; font-family: 'Cairo', sans-serif; font-size: 0.8125rem; line-height: 1.5; color: #374151; background: #fff; border: 1px solid #e5e7eb; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); pointer-events: none; display: none; text-align: right; direction: rtl; }
@@ -52,8 +52,8 @@
     </style>
     @stack('styles')
 </head>
-<body class="min-h-screen bg-gray-50" style="font-family: 'Cairo', sans-serif;">
-    <div class="flex flex-col min-h-screen">
+<body class="h-screen overflow-hidden bg-gray-50" style="font-family: 'Cairo', sans-serif;">
+    <div class="flex flex-col h-screen overflow-hidden">
         @include('layouts.partials.erp-global-navbar')
 
         <div class="flex flex-1 min-h-0 overflow-hidden">
@@ -68,7 +68,7 @@
                         العودة للوحدات
                     </a>
                 </div>
-                <nav class="module-nav flex-1 overflow-y-auto flex flex-col gap-1">
+                <nav class="module-nav flex-1 min-h-0 overflow-y-auto flex flex-col gap-1">
                     <x-pos-sidebar-nav />
                 </nav>
                 <div class="module-sidebar-footer text-center md:text-start">
@@ -104,11 +104,11 @@
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
         </div>
-        <div class="offcanvas-body p-0">
-            <div class="p-3 border-bottom">
+        <div class="offcanvas-body p-0 d-flex flex-column" style="overflow:hidden;">
+            <div class="p-3 border-bottom shrink-0">
                 <a href="{{ route('dashboard') }}" class="module-sidebar-back d-inline-flex">العودة للوحدات</a>
             </div>
-            <nav class="module-nav flex flex-col gap-1 p-2">
+            <nav class="module-nav flex-1 min-h-0 flex flex-col gap-1 p-2" style="overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
                 <x-pos-sidebar-nav />
             </nav>
         </div>

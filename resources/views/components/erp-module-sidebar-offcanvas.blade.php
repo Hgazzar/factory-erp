@@ -17,12 +17,12 @@
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
-    <div class="offcanvas-body p-0">
-        <div class="p-3 border-bottom">
+    <div class="offcanvas-body p-0 d-flex flex-column" style="overflow:hidden;">
+        <div class="p-3 border-bottom shrink-0">
             <a href="{{ route('dashboard') }}" class="module-sidebar-back d-inline-flex">العودة للوحدات</a>
             <input type="search" class="module-sidebar-search mt-2 w-100" placeholder="بحث" aria-label="بحث">
         </div>
-        <nav class="module-nav p-2">
+        <nav class="module-nav flex-1 min-h-0 p-2" style="overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
             <x-nav-shell-links :shell="$module" link-class="module-nav-link d-block" />
         </nav>
     </div>

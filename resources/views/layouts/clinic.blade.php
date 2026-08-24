@@ -67,9 +67,15 @@
         .module-sidebar {
             width: 280px; min-width: 280px; background: #fff;
             border-left: 1px solid var(--clinic-border);
-            display: flex; flex-direction: column; overflow-y: auto;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            align-self: stretch;
         }
-        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--clinic-border); }
+        .module-sidebar-header {
+            padding: 1rem 1.25rem; border-bottom: 1px solid var(--clinic-border);
+            flex-shrink: 0;
+        }
         .module-sidebar-icon-wrap {
             width: 48px; height: 48px; border-radius: 0.75rem;
             background: linear-gradient(135deg, var(--clinic-primary), var(--clinic-primary-dark));
@@ -84,7 +90,16 @@
             background: var(--clinic-bg-mid); border: 1px solid var(--clinic-border);
         }
         .module-sidebar-back:hover { background: var(--clinic-secondary); color: var(--clinic-text); }
-        .module-nav { padding: 0.75rem; list-style: none; margin: 0; }
+        .module-nav {
+            padding: 0.75rem; list-style: none; margin: 0;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
         .module-nav-link {
             display: flex; align-items: center; gap: 0.75rem;
             padding: 0.6rem 0.75rem; border-radius: 0.5rem;
@@ -94,8 +109,9 @@
         .module-nav-link:hover { background: var(--clinic-secondary); color: var(--clinic-text); }
         .module-nav-link.active { background: var(--clinic-primary); color: var(--clinic-on-primary); font-weight: 500; }
         .module-sidebar-footer {
-            margin-top: auto; padding: 0.75rem 1rem;
+            margin-top: 0; padding: 0.75rem 1rem;
             border-top: 1px solid #f0fdfa; font-size: 0.8rem; color: #9ca3af;
+            flex-shrink: 0;
         }
 
         /* أزرار وعناصر العيادة — fallback */
@@ -166,10 +182,10 @@
     @stack('styles')
 </head>
 <body>
-    <div class="flex flex-col min-h-screen">
+    <div class="flex flex-col h-screen overflow-hidden">
         @include('layouts.partials.erp-global-navbar')
         <div class="clinic-shell">
-            <aside class="module-sidebar hidden md:flex shrink-0 flex-col">
+            <aside class="module-sidebar hidden md:flex shrink-0 flex-col min-h-0">
                 <div class="module-sidebar-header">
                     @if(!empty($tenantBrand))
                         @include('tenant.partials.brand-mark', ['variant' => 'sidebar', 'markClass' => 'tenant-brand-mark', 'fallbackEmoji' => '🏥'])
@@ -181,7 +197,7 @@
                     @endif
                     <a href="{{ route('dashboard') }}" class="module-sidebar-back">← العودة للوحدات</a>
                 </div>
-                <nav class="module-nav flex-1">
+                <nav class="module-nav flex-1 min-h-0">
                     <x-clinic-sidebar-nav />
                 </nav>
                 <div class="module-sidebar-footer">{{ config('app.name') }} · Clinic</div>

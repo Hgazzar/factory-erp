@@ -36,21 +36,21 @@
         body { font-family: 'Cairo', sans-serif; background-color: #f5f7fb; min-height: 100vh; display: flex; flex-direction: column; }
         .content-wrap { max-width: 80rem; margin-left: auto; margin-right: auto; width: 100%; }
         /* Dynamic module sidebar */
-        .module-sidebar { width: 280px; min-width: 280px; background: #fff; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; overflow-y: auto; }
-        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid #f3f4f6; }
+        .module-sidebar { width: 280px; min-width: 280px; background: #fff; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; overflow: hidden; min-height: 0; align-self: stretch; }
+        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid #f3f4f6; flex-shrink: 0; }
         .module-sidebar-icon-wrap { width: 48px; height: 48px; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; margin-bottom: 0.75rem; }
         .module-sidebar-title { font-size: 1.125rem; font-weight: 700; color: #111827; margin: 0 0 0.75rem 0; }
         .module-sidebar-back { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; color: #6b7280; text-decoration: none; font-size: 0.875rem; background: #f9fafb; border: 1px solid #e5e7eb; transition: background 0.15s, color 0.15s; }
         .module-sidebar-back:hover { background: #f3f4f6; color: #374151; }
         .module-sidebar-search { margin-top: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; background: #f9fafb; font-size: 0.875rem; width: 100%; height: 2.5rem; box-sizing: border-box; line-height: 1.25; }
         .module-sidebar-search:focus { outline: none; border-color: #6366f1; background: #fff; }
-        .module-nav { padding: 0.75rem; list-style: none; margin: 0; }
+        .module-nav { padding: 0.75rem; list-style: none; margin: 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
         .module-nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 0.5rem; color: #4b5563; text-decoration: none; font-size: 0.9375rem; transition: background 0.15s, color 0.15s; }
         .module-nav-link:hover { background: #f3f4f6; color: #111827; }
         .module-nav-link.active { background: #2563eb; color: #fff; font-weight: 500; }
         .module-nav-link.active .module-nav-icon { color: #fff; opacity: 1; }
         .module-nav-icon { width: 20px; height: 20px; flex-shrink: 0; color: #6b7280; opacity: 0.9; }
-        .module-sidebar-footer { margin-top: auto; padding: 0.75rem 1rem; border-top: 1px solid #f3f4f6; font-size: 0.8rem; color: #9ca3af; }
+        .module-sidebar-footer { margin-top: 0; padding: 0.75rem 1rem; border-top: 1px solid #f3f4f6; font-size: 0.8rem; color: #9ca3af; flex-shrink: 0; }
         .module-sidebar-footer a { color: #6b7280; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
         .module-sidebar-footer a:hover { color: #374151; }
         .erp-sidebar-section { font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; padding: 0.5rem 1rem 0.25rem; margin-top: 0.5rem; }
@@ -114,8 +114,8 @@
     </style>
     @stack('styles')
 </head>
-<body class="min-h-screen bg-gray-50" style="font-family: 'Cairo', sans-serif;">
-    <div class="flex flex-col min-h-screen">
+<body class="h-screen overflow-hidden bg-gray-50" style="font-family: 'Cairo', sans-serif;">
+    <div class="flex flex-col h-screen overflow-hidden">
         @include('layouts.partials.erp-global-navbar')
 
         @php
@@ -125,16 +125,16 @@
                 && $currentModule
                 && ($tenantNavigation ?? null)?->hasVisibleErpModuleSidebar($currentModule);
         @endphp
-        <div class="flex flex-1 min-h-0">
+        <div class="flex flex-1 min-h-0 overflow-hidden">
         @if($showErpSidebar)
         <x-erp-module-sidebar :module="$currentModule" />
         @endif
 
         {{-- Main content --}}
-        <div class="flex-1 flex flex-col min-w-0">
+        <div class="flex-1 flex flex-col min-w-0 min-h-0">
             {{-- Mobile sidebar toggle (يظهر فقط عند وجود سايدبار الوحدة) --}}
             @if($showErpSidebar)
-            <div class="md:hidden flex items-center px-4 py-2 border-b border-gray-100 bg-white no-print">
+            <div class="md:hidden flex items-center px-4 py-2 border-b border-gray-100 bg-white no-print shrink-0">
                 <button type="button" class="p-2 rounded-lg text-gray-600 hover:bg-gray-100" data-bs-toggle="offcanvas" data-bs-target="#mobileModuleSidebar" aria-label="قائمة القسم">
                     <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
@@ -142,7 +142,7 @@
             </div>
             @endif
 
-            <main class="flex-1 px-4 md:px-6 py-4 main-content">
+            <main class="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-4 main-content">
                 <x-flash-messages />
 
                 <div class="w-full {{ request()->routeIs('finance.journals.*', 'finance.expenses.index') ? 'max-w-full' : 'content-wrap max-w-7xl mx-auto' }}">

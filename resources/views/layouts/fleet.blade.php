@@ -37,8 +37,11 @@
             width: 260px; min-width: 260px; background: #fff;
             border-left: 1px solid var(--fleet-border);
             display: flex; flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            align-self: stretch;
         }
-        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--fleet-border); }
+        .module-sidebar-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--fleet-border); flex-shrink: 0; }
         .module-sidebar-icon-wrap {
             width: 52px; height: 52px; border-radius: 1rem;
             background: linear-gradient(135deg, var(--fleet-primary), var(--fleet-primary-dark));
@@ -53,7 +56,16 @@
             background: var(--fleet-bg-mid); border: 1px solid var(--fleet-border);
         }
         .module-sidebar-back:hover { background: var(--fleet-secondary); color: var(--fleet-text); }
-        .module-nav { padding: 0.75rem; list-style: none; margin: 0; }
+        .module-nav {
+            padding: 0.75rem; list-style: none; margin: 0;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
         .module-nav-link {
             display: flex; align-items: center; gap: 0.75rem;
             padding: 0.6rem 0.75rem; border-radius: 0.5rem;
@@ -80,16 +92,16 @@
     @stack('styles')
 </head>
 <body>
-    <div class="flex flex-col min-h-screen">
+    <div class="flex flex-col h-screen overflow-hidden">
         @include('layouts.partials.erp-global-navbar')
         <div class="fleet-shell">
-            <aside class="module-sidebar hidden md:flex shrink-0 flex-col">
+            <aside class="module-sidebar hidden md:flex shrink-0 flex-col min-h-0">
                 <div class="module-sidebar-header">
                     <div class="module-sidebar-icon-wrap" aria-hidden="true">🚚</div>
                     <h2 class="module-sidebar-title">{{ niche_module_label('fleet') }}</h2>
                     <a href="{{ route('dashboard') }}" class="module-sidebar-back">← العودة للوحدات</a>
                 </div>
-                <nav class="module-nav flex-1">
+                <nav class="module-nav flex-1 min-h-0">
                     <x-fleet-sidebar-nav />
                 </nav>
             </aside>
