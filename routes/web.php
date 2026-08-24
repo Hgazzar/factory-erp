@@ -167,7 +167,9 @@ if (app()->environment('production')) {
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
-    return view('welcome');
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
 });
 
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
