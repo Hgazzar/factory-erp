@@ -379,6 +379,11 @@ final class NurserySubscriptionService
             ->whereBetween('ends_on', [now()->toDateString(), $until])
             ->count();
 
+        $operationalTotal = Subscription::query()
+            ->where('user_id', $tenantUserId)
+            ->whereIn('status', Subscription::operationalStatuses())
+            ->count();
+
         $weekStart = now()->startOfWeek(Carbon::SUNDAY)->toDateString();
         $weekEnd = now()->endOfWeek(Carbon::SATURDAY)->toDateString();
 
@@ -390,6 +395,7 @@ final class NurserySubscriptionService
         return [
             'unpaid_active' => $unpaid,
             'expiring_soon' => $expiring,
+            'operational_total' => $operationalTotal,
             'calendar_this_week' => $calendarCount,
         ];
     }

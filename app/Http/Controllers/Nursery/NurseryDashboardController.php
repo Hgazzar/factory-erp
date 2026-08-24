@@ -40,6 +40,8 @@ final class NurseryDashboardController extends Controller
             'waiting_today' => $board['not_yet']->count(),
         ];
 
+        $spark = $dashboard->dashboardSparkMeta($overview, $stats, $subscriptionKpis);
+
         $portalUrl = null;
         $qrDataUri = null;
 
@@ -65,6 +67,7 @@ final class NurseryDashboardController extends Controller
         return view('nursery.dashboard', compact(
             'overview',
             'stats',
+            'spark',
             'board',
             'subscriptionKpis',
             'portalUrl',

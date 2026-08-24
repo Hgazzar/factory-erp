@@ -33,37 +33,48 @@
     </div>
 
     <section class="nursery-stats-row">
-        <x-nursery-stat-card title="الأطفال النشطون" :value="$overview['children']" info="nursery.stat_active_children" tone="primary" hint="مسجّلون حالياً" spark="bars" trend="up"
+        <x-nursery-stat-card title="الأطفال النشطون" :value="$overview['children']" info="nursery.stat_active_children" tone="primary" hint="مسجّلون حالياً" spark="bars"
+            :percent="$spark['children']['percent']" :trend="$spark['children']['trend']"
             :href="$canViewChildren ? route('nursery.children.index') : null" :link-label="$canViewChildren ? 'الأطفال' : null" />
-        <x-nursery-stat-card title="طاقم العمل" :value="$overview['staff']" info="nursery.stat_staff" tone="info" hint="موظفون نشطون" spark="line" trend="up"
+        <x-nursery-stat-card title="طاقم العمل" :value="$overview['staff']" info="nursery.stat_staff" tone="info" hint="موظفون نشطون" spark="line"
+            :percent="$spark['staff']['percent']" :trend="$spark['staff']['trend']"
             :href="$canViewStaff ? route('nursery.staff.index') : null" :link-label="$canViewStaff ? 'الطاقم' : null" />
-        <x-nursery-stat-card title="الفصول النشطة" :value="$overview['classrooms']" info="nursery.stat_classrooms" tone="success" hint="فصول جاهزة" spark="ring" trend="up"
+        <x-nursery-stat-card title="الفصول النشطة" :value="$overview['classrooms']" info="nursery.stat_classrooms" tone="success" hint="فصول جاهزة" spark="ring"
+            :percent="$spark['classrooms']['percent']" :trend="$spark['classrooms']['trend']"
             :href="$canViewClassrooms ? route('nursery.classrooms.index') : null" :link-label="$canViewClassrooms ? 'الفصول' : null" />
     </section>
 
     <section class="nursery-stats-row">
-        <x-nursery-stat-card title="حضور اليوم" :value="$stats['present_today']" info="nursery.stat_present_today" tone="success" hint="داخل الحضانة الآن" spark="ring" trend="up"
+        <x-nursery-stat-card title="حضور اليوم" :value="$stats['present_today']" info="nursery.stat_present_today" tone="success" hint="داخل الحضانة الآن" spark="ring"
+            :percent="$spark['present_today']['percent']" :trend="$spark['present_today']['trend']"
             :href="$canViewAttendance ? route('nursery.attendance.index') : null" :link-label="$canViewAttendance ? 'الحضور' : null" />
-        <x-nursery-stat-card title="بانتظار التسجيل" :value="$stats['waiting_today']" info="nursery.stat_waiting_today" tone="warning" hint="لم يُسجَّل حضورهم" spark="bars" trend="down"
+        <x-nursery-stat-card title="بانتظار التسجيل" :value="$stats['waiting_today']" info="nursery.stat_waiting_today" tone="warning" hint="لم يُسجَّل حضورهم" spark="bars"
+            :percent="$spark['waiting_today']['percent']" :trend="$spark['waiting_today']['trend']"
             :href="$canViewAttendance ? route('nursery.attendance.index', ['tab' => 'register']) : null" :link-label="$canViewAttendance ? 'تسجيل' : null" />
-        <x-nursery-stat-card title="انصراف اليوم" :value="$stats['left_today']" info="nursery.stat_left_today" tone="info" hint="غادروا الحضانة" spark="line" trend="flat"
+        <x-nursery-stat-card title="انصراف اليوم" :value="$stats['left_today']" info="nursery.stat_left_today" tone="info" hint="غادروا الحضانة" spark="line"
+            :percent="$spark['left_today']['percent']" :trend="$spark['left_today']['trend']"
             :href="$canViewAttendance ? route('nursery.attendance.index') : null" :link-label="$canViewAttendance ? 'الحضور' : null" />
     </section>
 
     @if($canViewSubs)
         <section class="nursery-stats-row">
-            <x-nursery-stat-card title="غير مدفوعة" :value="$subscriptionKpis['unpaid_active']" info="nursery.dashboard_unpaid_subs" tone="warning" hint="بانتظار الدفع" spark="bars" trend="down"
+            <x-nursery-stat-card title="غير مدفوعة" :value="$subscriptionKpis['unpaid_active']" info="nursery.dashboard_unpaid_subs" tone="warning" hint="بانتظار الدفع" spark="bars"
+                :percent="$spark['unpaid_active']['percent']" :trend="$spark['unpaid_active']['trend']"
                 :href="route('nursery.subscriptions.index')" link-label="الاشتراكات" />
-            <x-nursery-stat-card title="تنتهي قريباً" :value="$subscriptionKpis['expiring_soon']" info="nursery.dashboard_expiring_subs" tone="primary" hint="تحتاج تجديد" spark="line" trend="down"
+            <x-nursery-stat-card title="تنتهي قريباً" :value="$subscriptionKpis['expiring_soon']" info="nursery.dashboard_expiring_subs" tone="primary" hint="تحتاج تجديد" spark="line"
+                :percent="$spark['expiring_soon']['percent']" :trend="$spark['expiring_soon']['trend']"
                 :href="route('nursery.subscriptions.index')" link-label="متابعة" />
-            <x-nursery-stat-card title="الوحدات النشطة" :value="$overview['units']" info="nursery.stat_units" tone="warning" hint="منهج نشط" spark="bars" trend="up"
+            <x-nursery-stat-card title="الوحدات النشطة" :value="$overview['units']" info="nursery.stat_units" tone="warning" hint="منهج نشط" spark="bars"
+                :percent="$spark['units']['percent']" :trend="$spark['units']['trend']"
                 :href="$canViewUnits ? route('nursery.units.index') : null" :link-label="$canViewUnits ? 'الوحدات' : null" />
         </section>
     @else
         <section class="nursery-stats-row">
-            <x-nursery-stat-card title="الوحدات النشطة" :value="$overview['units']" info="nursery.stat_units" tone="warning" hint="منهج نشط" spark="bars" trend="up"
+            <x-nursery-stat-card title="الوحدات النشطة" :value="$overview['units']" info="nursery.stat_units" tone="warning" hint="منهج نشط" spark="bars"
+                :percent="$spark['units']['percent']" :trend="$spark['units']['trend']"
                 :href="$canViewUnits ? route('nursery.units.index') : null" :link-label="$canViewUnits ? 'الوحدات' : null" />
-            <x-nursery-stat-card title="أحداث الأسبوع" :value="$overview['activities']" info="nursery.stat_activities" tone="muted" hint="هذا الأسبوع" spark="line" trend="flat"
+            <x-nursery-stat-card title="أحداث الأسبوع" :value="$overview['activities']" info="nursery.stat_activities" tone="muted" hint="هذا الأسبوع" spark="line"
+                :percent="$spark['activities']['percent']" :trend="$spark['activities']['trend']"
                 :href="$canViewCalendar ? route('nursery.calendar.index') : null" :link-label="$canViewCalendar ? 'التقويم' : null" />
         </section>
     @endif

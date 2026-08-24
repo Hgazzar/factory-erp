@@ -8,6 +8,7 @@
     'linkLabel' => null,
     'spark' => 'bars', // bars|line|ring|none
     'trend' => 'up', // up|down|flat|none
+    'percent' => null, // 0–100 drives spark fill; null = decorative fallback
 ])
 
 @php
@@ -50,8 +51,39 @@
         ],
     ];
     $t = $tones[$tone] ?? $tones['primary'];
-    $barHeights = [42, 62, 48, 78, 58, 92, 70];
     $trend = in_array($trend, ['up', 'down', 'flat', 'none'], true) ? $trend : 'up';
+
+    $hasPercent = $percent !== null && $percent !== '';
+    $pct = $hasPercent ? max(0.0, min(100.0, (float) $percent)) : null;
+
+    // Circumference for r=20 ≈ 125.66
+    $ringCirc = 125.66;
+    $ringDash = $pct !== null ? round(($pct / 100) * $ringCirc, 2) : 88.0;
+
+    if ($pct !== null) {
+        $peak = max(12.0, $pct);
+        $barHeights = [];
+        foreach ([0.35, 0.5, 0.42, 0.72, 0.58, 1.0, 0.78] as $factor) {
+            $barHeights[] = (int) round(max(8, min(100, $peak * $factor)));
+        }
+        $lineY = static fn (float $share): float => 42 - (($peak * $share) / 100) * 34;
+        $linePath = sprintf(
+            'M2 %.1f C14 %.1f, 18 %.1f, 30 %.1f C42 %.1f, 46 %.1f, 58 %.1f C70 %.1f, 76 %.1f, 86 %.1f',
+            $lineY(0.55),
+            $lineY(0.55),
+            $lineY(0.85),
+            $lineY(0.72),
+            $lineY(0.72),
+            $lineY(0.4),
+            $lineY(0.62),
+            $lineY(0.62),
+            $lineY(0.95),
+            $lineY(1.0),
+        );
+    } else {
+        $barHeights = [42, 62, 48, 78, 58, 92, 70];
+        $linePath = 'M2 36 C14 34, 18 14, 30 16 C42 18, 46 38, 58 30 C70 22, 76 10, 86 12';
+    }
 @endphp
 
 <div {{ $attributes->merge(['class' => 'nursery-card nursery-admina-stat']) }}
@@ -103,16 +135,19 @@
             @elseif($spark === 'line')
                 <div class="nursery-stat-spark nursery-stat-spark--line" aria-hidden="true">
                     <svg viewBox="0 0 88 48" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-                        <path d="M2 36 C14 34, 18 14, 30 16 C42 18, 46 38, 58 30 C70 22, 76 10, 86 12" stroke="var(--spark)" stroke-width="2.75" stroke-linecap="round" fill="none"/>
-                        <path d="M2 36 C14 34, 18 14, 30 16 C42 18, 46 38, 58 30 C70 22, 76 10, 86 12 V48 H2 Z" fill="var(--spark-soft)" opacity="0.4"/>
+                        <path d="{{ $linePath }}" stroke="var(--spark)" stroke-width="2.75" stroke-linecap="round" fill="none"/>
+                        <path d="{{ $linePath }} V48 H2 Z" fill="var(--spark-soft)" opacity="0.4"/>
                     </svg>
                 </div>
             @elseif($spark === 'ring')
-                <div class="nursery-stat-spark nursery-stat-spark--ring" aria-hidden="true">
+                <div class="nursery-stat-spark nursery-stat-spark--ring" aria-hidden="true"
+                     @if($pct !== null) title="{{ rtrim(rtrim(number_format($pct, 1, '.', ''), '0'), '.') }}%" @endif>
                     <svg viewBox="0 0 56 56">
                         <circle cx="28" cy="28" r="20" stroke="var(--spark-soft)" stroke-width="7" fill="none"/>
                         <circle cx="28" cy="28" r="20" stroke="var(--spark)" stroke-width="7" fill="none"
-                                stroke-linecap="round" stroke-dasharray="88 126" transform="rotate(-90 28 28)"/>
+                                stroke-linecap="round"
+                                stroke-dasharray="{{ $ringDash }} {{ $ringCirc }}"
+                                transform="rotate(-90 28 28)"/>
                     </svg>
                 </div>
             @endif
