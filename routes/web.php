@@ -172,6 +172,20 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+// علامة نشر — للتأكد أن Railway يشغّل آخر كود (افتح /__deploy)
+Route::get('/__deploy', function () {
+    $marker = public_path('deploy-marker.txt');
+
+    return response()->json([
+        'ok' => true,
+        'app' => config('app.name'),
+        'env' => config('app.env'),
+        'marker' => is_file($marker) ? trim((string) file_get_contents($marker)) : null,
+        'git' => env('RAILWAY_GIT_COMMIT_SHA', env('GITHUB_SHA')),
+        'time' => now()->toIso8601String(),
+    ]);
+});
+
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 
 /*

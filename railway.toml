@@ -1,6 +1,13 @@
 # إعدادات Railway (انظر: https://docs.railway.com/reference/config-as-code)
 #
+# مهم: استخدم Dockerfile (مش Nixpacks) حتى ENTRYPOINT يمسح الكاش ويوجّه كل الطلبات لـ Laravel.
 # preDeployCommand: لا تستخدم && الصارم على أوامر غير حرجة — فشلها يوقف الـDeploy بالكامل.
-# Docker ENTRYPOINT يمسح الكاش عند كل إقلاع ويشغّل السيرفر بـ public/index.php كـ router.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
 [deploy]
-preDeployCommand = "bash -lc \"php artisan optimize:clear || true; php artisan migrate --force; php artisan system:set-super-admins || true\""
+# لا تضع startCommand هنا إذا كان في الـ Dashboard أمر قديم بدون router —
+# ENTRYPOINT في الـ Dockerfile يكفي.
+preDeployCommand = "bash -lc \"php artisan optimize:clear || true; php artisan migrate --force || true; php artisan system:set-super-admins || true\""
+restartPolicyType = "ON_FAILURE"

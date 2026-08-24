@@ -12,7 +12,10 @@ class RestrictFilamentPanel
     public function handle(Request $request, Closure $next): Response
     {
         // اسمح بصفحات تسجيل الدخول/المصادقة للضيوف (وإلا /admin/login يعطي 404)
-        if ($request->routeIs('filament.*.auth.*')) {
+        if (
+            $request->routeIs('filament.*.auth.*')
+            || $request->is('admin/login', 'admin/login/*')
+        ) {
             return $next($request);
         }
 

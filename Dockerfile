@@ -66,6 +66,10 @@ RUN php artisan package:discover --ansi || true
 COPY --from=frontend /app/public/build ./public/build
 RUN rm -f public/hot
 
+# علامة نشر ظاهرة على /__deploy و public/deploy-marker.txt
+ARG RAILWAY_GIT_COMMIT_SHA=local
+RUN printf '%s\nbuilt_at=%s\n' "${RAILWAY_GIT_COMMIT_SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/deploy-marker.txt
+
 # رابط public/storage أثناء البناء (root) — تشغيل storage:link وقت الـ deploy يفشل كثيراً بـ Permission denied على Railway
 RUN mkdir -p storage/app/public \
     && rm -rf public/storage \
