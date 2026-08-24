@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 # Railway / Docker entrypoint:
 # 1) امسح كاش Laravel مع كل إقلاع
-# 2) شغّل PHP built-in server مع public/router.php
-#    (index.php كـ router يكسر /build/assets → CSS تختفي ويظهر اللوجين بدون ستايل)
+# 2) شغّل PHP built-in server مع public/router.php دائماً
+#    (أي startCommand يمرّر index.php بدون router يكسر CSS → 302 /login)
 set -eu
 
 cd /var/www/html
@@ -16,12 +16,15 @@ if [ "${MIGRATE_ON_START:-false}" = "true" ]; then
 fi
 
 PORT="${PORT:-8080}"
-echo "==> Starting PHP server on 0.0.0.0:${PORT} (static-aware router)"
 
-# أوامر start مخصّصة من Railway (اختياري). تجنّب php -S ... index.php بدون router.php
 if [ "$#" -gt 0 ]; then
-  echo "==> Executing start command: $*"
-  exec "$@"
+  echo "==> Ignoring custom start command (use Dockerfile router): $*"
 fi
 
+if [ ! -f public/router.php ]; then
+  echo "==> FATAL: public/router.php missing — rebuild image from latest main" >&2
+  exit 1
+fi
+
+echo "==> Starting PHP server on 0.0.0.0:${PORT} (public/router.php)"
 exec php -d opcache.enable_cli=1 -S "0.0.0.0:${PORT}" -t public public/router.php

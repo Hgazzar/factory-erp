@@ -7,8 +7,7 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# اترك startCommand فاضي في الـ Dashboard — ENTRYPOINT يشغّل router يقدّم CSS/JS.
-# لو لازم أمر: استخدم artisan serve (يقدّم الملفات الثابتة) أو اترك ENTRYPOINT الافتراضي.
-# لا تستخدم: php -S ... -t public   بدون public/router.php
+# لا تضع startCommand — ENTRYPOINT يتجاهل أي أمر مخصّص ويشغّل public/router.php
+# (بدونها /build/manifest.json يتحوّل إلى /login وتختفي CSS)
 preDeployCommand = "bash -lc \"php artisan optimize:clear || true; php artisan migrate --force || true; php artisan system:set-super-admins || true\""
 restartPolicyType = "ON_FAILURE"
