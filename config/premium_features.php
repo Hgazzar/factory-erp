@@ -140,6 +140,35 @@ return [
             ],
         ],
 
+        'restaurants' => [
+            [
+                'key' => StoreFeatureKeys::ONLINE_STORE,
+                'name_ar' => 'الطلب أونلاين والتوصيل',
+                'description_ar' => 'واجهة طلب عامة، checkout، طرق دفع، وإدارة طلبات التوصيل.',
+                'hint' => 'premium_feature_online_store_restaurant',
+                'requires_module' => 'pos',
+            ],
+            [
+                'key' => PremiumFeatureKeys::RETAIL_MULTI_BRANCHES,
+                'name_ar' => 'تعدد الفروع',
+                'description_ar' => 'إدارة أكثر من فرع مطعم ومطبخ في لوحة التحكم.',
+                'hint' => 'premium_feature_retail_multi_branches',
+            ],
+            [
+                'key' => PremiumFeatureKeys::RETAIL_POS_DEVICE_LINK,
+                'name_ar' => 'ربط أجهزة الكاشير (بريميوم)',
+                'description_ar' => 'تسجيل وربط أجهزة POS في الصالة (MAC/توكن).',
+                'hint' => 'premium_feature_retail_pos_device_link',
+                'requires_module' => 'pos',
+            ],
+            [
+                'key' => PremiumFeatureKeys::RETAIL_WHATSAPP_AUTOMATION,
+                'name_ar' => 'واتساب الطلبات',
+                'description_ar' => 'تأكيد الطلبات وتذكيرات التوصيل عبر واتساب.',
+                'hint' => 'premium_feature_retail_whatsapp_automation',
+            ],
+        ],
+
         'fleet_agents' => [
             [
                 'key' => PremiumFeatureKeys::FLEET_FIELD_OPS,
@@ -178,6 +207,6 @@ return [
      *
      * @var list<string>
      */
-    'full_erp_niche_keys' => ['retail', 'manufacturing', 'fleet_agents', 'nurseries', 'medical_clinics'],
+    'full_erp_niche_keys' => ['retail', 'restaurants', 'manufacturing', 'fleet_agents', 'nurseries', 'medical_clinics'],
 
 ];

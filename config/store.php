@@ -90,6 +90,15 @@ return [
             'pos_lexicon_key' => 'modules.pos',
             'whatsapp_feature_keys' => ['nursery_whatsapp_automation', 'retail_whatsapp_automation'],
         ],
+        'restaurants' => [
+            'online_store_portal' => true,
+            'provision_online_store' => true,
+            'storefront_label_ar' => 'طلبات المطعم أونلاين',
+            'settings_nav_label_ar' => 'إعدادات الطلب أونلاين',
+            'orders_nav_label_ar' => 'طلبات التوصيل',
+            'pos_lexicon_key' => 'modules.pos',
+            'whatsapp_feature_keys' => ['retail_whatsapp_automation'],
+        ],
         '_default' => [
             'online_store_portal' => false,
             'provision_online_store' => false,

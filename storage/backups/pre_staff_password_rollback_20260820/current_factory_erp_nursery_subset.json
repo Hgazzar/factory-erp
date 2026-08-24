@@ -1,0 +1,178 @@
+{
+    "generated_at": "2026-08-20T18:05:12+00:00",
+    "tables": {
+        "nursery_children": [
+            {
+                "id": 1,
+                "user_id": 2,
+                "code": "CH-00001",
+                "name": "فهد",
+                "date_of_birth": "2026-08-27",
+                "gender": "male",
+                "guardian_id": 1,
+                "allergies": null,
+                "status": "active",
+                "created_at": "2026-08-20 17:35:37",
+                "updated_at": "2026-08-20 17:35:37",
+                "guardian_relationship": null,
+                "diseases": null,
+                "health_notes": null
+            },
+            {
+                "id": 2,
+                "user_id": 2,
+                "code": "CH-00002",
+                "name": "فهد",
+                "date_of_birth": "2026-08-27",
+                "gender": "male",
+                "guardian_id": 1,
+                "allergies": null,
+                "status": "active",
+                "created_at": "2026-08-20 17:37:00",
+                "updated_at": "2026-08-20 17:37:00",
+                "guardian_relationship": null,
+                "diseases": null,
+                "health_notes": null
+            }
+        ],
+        "nursery_guardians": [
+            {
+                "id": 1,
+                "user_id": 2,
+                "name": "السلامي",
+                "phone": "056565656",
+                "phone_alt": null,
+                "email": null,
+                "notes": null,
+                "created_at": "2026-08-20 17:35:37",
+                "updated_at": "2026-08-20 17:35:37",
+                "national_id": null,
+                "address": null,
+                "region": null,
+                "city": null,
+                "portal_access_token": null,
+                "portal_invited_at": null,
+                "portal_last_login_at": null
+            }
+        ],
+        "nursery_classrooms": [],
+        "nursery_enrollments": [],
+        "nursery_attendance_logs": [
+            {
+                "id": 1,
+                "user_id": 2,
+                "child_id": 1,
+                "attendance_date": "2026-08-20",
+                "checked_in_at": "2026-08-20 17:41:35",
+                "checked_out_at": null,
+                "status": "present",
+                "notes": null,
+                "recorded_by": 2,
+                "created_at": "2026-08-20 17:41:35",
+                "updated_at": "2026-08-20 17:41:35"
+            }
+        ],
+        "nursery_staff_attendance_logs": [],
+        "nursery_subscriptions": [],
+        "nursery_subscription_plans": [
+            {
+                "id": 1,
+                "user_id": 2,
+                "name": "شهري",
+                "plan_type": "monthly",
+                "amount": "2000.00",
+                "tax_rate": "15.00",
+                "currency_code": "SAR",
+                "is_active": true,
+                "created_at": "2026-08-20 17:11:28",
+                "updated_at": "2026-08-20 17:11:28"
+            },
+            {
+                "id": 2,
+                "user_id": 2,
+                "name": "فصلي",
+                "plan_type": "term",
+                "amount": "5500.00",
+                "tax_rate": "15.00",
+                "currency_code": "SAR",
+                "is_active": true,
+                "created_at": "2026-08-20 17:11:28",
+                "updated_at": "2026-08-20 17:11:28"
+            },
+            {
+                "id": 3,
+                "user_id": 2,
+                "name": "سنوي",
+                "plan_type": "yearly",
+                "amount": "18000.00",
+                "tax_rate": "15.00",
+                "currency_code": "SAR",
+                "is_active": true,
+                "created_at": "2026-08-20 17:11:28",
+                "updated_at": "2026-08-20 17:11:28"
+            }
+        ],
+        "nursery_settings": [
+            {
+                "id": 1,
+                "user_id": 2,
+                "nursery_name": "مدير حضانة تجريبية",
+                "display_name": null,
+                "logo_path": null,
+                "theme_primary_color": null,
+                "theme_secondary_color": null,
+                "contact_phone": null,
+                "contact_email": null,
+                "address": null,
+                "city": null,
+                "region": null,
+                "manager_name": null,
+                "manager_mobile": null,
+                "manager_email": null,
+                "created_at": "2026-08-20 17:01:12",
+                "updated_at": "2026-08-20 17:01:12"
+            }
+        ],
+        "employees": [],
+        "users": [
+            {
+                "id": 2,
+                "name": "مدير حضانة تجريبية",
+                "email": "nursery-demo@akwad.test",
+                "role": "admin",
+                "email_verified_at": null,
+                "password": "$2y$12$VKa.mCYXJljFY8bXQZQg1ue\/A2Si\/dsdNSKZYP2zgDSiC1xL.DMmK",
+                "is_technician": false,
+                "remember_token": null,
+                "created_at": "2026-08-20 17:00:48",
+                "updated_at": "2026-08-20 17:00:48"
+            }
+        ],
+        "tenant_profiles": [
+            {
+                "id": 1,
+                "tenant_user_id": 2,
+                "niche_key": "nurseries",
+                "domain": "demo-nursery",
+                "slug": "demo-nursery",
+                "status": "active",
+                "lexicon_overrides": null,
+                "created_at": "2026-08-20 17:07:18",
+                "updated_at": "2026-08-20 17:10:22"
+            }
+        ],
+        "tenant_modules": [
+            {
+                "id": 1,
+                "tenant_user_id": 2,
+                "system_module_id": 12,
+                "enabled": true,
+                "enabled_at": "2026-08-20 17:07:18",
+                "disabled_at": null,
+                "config": null,
+                "created_at": "2026-08-20 17:07:18",
+                "updated_at": "2026-08-20 17:07:18"
+            }
+        ]
+    }
+}

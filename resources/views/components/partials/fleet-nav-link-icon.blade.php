@@ -1,0 +1,29 @@
+@php
+    $linkKey = $linkKey ?? '';
+@endphp
+@switch($linkKey)
+    @case('fleet.dashboard')
+        🏠
+        @break
+    @case('fleet.collections')
+        💰
+        @break
+    @case('fleet.custody')
+        📋
+        @break
+    @case('fleet.store_orders')
+        🛒
+        @break
+    @case('fleet.routes')
+        🗺️
+        @break
+    @case('fleet.agents')
+        🚚
+        @break
+    @case('fleet.customers')
+        👥
+        @break
+    @case('fleet.products')
+        📦
+        @break
+@endswitch

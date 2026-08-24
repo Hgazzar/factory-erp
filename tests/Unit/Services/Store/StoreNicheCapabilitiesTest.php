@@ -15,17 +15,18 @@ final class StoreNicheCapabilitiesTest extends TestCase
     {
         $caps = new StoreNicheCapabilities;
 
-        foreach (['retail', 'full_erp', 'manufacturing', 'fleet_agents', 'medical_clinics', 'nurseries'] as $niche) {
+        foreach (['retail', 'restaurants', 'full_erp', 'manufacturing', 'fleet_agents', 'medical_clinics', 'nurseries'] as $niche) {
             $this->assertTrue($caps->supportsOnlineStorePortal($niche), "Expected portal support for {$niche}");
         }
     }
 
     #[Test]
-    public function only_retail_provisions_online_store_by_default(): void
+    public function retail_and_restaurants_provision_online_store_by_default(): void
     {
         $caps = new StoreNicheCapabilities;
 
         $this->assertTrue($caps->provisionOnlineStoreByDefault('retail'));
+        $this->assertTrue($caps->provisionOnlineStoreByDefault('restaurants'));
         $this->assertFalse($caps->provisionOnlineStoreByDefault('manufacturing'));
         $this->assertFalse($caps->provisionOnlineStoreByDefault('medical_clinics'));
     }

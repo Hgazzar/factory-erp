@@ -9,7 +9,9 @@
 @endsection
 
 @section('content')
-<div dir="rtl" class="max-w-7xl mx-auto space-y-6" x-data="{ receiptUrl: null, receiptInvoice: '' }">
+<div dir="rtl" class="max-w-7xl mx-auto space-y-6"
+     x-data="{ receiptUrl: null, receiptInvoice: '' }"
+     @pos-receipt.window="receiptUrl = $event.detail.url; receiptInvoice = $event.detail.invoice">
     <header class="flex flex-wrap items-end justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">إدارة طلبات المتجر الإلكتروني</h1>
@@ -60,7 +62,7 @@
                         <th class="px-4 py-3 text-right font-semibold"><x-info field="pos.online_order_status" /> الحالة</th>
                         <th class="px-4 py-3 text-right font-semibold"><x-info field="pos.online_order_total" /> الإجمالي</th>
                         <th class="px-4 py-3 text-right font-semibold"><x-info field="pos.online_order_date" /> التاريخ</th>
-                        <th class="px-4 py-3 text-right font-semibold">إجراءات</th>
+                        <th class="px-4 py-3 text-center font-semibold w-14">إجراءات</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -80,6 +82,10 @@
                             \App\Models\PosSale::PAYMENT_MANUAL_TRANSFER => 'تحويل',
                             default => 'COD',
                         };
+                        $showTransferReceipt = $order->payment_method === \App\Models\PosSale::PAYMENT_MANUAL_TRANSFER && $order->payment_receipt_path;
+                        $isCodPending = $order->payment_method === \App\Models\PosSale::PAYMENT_COD && $order->status === \App\Models\PosSale::STATUS_PENDING;
+                        $isCodDelivered = $order->payment_method === \App\Models\PosSale::PAYMENT_COD && $order->status === \App\Models\PosSale::STATUS_DELIVERED;
+                        $isTransferPending = $order->payment_method === \App\Models\PosSale::PAYMENT_MANUAL_TRANSFER && $order->status === \App\Models\PosSale::STATUS_PENDING_VERIFICATION;
                     @endphp
                     <tr>
                         <td class="px-4 py-3 font-mono text-xs">{{ $order->invoice_number }}</td>
@@ -95,53 +101,105 @@
                         </td>
                         <td class="px-4 py-3 font-bold tabular-nums">{{ number_format((float) $order->total_amount, 2) }}</td>
                         <td class="px-4 py-3 text-gray-500">{{ $order->created_at?->format('Y-m-d H:i') }}</td>
-                        <td class="px-4 py-3">
-                            <div class="flex flex-wrap gap-2 items-center">
+                        <td class="px-4 py-3 text-center relative" x-data="{ open: false }">
+                            <button type="button"
+                                    @click="open = !open"
+                                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50"
+                                    title="المزيد من الإجراءات"
+                                    aria-label="المزيد من الإجراءات"
+                                    :aria-expanded="open.toString()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                                    <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+                                </svg>
+                            </button>
+                            <div x-show="open" @click.outside="open = false" x-cloak
+                                 class="absolute left-0 top-full z-30 mt-2 min-w-[13rem] rounded-xl border border-gray-200/90 bg-white py-2 shadow-2xl ring-1 ring-black/5"
+                                 role="menu"
+                                 dir="rtl">
                                 <a href="{{ route('pos.orders.invoice.pdf', $order) }}" target="_blank" rel="noopener"
-                                   class="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50">
-                                    <x-info field="pos.online_order_invoice_pdf" /> PDF
+                                   class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-orange-50 no-underline"
+                                   role="menuitem"
+                                   @click="open = false">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-700">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/></svg>
+                                    </span>
+                                    <span class="flex-1 leading-snug"><x-info field="pos.online_order_invoice_pdf" /> PDF</span>
                                 </a>
-
-                                @if($order->payment_method === \App\Models\PosSale::PAYMENT_MANUAL_TRANSFER && $order->payment_receipt_path)
+                                @if($showTransferReceipt)
                                     <button type="button"
-                                            @click="receiptUrl='{{ route('pos.orders.payment-receipt', $order) }}'; receiptInvoice='{{ $order->invoice_number }}'"
-                                            class="px-3 py-1.5 rounded-lg border border-amber-200 text-amber-800 text-xs font-bold hover:bg-amber-50">
-                                        إيصال التحويل
+                                            class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-orange-50"
+                                            role="menuitem"
+                                            @click="open=false; $dispatch('pos-receipt', { url: '{{ route('pos.orders.payment-receipt', $order) }}', invoice: @js($order->invoice_number) })">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/></svg>
+                                        </span>
+                                        <span class="flex-1 leading-snug">إيصال التحويل</span>
                                     </button>
                                 @endif
-
-                                @if($order->payment_method === \App\Models\PosSale::PAYMENT_COD && $order->status === \App\Models\PosSale::STATUS_PENDING)
-                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" onsubmit="return confirm('تأكيد التسليم؟');">
+                                @if($isCodPending)
+                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" class="m-0" onsubmit="return confirm('تأكيد التسليم؟');">
                                         @csrf
                                         <input type="hidden" name="status" value="delivered">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold">تم التسليم</button>
+                                        <button type="submit" class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-orange-50" role="menuitem">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/></svg>
+                                            </span>
+                                            <span class="flex-1 leading-snug">تم التسليم</span>
+                                        </button>
                                     </form>
-                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" onsubmit="return confirm('تحصيل مباشر؟');">
+                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" class="m-0" onsubmit="return confirm('تحصيل مباشر؟');">
                                         @csrf
                                         <input type="hidden" name="status" value="collected">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">تحصيل مباشر</button>
+                                        <button type="submit" class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-orange-50" role="menuitem">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/></svg>
+                                            </span>
+                                            <span class="flex-1 leading-snug">تحصيل مباشر</span>
+                                        </button>
                                     </form>
-                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" onsubmit="return confirm('إلغاء؟');">
+                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" class="m-0" onsubmit="return confirm('إلغاء؟');">
                                         @csrf
                                         <input type="hidden" name="status" value="cancelled">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-bold">إلغاء</button>
+                                        <button type="submit" class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50" role="menuitem">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>
+                                            </span>
+                                            <span class="flex-1 leading-snug">إلغاء</span>
+                                        </button>
                                     </form>
-                                @elseif($order->payment_method === \App\Models\PosSale::PAYMENT_COD && $order->status === \App\Models\PosSale::STATUS_DELIVERED)
-                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" onsubmit="return confirm('تأكيد التحصيل؟');">
+                                @elseif($isCodDelivered)
+                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" class="m-0" onsubmit="return confirm('تأكيد التحصيل؟');">
                                         @csrf
                                         <input type="hidden" name="status" value="collected">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">تم التحصيل</button>
+                                        <button type="submit" class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-orange-50" role="menuitem">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z"/></svg>
+                                            </span>
+                                            <span class="flex-1 leading-snug">تم التحصيل</span>
+                                        </button>
                                     </form>
-                                @elseif($order->payment_method === \App\Models\PosSale::PAYMENT_MANUAL_TRANSFER && $order->status === \App\Models\PosSale::STATUS_PENDING_VERIFICATION)
-                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" onsubmit="return confirm('تأكيد التحويل وترحيل القيد؟');">
+                                @elseif($isTransferPending)
+                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" class="m-0" onsubmit="return confirm('تأكيد التحويل وترحيل القيد؟');">
                                         @csrf
                                         <input type="hidden" name="status" value="collected">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">تأكيد التحويل</button>
+                                        <button type="submit" class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-gray-800 transition hover:bg-orange-50" role="menuitem">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/></svg>
+                                            </span>
+                                            <span class="flex-1 leading-snug">تأكيد التحويل</span>
+                                        </button>
                                     </form>
-                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" onsubmit="return confirm('إلغاء؟');">
+                                    <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                    <form method="post" action="{{ route('pos.orders.update-status', $order) }}" class="m-0" onsubmit="return confirm('إلغاء؟');">
                                         @csrf
                                         <input type="hidden" name="status" value="cancelled">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-bold">إلغاء</button>
+                                        <button type="submit" class="erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium text-red-700 transition hover:bg-red-50" role="menuitem">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>
+                                            </span>
+                                            <span class="flex-1 leading-snug">إلغاء</span>
+                                        </button>
                                     </form>
                                 @endif
                             </div>

@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Fleet\FleetAgent;
 use App\Models\Fleet\FleetCustomer;
 use App\Services\Fleet\FleetCustomerService;
+use App\Services\Fleet\FleetGeoVerificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -143,5 +144,15 @@ final class FleetCustomerWebController extends Controller
         }
 
         return redirect()->route('fleet.customers.index')->with('success', 'تم تحديث بيانات العميل.');
+    }
+
+    public function approveLocation(FleetCustomer $customer, FleetGeoVerificationService $geo): RedirectResponse
+    {
+        $approved = $geo->approveLocation($customer);
+
+        return redirect()->back()->with(
+            $approved ? 'success' : 'error',
+            $approved ? 'تم اعتماد موقع العميل.' : 'تعذّر اعتماد الموقع — لا يوجد موقع معلّق صالح.',
+        );
     }
 }

@@ -1,0 +1,56 @@
+Akwad System — Store/POS v1.0 Deployment Notes
+Tag: v1.0-Retail-Engine
+Commit: Finalize Store/POS v1.0: Modular payments, HMAC security, and queuing system
+
+═══════════════════════════════════════════════════════════════
+عند شراء السيرفر — نفّذ بالترتيب:
+═══════════════════════════════════════════════════════════════
+
+1) رفع الكود ونسخ .env
+   - انسخ من: ~/Backups/Production_Credentials/Akwad-Store-POS-v1.0-production.env.template.txt
+   - إلى: .env على السيرفر (بعد ملء القيم الحقيقية)
+   - تأكد: APP_URL=https://your-domain.com (HTTPS)
+
+2) Database & migrations
+   php artisan key:generate          # مرة واحدة إذا لم يكن APP_KEY مضبوطاً
+   php artisan migrate --force
+
+3) Storage (إيصالات التحويل البنكي + PDF)
+   php artisan storage:link
+
+4) Queue worker (WhatsApp + PDF بعد الطلب)
+   php artisan queue:work --queue=default --sleep=3 --tries=3
+   # أو Supervisor / systemd للتشغيل الدائم
+
+5) Cache (بعد ضبط .env)
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+
+6) Paymob
+   - Processed callback URL: {APP_URL}/webhooks/store/paymob
+   - HMAC Secret → إعدادات المتجر → Paymob (إلزامي في Live)
+
+7) Git (اختياري — من جهازك المحلي)
+   git push origin main
+   git push origin v1.0-Retail-Engine
+
+═══════════════════════════════════════════════════════════════
+اختبار سريع بعد النشر
+═══════════════════════════════════════════════════════════════
+   php artisan test tests/Feature/Store/   # على بيئة staging إن وُجدت
+   curl -I https://your-domain.com/webhooks/store/paymob   # POST فقط من Paymob
+
+═══════════════════════════════════════════════════════════════
+ملفات مهمة خارج Git
+═══════════════════════════════════════════════════════════════
+   ~/Backups/Production_Credentials/Akwad-Store-POS-v1.0-production.env.template.txt
+
+═══════════════════════════════════════════════════════════════
+Core Refactoring — checkpoint (planned, not started)
+═══════════════════════════════════════════════════════════════
+   File: CORE-REFACTOR-CHECKPOINT.txt (same folder as this project)
+   Scope: 6 niches — retail, full_erp, manufacturing, fleet_agents,
+          medical_clinics, nurseries (no restaurant)
+   Pillars: WhatsApp | Payment | HMAC | Queues | Checkout | Settings/Metrics
+   Start: tell Cursor "ابدأ Core Phase 1" … through Phase 6

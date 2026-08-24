@@ -30,7 +30,7 @@ return [
             'name_en' => 'Inventory',
             'description_ar' => 'الأصناف، المستودعات، الحركات، الجرد.',
             'is_core' => false,
-            'niche_tags' => ['erp', 'factory', 'ecommerce'],
+            'niche_tags' => ['erp', 'factory', 'ecommerce', 'restaurant'],
             'sort_order' => 20,
         ],
         'manufacturing' => [
@@ -70,7 +70,7 @@ return [
             'name_en' => 'Point of Sale',
             'description_ar' => 'الكاشير، الجلسات، الإيصالات.',
             'is_core' => false,
-            'niche_tags' => ['ecommerce', 'retail', 'factory', 'fleet', 'clinic', 'nursery'],
+            'niche_tags' => ['ecommerce', 'retail', 'restaurant', 'factory', 'fleet', 'clinic', 'nursery'],
             'sort_order' => 70,
         ],
         'crm' => [
@@ -113,6 +113,14 @@ return [
             'niche_tags' => ['fleet'],
             'sort_order' => 87,
         ],
+        'restaurant' => [
+            'name_ar' => 'المطعم',
+            'name_en' => 'Restaurant',
+            'description_ar' => 'الصالة، الطاولات، طلبات المطبخ، وقائمة الطعام.',
+            'is_core' => false,
+            'niche_tags' => ['restaurant'],
+            'sort_order' => 88,
+        ],
     ],
 
     /**
@@ -133,6 +141,7 @@ return [
         'clinic' => 'clinic',
         'nursery' => 'nursery',
         'fleet' => 'fleet',
+        'restaurant' => 'restaurant',
         'operations' => 'manufacturing',
     ],
 

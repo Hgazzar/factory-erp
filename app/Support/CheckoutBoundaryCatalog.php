@@ -38,6 +38,7 @@ final class CheckoutBoundaryCatalog
     {
         return [
             'retail',
+            'restaurants',
             'full_erp',
             'manufacturing',
             'fleet_agents',
@@ -51,6 +52,7 @@ final class CheckoutBoundaryCatalog
     {
         return [
             'retail',
+            'restaurants',
             'manufacturing',
             'fleet_agents',
             'medical_clinics',

@@ -1,0 +1,138 @@
+ M app/Console/Commands/NurserySendWhatsAppRemindersCommand.php
+ M app/Core/Messaging/MetaCloudWhatsAppChannel.php
+ M app/Http/Controllers/Fleet/Api/FleetAgentApiController.php
+ M app/Http/Controllers/Fleet/FleetCustomerWebController.php
+ M app/Http/Controllers/Fleet/FleetDashboardController.php
+ M app/Http/Controllers/Nursery/NurseryAttendanceWebController.php
+ M app/Http/Controllers/Nursery/NurseryChildWebController.php
+ M app/Http/Controllers/Nursery/NurseryClassroomWebController.php
+ M app/Http/Controllers/Nursery/NurseryDashboardController.php
+ M app/Http/Controllers/Nursery/NurseryStaffWebController.php
+ M app/Http/Controllers/Nursery/NurserySubscriptionWebController.php
+ M app/Http/Controllers/Nursery/Portal/NurseryPortalAuthController.php
+ M app/Http/Controllers/Nursery/Portal/NurseryPortalChildWebController.php
+ M app/Jobs/Nursery/SendNurseryPaymentReminderWhatsAppJob.php
+ M app/Jobs/Nursery/SendNurseryRenewalReminderWhatsAppJob.php
+ M app/Jobs/Nursery/SendNurserySubscriptionPaidConfirmationWhatsAppJob.php
+ M app/Models/Fleet/FleetCustomer.php
+ M app/Models/Nursery/AttendanceLog.php
+ M app/Models/Nursery/Child.php
+ M app/Models/Nursery/Subscription.php
+ M app/Providers/AppServiceProvider.php
+ M app/Services/Nursery/NurseryAttendanceService.php
+ M app/Services/Nursery/NurseryPortalInviteService.php
+ M app/Services/Nursery/NurseryShiftAttendanceService.php
+ M app/Services/Nursery/NurseryStaffService.php
+ M app/Services/Nursery/NurserySubscriptionAccountingService.php
+ M app/Services/Nursery/NurserySubscriptionService.php
+ M app/Services/Nursery/NurseryWhatsAppNotificationService.php
+ M app/Services/Nursery/NurseryWhatsAppNotifier.php
+ M app/Services/Nursery/Portal/NurseryPortalAuthService.php
+ M app/Services/Nursery/Portal/NurseryPortalChildProfileService.php
+ M app/Services/Tenant/TenantDashboardPackageService.php
+ M app/Support/CheckoutBoundaryCatalog.php
+ M app/Support/NurseryAccess.php
+ M config/fleet.php
+ M config/hints.php
+ M config/lexicon.php
+ M config/modules.php
+ M config/niches.php
+ M config/nursery.php
+ M config/premium_features.php
+ M config/store.php
+ M resources/views/components/clinic-sidebar-nav.blade.php
+ M resources/views/components/fleet-sidebar-nav.blade.php
+ M resources/views/components/nursery-sidebar-nav.blade.php
+ M resources/views/components/pos-sidebar-nav.blade.php
+ M resources/views/components/searchable-select.blade.php
+ M resources/views/dashboard.blade.php
+ M resources/views/fleet/dashboard.blade.php
+ M resources/views/layouts/app.blade.php
+ M resources/views/layouts/nursery.blade.php
+ M resources/views/layouts/partials/erp-global-navbar.blade.php
+ M resources/views/nursery/attendance/partials/register-tab.blade.php
+ M resources/views/nursery/children/show.blade.php
+ M resources/views/nursery/classrooms/index.blade.php
+ M resources/views/nursery/dashboard.blade.php
+ M resources/views/nursery/partials/staff-form.blade.php
+ M resources/views/nursery/partials/staff-today-board.blade.php
+ M resources/views/nursery/partials/today-board.blade.php
+ M resources/views/nursery/portal/child.blade.php
+ M resources/views/nursery/staff/index.blade.php
+ M resources/views/nursery/subscriptions/index.blade.php
+ M routes/console.php
+ M routes/web.php
+ M tests/Feature/Nursery/NurseryClassroomTest.php
+ M tests/Feature/Nursery/NurseryGuardianAdminTest.php
+ M tests/Feature/Nursery/NurseryPhase2Test.php
+ M tests/Feature/Nursery/NurseryStaffTest.php
+ M tests/Feature/Nursery/NurserySubscriptionTest.php
+ M tests/Feature/Nursery/NurseryWhatsAppJobTest.php
+ M tests/Unit/Core/Messaging/MetaCloudWhatsAppChannelTest.php
+ M tests/Unit/Services/Store/StoreNicheCapabilitiesTest.php
+ M tests/Unit/Tenant/NicheCatalogTest.php
+?? app/Console/Commands/NurseryExpireSubscriptionsCommand.php
+?? app/Data/
+?? app/Http/Controllers/Nursery/NurseryChildDailyActivityWebController.php
+?? app/Jobs/Nursery/SendNurseryGuardianInviteWhatsAppJob.php
+?? app/Jobs/Nursery/SendNurseryGuardianOtpWhatsAppJob.php
+?? app/Models/Fleet/FleetVisit.php
+?? app/Models/Nursery/AttendanceCorrection.php
+?? app/Models/Nursery/ChildDailyActivity.php
+?? app/Models/Nursery/NurseryOutboundMessage.php
+?? app/Services/Fleet/FleetGeoVerificationService.php
+?? app/Services/Fleet/FleetVisitService.php
+?? app/Services/Fleet/LocationValidatorService.php
+?? app/Services/Nursery/NurseryChildDailyActivityService.php
+?? app/Services/Nursery/NurseryStaffAccountService.php
+?? app/Services/Nursery/NurseryWhatsAppOutboxService.php
+?? app/Services/Tenant/TenantNavigationService.php
+?? app/Support/NurseryChildDailyActivityCatalog.php
+?? config/erp_navigation.php
+?? config/navigation.php
+?? database/migrations/2026_06_15_100000_fleet_geo_verification.php
+?? database/migrations/2026_06_16_100000_nursery_subscription_status_lifecycle.php
+?? database/migrations/2026_06_17_100000_nursery_outbox_and_subscription_lifecycle.php
+?? database/migrations/2026_06_18_100000_nursery_subscription_renewed_from.php
+?? database/migrations/2026_06_19_100000_nursery_child_daily_activities.php
+?? database/migrations/2026_06_20_100000_nursery_attendance_corrections.php
+?? notes.txt
+?? resources/views/components/dashboard-widget-actions.blade.php
+?? resources/views/components/erp-module-sidebar-offcanvas.blade.php
+?? resources/views/components/erp-module-sidebar.blade.php
+?? resources/views/components/fleet-exceptions-queue.blade.php
+?? resources/views/components/fleet-pending-locations.blade.php
+?? resources/views/components/nav-shell-links.blade.php
+?? resources/views/components/partials/
+?? resources/views/nursery/classrooms/partials/
+?? resources/views/nursery/classrooms/today.blade.php
+?? resources/views/nursery/partials/child-daily-activity.blade.php
+?? storage/backups/pre_staff_password_rollback_20260820/
+?? tests/Feature/Clinic/ClinicSidebarNavigationTest.php
+?? tests/Feature/Fleet/FleetGeoVerificationTest.php
+?? tests/Feature/Fleet/FleetSidebarNavigationTest.php
+?? tests/Feature/Nursery/NurseryAttendanceAuthorizationTest.php
+?? tests/Feature/Nursery/NurseryAttendanceDepthTest.php
+?? tests/Feature/Nursery/NurseryChildDailyActivityTest.php
+?? tests/Feature/Nursery/NurseryClassroomTodayTest.php
+?? tests/Feature/Nursery/NurserySidebarNavigationTest.php
+?? tests/Feature/Nursery/NurseryStaffAccountTest.php
+?? tests/Feature/Nursery/NurserySubscriptionLifecycleTest.php
+?? tests/Feature/Nursery/NurserySubscriptionMarkPaidTest.php
+?? tests/Feature/Nursery/NurserySubscriptionPermissionTest.php
+?? tests/Feature/Nursery/NurseryWhatsAppOutboxReliabilityTest.php
+?? tests/Feature/Nursery/NurseryWhatsAppOutboxTest.php
+?? tests/Feature/Nursery/Portal/NurseryPortalDailyActivityTest.php
+?? tests/Feature/Pos/PosSidebarNavigationTest.php
+?? tests/Feature/Tenant/ErpSidebarNavigationTest.php
+?? tests/Feature/Tenant/TenantDashboardModuleNavigationTest.php
+?? tests/Feature/Tenant/TenantDashboardNavigationTest.php
+?? tests/Unit/Nursery/
+?? tests/Unit/Tenant/NavigationLinksIntegrityTest.php
+?? tests/Unit/Tenant/TenantNavigationServiceTest.php
+?? tests/database/migrations/0001_01_01_000041_fleet_geo_verification_test_schema.php
+?? tests/database/migrations/0001_01_01_000042_nursery_subscription_status_lifecycle_test_schema.php
+?? tests/database/migrations/0001_01_01_000043_nursery_outbox_and_subscription_lifecycle_test_schema.php
+?? tests/database/migrations/0001_01_01_000044_nursery_subscription_renewed_from_test_schema.php
+?? tests/database/migrations/0001_01_01_000045_nursery_child_daily_activities_test_schema.php
+?? tests/database/migrations/0001_01_01_000046_nursery_attendance_corrections_test_schema.php

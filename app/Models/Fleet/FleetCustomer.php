@@ -16,6 +16,18 @@ class FleetCustomer extends Model
 
     public const STATUS_INACTIVE = 'inactive';
 
+    public const LOCATION_NONE = 'none';
+
+    public const LOCATION_PENDING = 'pending';
+
+    public const LOCATION_APPROVED = 'approved';
+
+    public const LOCATION_SOURCE_AGENT = 'agent';
+
+    public const LOCATION_SOURCE_MANAGER = 'manager';
+
+    public const LOCATION_SOURCE_MAP = 'map';
+
     protected $table = 'fleet_customers';
 
     protected $fillable = [
@@ -30,10 +42,33 @@ class FleetCustomer extends Model
         'crm_customer_id',
         'status',
         'notes',
+        'latitude',
+        'longitude',
+        'location_status',
+        'location_source',
+        'location_updated_at',
+        'geofence_radius',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'location_updated_at' => 'datetime',
+            'geofence_radius' => 'integer',
+        ];
+    }
 
     public function assignedAgent(): BelongsTo
     {
         return $this->belongsTo(FleetAgent::class, 'assigned_agent_id');
+    }
+
+    public function hasApprovedLocation(): bool
+    {
+        return $this->location_status === self::LOCATION_APPROVED
+            && $this->latitude !== null
+            && $this->longitude !== null;
     }
 }

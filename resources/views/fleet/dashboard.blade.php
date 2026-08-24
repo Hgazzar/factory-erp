@@ -114,6 +114,22 @@
         </div>
     </section>
 
+    @if(app(\App\Support\FleetAccess::class)->allows(\App\Support\FleetAccess::CAP_MANAGE_CUSTOMERS))
+        @php
+            $geoCanApprove = app(\App\Support\FleetAccess::class)->allows(\App\Support\FleetAccess::CAP_MANAGE_CUSTOMERS);
+        @endphp
+        <section>
+            <h2 class="text-base font-bold text-violet-950 mb-3">
+                التحقق الجغرافي من الزيارات
+                <x-info field="fleet.geo_verification_intro" />
+            </h2>
+            <div class="grid gap-3 grid-cols-1 lg:grid-cols-2">
+                <x-fleet-exceptions-queue :visits="$geoExceptions ?? []" />
+                <x-fleet-pending-locations :customers="$geoPendingLocations ?? []" :can-approve="$geoCanApprove" />
+            </div>
+        </section>
+    @endif
+
     <section class="flex flex-wrap gap-2">
         <a href="{{ route('fleet.store-orders.index') }}" class="fleet-btn fleet-btn-primary text-sm">طلبات المتجر</a>
         <a href="{{ route('fleet.routes.index') }}" class="fleet-btn fleet-btn-soft text-sm">خطوط السير</a>

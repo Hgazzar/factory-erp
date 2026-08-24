@@ -87,6 +87,24 @@ return [
             ],
         ],
 
+        'restaurants' => [
+            'key' => 'restaurants',
+            'name_ar' => 'المطاعم',
+            'name_en' => 'Restaurants',
+            'description_ar' => 'صالة طعام، طاولات، طاقم صالة، ومطبخ تحضير داخلي.',
+            'modules' => [
+                'finance',
+                'pos',
+                'inventory',
+                'purchases',
+                'hr',
+            ],
+            'default_premium_features' => [
+                'online_store',
+                'retail_whatsapp_automation',
+            ],
+        ],
+
         // 🌟 النيش الجديد: نظام الـ ERP الشامل والمتكامل
         'full_erp' => [
             'key' => 'full_erp',

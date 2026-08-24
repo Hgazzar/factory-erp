@@ -11,17 +11,18 @@ use Tests\TestCase;
 final class NicheCatalogTest extends TestCase
 {
     #[Test]
-    public function all_six_niches_are_defined(): void
+    public function all_niches_are_defined(): void
     {
         $catalog = app(NicheCatalog::class);
 
-        $this->assertCount(6, $catalog->keys());
+        $this->assertCount(7, $catalog->keys());
         $this->assertSame([
             'manufacturing',
             'retail',
             'medical_clinics',
             'nurseries',
             'fleet_agents',
+            'restaurants',
             'full_erp',
         ], $catalog->keys());
     }
@@ -92,5 +93,38 @@ final class NicheCatalogTest extends TestCase
         $this->assertContains('nursery', $modules);
         $this->assertContains('finance', $modules);
         $this->assertNotContains('crm', $modules);
+    }
+
+    #[Test]
+    public function restaurants_default_modules_include_pos_inventory_and_hr(): void
+    {
+        $modules = app(NicheCatalog::class)->defaultModuleKeys('restaurants');
+
+        $this->assertContains('pos', $modules);
+        $this->assertContains('inventory', $modules);
+        $this->assertContains('purchases', $modules);
+        $this->assertContains('hr', $modules);
+        $this->assertNotContains('crm', $modules);
+        $this->assertNotContains('restaurant', $modules);
+    }
+
+    #[Test]
+    public function restaurants_default_premium_features_include_online_store_and_whatsapp(): void
+    {
+        $features = app(NicheCatalog::class)->defaultPremiumFeatureKeys('restaurants');
+
+        $this->assertContains('online_store', $features);
+        $this->assertContains('retail_whatsapp_automation', $features);
+    }
+
+    #[Test]
+    public function restaurants_lexicon_renames_inventory_and_order_entities(): void
+    {
+        $overrides = config('lexicon.niche_overrides.restaurants');
+
+        $this->assertSame('المطبخ / المستودع', $overrides['modules.inventory']);
+        $this->assertSame('طاولة', $overrides['entities.table']);
+        $this->assertSame('قائمة الطعام', $overrides['entities.menu']);
+        $this->assertSame('طلب المطبخ', $overrides['entities.order']);
     }
 }

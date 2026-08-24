@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Fleet\Api;
 
+use App\Data\Fleet\GeoCapture;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Fleet\Api\Concerns\ResolvesFleetAgentApiContext;
 use App\Models\Fleet\FleetCollection;
+use App\Models\Fleet\FleetRouteStop;
+use App\Models\Fleet\FleetVisit;
 use App\Services\Fleet\FleetAgentAuthService;
 use App\Services\Fleet\FleetAgentMobileService;
 use App\Services\Fleet\FleetCollectionService;
 use App\Services\Fleet\FleetRouteService;
+use App\Services\Fleet\FleetVisitService;
 use App\Support\Api\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class FleetAgentApiController extends Controller
@@ -75,20 +80,60 @@ final class FleetAgentApiController extends Controller
         }
     }
 
-    public function updateStopStatus(Request $request, int $stop, FleetRouteService $routes, FleetAgentMobileService $mobile): JsonResponse
+    public function updateStopStatus(Request $request, int $stop, FleetRouteService $routes, FleetAgentMobileService $mobile, FleetVisitService $visits): JsonResponse
     {
         $validated = $request->validate([
             'status' => ['required', 'string', 'in:pending,visited,skipped'],
+            'outcome' => ['nullable', 'string', 'in:sale,no_sale,skipped'],
+            'visit_reason' => ['nullable', 'string', 'max:191'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'accuracy' => ['nullable', 'numeric', 'min:0'],
+            'is_mocked' => ['nullable', 'boolean'],
         ]);
 
+        $tenantUserId = $this->tenantUserId($request);
+        $agent = $this->agent($request);
+        $outcome = $this->resolveStopOutcome($validated['status'], $validated['outcome'] ?? null);
+
+        if ($outcome === FleetVisit::OUTCOME_NO_SALE && trim((string) ($validated['visit_reason'] ?? '')) === '') {
+            throw ValidationException::withMessages([
+                'visit_reason' => 'سبب عدم البيع مطلوب عند إغلاق الزيارة بدون فاتورة.',
+            ]);
+        }
+
         try {
-            $model = $mobile->stopForAgent($this->tenantUserId($request), $this->agent($request), $stop);
-            $updated = $routes->updateStopStatus($model, $this->tenantUserId($request), $validated['status']);
+            $model = $mobile->stopForAgent($tenantUserId, $agent, $stop);
+            $updated = $routes->updateStopStatus($model, $tenantUserId, $validated['status']);
+
+            if (in_array($validated['status'], [FleetRouteStop::STATUS_VISITED, FleetRouteStop::STATUS_SKIPPED], true)) {
+                $visits->recordForStop(
+                    $tenantUserId,
+                    (int) $agent->id,
+                    $updated,
+                    $outcome,
+                    $validated['visit_reason'] ?? null,
+                    GeoCapture::fromRequest($validated),
+                );
+            }
 
             return ApiResponse::success(['stop' => $mobile->stopPayload($updated)]);
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 422, 'stop_update_failed');
         }
+    }
+
+    private function resolveStopOutcome(string $status, ?string $outcome): string
+    {
+        if ($status === FleetRouteStop::STATUS_SKIPPED) {
+            return FleetVisit::OUTCOME_SKIPPED;
+        }
+
+        if ($outcome === FleetVisit::OUTCOME_NO_SALE) {
+            return FleetVisit::OUTCOME_NO_SALE;
+        }
+
+        return FleetVisit::OUTCOME_SALE;
     }
 
     public function custodyBalance(Request $request, FleetAgentMobileService $mobile): JsonResponse
@@ -142,7 +187,7 @@ final class FleetAgentApiController extends Controller
         }
     }
 
-    public function storeCollection(Request $request, FleetCollectionService $collections, FleetAgentMobileService $mobile): JsonResponse
+    public function storeCollection(Request $request, FleetCollectionService $collections, FleetAgentMobileService $mobile, FleetVisitService $visits): JsonResponse
     {
         $validated = $request->validate([
             'customer_id' => ['nullable', 'integer', 'min:1'],
@@ -151,6 +196,10 @@ final class FleetAgentApiController extends Controller
             'collected_on' => ['nullable', 'date'],
             'payment_method' => ['nullable', 'string', 'in:cod,transfer,credit'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'accuracy' => ['nullable', 'numeric', 'min:0'],
+            'is_mocked' => ['nullable', 'boolean'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.product_id' => ['required', 'integer', 'min:1'],
             'lines.*.quantity' => ['required', 'numeric', 'gt:0'],
@@ -180,6 +229,13 @@ final class FleetAgentApiController extends Controller
                 ],
                 $validated['notes'] ?? null,
                 (int) $agent->id,
+            );
+
+            $visits->recordForCollection(
+                $tenantUserId,
+                (int) $agent->id,
+                $collection,
+                GeoCapture::fromRequest($validated),
             );
 
             return ApiResponse::success(
