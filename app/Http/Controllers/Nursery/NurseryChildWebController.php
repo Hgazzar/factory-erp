@@ -123,6 +123,9 @@ final class NurseryChildWebController extends Controller
 
         try {
             $uploads = $request->file('attachments', []) ?? [];
+            if (! is_array($uploads)) {
+                $uploads = [$uploads];
+            }
             if ($uploads !== []) {
                 $this->persistMorphAttachments($child, $uploads, $tenantUserId, 'nursery/children');
             }
@@ -138,8 +141,7 @@ final class NurseryChildWebController extends Controller
 
             return redirect()
                 ->route('nursery.children.show', $child)
-                ->with('success', 'تم تسجيل الطفل.')
-                ->with('error', 'حُفظت البيانات لكن تعذّر رفع بعض الملفات. يمكنك إضافتها من التعديل.');
+                ->with('warning', 'تم تسجيل الطفل، لكن تعذّر رفع الصورة/المرفقات. أعد رفعها من «تعديل البيانات».');
         }
 
         if ($request->boolean('send_portal_invite')) {
@@ -258,6 +260,9 @@ final class NurseryChildWebController extends Controller
 
         try {
             $uploads = $request->file('attachments', []) ?? [];
+            if (! is_array($uploads)) {
+                $uploads = [$uploads];
+            }
             if ($uploads !== []) {
                 $this->persistMorphAttachments($child, $uploads, $tenantUserId, 'nursery/children');
             }
@@ -273,8 +278,7 @@ final class NurseryChildWebController extends Controller
 
             return redirect()
                 ->route('nursery.children.show', $child)
-                ->with('success', 'تم تحديث بيانات الطفل.')
-                ->with('error', 'حُفظت البيانات لكن تعذّر رفع بعض الملفات.');
+                ->with('warning', 'تم تحديث البيانات، لكن تعذّر رفع الصورة/المرفقات. أعد المحاولة من التعديل.');
         }
 
         return redirect()

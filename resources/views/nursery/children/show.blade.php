@@ -4,12 +4,6 @@
 
 @section('content')
 <div class="w-full space-y-6" dir="rtl">
-    @if(session('success'))
-        <div class="nursery-card px-4 py-3 text-sm text-emerald-800 bg-emerald-50">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="nursery-card px-4 py-3 text-sm text-red-800 bg-red-50">{{ session('error') }}</div>
-    @endif
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3 min-w-0">
             <x-nursery-person-avatar :name="$child->name" :src="$child->firstImageUrl()" size="lg" />
