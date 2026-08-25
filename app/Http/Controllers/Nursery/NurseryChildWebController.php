@@ -286,6 +286,34 @@ final class NurseryChildWebController extends Controller
             ->with('success', 'تم تحديث بيانات الطفل.');
     }
 
+    public function archive(Child $child, NurseryChildService $children): RedirectResponse
+    {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        abort_unless((int) $child->user_id === $tenantUserId, 404);
+
+        try {
+            $children->archive($child, $tenantUserId);
+        } catch (InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'تم أرشفة حساب الطفل.');
+    }
+
+    public function restore(Child $child, NurseryChildService $children): RedirectResponse
+    {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        abort_unless((int) $child->user_id === $tenantUserId, 404);
+
+        try {
+            $children->restore($child, $tenantUserId);
+        } catch (InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'تم إعادة تفعيل حساب الطفل.');
+    }
+
     public function sendPortalInvite(Child $child, NurseryPortalInviteService $inviteService): RedirectResponse
     {
         $tenantUserId = $this->resolveOperationsTenantUserId();

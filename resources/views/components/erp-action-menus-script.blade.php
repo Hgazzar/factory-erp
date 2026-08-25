@@ -6,6 +6,13 @@
         max-height: none !important;
         -webkit-overflow-scrolling: auto;
     }
+    .erp-actions-item-icon {
+        background: color-mix(in srgb, var(--nursery-primary, #64748b) 14%, #fff);
+        color: var(--nursery-primary, #475569);
+    }
+    .erp-actions-item-hover:hover {
+        background: color-mix(in srgb, var(--nursery-primary, #64748b) 9%, #fff);
+    }
 </style>
 @endonce
 @once

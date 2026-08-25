@@ -119,6 +119,26 @@
                                         <x-erp-actions-menu-item :href="route('nursery.children.edit', $child)" icon="edit">
                                             تعديل
                                         </x-erp-actions-menu-item>
+                                        <div class="mx-2 my-2 border-t border-gray-100"></div>
+                                        @if($isActive)
+                                            <form method="post" action="{{ route('nursery.children.archive', $child) }}" class="m-0">
+                                                @csrf
+                                                @method('PATCH')
+                                                <x-erp-actions-menu-item type="submit" icon="archive"
+                                                    confirm="أرشفة هذا الطفل؟ لن يظهر في الحضور والأنشطة اليومية، ويمكن إعادة تفعيله لاحقاً.">
+                                                    أرشفة
+                                                </x-erp-actions-menu-item>
+                                            </form>
+                                        @else
+                                            <form method="post" action="{{ route('nursery.children.restore', $child) }}" class="m-0">
+                                                @csrf
+                                                @method('PATCH')
+                                                <x-erp-actions-menu-item type="submit" icon="renew"
+                                                    confirm="إعادة تفعيل حساب هذا الطفل؟">
+                                                    إعادة تفعيل
+                                                </x-erp-actions-menu-item>
+                                            </form>
+                                        @endif
                                     @endif
                                 </x-erp-actions-dropdown>
                             </td>

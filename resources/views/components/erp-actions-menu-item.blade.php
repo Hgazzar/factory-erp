@@ -53,11 +53,15 @@
             'M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16',
             'M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708',
         ],
+        'archive' => [
+            'M0 2a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v7.5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 1 12.5V5a1 1 0 0 1-1-1zm2 3v7.5A1.5 1.5 0 0 0 3.5 14h9a1.5 1.5 0 0 0 1.5-1.5V5zm13-3H1v2h14zM5 7.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5',
+        ],
     ];
     $paths = $iconPaths[$icon] ?? $iconPaths['edit'];
-    $textClass = $danger ? 'text-red-700' : 'text-gray-800';
-    $iconWrap = $danger ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-700';
-    $hover = $danger ? 'hover:bg-red-50' : 'hover:bg-orange-50';
+    $textClass = $danger ? 'text-red-700' : 'text-slate-800';
+    // ألوان الأيقونة عبر CSS (يتبع --nursery-primary في شِل الحضانة، وإلا رمادي محايد)
+    $iconWrap = $danger ? 'bg-red-50 text-red-600' : 'erp-actions-item-icon';
+    $hover = $danger ? 'hover:bg-red-50' : 'erp-actions-item-hover';
     $baseClass = "erp-menu-item flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm font-medium {$textClass} transition {$hover}";
 @endphp
 

@@ -473,6 +473,8 @@ Route::prefix('nursery')->name('nursery.')->middleware(['auth', 'worker.scope', 
         Route::post('children', [NurseryChildWebController::class, 'store'])->name('children.store');
         Route::get('children/{child}/edit', [NurseryChildWebController::class, 'edit'])->name('children.edit');
         Route::put('children/{child}', [NurseryChildWebController::class, 'update'])->name('children.update');
+        Route::patch('children/{child}/archive', [NurseryChildWebController::class, 'archive'])->name('children.archive');
+        Route::patch('children/{child}/restore', [NurseryChildWebController::class, 'restore'])->name('children.restore');
         Route::post('children/{child}/portal-invite', [NurseryChildWebController::class, 'sendPortalInvite'])->name('children.portal-invite');
 
         Route::post('guardians/{guardian}/portal-invite', [NurseryGuardianWebController::class, 'sendPortalInvite'])->name('guardians.portal-invite');

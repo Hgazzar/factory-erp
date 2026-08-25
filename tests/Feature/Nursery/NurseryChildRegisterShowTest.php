@@ -72,4 +72,35 @@ final class NurseryChildRegisterShowTest extends NurseryTestCase
         $this->assertNotNull($child->firstImageUrl());
         $this->assertTrue(Storage::disk('public')->exists((string) $child->avatarAttachment()->file_path));
     }
+
+    #[Test]
+    public function archive_and_restore_from_index_menu(): void
+    {
+        $this->post(route('nursery.children.store'), [
+            'name' => 'راشد',
+            'gender' => 'male',
+            'date_of_birth' => '2021-09-10',
+            'guardian_name' => 'ولي راشد',
+            'guardian_phone' => '0503333444',
+        ])->assertRedirect();
+
+        $child = Child::query()
+            ->where('user_id', $this->tenant->id)
+            ->where('name', 'راشد')
+            ->firstOrFail();
+
+        $this->from(route('nursery.children.index'))
+            ->patch(route('nursery.children.archive', $child))
+            ->assertRedirect(route('nursery.children.index'))
+            ->assertSessionHas('success');
+
+        $this->assertSame(Child::STATUS_INACTIVE, $child->fresh()->status);
+
+        $this->from(route('nursery.children.index'))
+            ->patch(route('nursery.children.restore', $child))
+            ->assertRedirect(route('nursery.children.index'))
+            ->assertSessionHas('success');
+
+        $this->assertSame(Child::STATUS_ACTIVE, $child->fresh()->status);
+    }
 }

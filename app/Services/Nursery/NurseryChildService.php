@@ -178,6 +178,36 @@ final class NurseryChildService
         });
     }
 
+    public function archive(Child $child, int $tenantUserId): Child
+    {
+        return $this->setStatus($child, $tenantUserId, Child::STATUS_INACTIVE);
+    }
+
+    public function restore(Child $child, int $tenantUserId): Child
+    {
+        return $this->setStatus($child, $tenantUserId, Child::STATUS_ACTIVE);
+    }
+
+    private function setStatus(Child $child, int $tenantUserId, string $status): Child
+    {
+        if ((int) $child->user_id !== $tenantUserId) {
+            throw new InvalidArgumentException('الطفل غير تابع لهذه الحضانة.');
+        }
+
+        if (! in_array($status, [Child::STATUS_ACTIVE, Child::STATUS_INACTIVE], true)) {
+            throw new InvalidArgumentException('حالة الطفل غير صالحة.');
+        }
+
+        if ($child->status === $status) {
+            return $child;
+        }
+
+        $child->status = $status;
+        $child->save();
+
+        return $child->fresh(['guardian', 'activeEnrollment.classroom', 'attachments']);
+    }
+
     public function findSiblingByNormalizedName(
         int $tenantUserId,
         int $guardianId,
