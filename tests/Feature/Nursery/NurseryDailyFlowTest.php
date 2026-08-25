@@ -91,12 +91,18 @@ final class NurseryDailyFlowTest extends NurseryTestCase
             'guardian_phone' => '0505555666',
         ])->assertRedirect();
 
+        $existing = Child::query()
+            ->where('user_id', $this->tenant->id)
+            ->where('name', 'فهد')
+            ->first();
+        $this->assertNotNull($existing);
+
         $this->post(route('nursery.children.store'), [
             'name' => 'فهد',
             'guardian_name' => 'ولي الأشقاء',
             'guardian_phone' => '0505555666',
-        ])->assertRedirect()
-            ->assertSessionHas('error');
+        ])->assertRedirect(route('nursery.children.show', $existing))
+            ->assertSessionHas('success');
 
         $this->assertSame(
             1,

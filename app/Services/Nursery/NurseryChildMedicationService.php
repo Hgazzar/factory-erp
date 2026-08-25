@@ -15,7 +15,9 @@ final class NurseryChildMedicationService
      */
     public function sync(Child $child, int $tenantUserId, ?array $rows): void
     {
-        abort_unless((int) $child->user_id === $tenantUserId, 404);
+        if ((int) $child->user_id !== $tenantUserId) {
+            throw new InvalidArgumentException('تعذّر حفظ الأدوية: الطفل لا يتبع هذا المستأجر.');
+        }
 
         ChildMedication::query()
             ->where('user_id', $tenantUserId)

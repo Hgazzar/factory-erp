@@ -30,7 +30,14 @@ final class NurseryChildService
 
         return DB::transaction(function () use ($tenantUserId, $data, $name, $guardianName, $guardianPhone): Child {
             $guardian = $this->resolveGuardian($tenantUserId, $guardianName, $guardianPhone, $data);
-            $this->assertUniqueNameForGuardian($tenantUserId, (int) $guardian->id, $name);
+
+            $existing = $this->findSiblingByNormalizedName($tenantUserId, (int) $guardian->id, $name);
+            if ($existing !== null) {
+                throw new DuplicateChildNameException(
+                    'لا يمكن تسجيل أخوين لنفس ولي الأمر بنفس الاسم. ميّز الاسم (مثل فهد الأكبر / فهد الأصغر).',
+                    $existing,
+                );
+            }
 
             $child = Child::query()->create([
                 'user_id' => $tenantUserId,
@@ -118,7 +125,13 @@ final class NurseryChildService
 
         return DB::transaction(function () use ($child, $tenantUserId, $data, $name, $guardianName, $guardianPhone): Child {
             $guardian = $this->resolveGuardian($tenantUserId, $guardianName, $guardianPhone, $data);
-            $this->assertUniqueNameForGuardian($tenantUserId, (int) $guardian->id, $name, (int) $child->id);
+            $existing = $this->findSiblingByNormalizedName($tenantUserId, (int) $guardian->id, $name, (int) $child->id);
+            if ($existing !== null) {
+                throw new DuplicateChildNameException(
+                    'لا يمكن تسجيل أخوين لنفس ولي الأمر بنفس الاسم. ميّز الاسم (مثل فهد الأكبر / فهد الأصغر).',
+                    $existing,
+                );
+            }
 
             $child->fill([
                 'name' => $name,
@@ -165,34 +178,50 @@ final class NurseryChildService
         });
     }
 
-    private function assertUniqueNameForGuardian(
+    public function findSiblingByNormalizedName(
         int $tenantUserId,
         int $guardianId,
         string $name,
         ?int $exceptChildId = null,
-    ): void {
-        $normalized = mb_strtolower(preg_replace('/\s+/u', ' ', trim($name)) ?? trim($name));
+    ): ?Child {
+        $normalized = $this->normalizePersonName($name);
+        if ($normalized === '') {
+            return null;
+        }
 
         $siblings = Child::query()
             ->where('user_id', $tenantUserId)
             ->where('guardian_id', $guardianId)
             ->when($exceptChildId !== null, fn ($q) => $q->where('id', '!=', $exceptChildId))
-            ->get(['id', 'name']);
+            ->get(['id', 'user_id', 'name', 'guardian_id', 'code', 'status', 'created_at']);
 
         foreach ($siblings as $sibling) {
-            $siblingName = mb_strtolower(preg_replace('/\s+/u', ' ', trim((string) $sibling->name)) ?? '');
-            if ($siblingName !== '' && $siblingName === $normalized) {
-                throw new InvalidArgumentException('لا يمكن تسجيل أخوين لنفس ولي الأمر بنفس الاسم. ميّز الاسم (مثل فهد الأكبر / فهد الأصغر).');
+            if ($this->normalizePersonName((string) $sibling->name) === $normalized) {
+                return $sibling;
             }
         }
+
+        return null;
+    }
+
+    private function normalizePersonName(string $name): string
+    {
+        return mb_strtolower(preg_replace('/\s+/u', ' ', trim($name)) ?? trim($name));
     }
 
     private function nextChildCode(int $tenantUserId): string
     {
-        $count = Child::withoutGlobalScopes()
+        $codes = Child::withoutGlobalScopes()
             ->where('user_id', $tenantUserId)
-            ->count();
+            ->pluck('code');
 
-        return 'CH-'.str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
+        $max = 0;
+        foreach ($codes as $code) {
+            if (preg_match('/(\d+)\s*$/', (string) $code, $m) === 1) {
+                $max = max($max, (int) $m[1]);
+            }
+        }
+
+        return 'CH-'.str_pad((string) ($max + 1), 5, '0', STR_PAD_LEFT);
     }
 }

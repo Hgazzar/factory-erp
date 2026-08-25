@@ -65,8 +65,12 @@ class Child extends Model
     public function activeEnrollment(): HasOne
     {
         return $this->hasOne(Enrollment::class, 'child_id')
-            ->where('is_active', true)
-            ->latestOfMany('starts_on');
+            ->ofMany(
+                ['starts_on' => 'max', 'id' => 'max'],
+                function ($query): void {
+                    $query->where($query->getModel()->getTable().'.is_active', true);
+                }
+            );
     }
 
     public function attendanceLogs(): HasMany

@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Nursery\AttendanceLog;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\Classroom;
+use App\Services\Nursery\DuplicateChildNameException;
 use App\Services\Nursery\NurseryChildDailyActivityService;
 use App\Services\Nursery\NurseryChildService;
 use App\Services\Nursery\NurseryDashboardService;
@@ -111,28 +112,46 @@ final class NurseryChildWebController extends Controller
 
         try {
             $child = $children->register($tenantUserId, $data);
+        } catch (DuplicateChildNameException $e) {
+            // غالباً الحفظ الأول نجح ثم فشل التحويل/الرفع — افتح السجل الموجود بدل رسالة مربكة.
+            return redirect()
+                ->route('nursery.children.show', $e->existingChild())
+                ->with('success', 'هذا الطفل مسجّل مسبقاً لنفس ولي الأمر — تم فتح ملفه.');
         } catch (InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        $uploads = $request->file('attachments', []) ?? [];
-        if ($uploads !== []) {
-            $this->persistMorphAttachments($child, $uploads, $tenantUserId, 'nursery/children');
+        try {
+            $uploads = $request->file('attachments', []) ?? [];
+            if ($uploads !== []) {
+                $this->persistMorphAttachments($child, $uploads, $tenantUserId, 'nursery/children');
+            }
+            $this->persistAvatarUpload(
+                $child,
+                $request->file('avatar'),
+                $tenantUserId,
+                'nursery/children',
+                $request->boolean('remove_avatar')
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('nursery.children.show', $child)
+                ->with('success', 'تم تسجيل الطفل.')
+                ->with('error', 'حُفظت البيانات لكن تعذّر رفع بعض الملفات. يمكنك إضافتها من التعديل.');
         }
-        $this->persistAvatarUpload(
-            $child,
-            $request->file('avatar'),
-            $tenantUserId,
-            'nursery/children',
-            $request->boolean('remove_avatar')
-        );
 
         if ($request->boolean('send_portal_invite')) {
-            $invite = app(NurseryPortalInviteService::class)->sendInvite($tenantUserId, $child);
-            if ($invite['sent']) {
-                return redirect()
-                    ->route('nursery.children.show', $child)
-                    ->with('success', 'تم تسجيل الطفل و'.$invite['message']);
+            try {
+                $invite = app(NurseryPortalInviteService::class)->sendInvite($tenantUserId, $child);
+                if ($invite['sent']) {
+                    return redirect()
+                        ->route('nursery.children.show', $child)
+                        ->with('success', 'تم تسجيل الطفل و'.$invite['message']);
+                }
+            } catch (\Throwable $e) {
+                report($e);
             }
         }
 
@@ -171,15 +190,26 @@ final class NurseryChildWebController extends Controller
             $activityDate = now()->toDateString();
         }
 
-        $todaysActivities = $dailyActivities->forChildOnDate($tenantUserId, (int) $child->id, $activityDate);
-        $dailySummary = $dailyActivities->summary($todaysActivities);
+        try {
+            $todaysActivities = $dailyActivities->forChildOnDate($tenantUserId, (int) $child->id, $activityDate);
+            $dailySummary = $dailyActivities->summary($todaysActivities);
+        } catch (\Throwable $e) {
+            report($e);
+            $todaysActivities = collect();
+            $dailySummary = [];
+        }
 
         $canEdit = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILDREN);
         $canManageChildAttendance = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILD_ATTENDANCE);
         $canManageChildActivity = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILD_ACTIVITY);
-        $portalInviteUrl = $child->guardian !== null
-            ? app(NurseryPortalInviteService::class)->inviteUrl($tenantUserId, $child->guardian)
-            : null;
+        $portalInviteUrl = null;
+        if ($child->guardian !== null) {
+            try {
+                $portalInviteUrl = app(NurseryPortalInviteService::class)->inviteUrl($tenantUserId, $child->guardian);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return view('nursery.children.show', compact(
             'child',
@@ -217,21 +247,35 @@ final class NurseryChildWebController extends Controller
 
         try {
             $child = $children->update($child, $tenantUserId, $data);
+        } catch (DuplicateChildNameException $e) {
+            return back()->withInput()->with(
+                'error',
+                'يوجد طفل آخر لنفس ولي الأمر بهذا الاسم ('.$e->existingChild()->code.'). ميّز الاسم.'
+            );
         } catch (InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        $uploads = $request->file('attachments', []) ?? [];
-        if ($uploads !== []) {
-            $this->persistMorphAttachments($child, $uploads, $tenantUserId, 'nursery/children');
+        try {
+            $uploads = $request->file('attachments', []) ?? [];
+            if ($uploads !== []) {
+                $this->persistMorphAttachments($child, $uploads, $tenantUserId, 'nursery/children');
+            }
+            $this->persistAvatarUpload(
+                $child,
+                $request->file('avatar'),
+                $tenantUserId,
+                'nursery/children',
+                $request->boolean('remove_avatar')
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('nursery.children.show', $child)
+                ->with('success', 'تم تحديث بيانات الطفل.')
+                ->with('error', 'حُفظت البيانات لكن تعذّر رفع بعض الملفات.');
         }
-        $this->persistAvatarUpload(
-            $child,
-            $request->file('avatar'),
-            $tenantUserId,
-            'nursery/children',
-            $request->boolean('remove_avatar')
-        );
 
         return redirect()
             ->route('nursery.children.show', $child)
@@ -279,6 +323,10 @@ final class NurseryChildWebController extends Controller
     {
         $regionKeys = array_keys(SaudiRegions::regions());
 
+        $request->merge([
+            'classroom_id' => $request->filled('classroom_id') ? $request->input('classroom_id') : null,
+        ]);
+
         $rules = [
             'name' => ['required', 'string', 'max:120'],
             'gender' => ['nullable', 'string', 'in:male,female'],
@@ -312,6 +360,12 @@ final class NurseryChildWebController extends Controller
         }
 
         $data = $request->validate($rules);
+
+        if (($data['classroom_id'] ?? null) === '' || ($data['classroom_id'] ?? null) === null) {
+            $data['classroom_id'] = null;
+        } else {
+            $data['classroom_id'] = (int) $data['classroom_id'];
+        }
 
         $validator = \Validator::make($data, []);
         $validator->after(function (Validator $v) use ($data): void {
