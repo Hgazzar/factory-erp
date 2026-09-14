@@ -20,6 +20,19 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         // Railway / أي reverse proxy: بدونها قد يُعرَّف الطلب كـ HTTP فيفشل كوكي الجلسة/CSRF (419).
         $middleware->trustProxies(at: '*');
+
+        // زائر يفتح مسار حضانة أو سبق له دخول الحضانة → شاشة Nursery وليس /login العامة
+        $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
+            $wantsNursery = $request->is('nursery', 'nursery/*')
+                || \App\Support\PreferredLoginShell::isNursery(
+                    $request->cookie(\App\Support\PreferredLoginShell::COOKIE)
+                );
+
+            return $wantsNursery
+                ? route('nursery.login')
+                : route('login');
+        });
+
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'super_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,

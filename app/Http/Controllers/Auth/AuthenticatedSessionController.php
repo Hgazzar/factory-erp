@@ -9,6 +9,7 @@ use App\Services\Tenant\TenantModuleRegistry;
 use App\Services\Tenant\TenantNavigationService;
 use App\Services\Tenant\TenantThemeService;
 use App\Support\AgentDebugLog;
+use App\Support\PreferredLoginShell;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -69,6 +70,8 @@ class AuthenticatedSessionController extends Controller
             AgentDebugLog::line('H_SESSION', 'AuthenticatedSessionController@store', 'after_session_regenerate_ok', []);
             // #endregion
 
+            PreferredLoginShell::forget();
+
             $intendedUrl = app(TenantNavigationService::class)
                 ->defaultHomeRoute($request->user());
 
@@ -120,6 +123,8 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        PreferredLoginShell::rememberNursery();
+
         return redirect()->route('nursery.dashboard');
     }
 
@@ -128,12 +133,30 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $returnToNursery = PreferredLoginShell::isNursery($request->cookie(PreferredLoginShell::COOKIE))
+            || $this->userUsesNurseryShell($request);
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->route($returnToNursery ? 'nursery.login' : 'login');
+    }
+
+    private function userUsesNurseryShell(Request $request): bool
+    {
+        $user = $request->user();
+        if ($user === null) {
+            return false;
+        }
+
+        $tenantUserId = app(TenantContext::class)->resolveTenantUserId($user);
+        if ($tenantUserId === null) {
+            return false;
+        }
+
+        return app(TenantNavigationService::class)->isNurseryPrimaryShell($tenantUserId);
     }
 }

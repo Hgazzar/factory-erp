@@ -46,9 +46,24 @@ final class NurseryLoginPageTest extends NurseryTestCase
         $this->post(route('nursery.login.store'), [
             'email' => $this->tenant->email,
             'password' => 'password',
-        ])->assertRedirect(route('nursery.dashboard'));
+        ])
+            ->assertRedirect(route('nursery.dashboard'))
+            ->assertCookie(\App\Support\PreferredLoginShell::COOKIE, \App\Support\PreferredLoginShell::NURSERY);
 
         $this->assertAuthenticatedAs($this->tenant);
+    }
+
+    #[Test]
+    public function nursery_logout_and_expired_nursery_route_return_to_nursery_login(): void
+    {
+        $this->actingAs($this->tenant)
+            ->post(route('logout'))
+            ->assertRedirect(route('nursery.login'));
+
+        $this->assertGuest();
+
+        $this->get(route('nursery.dashboard'))
+            ->assertRedirect(route('nursery.login'));
     }
 
     #[Test]
