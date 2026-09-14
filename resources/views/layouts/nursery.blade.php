@@ -71,6 +71,87 @@
             border-color: var(--nursery-primary);
             color: var(--nursery-primary-dark);
         }
+        .nursery-account-menu {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-top: 1px solid var(--nursery-border);
+            background: #fff;
+            flex-shrink: 0;
+        }
+        .nursery-account-menu--compact {
+            border-top: 0;
+            padding: 0;
+            margin-inline-start: auto;
+            background: transparent;
+        }
+        .nursery-account-menu__who {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            min-width: 0;
+        }
+        .nursery-account-menu__avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 999px;
+            background: var(--nursery-primary);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .nursery-account-menu__name {
+            margin: 0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--nursery-text);
+            line-height: 1.2;
+        }
+        .nursery-account-menu__link {
+            font-size: 0.7rem;
+            color: var(--nursery-primary);
+            text-decoration: none;
+        }
+        .nursery-account-menu__link:hover { text-decoration: underline; }
+        .nursery-account-menu__logout {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border: 1px solid var(--nursery-border);
+            background: var(--nursery-secondary);
+            color: var(--nursery-primary-dark);
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .nursery-account-menu__logout:hover {
+            border-color: var(--nursery-primary);
+            color: var(--nursery-primary);
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-sidebar .nursery-account-menu__meta,
+        .nursery-shell.is-sidebar-collapsed .module-sidebar .nursery-account-menu__meta,
+        html.nursery-sidebar-collapsed .nursery-shell .module-sidebar .nursery-account-menu__logout-label,
+        .nursery-shell.is-sidebar-collapsed .module-sidebar .nursery-account-menu__logout-label {
+            display: none;
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-sidebar .nursery-account-menu,
+        .nursery-shell.is-sidebar-collapsed .module-sidebar .nursery-account-menu {
+            flex-direction: column;
+            padding: 0.5rem;
+            gap: 0.5rem;
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-sidebar .nursery-account-menu__logout,
+        .nursery-shell.is-sidebar-collapsed .module-sidebar .nursery-account-menu__logout {
+            padding: 0.4rem;
+        }
         .module-sidebar {
             width: 268px;
             min-width: 268px;
@@ -1125,7 +1206,13 @@
             }
          }"
          x-init="document.documentElement.setAttribute('data-nursery-shell-ready', '1')">
-        @include('layouts.partials.erp-global-navbar')
+        @php
+            // شريط Akwad العام: لصاحب الساس (سوبر أدمن) فقط داخل شِل الحضانة
+            $showErpGlobalNavbar = (bool) (auth()->user()?->is_super_admin);
+        @endphp
+        @if($showErpGlobalNavbar)
+            @include('layouts.partials.erp-global-navbar')
+        @endif
         <div class="nursery-shell" :class="{ 'is-sidebar-collapsed': sidebarCollapsed }">
             <aside class="module-sidebar hidden md:flex shrink-0 flex-col min-h-0" :aria-expanded="(!sidebarCollapsed).toString()">
                 <div class="module-sidebar-header">
@@ -1141,6 +1228,9 @@
                 <nav class="module-nav flex-1 min-h-0" aria-label="قائمة الحضانة">
                     <x-nursery-sidebar-nav />
                 </nav>
+                @unless($showErpGlobalNavbar)
+                    @include('nursery.partials.shell-account-menu')
+                @endunless
             </aside>
             <div class="nursery-main">
                 <div class="nursery-topbar">
@@ -1181,10 +1271,13 @@
             <h5 class="offcanvas-title font-semibold mb-0" id="nurseryMobileSidebarLabel">{{ niche_module_label('nursery') }}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="إغلاق"></button>
         </div>
-        <div class="offcanvas-body p-0">
-            <nav class="module-nav flex flex-col gap-1 p-2">
+        <div class="offcanvas-body p-0 d-flex flex-column">
+            <nav class="module-nav flex flex-col gap-1 p-2 flex-grow-1">
                 <x-nursery-sidebar-nav />
             </nav>
+            @unless($showErpGlobalNavbar)
+                @include('nursery.partials.shell-account-menu')
+            @endunless
         </div>
     </div>
 

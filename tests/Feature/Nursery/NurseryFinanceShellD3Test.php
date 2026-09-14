@@ -79,6 +79,27 @@ final class NurseryFinanceShellD3Test extends NurseryTestCase
     }
 
     #[Test]
+    public function tenant_nursery_hides_erp_global_navbar_but_super_admin_keeps_it(): void
+    {
+        $this->get(route('nursery.dashboard'))
+            ->assertOk()
+            ->assertDontSee('id="navbarUserDropdown"', false)
+            ->assertSee('data-nursery-account-menu', false)
+            ->assertSee('تسجيل الخروج', false);
+
+        $super = User::factory()->create([
+            'role' => 'super_admin',
+            'email' => 'platform-owner@example.com',
+        ]);
+        $this->actingAs($super);
+
+        $this->get(route('nursery.dashboard'))
+            ->assertOk()
+            ->assertSee('id="navbarUserDropdown"', false)
+            ->assertDontSee('data-nursery-account-menu', false);
+    }
+
+    #[Test]
     public function owner_sees_reordered_finance_sidebar_labels(): void
     {
         $html = $this->get(route('nursery.dashboard'))->assertOk()->getContent();
