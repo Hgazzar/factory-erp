@@ -18,6 +18,7 @@ final class NurseryProfileShellTest extends NurseryTestCase
             ->assertSee('إيميل تسجيل الدخول', false)
             ->assertSee('تغيير كلمة المرور', false)
             ->assertSee('id="nurseryMobileSidebar"', false)
+            ->assertDontSee('حذف الحساب', false)
             ->assertDontSee('نظام إدارة الأعمال', false);
     }
 }

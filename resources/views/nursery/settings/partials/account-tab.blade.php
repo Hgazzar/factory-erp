@@ -50,7 +50,7 @@
         <div class="rounded-lg border border-teal-100 bg-teal-50/40 p-3 text-sm">
             <p class="font-semibold text-teal-950 mb-1">إيميل تسجيل الدخول <x-info field="nursery.settings_login_email" /></p>
             <p class="text-teal-900" dir="ltr">{{ auth()->user()?->email ?: '—' }}</p>
-            <p class="text-xs text-teal-700/80 mt-1">هذا الإيميل هو اسم المستخدم للوجين. لتغييره افتح <a href="{{ route('profile.edit') }}" class="font-bold text-teal-700 underline">حساب الدخول</a>.</p>
+            <p class="text-xs text-teal-700/80 mt-1">بهذا البريد تدخل للنظام. لتغييره أو تغيير كلمة المرور افتح <a href="{{ route('profile.edit') }}" class="font-bold text-teal-700 underline">حساب الدخول</a>.</p>
         </div>
         <p class="text-xs text-teal-700/60">آخر تحديث {{ $settings->updated_at?->locale('ar')->translatedFormat('j F Y — h:i a') }}</p>
     </div>
@@ -76,7 +76,7 @@
                     <div>
                         <label class="block text-sm font-semibold text-teal-950 mb-1">بريد التواصل للحضانة (ليس للدخول) <x-info field="nursery.settings_contact_email" /></label>
                         <input type="email" name="contact_email" value="{{ old('contact_email', $settings->contact_email) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2" placeholder="info@nursery.com">
-                        <p class="text-xs text-teal-700/70 mt-1">للتواصل والعرض فقط — لا يغيّر إيميل اللوجين.</p>
+                        <p class="text-xs text-teal-700/70 mt-1">للتواصل والعرض فقط — لا يغيّر إيميل تسجيل الدخول.</p>
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-semibold text-teal-950 mb-1">العنوان <x-info field="nursery.settings_address" /></label>
@@ -114,7 +114,7 @@
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-semibold text-teal-950 mb-1">بريد المدير للتواصل (ليس للدخول) <x-info field="nursery.settings_manager_email" /></label>
                         <input type="email" name="manager_email" value="{{ old('manager_email', $settings->manager_email) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2" placeholder="manager@nursery.com">
-                        <p class="text-xs text-teal-700/70 mt-1">للتواصل الداخلي فقط — لا يغيّر إيميل اللوجين.</p>
+                        <p class="text-xs text-teal-700/70 mt-1">للتواصل الداخلي فقط — لا يغيّر إيميل تسجيل الدخول.</p>
                     </div>
                 </div>
             </div>
@@ -122,7 +122,7 @@
             <div class="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-950">
                 <p class="font-semibold mb-1">إيميل تسجيل الدخول الحالي <x-info field="nursery.settings_login_email" /></p>
                 <p dir="ltr" class="font-mono">{{ auth()->user()?->email }}</p>
-                <p class="text-xs mt-2">لتغيير إيميل اللوجين أو كلمة المرور: <a href="{{ route('profile.edit') }}" class="font-bold underline">حساب الدخول (الملف الشخصي)</a></p>
+                <p class="text-xs mt-2">لتغيير إيميل تسجيل الدخول أو كلمة المرور افتح: <a href="{{ route('profile.edit') }}" class="font-bold underline">حساب الدخول</a></p>
             </div>
 
             <div class="flex flex-wrap gap-2">

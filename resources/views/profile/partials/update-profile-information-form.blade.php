@@ -5,7 +5,7 @@
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            غيّر الاسم الظاهر وإيميل تسجيل الدخول (اسم المستخدم للوجين).
+            غيّر الاسم الظاهر وإيميل تسجيل الدخول.
         </p>
     </header>
 
@@ -20,14 +20,14 @@
         <div>
             <x-input-label for="name" value="الاسم الظاهر" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
-            <p class="mt-1 text-xs text-gray-500">يظهر في القائمة والواجهة — ليس اسم المستخدم للوجين.</p>
+            <p class="mt-1 text-xs text-gray-500">يظهر في القائمة والواجهة — ليس بريد تسجيل الدخول.</p>
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
             <x-input-label for="email" value="إيميل تسجيل الدخول" />
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
-            <p class="mt-1 text-xs text-gray-500">هذا هو اسم المستخدم عند الدخول للنظام. بعد التغيير استخدم الإيميل الجديد في صفحة اللوجين.</p>
+            <p class="mt-1 text-xs text-gray-500">بهذا البريد تدخل للنظام. بعد التغيير سجّل الدخول بالإيميل الجديد.</p>
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
