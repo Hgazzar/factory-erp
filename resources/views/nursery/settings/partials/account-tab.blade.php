@@ -33,7 +33,7 @@
             <dl class="grid gap-3 sm:grid-cols-2 text-sm">
                 <div><dt class="text-teal-700/80 font-medium">اسم الحضانة <x-info field="nursery.settings_nursery_name" /></dt><dd class="font-semibold text-teal-950">{{ $settings->nursery_name }}</dd></div>
                 <div><dt class="text-teal-700/80 font-medium">رقم التواصل <x-info field="nursery.settings_contact_phone" /></dt><dd class="font-semibold text-teal-950">{{ $settings->contact_phone ?: '—' }}</dd></div>
-                <div><dt class="text-teal-700/80 font-medium">البريد الإلكتروني <x-info field="nursery.settings_contact_email" /></dt><dd class="font-semibold text-teal-950">{{ $settings->contact_email ?: '—' }}</dd></div>
+                <div><dt class="text-teal-700/80 font-medium">بريد التواصل (ليس للدخول) <x-info field="nursery.settings_contact_email" /></dt><dd class="font-semibold text-teal-950">{{ $settings->contact_email ?: '—' }}</dd></div>
                 <div><dt class="text-teal-700/80 font-medium">العنوان <x-info field="nursery.settings_address" /></dt><dd class="font-semibold text-teal-950">{{ $settings->address ?: '—' }}</dd></div>
                 <div><dt class="text-teal-700/80 font-medium">المنطقة <x-info field="nursery.settings_region" /></dt><dd class="font-semibold text-teal-950">{{ $regionLabel ?: '—' }}</dd></div>
                 <div><dt class="text-teal-700/80 font-medium">المدينة <x-info field="nursery.settings_city" /></dt><dd class="font-semibold text-teal-950">{{ $settings->city ?: '—' }}</dd></div>
@@ -44,8 +44,13 @@
             <dl class="grid gap-3 sm:grid-cols-2 text-sm">
                 <div><dt class="text-teal-700/80 font-medium">اسم المدير <x-info field="nursery.settings_manager_name" /></dt><dd class="font-semibold text-teal-950">{{ $settings->manager_name ?: '—' }}</dd></div>
                 <div><dt class="text-teal-700/80 font-medium">رقم الجوال <x-info field="nursery.settings_manager_mobile" /></dt><dd class="font-semibold text-teal-950">{{ $settings->manager_mobile ?: '—' }}</dd></div>
-                <div class="sm:col-span-2"><dt class="text-teal-700/80 font-medium">البريد الإلكتروني <x-info field="nursery.settings_manager_email" /></dt><dd class="font-semibold text-teal-950">{{ $settings->manager_email ?: '—' }}</dd></div>
+                <div class="sm:col-span-2"><dt class="text-teal-700/80 font-medium">بريد المدير للتواصل (ليس للدخول) <x-info field="nursery.settings_manager_email" /></dt><dd class="font-semibold text-teal-950">{{ $settings->manager_email ?: '—' }}</dd></div>
             </dl>
+        </div>
+        <div class="rounded-lg border border-teal-100 bg-teal-50/40 p-3 text-sm">
+            <p class="font-semibold text-teal-950 mb-1">إيميل تسجيل الدخول <x-info field="nursery.settings_login_email" /></p>
+            <p class="text-teal-900" dir="ltr">{{ auth()->user()?->email ?: '—' }}</p>
+            <p class="text-xs text-teal-700/80 mt-1">هذا الإيميل هو اسم المستخدم للوجين. لتغييره افتح <a href="{{ route('profile.edit') }}" class="font-bold text-teal-700 underline">حساب الدخول</a>.</p>
         </div>
         <p class="text-xs text-teal-700/60">آخر تحديث {{ $settings->updated_at?->locale('ar')->translatedFormat('j F Y — h:i a') }}</p>
     </div>
@@ -69,8 +74,9 @@
                         <input type="text" name="contact_phone" value="{{ old('contact_phone', $settings->contact_phone) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-teal-950 mb-1">البريد الإلكتروني <x-info field="nursery.settings_contact_email" /></label>
-                        <input type="email" name="contact_email" value="{{ old('contact_email', $settings->contact_email) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2">
+                        <label class="block text-sm font-semibold text-teal-950 mb-1">بريد التواصل للحضانة (ليس للدخول) <x-info field="nursery.settings_contact_email" /></label>
+                        <input type="email" name="contact_email" value="{{ old('contact_email', $settings->contact_email) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2" placeholder="info@nursery.com">
+                        <p class="text-xs text-teal-700/70 mt-1">للتواصل والعرض فقط — لا يغيّر إيميل اللوجين.</p>
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-semibold text-teal-950 mb-1">العنوان <x-info field="nursery.settings_address" /></label>
@@ -106,10 +112,17 @@
                         <input type="text" name="manager_mobile" value="{{ old('manager_mobile', $settings->manager_mobile) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="block text-sm font-semibold text-teal-950 mb-1">البريد الإلكتروني <x-info field="nursery.settings_manager_email" /></label>
-                        <input type="email" name="manager_email" value="{{ old('manager_email', $settings->manager_email) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2">
+                        <label class="block text-sm font-semibold text-teal-950 mb-1">بريد المدير للتواصل (ليس للدخول) <x-info field="nursery.settings_manager_email" /></label>
+                        <input type="email" name="manager_email" value="{{ old('manager_email', $settings->manager_email) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2" placeholder="manager@nursery.com">
+                        <p class="text-xs text-teal-700/70 mt-1">للتواصل الداخلي فقط — لا يغيّر إيميل اللوجين.</p>
                     </div>
                 </div>
+            </div>
+
+            <div class="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-950">
+                <p class="font-semibold mb-1">إيميل تسجيل الدخول الحالي <x-info field="nursery.settings_login_email" /></p>
+                <p dir="ltr" class="font-mono">{{ auth()->user()?->email }}</p>
+                <p class="text-xs mt-2">لتغيير إيميل اللوجين أو كلمة المرور: <a href="{{ route('profile.edit') }}" class="font-bold underline">حساب الدخول (الملف الشخصي)</a></p>
             </div>
 
             <div class="flex flex-wrap gap-2">

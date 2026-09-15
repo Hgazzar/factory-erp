@@ -5,7 +5,7 @@
             <span class="nursery-account-menu__avatar" aria-hidden="true">{{ strtoupper(mb_substr(Auth::user()->name ?? 'U', 0, 1)) }}</span>
             <div class="nursery-account-menu__meta min-w-0">
                 <p class="nursery-account-menu__name truncate">{{ Auth::user()->name }}</p>
-                <a href="{{ route('profile.edit') }}" class="nursery-account-menu__link">الملف الشخصي</a>
+                <a href="{{ route('profile.edit') }}" class="nursery-account-menu__link">حساب الدخول</a>
             </div>
         </div>
         <form method="POST" action="{{ route('logout') }}" class="m-0 shrink-0">

@@ -1,11 +1,11 @@
 <section>
     <header>
         <h2 class="text-lg font-medium text-gray-900">
-            {{ __('Profile Information') }}
+            حساب الدخول
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            {{ __("Update your account's profile information and email address.") }}
+            غيّر الاسم الظاهر وإيميل تسجيل الدخول (اسم المستخدم للوجين).
         </p>
     </header>
 
@@ -18,14 +18,16 @@
         @method('patch')
 
         <div>
-            <x-input-label for="name" :value="__('Name')" />
+            <x-input-label for="name" value="الاسم الظاهر" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+            <p class="mt-1 text-xs text-gray-500">يظهر في القائمة والواجهة — ليس اسم المستخدم للوجين.</p>
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
-            <x-input-label for="email" :value="__('Email')" />
+            <x-input-label for="email" value="إيميل تسجيل الدخول" />
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
+            <p class="mt-1 text-xs text-gray-500">هذا هو اسم المستخدم عند الدخول للنظام. بعد التغيير استخدم الإيميل الجديد في صفحة اللوجين.</p>
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
@@ -48,7 +50,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+            <x-primary-button>حفظ</x-primary-button>
 
             @if (session('status') === 'profile-updated')
                 <p
@@ -57,7 +59,7 @@
                     x-transition
                     x-init="setTimeout(() => show = false, 2000)"
                     class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
+                >تم الحفظ.</p>
             @endif
         </div>
     </form>
