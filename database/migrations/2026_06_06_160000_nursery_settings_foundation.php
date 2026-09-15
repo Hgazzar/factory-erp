@@ -14,6 +14,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->string('nursery_name');
+            $table->string('display_name', 120)->nullable();
+            $table->string('logo_path', 500)->nullable();
+            $table->string('theme_primary_color', 7)->nullable();
+            $table->string('theme_secondary_color', 7)->nullable();
             $table->string('contact_phone')->nullable();
             $table->string('contact_email')->nullable();
             $table->string('address')->nullable();

@@ -96,7 +96,6 @@ final class NurserySettingsWebController extends Controller
         $tenantUserId = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'nursery_name' => ['required', 'string', 'max:120'],
-            'display_name' => ['nullable', 'string', 'max:120'],
             'contact_phone' => ['nullable', 'string', 'max:32'],
             'contact_email' => ['nullable', 'email', 'max:120'],
             'address' => ['nullable', 'string', 'max:255'],
@@ -111,6 +110,13 @@ final class NurserySettingsWebController extends Controller
             $settingsService->updateAccount($tenantUserId, $data);
         } catch (InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->with(
+                'error',
+                'تعذّر حفظ بيانات الحضانة. إن استمر الخطأ راجع سجلات السيرفر أو تأكد من تشغيل الهجرات.',
+            );
         }
 
         return redirect()

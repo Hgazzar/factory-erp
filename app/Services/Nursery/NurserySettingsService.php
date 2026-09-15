@@ -41,7 +41,6 @@ final class NurserySettingsService
 
         $settings->update([
             'nursery_name' => $name,
-            'display_name' => $this->nullableString($data['display_name'] ?? null),
             'contact_phone' => $this->nullableString($data['contact_phone'] ?? null),
             'contact_email' => $contactEmail,
             'address' => $this->nullableString($data['address'] ?? null),

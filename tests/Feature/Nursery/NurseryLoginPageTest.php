@@ -37,6 +37,17 @@ final class NurseryLoginPageTest extends NurseryTestCase
     }
 
     #[Test]
+    public function short_nursery_login_path_works_and_legacy_path_redirects(): void
+    {
+        $this->get('/n')
+            ->assertOk()
+            ->assertSee('نظام الحضانة', false);
+
+        $this->get('/nursery/login')
+            ->assertRedirect('/n');
+    }
+
+    #[Test]
     public function nursery_login_accepts_nursery_owner_and_lands_on_dashboard(): void
     {
         $this->tenant->forceFill([
