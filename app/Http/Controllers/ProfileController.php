@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\PreferredLoginShell;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,11 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
-        return view('profile.edit', [
+        $view = (function_exists('is_nursery_shell') && is_nursery_shell())
+            ? 'profile.nursery.edit'
+            : 'profile.edit';
+
+        return view($view, [
             'user' => $request->user(),
         ]);
     }
@@ -47,6 +52,8 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        $returnToNursery = PreferredLoginShell::isNursery($request->cookie(PreferredLoginShell::COOKIE))
+            || (function_exists('is_nursery_shell') && is_nursery_shell());
 
         Auth::logout();
 
@@ -55,6 +62,8 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return $returnToNursery
+            ? Redirect::route('nursery.login')
+            : Redirect::to('/');
     }
 }
