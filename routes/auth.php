@@ -22,16 +22,11 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-    // رابط قصير لدخول الحضانة — /n
-    Route::get('n', [AuthenticatedSessionController::class, 'createNursery'])
+    Route::get('nursery/login', [AuthenticatedSessionController::class, 'createNursery'])
         ->name('nursery.login');
 
-    Route::post('n', [AuthenticatedSessionController::class, 'storeNursery'])
+    Route::post('nursery/login', [AuthenticatedSessionController::class, 'storeNursery'])
         ->name('nursery.login.store');
-
-    // توافق مع الرابط القديم /nursery/login
-    Route::permanentRedirect('nursery/login', '/n');
-    Route::post('nursery/login', [AuthenticatedSessionController::class, 'storeNursery']);
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
