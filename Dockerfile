@@ -72,10 +72,11 @@ COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-railway.conf
 
-# Nginx template (PORT substituted at runtime)
+# Nginx template (PORT substituted at runtime) + http-level upload/header limits
 RUN mkdir -p /etc/nginx/templates \
     && rm -f /etc/nginx/sites-enabled/default
 COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/nginx/http-limits.conf /etc/nginx/conf.d/zz-http-limits.conf
 
 # Entrypoint
 COPY scripts/railway-entrypoint.sh /usr/local/bin/railway-entrypoint.sh
