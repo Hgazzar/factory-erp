@@ -52,6 +52,7 @@ if (! function_exists('niche_shell_layout')) {
 
         return match ($nicheKey) {
             'nurseries' => 'layouts.nursery',
+            'medical_clinics' => 'layouts.clinic',
             default => $fallback,
         };
     }
@@ -61,6 +62,13 @@ if (! function_exists('is_nursery_shell')) {
     function is_nursery_shell(): bool
     {
         return niche_shell_layout() === 'layouts.nursery';
+    }
+}
+
+if (! function_exists('is_clinic_shell')) {
+    function is_clinic_shell(): bool
+    {
+        return niche_shell_layout() === 'layouts.clinic';
     }
 }
 

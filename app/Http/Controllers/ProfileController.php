@@ -52,8 +52,12 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-        $returnToNursery = PreferredLoginShell::isNursery($request->cookie(PreferredLoginShell::COOKIE))
-            || (function_exists('is_nursery_shell') && is_nursery_shell());
+        $cookie = $request->cookie(PreferredLoginShell::COOKIE);
+        $returnToClinic = PreferredLoginShell::isClinic($cookie)
+            || (function_exists('is_clinic_shell') && is_clinic_shell());
+        $returnToNursery = ! $returnToClinic
+            && (PreferredLoginShell::isNursery($cookie)
+                || (function_exists('is_nursery_shell') && is_nursery_shell()));
 
         Auth::logout();
 
@@ -61,6 +65,10 @@ class ProfileController extends Controller
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($returnToClinic) {
+            return Redirect::route('clinic.login');
+        }
 
         return $returnToNursery
             ? Redirect::route('nursery.login')

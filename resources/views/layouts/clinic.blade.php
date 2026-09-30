@@ -31,6 +31,38 @@
             display: flex;
             flex-direction: column;
         }
+
+        /*
+         * شاشات العيادة تستخدم Tailwind teal-*.
+         * نعيد ربطها بمتغيرات الهوية حتى تطابق لون الحضانة.
+         */
+        .bg-teal-50, .bg-teal-50\/40, .bg-teal-50\/80 { background-color: var(--clinic-bg) !important; }
+        .bg-teal-100 { background-color: var(--clinic-bg-mid) !important; }
+        .bg-teal-500, .bg-teal-600,
+        .from-teal-600, .to-teal-500, .to-teal-50 {
+            --tw-gradient-from: var(--clinic-primary) !important;
+            --tw-gradient-to: var(--clinic-primary-dark) !important;
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+            background-color: var(--clinic-primary) !important;
+        }
+        .hover\:bg-teal-50:hover, .hover\:bg-teal-50\/30:hover, .hover\:bg-teal-50\/40:hover {
+            background-color: var(--clinic-bg-mid) !important;
+        }
+        .hover\:bg-teal-700:hover { background-color: var(--clinic-primary-dark) !important; }
+        .text-teal-100 { color: color-mix(in srgb, var(--clinic-on-primary) 85%, transparent) !important; }
+        .text-teal-600, .text-teal-700, .text-teal-800 { color: var(--clinic-primary-dark) !important; }
+        .text-teal-900, .text-teal-950 { color: var(--clinic-text) !important; }
+        .border-teal-50, .border-teal-100, .border-teal-200, .border-teal-300 {
+            border-color: var(--clinic-border) !important;
+        }
+        .border-teal-600 { border-color: var(--clinic-primary) !important; }
+        .focus\:border-teal-500:focus, .focus\:ring-teal-500:focus {
+            border-color: var(--clinic-primary) !important;
+            --tw-ring-color: var(--clinic-focus-ring) !important;
+        }
+        .text-teal-600 { accent-color: var(--clinic-primary); }
+        input[type="checkbox"].text-teal-600 { color: var(--clinic-primary) !important; }
+
         .nursery-brand-mark--sidebar,
         .tenant-brand-mark--sidebar {
             flex-direction: column;
@@ -125,10 +157,10 @@
         .clinic-btn-primary:hover { background: var(--clinic-primary-dark); color: var(--clinic-on-primary); }
         .clinic-btn-outline { background: #fff; color: #374151; border-color: #e5e7eb; }
         .clinic-btn-outline:hover { background: #f9fafb; }
-        .clinic-btn-outline.is-active { background: #0d9488; color: #fff; border-color: #0d9488; }
+        .clinic-btn-outline.is-active { background: var(--clinic-primary); color: var(--clinic-on-primary); border-color: var(--clinic-primary); }
 
         .clinic-card {
-            background: #fff; border: 1px solid #ccfbf1;
+            background: #fff; border: 1px solid #F0FDFA;
             border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(13, 148, 136, 0.08);
         }
         .clinic-page-header {

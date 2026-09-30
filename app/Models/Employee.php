@@ -114,6 +114,36 @@ class Employee extends Model
     }
 
     /**
+     * أعمدة عرض الطبيب في واجهات العيادة — تتجاهل job_title إن لم يكن مُرحَّلاً بعد.
+     *
+     * @return list<string>
+     */
+    public static function clinicDoctorSelectColumns(bool $includeSpecialty = false): array
+    {
+        $cols = ['id', 'name'];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn((new static)->getTable(), 'job_title')) {
+            $cols[] = 'job_title';
+        }
+
+        if ($includeSpecialty && \Illuminate\Support\Facades\Schema::hasColumn((new static)->getTable(), 'clinic_specialty_id')) {
+            $cols[] = 'clinic_specialty_id';
+        }
+
+        return $cols;
+    }
+
+    public function clinicDisplayLabel(): string
+    {
+        $title = '';
+        if (\Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), 'job_title')) {
+            $title = trim((string) ($this->job_title ?? ''));
+        }
+
+        return trim($this->name.($title !== '' ? ' — '.$title : ''));
+    }
+
+    /**
      * البحث عن موظف المستأجر بـ«كود الموظف» أو «رقم البصمة» (يُفترض أنهما نفس المعرّف عند الافتراض).
      */
     public static function findForAttendanceKey(int $tenantUserId, string $rawKey): ?self

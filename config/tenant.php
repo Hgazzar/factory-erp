@@ -13,8 +13,8 @@ return [
 
         'defaults' => [
             'medical_clinics' => [
-                'primary' => '#0d9488',
-                'secondary' => '#ccfbf1',
+                'primary' => '#069494',
+                'secondary' => '#F0FDFA',
             ],
             'nurseries' => [
                 'primary' => '#069494',

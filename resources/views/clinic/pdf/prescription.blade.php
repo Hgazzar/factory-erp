@@ -18,7 +18,7 @@
             padding: 20px 28px;
         }
         .rx-header {
-            border: 2px solid #0d9488;
+            border: 2px solid #069494;
             border-radius: 8px;
             padding: 14px 16px;
             margin-bottom: 18px;
@@ -26,7 +26,7 @@
         }
         .rx-header table { width: 100%; border-collapse: collapse; }
         .logo { height: 44px; max-width: 110px; }
-        .rx-symbol { font-size: 28px; font-weight: bold; color: #0d9488; }
+        .rx-symbol { font-size: 28px; font-weight: bold; color: #069494; }
         .company { font-size: 16px; font-weight: bold; color: #134e4a; margin: 0; }
         .patient-name { font-size: 15px; font-weight: bold; margin: 12px 0 4px; color: #111; }
         .meta { font-size: 10px; color: #64748b; margin-bottom: 16px; }

@@ -45,6 +45,24 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
+     * شاشة دخول مخصّصة لنظام العيادة (ستايل Clinic).
+     */
+    public function createClinic(TenantThemeService $theme): View
+    {
+        $clinicThemeVars = $theme->cssVariables(
+            null,
+            null,
+            TenantThemeService::DEFAULT_PRIMARY,
+            TenantThemeService::DEFAULT_SECONDARY,
+            ['clinic', 'cp', 'tenant'],
+        );
+
+        return view('auth.clinic-login', [
+            'clinicThemeVars' => $clinicThemeVars,
+        ]);
+    }
+
+    /**
      * Handle an incoming authentication request.
      */
     public function store(LoginRequest $request): RedirectResponse
@@ -129,18 +147,55 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
+     * دخول عبر صفحة العيادة فقط — يرفض حسابات غير Clinic.
+     */
+    public function storeClinic(LoginRequest $request): RedirectResponse
+    {
+        $request->authenticate();
+        $request->session()->regenerate();
+
+        $user = $request->user();
+        $navigation = app(TenantNavigationService::class);
+        $modules = app(TenantModuleRegistry::class);
+        $tenantUserId = app(TenantContext::class)->resolveTenantUserId($user);
+
+        $isClinic = $tenantUserId !== null
+            && $navigation->isClinicPrimaryShell($tenantUserId)
+            && $modules->isEnabled('clinic', $tenantUserId);
+
+        if (! $isClinic) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'هذه الصفحة مخصّصة لحسابات نظام العيادة فقط.',
+            ]);
+        }
+
+        PreferredLoginShell::rememberClinic();
+
+        return redirect()->route('clinic.dashboard');
+    }
+
+    /**
      * Destroy an authenticated session.
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $returnToNursery = PreferredLoginShell::isNursery($request->cookie(PreferredLoginShell::COOKIE))
-            || $this->userUsesNurseryShell($request);
+        $cookie = $request->cookie(PreferredLoginShell::COOKIE);
+        $returnToClinic = PreferredLoginShell::isClinic($cookie)
+            || $this->userUsesClinicShell($request);
+        $returnToNursery = ! $returnToClinic
+            && (PreferredLoginShell::isNursery($cookie) || $this->userUsesNurseryShell($request));
 
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
+
+        if ($returnToClinic) {
+            return redirect()->route('clinic.login');
+        }
 
         return redirect()->route($returnToNursery ? 'nursery.login' : 'login');
     }
@@ -158,5 +213,20 @@ class AuthenticatedSessionController extends Controller
         }
 
         return app(TenantNavigationService::class)->isNurseryPrimaryShell($tenantUserId);
+    }
+
+    private function userUsesClinicShell(Request $request): bool
+    {
+        $user = $request->user();
+        if ($user === null) {
+            return false;
+        }
+
+        $tenantUserId = app(TenantContext::class)->resolveTenantUserId($user);
+        if ($tenantUserId === null) {
+            return false;
+        }
+
+        return app(TenantNavigationService::class)->isClinicPrimaryShell($tenantUserId);
     }
 }

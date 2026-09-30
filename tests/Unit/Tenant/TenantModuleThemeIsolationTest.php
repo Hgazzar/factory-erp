@@ -44,11 +44,11 @@ final class TenantModuleThemeIsolationTest extends PosTestCase
         $store = $branding->branding($tenantId, null, TenantBrandingService::MODULE_STORE);
 
         $this->assertSame('#16a34a', $nursery['theme_primary']);
-        $this->assertSame('#0d9488', $clinic['theme_primary']);
+        $this->assertSame('#069494', $clinic['theme_primary']);
         $this->assertSame('#dc2626', $store['theme_primary']);
         $this->assertSame('#16a34a', $nursery['theme_vars']['--nursery-primary']);
         $this->assertArrayNotHasKey('--nursery-primary', $clinic['theme_vars']);
-        $this->assertSame('#0d9488', $clinic['theme_vars']['--clinic-primary']);
+        $this->assertSame('#069494', $clinic['theme_vars']['--clinic-primary']);
         $this->assertSame('#dc2626', $store['theme_vars']['--store-primary']);
 
         $setting = TenantSetting::forTenant($tenantId);

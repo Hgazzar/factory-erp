@@ -33,6 +33,12 @@ final class TenantThemeService
     /** @var list<string> */
     private const LEGACY_NURSERY_SECONDARIES = ['#ffedd5', '#fff7ed', '#fed7aa'];
 
+    /** @var list<string> previous clinic teal (Tailwind teal-600) — align to nursery primary */
+    private const LEGACY_CLINIC_PRIMARIES = ['#0d9488'];
+
+    /** @var list<string> */
+    private const LEGACY_CLINIC_SECONDARIES = ['#ccfbf1', '#f0fdfa'];
+
     public function __construct(
         private readonly NicheCatalog $nicheCatalog,
     ) {}
@@ -108,6 +114,11 @@ final class TenantThemeService
         if ($module === self::MODULE_NURSERY) {
             $storedPrimary = $this->nullIfLegacyNurseryColor($storedPrimary, self::LEGACY_NURSERY_PRIMARIES);
             $storedSecondary = $this->nullIfLegacyNurseryColor($storedSecondary, self::LEGACY_NURSERY_SECONDARIES);
+        }
+
+        if ($module === self::MODULE_CLINIC) {
+            $storedPrimary = $this->nullIfLegacyNurseryColor($storedPrimary, self::LEGACY_CLINIC_PRIMARIES);
+            $storedSecondary = $this->nullIfLegacyNurseryColor($storedSecondary, self::LEGACY_CLINIC_SECONDARIES);
         }
 
         return $this->cssVariables(

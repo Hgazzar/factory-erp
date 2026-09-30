@@ -28,6 +28,12 @@ Route::middleware('guest')->group(function () {
     Route::post('nursery/login', [AuthenticatedSessionController::class, 'storeNursery'])
         ->name('nursery.login.store');
 
+    Route::get('clinic/login', [AuthenticatedSessionController::class, 'createClinic'])
+        ->name('clinic.login');
+
+    Route::post('clinic/login', [AuthenticatedSessionController::class, 'storeClinic'])
+        ->name('clinic.login.store');
+
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 

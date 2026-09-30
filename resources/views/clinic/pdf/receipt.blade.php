@@ -17,7 +17,7 @@
             margin: 0;
             padding: 20px 24px;
         }
-        .hdr { border-bottom: 2px solid #0d9488; padding-bottom: 12px; margin-bottom: 16px; }
+        .hdr { border-bottom: 2px solid #069494; padding-bottom: 12px; margin-bottom: 16px; }
         .hdr table { width: 100%; border-collapse: collapse; }
         .logo { height: 48px; max-width: 120px; }
         .company { font-size: 18px; font-weight: bold; color: #134e4a; margin: 0; }
@@ -30,7 +30,7 @@
         .items th { background: #f0fdfa; color: #134e4a; font-weight: bold; }
         .totals { width: 100%; margin-top: 12px; }
         .totals td { padding: 5px 0; }
-        .totals .grand { font-size: 13px; font-weight: bold; color: #134e4a; border-top: 2px solid #0d9488; padding-top: 8px; }
+        .totals .grand { font-size: 13px; font-weight: bold; color: #134e4a; border-top: 2px solid #069494; padding-top: 8px; }
         .footer { margin-top: 24px; font-size: 9px; color: #94a3b8; text-align: center; }
     </style>
 </head>

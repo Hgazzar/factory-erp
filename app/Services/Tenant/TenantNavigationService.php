@@ -65,12 +65,25 @@ final class TenantNavigationService
             return route('nursery.dashboard', absolute: false);
         }
 
+        if ($tenantUserId !== null
+            && $this->primaryShell($tenantUserId) === 'clinic'
+            && $this->modules->isEnabled('clinic', $tenantUserId)
+            && Route::has('clinic.dashboard')
+        ) {
+            return route('clinic.dashboard', absolute: false);
+        }
+
         return route('dashboard', absolute: false);
     }
 
     public function isNurseryPrimaryShell(?int $tenantUserId = null): bool
     {
         return $this->primaryShell($tenantUserId) === 'nursery';
+    }
+
+    public function isClinicPrimaryShell(?int $tenantUserId = null): bool
+    {
+        return $this->primaryShell($tenantUserId) === 'clinic';
     }
 
     public function detectActiveErpModule(): ?string

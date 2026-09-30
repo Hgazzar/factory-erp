@@ -70,11 +70,13 @@ final class ClinicSpecialtyService
 
         return $query
             ->orderBy('name')
-            ->get(['id', 'name', 'job_title', 'clinic_specialty_id'])
+            ->get(Employee::clinicDoctorSelectColumns(includeSpecialty: true))
             ->map(fn (Employee $e) => [
                 'id' => (int) $e->id,
                 'name' => $e->name,
-                'job_title' => $e->job_title,
+                'job_title' => \Illuminate\Support\Facades\Schema::hasColumn('employees', 'job_title')
+                    ? $e->job_title
+                    : null,
             ])
             ->all();
     }

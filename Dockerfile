@@ -69,6 +69,7 @@ RUN mkdir -p storage/app/public \
 
 # PHP / Opcache / FPM
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/zz-railway.conf
 
 # Nginx template (PORT substituted at runtime)

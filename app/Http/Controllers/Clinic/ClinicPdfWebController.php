@@ -70,7 +70,7 @@ final class ClinicPdfWebController extends Controller
             abort(404);
         }
 
-        $prescription->load(['patient:id,name,phone,code', 'doctor:id,name,job_title']);
+        $prescription->load(['patient:id,name,phone,code', 'doctor:'.implode(',', \App\Models\Employee::clinicDoctorSelectColumns())]);
 
         $company = CompanySetting::forTenant($tenantUserId);
         $logoDataUri = $this->resolveLogoDataUri($company?->logo_url);

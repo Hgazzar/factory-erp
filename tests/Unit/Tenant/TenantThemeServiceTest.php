@@ -55,4 +55,16 @@ final class TenantThemeServiceTest extends TestCase
         $this->assertSame('#069494', TenantThemeService::DEFAULT_PRIMARY);
         $this->assertSame('#F0FDFA', TenantThemeService::DEFAULT_SECONDARY);
     }
+
+    #[Test]
+    public function clinic_config_defaults_match_nursery_palette(): void
+    {
+        $clinic = config('tenant.branding.defaults.medical_clinics');
+        $nursery = config('tenant.branding.defaults.nurseries');
+
+        $this->assertSame($nursery['primary'], $clinic['primary']);
+        $this->assertSame($nursery['secondary'], $clinic['secondary']);
+        $this->assertSame('#069494', $clinic['primary']);
+        $this->assertSame('#F0FDFA', $clinic['secondary']);
+    }
 }

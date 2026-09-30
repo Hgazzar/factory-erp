@@ -8,8 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Clinic\Appointment;
 use App\Models\Clinic\Patient;
-use App\Models\Employee;
 use App\Services\Clinic\ClinicAppointmentService;
+use App\Services\Clinic\ClinicDoctorScheduleService;
 use App\Services\Clinic\ClinicPatientService;
 use App\Services\Clinic\ClinicServiceCatalogService;
 use App\Support\ClinicAccess;
@@ -64,7 +64,7 @@ final class ClinicAppointmentWebController extends Controller
             'timeSlots' => $timeSlots,
             'viewMode' => $viewMode,
             'anchor' => $anchor,
-            'doctors' => $this->doctorOptions($tenantUserId),
+            'doctors' => app(ClinicDoctorScheduleService::class)->doctorOptions($tenantUserId),
             'patients' => Patient::query()->where('user_id', $tenantUserId)->orderBy('name')->limit(200)->get(['id', 'name', 'phone']),
             'statusLabels' => Appointment::statusLabels(),
             'clinicServices' => $catalog->activeForTenant($tenantUserId),
@@ -185,22 +185,5 @@ final class ClinicAppointmentWebController extends Controller
         }
 
         return back()->with('success', $message);
-    }
-
-    /**
-     * @return list<array{value: string, label: string}>
-     */
-    private function doctorOptions(int $tenantUserId): array
-    {
-        return Employee::query()
-            ->where('user_id', $tenantUserId)
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get(['id', 'name', 'job_title'])
-            ->map(fn (Employee $e) => [
-                'value' => (string) $e->id,
-                'label' => trim($e->name.($e->job_title ? ' — '.$e->job_title : '')),
-            ])
-            ->all();
     }
 }

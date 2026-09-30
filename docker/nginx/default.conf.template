@@ -7,7 +7,12 @@ server {
     root         /var/www/html/public;
     index        index.php;
 
-    client_max_body_size 32m;
+    # رفع صور الطاقم/المرفقات + هامش أمان (كان 32m → 413 على بعض الرفوعات)
+    client_max_body_size 100m;
+
+    # كوكيز/هيدر جلسة Laravel الكبيرة (بعد جلسات طويلة) قد تكسر الطلب
+    client_header_buffer_size 16k;
+    large_client_header_buffers 4 32k;
 
     # Static assets (Vite build, logos, etc.) — served by Nginx, not PHP
     location /build/ {

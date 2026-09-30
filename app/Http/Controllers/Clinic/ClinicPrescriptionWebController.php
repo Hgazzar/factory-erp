@@ -9,8 +9,8 @@ use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Models\Clinic\Appointment;
 use App\Models\Clinic\Patient;
 use App\Models\Clinic\Prescription;
-use App\Models\Employee;
 use App\Services\Clinic\ClinicAllergyAlertService;
+use App\Services\Clinic\ClinicDoctorScheduleService;
 use App\Services\Clinic\ClinicPrescriptionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,7 +56,7 @@ final class ClinicPrescriptionWebController extends Controller
 
         return view('clinic.prescriptions.create', [
             'patients' => Patient::query()->where('user_id', $tenantUserId)->orderBy('name')->get(['id', 'name']),
-            'doctors' => $this->doctorOptions($tenantUserId),
+            'doctors' => app(ClinicDoctorScheduleService::class)->doctorOptions($tenantUserId),
             'preselectedPatientId' => $preselectedPatientId,
             'preselectedAppointmentId' => $linkedAppointment?->id,
             'preselectedDoctorId' => $preselectedDoctorId,
@@ -128,22 +128,5 @@ final class ClinicPrescriptionWebController extends Controller
         $prescription->load(['patient', 'doctor', 'appointment']);
 
         return view('clinic.prescriptions.show', compact('prescription'));
-    }
-
-    /**
-     * @return list<array{value: string, label: string}>
-     */
-    private function doctorOptions(int $tenantUserId): array
-    {
-        return Employee::query()
-            ->where('user_id', $tenantUserId)
-            ->where('status', 'active')
-            ->orderBy('name')
-            ->get(['id', 'name', 'job_title'])
-            ->map(fn (Employee $e) => [
-                'value' => (string) $e->id,
-                'label' => trim($e->name.($e->job_title ? ' — '.$e->job_title : '')),
-            ])
-            ->all();
     }
 }

@@ -26,7 +26,7 @@
                 <input type="time" class="form-control" x-model="manageTime">
             </div>
             <div class="col-12 col-md-4 d-flex gap-2 align-items-end">
-                <button type="button" class="btn text-white flex-fill" style="background:#0d9488;" @click="rescheduleBooking()">تعديل</button>
+                <button type="button" class="btn text-white flex-fill" style="background:#069494;" @click="rescheduleBooking()">تعديل</button>
                 <button type="button" class="btn btn-outline-danger flex-fill" @click="cancelBooking()">إلغاء</button>
             </div>
         </div>
@@ -42,7 +42,7 @@
                 <template x-for="s in specialties" :key="s.id">
                     <button type="button" class="btn btn-outline-teal text-start border-teal-subtle"
                             :class="selectedSpecialtyId === s.id ? 'btn-teal text-white' : ''"
-                            style="--bs-btn-color:#0d9488; border-color:#99f6e4;"
+                            style="--bs-btn-color:#069494; border-color:#99f6e4;"
                             @click="selectSpecialty(s.id)">
                         <span x-text="s.name"></span>
                     </button>
@@ -96,7 +96,7 @@
             <div class="d-flex justify-content-between mt-3">
                 <button type="button" class="btn btn-link text-muted p-0" @click="step = 2">← رجوع</button>
                 <button type="button" class="btn btn-teal text-white px-4"
-                        style="background:#0d9488;border:none;"
+                        style="background:#069494;border:none;"
                         :disabled="!selectedSlot"
                         @click="step = 4">التالي</button>
             </div>
@@ -120,7 +120,7 @@
             <div class="d-flex justify-content-between mt-3">
                 <button type="button" class="btn btn-link text-muted p-0" @click="step = 3">← رجوع</button>
                 <button type="button" class="btn btn-teal text-white px-4"
-                        style="background:#0d9488;border:none;"
+                        style="background:#069494;border:none;"
                         :disabled="submitting || !patientName || !patientPhone"
                         @click="submitBooking()">
                     <span x-show="!submitting">تأكيد الحجز</span>

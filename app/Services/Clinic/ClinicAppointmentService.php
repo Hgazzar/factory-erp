@@ -7,6 +7,7 @@ namespace App\Services\Clinic;
 use App\Events\Clinic\ClinicAppointmentBooked;
 use App\Models\Clinic\Appointment;
 use App\Models\Clinic\Patient;
+use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -245,7 +246,7 @@ final class ClinicAppointmentService
     public function forDateRange(int $tenantUserId, Carbon $from, Carbon $to): Collection
     {
         return Appointment::query()
-            ->with(['patient:id,name,phone', 'doctor:id,name,job_title'])
+            ->with(['patient:id,name,phone', 'doctor:'.implode(',', Employee::clinicDoctorSelectColumns())])
             ->where('user_id', $tenantUserId)
             ->whereBetween('appointment_date', [$from->toDateString(), $to->toDateString()])
             ->orderBy('appointment_date')

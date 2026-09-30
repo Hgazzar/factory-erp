@@ -1,6 +1,7 @@
     @php
         $quickAccessModules = ($tenantNavigation ?? null)?->visibleModuleLauncherCards() ?? [];
-        $nurseryPrimaryShell = function_exists('is_nursery_shell') && is_nursery_shell();
+        $nichePrimaryShell = (function_exists('is_nursery_shell') && is_nursery_shell())
+            || (function_exists('is_clinic_shell') && is_clinic_shell());
         $tenantHome = function_exists('tenant_home_route') ? tenant_home_route() : route('dashboard');
     @endphp
     {{-- Top Global Navbar — يُدمَج داخل .flex.flex-col.min-h-screen في التخطيط الأم --}}
@@ -12,7 +13,7 @@
                         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                     </a>
                 @else
-                    @unless($nurseryPrimaryShell)
+                    @unless($nichePrimaryShell)
                     {{-- فتح مودال يدوياً بعد bootstrap.bundle (نفس أسلوب استيراد الحسابات) لتفادي تعطيل data-api على السيرفر --}}
                     <button type="button"
                             id="erp-module-launcher-trigger"
@@ -42,7 +43,7 @@
             </div>
 
             {{-- CENTER (Global Search) — مخفي لحضانة SaaS لتجنب سياق ERP العام --}}
-            @unless($nurseryPrimaryShell)
+            @unless($nichePrimaryShell)
             <div class="hidden md:flex flex-1 max-w-md justify-center px-4">
                 <form action="{{ route('dashboard') }}" method="GET" class="flex h-9 w-72 max-w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3">
                     <svg class="w-4 h-4 text-gray-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -168,7 +169,7 @@
                                 <li>
                                     <a href="{{ route('settings.company.edit') }}" class="dropdown-item rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">إعدادات المنشأة</a>
                                 </li>
-                                @if(auth()->user()->hasModule('pos') && ! $nurseryPrimaryShell)
+                                @if(auth()->user()->hasModule('pos') && ! $nichePrimaryShell)
                                     <li>
                                         <a href="{{ route('settings.store.edit') }}" class="dropdown-item rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">إعدادات المتجر الإلكتروني</a>
                                     </li>
@@ -196,7 +197,7 @@
         </header>
 
         @auth
-        @unless($nurseryPrimaryShell)
+        @unless($nichePrimaryShell)
         {{-- مودال الوصول السريع للوحدات (Bootstrap فقط) --}}
         <div class="modal fade" id="erpModuleLauncherModal" tabindex="-1" aria-labelledby="erpModuleLauncherModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">

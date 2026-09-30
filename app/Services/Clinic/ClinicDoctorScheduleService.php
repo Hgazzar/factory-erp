@@ -133,10 +133,10 @@ final class ClinicDoctorScheduleService
             ->where('status', 'active')
             ->where('clinic_role', 'doctor')
             ->orderBy('name')
-            ->get(['id', 'name', 'job_title'])
+            ->get(Employee::clinicDoctorSelectColumns())
             ->map(fn (Employee $e) => [
                 'value' => (string) $e->id,
-                'label' => trim($e->name.($e->job_title ? ' — '.$e->job_title : '')),
+                'label' => $e->clinicDisplayLabel(),
             ])
             ->all();
     }
