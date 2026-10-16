@@ -207,4 +207,41 @@ final class NurserySubscriptionTest extends NurseryTestCase
 
         $this->assertSame(['ساعة', 'يومي', 'أسبوعي', 'فصلي'], $names);
     }
+
+    #[Test]
+    public function ensure_default_plans_tolerates_legacy_name_collisions(): void
+    {
+        SubscriptionPlan::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'name' => 'فصلي',
+            'plan_type' => 'yearly',
+            'amount' => 9000,
+            'tax_rate' => 15,
+            'currency_code' => 'SAR',
+            'is_active' => true,
+        ]);
+        SubscriptionPlan::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'name' => 'شهري',
+            'plan_type' => 'monthly',
+            'amount' => 2000,
+            'tax_rate' => 15,
+            'currency_code' => 'SAR',
+            'is_active' => true,
+        ]);
+
+        app(NurserySubscriptionService::class)->ensureDefaultPlans((int) $this->tenant->id);
+
+        $this->get(route('nursery.subscriptions.index'))->assertOk();
+
+        $active = SubscriptionPlan::query()
+            ->where('user_id', $this->tenant->id)
+            ->where('is_active', true)
+            ->pluck('plan_type')
+            ->all();
+
+        $this->assertEqualsCanonicalizing(['hourly', 'daily', 'weekly', 'term'], $active);
+        $this->assertNotContains('yearly', $active);
+        $this->assertNotContains('monthly', $active);
+    }
 }

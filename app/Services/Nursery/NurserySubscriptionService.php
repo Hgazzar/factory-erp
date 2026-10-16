@@ -26,6 +26,7 @@ final class NurserySubscriptionService
     /**
      * Canonical nursery plans: ساعة / يومي / أسبوعي / فصلي (no yearly, no monthly default).
      * Syncs existing tenants — creates missing types, renames defaults, deactivates yearly.
+     * Safe against unique(user_id, name) conflicts on live DBs with legacy plan rows.
      */
     public function ensureDefaultPlans(int $tenantUserId): void
     {
@@ -36,16 +37,31 @@ final class NurserySubscriptionService
             ['name' => 'فصلي', 'plan_type' => NurserySubscriptionPlanService::TYPE_TERM, 'amount' => 5500],
         ];
 
+        $base = fn () => SubscriptionPlan::query()->withoutGlobalScopes()->where('user_id', $tenantUserId);
+
         foreach ($defaults as $plan) {
-            $existing = SubscriptionPlan::query()
-                ->where('user_id', $tenantUserId)
+            $byType = $base()
                 ->where('plan_type', $plan['plan_type'])
                 ->orderByDesc('is_active')
                 ->orderBy('id')
                 ->first();
 
-            if ($existing !== null) {
-                $existing->update([
+            $byName = $base()
+                ->where('name', $plan['name'])
+                ->orderByDesc('is_active')
+                ->orderBy('id')
+                ->first();
+
+            if ($byType !== null) {
+                // Free the canonical name if another row holds it (avoids unique user_id+name 500).
+                if ($byName !== null && (int) $byName->id !== (int) $byType->id) {
+                    $byName->update([
+                        'name' => $plan['name'].' (قديم-'.$byName->id.')',
+                        'is_active' => false,
+                    ]);
+                }
+
+                $byType->update([
                     'name' => $plan['name'],
                     'is_active' => true,
                 ]);
@@ -53,7 +69,16 @@ final class NurserySubscriptionService
                 continue;
             }
 
-            SubscriptionPlan::query()->create([
+            if ($byName !== null) {
+                $byName->update([
+                    'plan_type' => $plan['plan_type'],
+                    'is_active' => true,
+                ]);
+
+                continue;
+            }
+
+            SubscriptionPlan::query()->withoutGlobalScopes()->create([
                 'user_id' => $tenantUserId,
                 'name' => $plan['name'],
                 'plan_type' => $plan['plan_type'],
@@ -65,8 +90,7 @@ final class NurserySubscriptionService
         }
 
         // Hide legacy yearly (and leftover monthly defaults) from new-subscription pickers.
-        SubscriptionPlan::query()
-            ->where('user_id', $tenantUserId)
+        $base()
             ->whereIn('plan_type', [
                 NurserySubscriptionPlanService::TYPE_YEARLY,
                 NurserySubscriptionPlanService::TYPE_MONTHLY,
