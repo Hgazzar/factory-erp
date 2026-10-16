@@ -60,7 +60,7 @@
                         :options="$contractCustomerOptions"
                         :value="old('customer_id')"
                         :required="true"
-                        empty-label="اختر العميل"
+                        empty-label="— العميل —"
                         placeholder="ابحث باسم العميل..."
                     />
                 </div>
@@ -139,7 +139,7 @@
                             <tr class="border-b border-gray-100">
                                 <td class="py-2 px-3">
                                     <select :name="`lines[${index}][item_id]`" x-model="line.item_id" class="w-full px-3 py-2 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                                        <option value="">اختر المنتج</option>
+                                        <option value="">— المنتج —</option>
                                         <template x-for="item in items" :key="item.id">
                                             <option :value="item.id" x-text="item.name_ar || item.name_en || item.code"></option>
                                         </template>

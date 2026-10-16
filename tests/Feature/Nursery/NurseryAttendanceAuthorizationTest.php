@@ -21,7 +21,7 @@ final class NurseryAttendanceAuthorizationTest extends NurseryTestCase
 
         $this->actingAs($staff);
 
-        $this->get(route('nursery.attendance.index'))->assertOk();
+        $this->get(route('nursery.attendance.index'))->assertForbidden();
 
         $this->post(route('nursery.attendance.check-in'), ['child_id' => $child->id])
             ->assertForbidden();

@@ -7,6 +7,7 @@ namespace App\Models\Nursery;
 use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToTenantContextScope;
 use App\Models\User;
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ScopedBy([BelongsToTenantContextScope::class])]
 class CalendarEntry extends Model
 {
+    use HasAttachments;
     use ResolvesRouteBindingForTenant;
 
     public const TYPE_LESSON = 'lesson';

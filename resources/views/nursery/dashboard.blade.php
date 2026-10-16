@@ -10,12 +10,9 @@
     $canViewCalendar = $access->allows(\App\Support\NurseryAccess::CAP_VIEW_CALENDAR);
     $canViewSubs = $access->allows(\App\Support\NurseryAccess::CAP_VIEW_SUBSCRIPTIONS);
     $canViewStaff = $access->allows(\App\Support\NurseryAccess::CAP_VIEW_STAFF);
-    $canViewChildren = $access->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILDREN)
-        || $access->allows(\App\Support\NurseryAccess::CAP_VIEW_DAILY);
-    $canViewClassrooms = $access->allows(\App\Support\NurseryAccess::CAP_MANAGE_CLASSROOMS)
-        || $access->allows(\App\Support\NurseryAccess::CAP_VIEW_DAILY);
-    $canViewAttendance = $access->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILD_ATTENDANCE)
-        || $access->allows(\App\Support\NurseryAccess::CAP_VIEW_DAILY);
+    $canViewChildren = $access->allows(\App\Support\NurseryAccess::CAP_VIEW_CHILDREN);
+    $canViewClassrooms = $access->allows(\App\Support\NurseryAccess::CAP_VIEW_CLASSROOMS);
+    $canViewAttendance = $access->allows(\App\Support\NurseryAccess::CAP_VIEW_ATTENDANCE);
 @endphp
 <div class="w-full space-y-6" dir="rtl">
     <div class="flex flex-wrap items-center justify-between gap-4">
@@ -27,9 +24,11 @@
             </p>
             <p class="text-xs text-teal-700/70 mt-1">تاريخ اليوم: {{ $board['date'] }}</p>
         </div>
+        @if($canViewAttendance)
         <a href="{{ route('nursery.attendance.index') }}" class="nursery-btn nursery-btn-primary">
             تسجيل حضور سريع
         </a>
+        @endif
     </div>
 
     <section class="nursery-stats-row">
@@ -218,7 +217,7 @@
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
                     </span>
                     <div>
-                        <h2 class="nursery-panel-head__title">انصرفوا اليوم</h2>
+                        <h2 class="nursery-panel-head__title">انصراف اليوم</h2>
                         <p class="nursery-panel-head__sub">عدد الأطفال: {{ $board['checked_out']->count() }}</p>
                     </div>
                 </div>
@@ -229,7 +228,11 @@
                     <div class="min-w-0 flex-1">
                         <p class="font-semibold text-teal-950 truncate">{{ $row['child']->name }}</p>
                         <p class="text-xs text-sky-700">
-                            انصراف: {{ $row['log']->checked_out_at?->format('H:i') ?? '—' }}
+                            @if($row['log']->checked_in_at) حضور {{ $row['log']->checked_in_at->format('H:i') }} @endif
+                            @if($row['log']->checked_out_at)
+                                @if($row['log']->checked_in_at) · @endif
+                                انصراف {{ $row['log']->checked_out_at->format('H:i') }}
+                            @endif
                         </p>
                     </div>
                 </div>

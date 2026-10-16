@@ -49,7 +49,7 @@
                     :required="true"
                     :error="$errors->has('warehouse_id')"
                     :empty-option="true"
-                    empty-label="— اختر مستودع التوريد —"
+                    empty-label="— مستودع التوريد —"
                     placeholder="ابحث باسم المستودع أو الكود..."
                 />
                 @error('warehouse_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror

@@ -105,7 +105,7 @@
                 <form method="post" action="{{ route('services.orders.assign', $order) }}" class="flex flex-col gap-3">
                     @csrf
                     <select name="assigned_technician_id" class="rounded-lg border-gray-300 text-sm" required>
-                        <option value="">— اختر فنياً —</option>
+                        <option value="">— فنياً —</option>
                         @foreach($technicians as $t)
                             <option value="{{ $t->id }}" @selected($order->assigned_technician_id == $t->id)>{{ $t->name }}</option>
                         @endforeach

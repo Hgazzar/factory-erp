@@ -17,17 +17,14 @@ use Tests\Support\NurseryTestCase;
 final class NurserySubscriptionPermissionTest extends NurseryTestCase
 {
     #[Test]
-    public function view_only_staff_can_open_subscriptions_but_cannot_manage(): void
+    public function login_app_only_cannot_open_subscriptions(): void
     {
         $staff = $this->makeLinkedStaff('sub-view@example.com', ['login.app']);
         $subscription = $this->makeUnpaidSubscription();
 
         $this->actingAs($staff);
 
-        $this->get(route('nursery.subscriptions.index'))
-            ->assertOk()
-            ->assertDontSee('+ إضافة اشتراك')
-            ->assertDontSee('تسجيل الدفع');
+        $this->get(route('nursery.subscriptions.index'))->assertForbidden();
 
         $this->post(route('nursery.subscriptions.store'), [
             'child_id' => $subscription->child_id,

@@ -193,7 +193,7 @@
                                 style="z-index:9999;"
                                 :error="$errors->has('payment_account_id')"
                                 :emptyOption="true"
-                                empty-label="— اختر الحساب —"
+                                empty-label="— الحساب —"
                                 placeholder="ابحث بالرمز أو الاسم..."
                             />
                             @error('payment_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

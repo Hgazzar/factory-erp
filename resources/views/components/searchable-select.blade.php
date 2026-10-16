@@ -31,16 +31,21 @@
     $normalized = [];
     foreach ($options as $row) {
         if (is_array($row)) {
-            $normalized[] = [
-                'v' => (string) ($row['value'] ?? ''),
-                'l' => (string) ($row['label'] ?? ''),
-            ];
+            $v = (string) ($row['value'] ?? '');
+            $l = (string) ($row['label'] ?? '');
         } elseif (is_object($row)) {
-            $normalized[] = [
-                'v' => (string) ($row->value ?? ''),
-                'l' => (string) ($row->label ?? ''),
-            ];
+            $v = (string) ($row->value ?? '');
+            $l = (string) ($row->label ?? '');
+        } else {
+            continue;
         }
+
+        // Avoid duplicate empty rows when emptyOption already prepends the empty choice.
+        if ($emptyOption && $v === '') {
+            continue;
+        }
+
+        $normalized[] = ['v' => $v, 'l' => $l];
     }
     if ($emptyOption) {
         array_unshift($normalized, [

@@ -126,7 +126,7 @@
                         :options="$crmStatusFilterOptions"
                         :value="old('crm_status', 'potential')"
                         :empty-option="false"
-                        placeholder="اختر الحالة…"
+                        placeholder="ابحث عن الحالة..."
                         :searchable="false"
                     />
                     @error('crm_status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -139,7 +139,7 @@
                         :options="$crmLeadPriorityOptions"
                         :value="old('lead_priority', '')"
                         empty-label="—"
-                        placeholder="اختر…"
+                        placeholder="—"
                         :searchable="false"
                     />
                     @error('lead_priority')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

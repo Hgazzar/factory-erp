@@ -62,7 +62,7 @@
                                 :required="true"
                                 :error="$errors->has('employee_id')"
                                 :empty-option="true"
-                                empty-label="اختر الموظف"
+                                empty-label="— الموظف —"
                                 placeholder="ابحث بالاسم أو الكود…"
                             />
                             @error('employee_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -77,8 +77,8 @@
                                 :required="true"
                                 :error="$errors->has('leave_type')"
                                 :empty-option="false"
-                                empty-label="اختر نوع الإجازة"
-                                placeholder="اختر نوع الإجازة…"
+                                empty-label="— نوع الإجازة —"
+                                placeholder="ابحث عن نوع الإجازة..."
                             />
                             @error('leave_type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                         </div>

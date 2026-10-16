@@ -35,7 +35,7 @@
     :required="$required"
     :error="$error"
     :empty-option="(bool) $emptyOption"
-    :empty-label="$emptyLabel ?? '— اختر —'"
+    :empty-label="$emptyLabel ?? '—'"
     :placeholder="$placeholder"
     :in-modal="$inModal"
     :fixed-panel="$fixedPanel"

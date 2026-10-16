@@ -82,7 +82,7 @@
                             :value="old('customer_id', optional($opportunity)->customer_id ?? '')"
                             :required="true"
                             :empty-option="false"
-                            placeholder="اختر العميل"
+                            placeholder="ابحث عن العميل..."
                             :searchable="true"
                         />
                     </div>
@@ -101,7 +101,7 @@
                             :value="(string) $defaultStage"
                             :required="true"
                             :empty-option="false"
-                            placeholder="اختر المرحلة"
+                            placeholder="ابحث عن المرحلة..."
                             :searchable="false"
                         />
                     </div>

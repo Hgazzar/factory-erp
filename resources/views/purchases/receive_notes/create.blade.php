@@ -56,7 +56,7 @@
                             :options="$receiveNoteSupplierOptions"
                             :value="old('supplier_id')"
                             :required="true"
-                            empty-label="اختر المورد"
+                            empty-label="— المورد —"
                             placeholder="ابحث باسم المورد أو الرمز..."
                         />
                     </div>
@@ -72,7 +72,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">المستودع <span class="text-red-500">*</span></label>
                         <select name="warehouse_id" required class="w-full px-3 py-2.5 rounded-2xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500">
-                            <option value="">اختر المستودع</option>
+                            <option value="">— المستودع —</option>
                             @foreach($warehouses as $w)
                                 <option value="{{ $w->id }}" {{ old('warehouse_id') == $w->id ? 'selected' : '' }}>{{ $w->name_ar ?? $w->name_en ?? $w->code }}</option>
                             @endforeach
@@ -135,7 +135,7 @@
                                     </td>
                                     <td class="py-2 px-2">
                                         <select :name="'items[' + index + '][item_id]'" class="w-full px-2 py-2 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500" x-model="row.item_id" @change="onItemSelect(index)">
-                                            <option value="">اختر</option>
+                                            <option value="">—</option>
                                             @foreach($items as $item)
                                                 <option value="{{ $item->id }}" data-unit="{{ optional($item->unit)->name_ar ?? optional($item->unit)->symbol ?? '' }}" data-cost="{{ $item->cost ?? 0 }}">{{ $item->name_ar ?? $item->name_en ?? $item->code }}</option>
                                             @endforeach

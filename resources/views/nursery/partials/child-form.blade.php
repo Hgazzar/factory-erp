@@ -41,7 +41,7 @@
                         <x-info field="nursery.child_gender" />
                     </label>
                     <x-custom-select name="gender" :options="$genderOptions" :value="old('gender', $child?->gender)"
-                        placeholder="اختر الجنس" empty-label="—" :searchable="false" />
+                        placeholder="الجنس" empty-label="—" :searchable="false" />
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-teal-950 mb-1">
@@ -61,7 +61,7 @@
                     <x-custom-select name="classroom_id"
                         :options="$classrooms->map(fn ($c) => ['value' => (string) $c->id, 'label' => $c->name])->all()"
                         :value="old('classroom_id', (string) ($child?->activeEnrollment?->classroom_id ?? ''))"
-                        placeholder="اختر الفصل" empty-label="— بدون فصل —" :searchable="true" />
+                        placeholder="ابحث عن الفصل..." empty-label="— بدون فصل —" :searchable="true" />
                 </div>
                 @if($child !== null)
                     <div>
@@ -75,6 +75,21 @@
                             :searchable="false" />
                     </div>
                 @endif
+                <div class="lg:col-span-2">
+                    <label class="flex items-start gap-3 rounded-xl border border-teal-100 bg-teal-50/40 px-4 py-3 cursor-pointer">
+                        <input type="hidden" name="social_media_photo_consent" value="0">
+                        <input type="checkbox" name="social_media_photo_consent" value="1"
+                               class="mt-1 rounded border-teal-300 text-teal-600 focus:ring-teal-500 shrink-0"
+                               @checked(old('social_media_photo_consent', $child?->social_media_photo_consent ?? false))>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-semibold text-teal-950">
+                                الموافقة على تصوير الطفل في وسائل التواصل
+                                <x-info field="nursery.child_social_media_photo_consent" />
+                            </span>
+                            <span class="block text-xs text-teal-800/75 mt-0.5">يسمح بنشر صور الطفل على حسابات التواصل الخاصة بالحضانة وفق سياسة الخصوصية.</span>
+                        </span>
+                    </label>
+                </div>
             </div>
         </section>
 
@@ -164,8 +179,8 @@
                     <x-custom-select name="guardian_region" id="guardian_region_select"
                         :options="\App\Support\SaudiRegions::regionSelectOptions()"
                         :value="$regionValue"
-                        placeholder="اختر المنطقة"
-                        empty-label="— اختر المنطقة —"
+                        placeholder="ابحث عن المنطقة..."
+                        empty-label="— المنطقة —"
                         :searchable="true" />
                 </div>
                 <div id="nursery-city-field-wrap">

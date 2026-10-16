@@ -113,7 +113,7 @@
                         :value="old('source', '')"
                         :required="true"
                         :empty-option="false"
-                        placeholder="اختر المصدر…"
+                        placeholder="ابحث عن المصدر..."
                         :searchable="true"
                     />
                 </div>
@@ -126,7 +126,7 @@
                         :value="old('lead_priority', 'medium')"
                         :required="true"
                         :empty-option="false"
-                        placeholder="اختر الأولوية…"
+                        placeholder="ابحث عن الأولوية..."
                         :searchable="false"
                     />
                 </div>
@@ -193,7 +193,7 @@
                         :options="$crmLeadRatingModalOptions"
                         :value="old('lead_rating') !== null && old('lead_rating') !== '' ? (string) old('lead_rating') : ''"
                         empty-label="—"
-                        placeholder="اختر…"
+                        placeholder="—"
                         :searchable="false"
                     />
                 </div>

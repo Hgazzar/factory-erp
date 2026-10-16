@@ -55,7 +55,7 @@
                         :required="true"
                         :error="$errors->has('employee_id')"
                         :empty-option="true"
-                        empty-label="اختر الموظف"
+                        empty-label="— الموظف —"
                         placeholder="ابحث بالاسم أو الكود…"
                     />
                     @error('employee_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

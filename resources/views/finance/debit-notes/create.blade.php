@@ -55,7 +55,7 @@
                         :options="$debitNoteSupplierOptions"
                         :value="old('supplier_id')"
                         :error="$errors->has('supplier_id')"
-                        empty-label="اختر المورد"
+                        empty-label="— المورد —"
                         placeholder="ابحث باسم المورد أو الرمز..."
                     />
                     @error('supplier_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
@@ -104,7 +104,7 @@
                         :selected="old('reason_type')"
                         :required="true"
                         :error="$errors->has('reason_type')"
-                        empty-label="اختر نوع السبب"
+                        empty-label="— نوع السبب —"
                         placeholder="ابحث عن نوع السبب..."
                     />
                     @error('reason_type') <p class="text-xs text-red-600">{{ $message }}</p> @enderror

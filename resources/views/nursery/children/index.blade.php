@@ -46,10 +46,7 @@
                 <x-info field="nursery.filter_classroom" />
             </label>
             <x-custom-select name="classroom_id"
-                :options="array_merge(
-                    [['value' => '', 'label' => 'جميع الفصول']],
-                    $classrooms->map(fn ($c) => ['value' => (string) $c->id, 'label' => $c->name])->all()
-                )"
+                :options="$classrooms->map(fn ($c) => ['value' => (string) $c->id, 'label' => $c->name])->all()"
                 :value="(string) $classroomId"
                 placeholder="الفصل"
                 empty-label="جميع الفصول"

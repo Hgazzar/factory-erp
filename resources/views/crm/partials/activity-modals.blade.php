@@ -57,7 +57,7 @@
                             :options="$crmFollowUpSelectOptions"
                             value=""
                             :required="true"
-                            empty-label="اختر النوع"
+                            empty-label="— النوع —"
                             placeholder="ابحث…"
                             :searchable="false"
                             :in-modal="true"

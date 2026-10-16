@@ -34,6 +34,12 @@
                 <div><dt class="text-teal-800/70">تاريخ الميلاد</dt><dd class="font-medium">{{ $child->date_of_birth?->format('Y-m-d') ?? '—' }}</dd></div>
                 <div><dt class="text-teal-800/70">الفصل</dt><dd class="font-medium">{{ $child->activeEnrollment?->classroom?->name ?? 'غير معين لفصل' }}</dd></div>
                 <div><dt class="text-teal-800/70">حالة الحساب</dt><dd class="font-medium">{{ $child->status === 'active' ? 'نشط' : 'مؤرشف' }}</dd></div>
+                <div class="sm:col-span-2">
+                    <dt class="text-teal-800/70">تصوير وسائل التواصل <x-info field="nursery.child_social_media_photo_consent" /></dt>
+                    <dd class="font-medium {{ $child->social_media_photo_consent ? 'text-emerald-700' : 'text-amber-700' }}">
+                        {{ $child->social_media_photo_consent ? 'موافق' : 'غير موافق' }}
+                    </dd>
+                </div>
             </dl>
         </section>
 

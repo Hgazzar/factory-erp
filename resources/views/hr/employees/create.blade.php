@@ -137,7 +137,7 @@
 
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">الجنس <x-info field="hr.employee_gender" /></label>
-                    <x-custom-select name="gender" :options="$genderOptions" :value="old('gender', '')" placeholder="اختر" empty-label="اختر" :empty-option="false" :error="$errors->has('gender')" />
+                    <x-custom-select name="gender" :options="$genderOptions" :value="old('gender', '')" placeholder="—" empty-label="—" :empty-option="false" :error="$errors->has('gender')" />
                     @error('gender')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -147,7 +147,7 @@
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">الحالة الاجتماعية <x-info field="hr.employee_marital_status" /></label>
-                    <x-custom-select name="marital_status" :options="$maritalOptions" :value="old('marital_status', '')" placeholder="اختر" empty-label="اختر" :empty-option="false" :error="$errors->has('marital_status')" />
+                    <x-custom-select name="marital_status" :options="$maritalOptions" :value="old('marital_status', '')" placeholder="—" empty-label="—" :empty-option="false" :error="$errors->has('marital_status')" />
                     @error('marital_status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
 
@@ -245,17 +245,17 @@
             <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">نوع التوظيف <x-info field="hr.employee_employment_type" /></label>
-                    <x-custom-select name="employment_type" :options="$employmentTypeOptions" :value="old('employment_type', 'full_time')" placeholder="اختر" empty-label="اختر" :empty-option="false" :error="$errors->has('employment_type')" />
+                    <x-custom-select name="employment_type" :options="$employmentTypeOptions" :value="old('employment_type', 'full_time')" placeholder="—" empty-label="—" :empty-option="false" :error="$errors->has('employment_type')" />
                     @error('employment_type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">القسم <x-info field="hr.employee_department" /></label>
-                    <x-custom-select name="department_id" :options="$departmentSelectOptions" :value="old('department_id', '')" placeholder="اختر القسم..." empty-label="بدون قسم" :error="$errors->has('department_id')" />
+                    <x-custom-select name="department_id" :options="$departmentSelectOptions" :value="old('department_id', '')" placeholder="ابحث عن القسم..." empty-label="بدون قسم" :error="$errors->has('department_id')" />
                     @error('department_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">وردية العمل <x-info field="hr.employee_shift" /></label>
-                    <x-custom-select name="shift_id" :options="$shiftSelectOptions" :value="old('shift_id', '')" placeholder="اختر الوردية..." empty-label="بدون وردية" :error="$errors->has('shift_id')" />
+                    <x-custom-select name="shift_id" :options="$shiftSelectOptions" :value="old('shift_id', '')" placeholder="ابحث عن الوردية..." empty-label="بدون وردية" :error="$errors->has('shift_id')" />
                     @error('shift_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -270,7 +270,7 @@
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">حالة الموظف <x-info field="hr.employee_status" /></label>
-                    <x-custom-select name="status" :options="$statusOptions" :value="old('status', 'active')" placeholder="اختر الحالة..." :empty-option="false" :error="$errors->has('status')" />
+                    <x-custom-select name="status" :options="$statusOptions" :value="old('status', 'active')" placeholder="ابحث عن الحالة..." :empty-option="false" :error="$errors->has('status')" />
                     @error('status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
@@ -280,7 +280,7 @@
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">الصلاحية (Role) <x-info field="hr.employee_role" /></label>
-                    <x-custom-select name="role" :options="$roleOptions" :value="old('role', '')" placeholder="اختر الصلاحية..." empty-label="—" :error="$errors->has('role')" />
+                    <x-custom-select name="role" :options="$roleOptions" :value="old('role', '')" placeholder="ابحث عن الصلاحية..." empty-label="—" :error="$errors->has('role')" />
                     @error('role')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 @if(in_array('clinic', $enabledModules ?? [], true))
@@ -305,12 +305,12 @@
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">نوع الراتب <x-info field="hr.employee_salary_type" /></label>
-                    <x-custom-select name="salary_type" :options="$salaryTypeOptions" :value="old('salary_type', 'monthly')" placeholder="اختر..." :empty-option="false" :searchable="false" :error="$errors->has('salary_type')" />
+                    <x-custom-select name="salary_type" :options="$salaryTypeOptions" :value="old('salary_type', 'monthly')" placeholder="—" :empty-option="false" :searchable="false" :error="$errors->has('salary_type')" />
                     @error('salary_type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-gray-800">سياسة الحضور (الخصم) <x-info field="hr.employee_attendance_policy" /></label>
-                    <x-custom-select name="attendance_policy" :options="$attendancePolicyOptions" :value="old('attendance_policy', 'none')" placeholder="اختر..." :empty-option="false" :searchable="false" :error="$errors->has('attendance_policy')" />
+                    <x-custom-select name="attendance_policy" :options="$attendancePolicyOptions" :value="old('attendance_policy', 'none')" placeholder="—" :empty-option="false" :searchable="false" :error="$errors->has('attendance_policy')" />
                     @error('attendance_policy')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>

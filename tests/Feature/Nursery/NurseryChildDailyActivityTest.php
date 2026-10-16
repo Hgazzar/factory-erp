@@ -142,7 +142,7 @@ final class NurseryChildDailyActivityTest extends NurseryTestCase
     #[Test]
     public function view_only_staff_can_read_but_cannot_write(): void
     {
-        $staff = $this->makeLinkedStaff('daily-view@example.com', ['login.app']);
+        $staff = $this->makeLinkedStaff('daily-view@example.com', ['login.app', 'children.files_page']);
         $child = $this->makeChild('طفل قراءة');
 
         ChildDailyActivity::query()->create([

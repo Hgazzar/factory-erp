@@ -20,21 +20,39 @@ final class NurserySubscriptionService
     public function __construct(
         private readonly NurserySubscriptionAccountingService $accounting,
         private readonly NurseryWhatsAppNotifier $notifier,
+        private readonly NurserySubscriptionPlanService $plans,
     ) {}
 
+    /**
+     * Canonical nursery plans: ساعة / يومي / أسبوعي / فصلي (no yearly, no monthly default).
+     * Syncs existing tenants — creates missing types, renames defaults, deactivates yearly.
+     */
     public function ensureDefaultPlans(int $tenantUserId): void
     {
-        if (SubscriptionPlan::query()->where('user_id', $tenantUserId)->exists()) {
-            return;
-        }
+        $defaults = [
+            ['name' => 'ساعة', 'plan_type' => NurserySubscriptionPlanService::TYPE_HOURLY, 'amount' => 50],
+            ['name' => 'يومي', 'plan_type' => NurserySubscriptionPlanService::TYPE_DAILY, 'amount' => 150],
+            ['name' => 'أسبوعي', 'plan_type' => NurserySubscriptionPlanService::TYPE_WEEKLY, 'amount' => 700],
+            ['name' => 'فصلي', 'plan_type' => NurserySubscriptionPlanService::TYPE_TERM, 'amount' => 5500],
+        ];
 
-        foreach (
-            [
-                ['name' => 'شهري', 'plan_type' => 'monthly', 'amount' => 2000],
-                ['name' => 'فصلي', 'plan_type' => 'term', 'amount' => 5500],
-                ['name' => 'سنوي', 'plan_type' => 'yearly', 'amount' => 18000],
-            ] as $plan
-        ) {
+        foreach ($defaults as $plan) {
+            $existing = SubscriptionPlan::query()
+                ->where('user_id', $tenantUserId)
+                ->where('plan_type', $plan['plan_type'])
+                ->orderByDesc('is_active')
+                ->orderBy('id')
+                ->first();
+
+            if ($existing !== null) {
+                $existing->update([
+                    'name' => $plan['name'],
+                    'is_active' => true,
+                ]);
+
+                continue;
+            }
+
             SubscriptionPlan::query()->create([
                 'user_id' => $tenantUserId,
                 'name' => $plan['name'],
@@ -45,6 +63,16 @@ final class NurserySubscriptionService
                 'is_active' => true,
             ]);
         }
+
+        // Hide legacy yearly (and leftover monthly defaults) from new-subscription pickers.
+        SubscriptionPlan::query()
+            ->where('user_id', $tenantUserId)
+            ->whereIn('plan_type', [
+                NurserySubscriptionPlanService::TYPE_YEARLY,
+                NurserySubscriptionPlanService::TYPE_MONTHLY,
+            ])
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
     }
 
     /**
@@ -77,8 +105,16 @@ final class NurserySubscriptionService
         $startsOn = (string) ($data['starts_on'] ?? '');
         $endsOn = (string) ($data['ends_on'] ?? '');
 
-        if ($startsOn === '' || $endsOn === '') {
-            throw new InvalidArgumentException('تاريخ البداية والانتهاء مطلوبان.');
+        if ($startsOn === '') {
+            throw new InvalidArgumentException('تاريخ البداية مطلوب.');
+        }
+
+        if ($endsOn === '') {
+            $autoEnd = $this->plans->endsOnForPlanType($startsOn, (string) $plan->plan_type);
+            if ($autoEnd === null) {
+                throw new InvalidArgumentException('تاريخ الانتهاء مطلوب لهذه الخطة.');
+            }
+            $endsOn = $autoEnd->toDateString();
         }
 
         if ($endsOn < $startsOn) {
@@ -239,12 +275,19 @@ final class NurserySubscriptionService
         }
 
         $subscription->loadMissing('plan');
-        $durationDays = max(1, (int) $subscription->starts_on?->diffInDays($subscription->ends_on));
         $startsOn = ($subscription->ends_on?->copy() ?? now())->addDay()->startOfDay();
         if ($startsOn->lt(now()->startOfDay())) {
             $startsOn = now()->startOfDay();
         }
-        $endsOn = $startsOn->copy()->addDays($durationDays);
+
+        $planType = (string) ($subscription->plan?->plan_type ?? NurserySubscriptionPlanService::TYPE_CUSTOM);
+        $autoEnd = $this->plans->endsOnForPlanType($startsOn, $planType);
+        if ($autoEnd !== null) {
+            $endsOn = $autoEnd;
+        } else {
+            $durationDays = max(1, (int) $subscription->starts_on?->diffInDays($subscription->ends_on));
+            $endsOn = $startsOn->copy()->addDays($durationDays);
+        }
 
         $result = $this->create($tenantUserId, [
             'child_id' => (int) $subscription->child_id,
@@ -440,25 +483,33 @@ final class NurserySubscriptionService
     private function periodScope(Builder $query, ?Carbon $from, ?Carbon $to): Builder
     {
         if ($from !== null) {
-            $query->where('created_at', '>=', $from->copy()->startOfDay());
+            $query->where('created_at', '>=', $from);
         }
         if ($to !== null) {
-            $query->where('created_at', '<=', $to->copy()->endOfDay());
+            $query->where('created_at', '<=', $to);
         }
 
         return $query;
     }
 
+    /**
+     * List filter windows in canonical duration order: ساعة → يومي → أسبوعي → فصلي.
+     *
+     * @return array{0: ?Carbon, 1: ?Carbon}
+     */
     public function resolvePeriod(?string $period): array
     {
         $period = strtolower(trim((string) $period));
         $to = now();
 
         return match ($period) {
+            'hour' => [$to->copy()->subHour(), $to->copy()],
             'day' => [$to->copy()->startOfDay(), $to->copy()->endOfDay()],
             'week' => [$to->copy()->startOfWeek(), $to->copy()->endOfWeek()],
-            'month' => [$to->copy()->startOfMonth(), $to->copy()->endOfMonth()],
-            'year' => [$to->copy()->startOfYear(), $to->copy()->endOfYear()],
+            'term' => [$to->copy()->subMonthsNoOverflow(3)->startOfDay(), $to->copy()->endOfDay()],
+            // Legacy bookmarks — map onto the new set (no yearly).
+            'month' => [$to->copy()->subMonthsNoOverflow(3)->startOfDay(), $to->copy()->endOfDay()],
+            'year' => [$to->copy()->subMonthsNoOverflow(3)->startOfDay(), $to->copy()->endOfDay()],
             default => [null, null],
         };
     }

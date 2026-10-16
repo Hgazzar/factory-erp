@@ -41,6 +41,38 @@ final class NurseryStaffTest extends NurseryTestCase
     }
 
     #[Test]
+    public function staff_can_be_created_without_email_when_login_not_granted(): void
+    {
+        $response = $this->post(route('nursery.staff.store'), [
+            'first_name' => 'نورة',
+            'last_name' => 'بلا',
+            'mobile' => '0509998877',
+            'permissions' => ['attendance.children'],
+        ]);
+
+        $emp = Employee::query()->where('mobile', '0509998877')->first();
+        $this->assertNotNull($emp);
+        $response->assertRedirect(route('nursery.staff.index'));
+        $this->assertNull($emp->email);
+        $this->assertNull($emp->linked_user_id);
+        $this->assertContains('attendance.children', $emp->nursery_permissions);
+    }
+
+    #[Test]
+    public function login_permission_requires_email(): void
+    {
+        $this->from(route('nursery.staff.create'))
+            ->post(route('nursery.staff.store'), [
+                'first_name' => 'فاطمة',
+                'last_name' => 'دخول',
+                'mobile' => '0501112233',
+                'permissions' => ['login.app'],
+            ])
+            ->assertRedirect(route('nursery.staff.create'))
+            ->assertSessionHas('error');
+    }
+
+    #[Test]
     public function staff_form_exposes_child_and_staff_attendance_permissions(): void
     {
         $this->get(route('nursery.staff.create'))

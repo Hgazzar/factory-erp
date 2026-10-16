@@ -37,6 +37,7 @@ class Child extends Model
         'allergies',
         'diseases',
         'health_notes',
+        'social_media_photo_consent',
         'status',
     ];
 
@@ -44,6 +45,7 @@ class Child extends Model
     {
         return [
             'date_of_birth' => 'date',
+            'social_media_photo_consent' => 'boolean',
         ];
     }
 

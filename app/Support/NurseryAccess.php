@@ -10,6 +10,9 @@ use App\Services\Tenant\TenantContext;
 
 /**
  * صلاحيات موديول الحضانة — مالك المنشأة + صلاحيات تفصيلية على الموظف.
+ *
+ * القاعدة: الموظف يرى فقط ما مُنح صراحة في nursery_permissions.
+ * login.app يفتح لوحة التحكم فقط ولا يفتح باقي الشاشات.
  */
 final class NurseryAccess
 {
@@ -18,6 +21,14 @@ final class NurseryAccess
     public const ROLE_TEACHER = 'teacher';
 
     public const CAP_VIEW_DAILY = 'view_daily';
+
+    public const CAP_VIEW_ATTENDANCE = 'view_attendance';
+
+    public const CAP_VIEW_CHILDREN = 'view_children';
+
+    public const CAP_VIEW_GUARDIANS = 'view_guardians';
+
+    public const CAP_VIEW_CLASSROOMS = 'view_classrooms';
 
     public const CAP_MANAGE_CHILDREN = 'manage_children';
 
@@ -134,45 +145,70 @@ final class NurseryAccess
         $perms = NurseryPermissionCatalog::normalize($employee->nursery_permissions);
 
         return match ($capability) {
-            self::CAP_VIEW_DAILY => in_array('login.app', $perms, true)
-                || in_array('attendance.children', $perms, true)
-                || $employee->nursery_role !== null,
-            self::CAP_VIEW_STAFF => in_array('employees.manage', $perms, true),
-            self::CAP_MANAGE_STAFF => in_array('employees.manage', $perms, true),
-            self::CAP_MANAGE_CHILDREN => in_array('children.manage', $perms, true)
-                || $employee->nursery_role === self::ROLE_RECEPTION,
-            self::CAP_MANAGE_CLASSROOMS => in_array('classrooms.manage', $perms, true),
-            self::CAP_VIEW_UNITS => in_array('units.manage', $perms, true)
-                || in_array('units.archive', $perms, true),
-            self::CAP_MANAGE_UNITS => in_array('units.manage', $perms, true),
-            self::CAP_VIEW_CALENDAR => in_array('scheduling.manage', $perms, true)
-                || in_array('login.app', $perms, true),
-            self::CAP_MANAGE_CALENDAR => in_array('scheduling.manage', $perms, true),
-            self::CAP_MANAGE_CHILD_ATTENDANCE => in_array('attendance.children', $perms, true),
-            self::CAP_VIEW_CHILD_ACTIVITY => in_array('login.app', $perms, true)
-                || in_array('attendance.children', $perms, true)
-                || in_array('children.manage', $perms, true)
-                || $employee->nursery_role !== null,
-            self::CAP_MANAGE_CHILD_ACTIVITY => in_array('attendance.children', $perms, true)
-                || in_array('children.manage', $perms, true),
-            self::CAP_MANAGE_STAFF_ATTENDANCE => in_array('attendance.staff', $perms, true),
-            self::CAP_VIEW_SUBSCRIPTIONS => in_array('subscriptions.manage', $perms, true)
-                || in_array('login.app', $perms, true),
-            self::CAP_MANAGE_SUBSCRIPTIONS => in_array('subscriptions.manage', $perms, true),
-            self::CAP_VIEW_FINANCE => in_array('finance.view', $perms, true)
-                || in_array('finance.admin', $perms, true),
-            self::CAP_VIEW_FINANCE_REPORTS => in_array('finance.view_reports', $perms, true)
-                || in_array('finance.admin', $perms, true),
-            self::CAP_MANAGE_FINANCE_EXPENSES => in_array('finance.manage_expenses', $perms, true)
-                || in_array('finance.admin', $perms, true),
-            self::CAP_MANAGE_FINANCE_TREASURY => in_array('finance.manage_treasury', $perms, true)
-                || in_array('finance.admin', $perms, true),
-            self::CAP_MANAGE_FINANCE_LEDGER => in_array('finance.manage_ledger', $perms, true)
-                || in_array('finance.admin', $perms, true),
-            self::CAP_FINANCE_ADMIN => in_array('finance.admin', $perms, true),
-            self::CAP_MANAGE_SETTINGS => in_array('settings.manage', $perms, true),
+            // لوحة التحكم: دخول التطبيق أو أي صلاحية تشغيلية أخرى
+            self::CAP_VIEW_DAILY => $this->has($perms, 'login.app') || $perms !== [],
+
+            self::CAP_VIEW_ATTENDANCE => $this->has($perms, 'attendance.children', 'attendance.staff'),
+
+            self::CAP_VIEW_CHILDREN => $this->has(
+                $perms,
+                'children.manage',
+                'children.files_page',
+                'children.archive',
+                'children.delete',
+                'attendance.children',
+            ),
+
+            self::CAP_VIEW_GUARDIANS => $this->has($perms, 'children.parents_page', 'children.manage'),
+
+            self::CAP_VIEW_CLASSROOMS => $this->has(
+                $perms,
+                'classrooms.manage',
+                'classrooms.assign_child',
+                'classrooms.archive',
+                'attendance.children',
+            ),
+
+            self::CAP_VIEW_STAFF => $this->has($perms, 'employees.manage'),
+            self::CAP_MANAGE_STAFF => $this->has($perms, 'employees.manage'),
+            self::CAP_MANAGE_CHILDREN => $this->has($perms, 'children.manage'),
+            self::CAP_MANAGE_CLASSROOMS => $this->has($perms, 'classrooms.manage'),
+            self::CAP_VIEW_UNITS => $this->has($perms, 'units.manage', 'units.archive'),
+            self::CAP_MANAGE_UNITS => $this->has($perms, 'units.manage'),
+            self::CAP_VIEW_CALENDAR => $this->has($perms, 'scheduling.manage'),
+            self::CAP_MANAGE_CALENDAR => $this->has($perms, 'scheduling.manage'),
+            self::CAP_MANAGE_CHILD_ATTENDANCE => $this->has($perms, 'attendance.children'),
+            self::CAP_VIEW_CHILD_ACTIVITY => $this->has(
+                $perms,
+                'attendance.children',
+                'children.manage',
+                'children.files_page',
+            ),
+            self::CAP_MANAGE_CHILD_ACTIVITY => $this->has($perms, 'attendance.children', 'children.manage'),
+            self::CAP_MANAGE_STAFF_ATTENDANCE => $this->has($perms, 'attendance.staff'),
+            self::CAP_VIEW_SUBSCRIPTIONS => $this->has($perms, 'subscriptions.manage'),
+            self::CAP_MANAGE_SUBSCRIPTIONS => $this->has($perms, 'subscriptions.manage'),
+            self::CAP_VIEW_FINANCE => $this->has($perms, 'finance.view', 'finance.admin'),
+            self::CAP_VIEW_FINANCE_REPORTS => $this->has($perms, 'finance.view_reports', 'finance.admin'),
+            self::CAP_MANAGE_FINANCE_EXPENSES => $this->has($perms, 'finance.manage_expenses', 'finance.admin'),
+            self::CAP_MANAGE_FINANCE_TREASURY => $this->has($perms, 'finance.manage_treasury', 'finance.admin'),
+            self::CAP_MANAGE_FINANCE_LEDGER => $this->has($perms, 'finance.manage_ledger', 'finance.admin'),
+            self::CAP_FINANCE_ADMIN => $this->has($perms, 'finance.admin'),
+            self::CAP_MANAGE_SETTINGS => $this->has($perms, 'settings.manage'),
             default => false,
         };
+    }
+
+    /** @param  list<string>  $perms */
+    private function has(array $perms, string ...$keys): bool
+    {
+        foreach ($keys as $key) {
+            if (in_array($key, $perms, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function resolveEmployee(?User $user): ?Employee

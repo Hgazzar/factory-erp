@@ -46,7 +46,7 @@
                     :required="true"
                     :error="$errors->has('raw_materials_warehouse_id')"
                     :empty-option="true"
-                    empty-label="— اختر مستودع الخامات —"
+                    empty-label="— مستودع الخامات —"
                     placeholder="ابحث باسم المستودع أو الكود..."
                 />
                 @error('raw_materials_warehouse_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
@@ -63,7 +63,7 @@
                     :required="true"
                     :error="$errors->has('finished_goods_warehouse_id')"
                     :empty-option="true"
-                    empty-label="— اختر مستودع المنتج التام —"
+                    empty-label="— مستودع المنتج التام —"
                     placeholder="ابحث باسم المستودع أو الكود..."
                 />
                 @error('finished_goods_warehouse_id')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
@@ -73,7 +73,7 @@
                     <span class="inline-flex items-center gap-1">المنتج التام <x-info field="production.finished_item" /></span>
                 </label>
                 <select name="finished_item_id" id="finished_item_select" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm text-right focus:ring-2 focus:ring-indigo-500" required>
-                    <option value="">— اختر —</option>
+                    <option value="">—</option>
                     @foreach($finishedGoods as $it)
                         <option value="{{ $it->id }}" @selected(old('finished_item_id') == $it->id)>{{ $it->code }} — {{ $it->name_ar }}</option>
                     @endforeach
@@ -128,7 +128,7 @@
                             <tr class="ingredient-row border-b border-gray-100">
                                 <td class="py-2 px-2">
                                     <select name="ingredients[{{ $idx }}][item_id]" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm text-right focus:ring-2 focus:ring-indigo-500" required>
-                                        <option value="">— اختر —</option>
+                                        <option value="">—</option>
                                         @foreach($rawMaterials as $it)
                                             <option value="{{ $it->id }}" @selected(($row['item_id'] ?? '') == $it->id)>{{ $it->code }} — {{ $it->name_ar }}</option>
                                         @endforeach
@@ -159,7 +159,7 @@
         <tr class="ingredient-row border-b border-gray-100">
             <td class="py-2 px-2">
                 <select name="ingredients[__IDX__][item_id]" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm text-right focus:ring-2 focus:ring-indigo-500" required>
-                    <option value="">— اختر —</option>
+                    <option value="">—</option>
                     @foreach($rawMaterials as $it)
                         <option value="{{ $it->id }}">{{ $it->code }} — {{ $it->name_ar }}</option>
                     @endforeach

@@ -69,7 +69,7 @@
                     :value="old('ledger_asset_account_id')"
                     :required="true"
                     :error="$errors->has('ledger_asset_account_id')"
-                    empty-label="اختر حساب أصل"
+                    empty-label="— حساب أصل —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('ledger_asset_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -83,7 +83,7 @@
                     :value="old('ledger_depreciation_cost_account_id')"
                     :required="true"
                     :error="$errors->has('ledger_depreciation_cost_account_id')"
-                    empty-label="اختر حساب مصروف"
+                    empty-label="— حساب مصروف —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('ledger_depreciation_cost_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -97,7 +97,7 @@
                     :value="old('ledger_accumulated_depreciation_account_id')"
                     :required="true"
                     :error="$errors->has('ledger_accumulated_depreciation_account_id')"
-                    empty-label="اختر حساب أصل (مجمع)"
+                    empty-label="— حساب أصل (مجمع) —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('ledger_accumulated_depreciation_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror

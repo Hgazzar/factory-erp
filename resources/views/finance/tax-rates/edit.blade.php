@@ -57,7 +57,7 @@
                     :value="old('ledger_account_id', $taxRate->ledger_account_id)"
                     :required="true"
                     :error="$errors->has('ledger_account_id')"
-                    empty-label="اختر حساب خصوم تفصيلي"
+                    empty-label="— حساب خصوم تفصيلي —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('ledger_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror

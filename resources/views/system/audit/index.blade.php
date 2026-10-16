@@ -76,13 +76,13 @@
                 <label class="mb-1 flex items-center gap-1 text-xs font-medium text-slate-600">
                     <x-info field="audit.filter_module" /> الموديول
                 </label>
-                <x-searchable-select name="module" :options="$moduleOptions" :value="$filters['module'] ?? ''" empty-label="جميع الموديولات" placeholder="اختر الموديول..." />
+                <x-searchable-select name="module" :options="$moduleOptions" :value="$filters['module'] ?? ''" empty-label="جميع الموديولات" placeholder="ابحث عن الموديول..." />
             </div>
             <div>
                 <label class="mb-1 flex items-center gap-1 text-xs font-medium text-slate-600">
                     <x-info field="audit.filter_action" /> نوع العملية
                 </label>
-                <x-searchable-select name="action" :options="$actionOptions" :value="$filters['action'] ?? ''" empty-label="جميع العمليات" placeholder="اختر العملية..." />
+                <x-searchable-select name="action" :options="$actionOptions" :value="$filters['action'] ?? ''" empty-label="جميع العمليات" placeholder="ابحث عن العملية..." />
             </div>
             <div>
                 <label class="mb-1 block text-xs font-medium text-slate-600"><x-info field="audit.filter_date_from" /> من تاريخ</label>

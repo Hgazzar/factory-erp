@@ -367,6 +367,7 @@ final class NurseryChildWebController extends Controller
             'allergies' => ['nullable', 'string', 'max:2000'],
             'diseases' => ['nullable', 'string', 'max:2000'],
             'health_notes' => ['nullable', 'string', 'max:5000'],
+            'social_media_photo_consent' => ['nullable', 'boolean'],
             'guardian_name' => ['required', 'string', 'max:120'],
             'guardian_phone' => ['required', 'string', 'max:32'],
             'guardian_relationship' => ['nullable', 'string', 'in:father,mother,guardian,other'],

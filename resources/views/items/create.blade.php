@@ -129,7 +129,7 @@
                     <div class="col-md-6">
                         <label class="form-label">وحدة القياس <span class="text-danger">*</span> <x-info field="inventory.item_unit" /></label>
                         <select name="unit_id" class="form-select @error('unit_id') is-invalid @enderror" required>
-                            <option value="">-- اختر الوحدة --</option>
+                            <option value="">— الوحدة —</option>
                             @foreach($units as $unit)
                                 <option value="{{ $unit->id }}" {{ old('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name_ar }} ({{ $unit->code }})</option>
                             @endforeach
@@ -173,7 +173,7 @@
                     <div class="col-12">
                         <label class="form-label">المستودع الافتراضي <span class="text-danger">*</span> <x-info field="inventory.item_default_warehouse" /></label>
                         <select name="warehouse_id" class="form-select @error('warehouse_id') is-invalid @enderror" required>
-                            <option value="">-- اختر المستودع --</option>
+                            <option value="">— المستودع —</option>
                             @foreach($warehouses as $warehouse)
                                 <option value="{{ $warehouse->id }}" {{ old('warehouse_id') == $warehouse->id ? 'selected' : '' }}>{{ $warehouse->name_ar }}</option>
                             @endforeach

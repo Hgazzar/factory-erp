@@ -56,7 +56,7 @@
                         :options="$creditNoteCustomerOptions"
                         :value="old('customer_id', $creditNote->customer_id)"
                         :error="$errors->has('customer_id')"
-                        empty-label="اختر العميل"
+                        empty-label="— العميل —"
                         placeholder="ابحث باسم العميل أو الرمز..."
                     />
                     @error('customer_id') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
@@ -105,7 +105,7 @@
                         :selected="old('reason_type', $creditNote->reason_type)"
                         :required="true"
                         :error="$errors->has('reason_type')"
-                        empty-label="اختر نوع السبب"
+                        empty-label="— نوع السبب —"
                         placeholder="ابحث عن نوع السبب..."
                     />
                     @error('reason_type') <p class="text-xs text-red-600">{{ $message }}</p> @enderror

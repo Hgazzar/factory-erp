@@ -114,7 +114,7 @@
                                             :name="`items[${index}][account_id]`"
                                             required
                                             x-model="item.account_id">
-                                        <option value="">اختر الحساب</option>
+                                        <option value="">— الحساب —</option>
                                         <template x-for="acc in accounts" :key="acc.id">
                                             <option :value="String(acc.id)" x-text="acc.label"></option>
                                         </template>

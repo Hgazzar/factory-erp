@@ -44,7 +44,7 @@
                     :value="$cashId"
                     :required="true"
                     :error="$errors->has('ledger_cash')"
-                    empty-label="اختر حساباً"
+                    empty-label="— حساباً —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('ledger_cash')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -58,7 +58,7 @@
                     :value="$transferId"
                     :required="true"
                     :error="$errors->has('ledger_transfer')"
-                    empty-label="اختر حساباً"
+                    empty-label="— حساباً —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('ledger_transfer')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -72,7 +72,7 @@
                     :value="$cardId"
                     :required="true"
                     :error="$errors->has('ledger_card')"
-                    empty-label="اختر حساباً"
+                    empty-label="— حساباً —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('ledger_card')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror

@@ -93,7 +93,7 @@
                 <input type="hidden" name="activity_date" value="{{ $activityDate }}">
                 <input type="hidden" name="type" value="mood">
                 <p class="text-sm font-bold text-teal-950">المزاج <x-info field="nursery.child_daily_mood" /></p>
-                <x-custom-select name="mood" id="daily_mood" :options="NurseryChildDailyActivityCatalog::selectOptions('mood', 'mood')" :searchable="false" empty-label="اختر المزاج" />
+                <x-custom-select name="mood" id="daily_mood" :options="NurseryChildDailyActivityCatalog::selectOptions('mood', 'mood')" :searchable="false" empty-label="— المزاج —" />
                 <button type="submit" class="nursery-btn nursery-btn-primary text-xs py-1.5 w-full">حفظ المزاج</button>
             </form>
 
@@ -124,7 +124,7 @@
                     <p class="text-sm font-bold text-teal-950">جرعة دواء <x-info field="nursery.child_daily_medication" /></p>
                     <div>
                         <label class="block text-xs text-teal-800/80 mb-1">الدواء <x-info field="nursery.child_daily_medication_pick" /></label>
-                        <x-custom-select name="medication_id" id="daily_medication_id" :options="$medicationOptions" :searchable="false" empty-label="اختر الدواء" />
+                        <x-custom-select name="medication_id" id="daily_medication_id" :options="$medicationOptions" :searchable="false" empty-label="— الدواء —" />
                     </div>
                     <div>
                         <label class="block text-xs text-teal-800/80 mb-1">الحالة <x-info field="nursery.child_daily_medication_status" /></label>

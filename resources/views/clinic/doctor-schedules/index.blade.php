@@ -20,7 +20,7 @@
             <div class="min-w-[220px]">
                 <label class="block text-sm font-medium text-gray-700 mb-1"><x-info field="clinic.doctor" /> الطبيب</label>
                 <x-searchable-select name="doctor_id" :options="$doctors" :selected="(string) ($selectedDoctorId ?? '')"
-                                     placeholder="اختر طبيباً" :searchable="true" />
+                                     placeholder="ابحث عن طبيباً..." :searchable="true" />
             </div>
             <button type="submit" class="clinic-btn clinic-btn-primary rounded-lg bg-teal-600 px-4 py-2 text-sm text-white">عرض الجدول</button>
         </form>

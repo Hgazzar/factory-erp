@@ -63,7 +63,7 @@
                         :selected="old('type')"
                         :required="true"
                         :error="$errors->has('type')"
-                        empty-label="اختر نوع الحساب"
+                        empty-label="— نوع الحساب —"
                         placeholder="ابحث عن نوع الحساب..."
                     />
                     @error('type')

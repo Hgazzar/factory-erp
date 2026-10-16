@@ -103,7 +103,7 @@
                         :error="$errors->has('type')"
                         :empty-option="false"
                         empty-label=""
-                        placeholder="اختر النوع"
+                        placeholder="ابحث عن النوع..."
                         :searchable="false"
                     />
                     @error('type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

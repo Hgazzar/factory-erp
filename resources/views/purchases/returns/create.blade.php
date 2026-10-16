@@ -48,7 +48,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                     <x-info field="procurement.purchase_return_supplier" for="supplier_id-trigger" class="block text-sm font-medium text-gray-700 mb-1">المورد <span class="text-red-500">*</span></x-info>
-                    <x-searchable-select class="w-full" name="supplier_id" id="supplier_id" :options="$purchaseReturnSupplierOptions" :value="old('supplier_id')" :required="true" empty-label="اختر المورد" placeholder="ابحث باسم المورد..." />
+                    <x-searchable-select class="w-full" name="supplier_id" id="supplier_id" :options="$purchaseReturnSupplierOptions" :value="old('supplier_id')" :required="true" empty-label="— المورد —" placeholder="ابحث باسم المورد..." />
                 </div>
                 <div>
                     <x-info field="procurement.purchase_return_invoice" class="block text-sm font-medium text-gray-700 mb-1">فاتورة المشتريات</x-info>
@@ -59,7 +59,7 @@
                 </div>
                 <div>
                     <x-info field="procurement.purchase_return_warehouse" for="warehouse_id-trigger" class="block text-sm font-medium text-gray-700 mb-1">المستودع <span class="text-red-500">*</span></x-info>
-                    <x-searchable-select class="w-full" name="warehouse_id" id="warehouse_id" :options="$purchaseReturnWarehouseOptions" :value="old('warehouse_id')" :required="true" empty-label="اختر المستودع" placeholder="ابحث عن مستودع..." />
+                    <x-searchable-select class="w-full" name="warehouse_id" id="warehouse_id" :options="$purchaseReturnWarehouseOptions" :value="old('warehouse_id')" :required="true" empty-label="— المستودع —" placeholder="ابحث عن مستودع..." />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">تاريخ الإرجاع <span class="text-red-500">*</span></label>
@@ -111,7 +111,7 @@
                                     </template>
                                     <template x-if="!selectedInvoiceId">
                                         <select :name="'lines['+index+'][item_id]'" required class="w-full px-2 py-2 rounded-xl border border-gray-300 text-sm" x-model="line.item_id" @change="onItemSelect(index)">
-                                            <option value="">اختر</option>
+                                            <option value="">—</option>
                                             @foreach($items as $item)
                                                 <option value="{{ $item->id }}" data-cost="{{ $item->cost ?? 0 }}">{{ $item->name_ar ?? $item->name_en ?? $item->code }}</option>
                                             @endforeach

@@ -141,6 +141,12 @@ return new class extends Migration
             });
         }
 
+        if (! Schema::hasColumn('nursery_children', 'social_media_photo_consent')) {
+            Schema::table('nursery_children', function (Blueprint $table) {
+                $table->boolean('social_media_photo_consent')->default(false);
+            });
+        }
+
         if (! Schema::hasTable('nursery_units')) {
             Schema::create('nursery_units', function (Blueprint $table) {
                 $table->id();

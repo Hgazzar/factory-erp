@@ -44,7 +44,7 @@
                     :options="$statusSelectOptions"
                     :value="request('status', '')"
                     :empty-option="false"
-                    placeholder="اختر الحالة…"
+                    placeholder="ابحث عن الحالة..."
                     :searchable="false"
                 />
             </div>

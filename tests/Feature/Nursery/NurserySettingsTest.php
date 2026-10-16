@@ -34,7 +34,8 @@ final class NurserySettingsTest extends NurseryTestCase
 
         $this->get(route('nursery.settings.index', ['tab' => 'plans']))
             ->assertOk()
-            ->assertSee('شهري');
+            ->assertSee('أسبوعي')
+            ->assertSee('فصلي');
 
         $this->post(route('nursery.settings.plans.store'), [
             'name' => 'نصف سنوي',

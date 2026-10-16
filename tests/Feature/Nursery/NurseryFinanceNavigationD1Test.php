@@ -36,6 +36,7 @@ final class NurseryFinanceNavigationD1Test extends NurseryTestCase
         $response->assertSee(route('finance.tax-rates.index'), false);
         $response->assertSee(route('finance.payment-method-accounts.edit'), false);
 
+        $response->assertSee('القسم المالي', false);
         $response->assertSee('ملخص المالية', false);
         $response->assertSee('لوحة المالية', false);
         $response->assertSee('سندات التحصيل', false);

@@ -60,7 +60,7 @@ final class NurseryAttendanceWebController extends Controller
             ? $list->staffWeeklyGrid($tenantUserId, $weekStart, $q)
             : null;
 
-        $classroomOptions = [['value' => '', 'label' => 'الجميع']];
+        $classroomOptions = [];
         foreach (
             Classroom::query()
                 ->where('user_id', $tenantUserId)

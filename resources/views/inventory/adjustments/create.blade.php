@@ -42,7 +42,7 @@
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="inventory.adjustment_warehouse" /> المستودع <span class="text-red-600">*</span></label>
                         <select name="warehouse_id" id="warehouse_id" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 @error('warehouse_id') border-red-500 @enderror" required>
-                            <option value="">— اختر المستودع —</option>
+                            <option value="">— المستودع —</option>
                             @foreach($warehouses as $w)
                             <option value="{{ $w->id }}" {{ old('warehouse_id') == $w->id ? 'selected' : '' }}>{{ $w->name_ar }} ({{ $w->code }})</option>
                             @endforeach
@@ -74,7 +74,7 @@
                             :options="$adjustmentCostCenterOptions"
                             :value="old('cost_center_id')"
                             :error="$errors->has('cost_center_id')"
-                            empty-label="— اختر مركز التكلفة —"
+                            empty-label="— مركز التكلفة —"
                             placeholder="ابحث باسم مركز التكلفة أو الرمز..."
                         />
                         @error('cost_center_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -165,7 +165,7 @@
     }
 
     function buildReasonOptions(selected) {
-        let html = '<option value="">— اختر السبب —</option>';
+        let html = '<option value="">— السبب —</option>';
         for (const [key, label] of Object.entries(reasons)) {
             html += '<option value="' + key + '"' + (selected === key ? ' selected' : '') + '>' + label + '</option>';
         }
@@ -176,7 +176,7 @@
         const select = row.querySelector('.item-select');
         if (!select) return;
         const cur = select.value;
-        select.innerHTML = '<option value="">اختر الصنف</option>';
+        select.innerHTML = '<option value="">— الصنف —</option>';
         items.forEach(function(it) {
             const opt = document.createElement('option');
             opt.value = it.id;
@@ -283,7 +283,7 @@
             const tr = document.createElement('tr');
             tr.className = 'item-row border-b border-gray-100 hover:bg-gray-50/60';
             tr.innerHTML =
-                '<td class="px-3 py-2"><select name="items[' + idx + '][item_id]" class="item-select ' + selectRow + '" required><option value="">اختر الصنف</option></select></td>' +
+                '<td class="px-3 py-2"><select name="items[' + idx + '][item_id]" class="item-select ' + selectRow + '" required><option value="">— الصنف —</option></select></td>' +
                 '<td class="px-3 py-2"><span class="qty-available text-gray-500">—</span></td>' +
                 '<td class="px-3 py-2"><input type="number" inputmode="decimal" name="items[' + idx + '][quantity]" class="qty-input ' + inputRow + '" step="any" min="0.0001" required><div class="adj-qty-error mt-1 hidden text-xs text-red-600"></div></td>' +
                 '<td class="px-3 py-2"><input type="number" inputmode="decimal" name="items[' + idx + '][unit_cost]" class="cost-input ' + inputRow + '" step="any" min="0" placeholder="0"><span class="unit-cost-display hidden">—</span></td>' +

@@ -3,7 +3,7 @@
     <x-custom-select name="plan_type"
         :options="$planTypeOptions"
         :value="old('plan_type', $plan->plan_type ?? 'custom')"
-        empty-label="— اختر النوع —"
+        empty-label="— النوع —"
         :searchable="false" />
     @error('plan_type')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
 </div>

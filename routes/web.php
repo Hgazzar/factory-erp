@@ -436,10 +436,12 @@ Route::prefix('nursery')->name('nursery.')->middleware(['auth', 'worker.scope', 
         ->middleware(['nursery.capability:view_daily', 'feature:nursery_portal'])
         ->name('portal.qr-download');
 
-    Route::middleware('nursery.capability:view_daily')->group(function () {
+    Route::middleware('nursery.capability:view_attendance')->group(function () {
         Route::get('attendance', [NurseryAttendanceWebController::class, 'index'])->name('attendance.index');
         Route::get('attendance/report', [NurseryAttendanceWebController::class, 'report'])->name('attendance.report');
+    });
 
+    Route::middleware('nursery.capability:view_children')->group(function () {
         Route::get('children', [NurseryChildWebController::class, 'index'])->name('children.index');
     });
 
@@ -481,13 +483,16 @@ Route::prefix('nursery')->name('nursery.')->middleware(['auth', 'worker.scope', 
         Route::delete('guardians/{guardian}/revoke-portal', [NurseryGuardianWebController::class, 'revokePortalAccess'])->name('guardians.revoke-portal');
     });
 
-    Route::middleware('nursery.capability:view_daily')->group(function () {
+    Route::middleware('nursery.capability:view_guardians')->group(function () {
         Route::get('guardians', [NurseryGuardianWebController::class, 'index'])->name('guardians.index');
         Route::get('guardians/{guardian}', [NurseryGuardianWebController::class, 'show'])->name('guardians.show');
+    });
+
+    Route::middleware('nursery.capability:view_children')->group(function () {
         Route::get('children/{child}', [NurseryChildWebController::class, 'show'])->name('children.show');
     });
 
-    Route::middleware('nursery.capability:view_daily')->group(function () {
+    Route::middleware('nursery.capability:view_classrooms')->group(function () {
         Route::get('classrooms', [NurseryClassroomWebController::class, 'index'])->name('classrooms.index');
         Route::get('classrooms/today', [NurseryClassroomWebController::class, 'todayRedirect'])->name('classrooms.today.redirect');
         Route::get('classrooms/{classroom}/today', [NurseryClassroomWebController::class, 'today'])->name('classrooms.today');

@@ -166,7 +166,7 @@
                     <div class="mb-3">
                         <label class="form-label">الوردية <span class="text-danger">*</span></label>
                         <select name="shift_id" class="form-select @error('shift_id') is-invalid @enderror" required>
-                            <option value="">-- اختر الوردية --</option>
+                            <option value="">— الوردية —</option>
                             @foreach($shifts as $shift)
                                 <option value="{{ $shift->id }}" {{ old('shift_id') == $shift->id ? 'selected' : '' }}>
                                     {{ $shift->name_ar }} ({{ $shift->code }})

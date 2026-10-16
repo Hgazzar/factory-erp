@@ -119,7 +119,7 @@
                             :value="old('default_receivable_account_id', $setting->default_receivable_account_id)"
                             :required="true"
                             :error="$errors->has('default_receivable_account_id')"
-                            empty-label="اختر حساباً"
+                            empty-label="— حساباً —"
                             placeholder="ابحث بالرمز أو الاسم..."
                         />
                         @error('default_receivable_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -137,7 +137,7 @@
                             :value="old('default_payable_account_id', $setting->default_payable_account_id)"
                             :required="true"
                             :error="$errors->has('default_payable_account_id')"
-                            empty-label="اختر حساباً"
+                            empty-label="— حساباً —"
                             placeholder="ابحث بالرمز أو الاسم..."
                         />
                         @error('default_payable_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -155,7 +155,7 @@
                             :value="old('purchase_discount_ledger_account_id', $setting->purchase_discount_ledger_account_id)"
                             :required="true"
                             :error="$errors->has('purchase_discount_ledger_account_id')"
-                            empty-label="اختر حساب مصروف"
+                            empty-label="— حساب مصروف —"
                             placeholder="ابحث بالرمز أو الاسم..."
                         />
                         @error('purchase_discount_ledger_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -173,7 +173,7 @@
                             :value="old('sales_allowed_discount_ledger_account_id', $setting->sales_allowed_discount_ledger_account_id)"
                             :required="true"
                             :error="$errors->has('sales_allowed_discount_ledger_account_id')"
-                            empty-label="اختر حساب إيراد"
+                            empty-label="— حساب إيراد —"
                             placeholder="ابحث بالرمز أو الاسم..."
                         />
                         @error('sales_allowed_discount_ledger_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -199,7 +199,7 @@
                             :required="false"
                             :error="$errors->has('payroll_wage_expense_account_id')"
                             :emptyOption="true"
-                            empty-label="اختر حساب مصروف"
+                            empty-label="— حساب مصروف —"
                             placeholder="ابحث بالرمز أو الاسم..."
                         />
                         @error('payroll_wage_expense_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -218,7 +218,7 @@
                             :required="false"
                             :error="$errors->has('payroll_wages_payable_account_id')"
                             :emptyOption="true"
-                            empty-label="اختر حساب خصوم"
+                            empty-label="— حساب خصوم —"
                             placeholder="ابحث بالرمز أو الاسم..."
                         />
                         @error('payroll_wages_payable_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -236,7 +236,7 @@
                             :required="false"
                             :error="$errors->has('payroll_default_payment_account_id')"
                             :emptyOption="true"
-                            empty-label="— اختر (اختياري) —"
+                            empty-label="— اختياري —"
                             placeholder="ابحث بالرمز أو الاسم..."
                         />
                         @error('payroll_default_payment_account_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -279,7 +279,7 @@
                         :options="$purgeOpts"
                         :value="old('target_user_id')"
                         :required="true"
-                        empty-label="اختر مستخدماً"
+                        empty-label="— مستخدماً —"
                         placeholder="بحث بالاسم أو البريد..."
                         class="[&_button]:h-11 [&_button]:rounded-lg"
                     />

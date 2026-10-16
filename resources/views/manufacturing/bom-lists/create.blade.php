@@ -55,7 +55,7 @@
                             :options="$bomItemOpts"
                             :selected="old('item_id')"
                             placeholder="ابحث في المنتجات التامة..."
-                            empty-label="— اختر المنتج التام —"
+                            empty-label="— المنتج التام —"
                             required
                             :error="$errors->has('item_id')"
                         />
@@ -84,7 +84,7 @@
                             class="w-full"
                             :options="$bomStatusOpts"
                             :selected="old('status', \App\Models\BomList::STATUS_DRAFT)"
-                            placeholder="اختر الحالة..."
+                            placeholder="ابحث عن الحالة..."
                             :empty-option="false"
                             required
                             :error="$errors->has('status')"
@@ -149,7 +149,7 @@
                                 <tr class="bom-line-row border-b border-gray-100 align-top">
                                     <td class="py-2 px-2">
                                         <select name="lines[{{ $idx }}][component_item_id]" class="bom-comp-select w-full py-2 px-3 border border-gray-200 rounded-lg text-sm text-right focus:ring-2 focus:ring-blue-500" required>
-                                            <option value="">— اختر الخامة —</option>
+                                            <option value="">— الخامة —</option>
                                             @foreach($rawMaterials as $rm)
                                                 <option value="{{ $rm->id }}" data-unit="{{ e($rm->unit ?? '') }}" @selected(($row['component_item_id'] ?? '') == $rm->id)>{{ $rm->code }} — {{ $rm->name_ar }}</option>
                                             @endforeach
@@ -186,7 +186,7 @@
 </div>
 
 <template id="bom-line-select-options">
-    <option value="">— اختر الخامة —</option>
+    <option value="">— الخامة —</option>
     @foreach($rawMaterials as $rm)
         <option value="{{ $rm->id }}" data-unit="{{ e($rm->unit ?? '') }}">{{ $rm->code }} — {{ $rm->name_ar }}</option>
     @endforeach

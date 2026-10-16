@@ -62,7 +62,7 @@
                         :options="$woBomOptions"
                         :selected="old('bom_list_id')"
                         placeholder="ابحث في قوائم المواد..."
-                        empty-label="اختر قائمة مواد"
+                        empty-label="— قائمة مواد —"
                         required
                         :error="$errors->has('bom_list_id')"
                     />
@@ -94,7 +94,7 @@
                         :options="$woWhOptions"
                         :selected="old('warehouse_id')"
                         placeholder="ابحث في المستودعات..."
-                        empty-label="اختر مستودع"
+                        empty-label="— مستودع —"
                         required
                         :error="$errors->has('warehouse_id')"
                     />

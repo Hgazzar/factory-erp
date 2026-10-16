@@ -110,7 +110,7 @@ final class NurseryClassroomTodayTest extends NurseryTestCase
     #[Test]
     public function view_only_staff_sees_roster_but_cannot_mutate(): void
     {
-        $staff = $this->makeLinkedStaff('today-view@example.com', ['login.app']);
+        $staff = $this->makeLinkedStaff('today-view@example.com', ['login.app', 'classrooms.assign_child']);
         [$room] = $this->makeTwoClassrooms();
         $child = $this->makeEnrolledChild($room, 'طفل عرض', '0501111006');
 
@@ -136,7 +136,7 @@ final class NurseryClassroomTodayTest extends NurseryTestCase
     #[Test]
     public function teacher_role_without_attendance_children_cannot_post_check_in(): void
     {
-        $staff = $this->makeLinkedStaff('today-role-only@example.com', ['login.app']);
+        $staff = $this->makeLinkedStaff('today-role-only@example.com', ['login.app', 'classrooms.assign_child']);
         Employee::query()->where('linked_user_id', $staff->id)->update(['nursery_role' => 'teacher']);
 
         [$room] = $this->makeTwoClassrooms();

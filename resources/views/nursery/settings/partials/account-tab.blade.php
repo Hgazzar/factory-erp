@@ -87,8 +87,8 @@
                         <x-custom-select name="region" id="settings_region_select"
                             :options="$regionOptions"
                             :value="old('region', $settings->region)"
-                            placeholder="اختر المنطقة"
-                            empty-label="— اختر المنطقة —"
+                            placeholder="ابحث عن المنطقة..."
+                            empty-label="— المنطقة —"
                             :searchable="true" />
                     </div>
                     <div id="settings-city-field-wrap">

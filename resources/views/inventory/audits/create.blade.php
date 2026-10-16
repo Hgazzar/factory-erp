@@ -42,7 +42,7 @@
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="inventory.audit_warehouse" /> المستودع <span class="text-red-600">*</span></label>
                         <select id="warehouse_select" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" required>
-                            <option value="">اختر المستودع لجرد المخزون</option>
+                            <option value="">— المستودع لجرد المخزون —</option>
                             @foreach($warehouses as $w)
                             <option value="{{ $w->id }}">{{ $w->name_ar }} ({{ $w->code }})</option>
                             @endforeach
@@ -62,7 +62,7 @@
                     <div class="hidden md:col-span-2" id="category-wrap">
                         <label class="mb-1 block text-sm font-medium text-gray-700"><x-info field="inventory.audit_category" /> تصنيف محدد</label>
                         <select id="category_select" class="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                            <option value="">— اختر التصنيف —</option>
+                            <option value="">— التصنيف —</option>
                             @foreach($auditCategories as $k => $v)
                             <option value="{{ $k }}">{{ $v }}</option>
                             @endforeach

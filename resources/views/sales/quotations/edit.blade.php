@@ -46,7 +46,7 @@
                         :value="old('customer_id', $quotation->customer_id)"
                         :required="true"
                         :error="$errors->has('customer_id')"
-                        empty-label="اختر العميل"
+                        empty-label="— العميل —"
                         placeholder="ابحث باسم العميل..."
                     />
                     @error('customer_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

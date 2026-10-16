@@ -123,7 +123,7 @@
                                     <select class="h-10 w-60 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500"
                                             :name="`items[${index}][account_id]`"
                                             x-model="item.account_id">
-                                        <option value="">اختر الحساب</option>
+                                        <option value="">— الحساب —</option>
                                         <template x-for="acc in accounts" :key="acc.id">
                                             <option :value="String(acc.id)" x-text="acc.label"></option>
                                         </template>

@@ -45,7 +45,7 @@
                     :options="$ledgerAccountOptions"
                     :value="optional($selectedAccount)->id"
                     :required="true"
-                    empty-label="— اختر الحساب —"
+                    empty-label="— الحساب —"
                     placeholder="ابحث بالرمز أو اسم الحساب..."
                 />
             </div>

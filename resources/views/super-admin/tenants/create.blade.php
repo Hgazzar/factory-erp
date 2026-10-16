@@ -74,8 +74,8 @@
                 :value="old('niche_key')"
                 :required="true"
                 :searchable="false"
-                empty-label="— اختر النيش —"
-                placeholder="اختر النيش..."
+                empty-label="— النيش —"
+                placeholder="ابحث عن النيش..."
                 :error="$errors->has('niche_key')"
             />
             @error('niche_key')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror

@@ -128,8 +128,8 @@
                         id="loyalty-status"
                         :options="$statusOptions ?? []"
                         :value="old('status', 'active')"
-                        empty-label="اختر"
-                        placeholder="اختر الحالة"
+                        empty-label="—"
+                        placeholder="ابحث عن الحالة..."
                         :searchable="false"
                     />
                     @error('status')

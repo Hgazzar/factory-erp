@@ -97,6 +97,7 @@
                     <div id="nursery_unit_lessons_list" class="space-y-2">
                         @foreach($lessonLines as $lessonText)
                             <div class="nursery-unit-lesson-row flex gap-2 items-start">
+                                <span class="text-sm text-teal-800/70 pt-2 tabular-nums w-6 shrink-0">{{ $loop->iteration }}.</span>
                                 <input type="text" name="lessons[]" value="{{ $lessonText }}"
                                        class="flex-1 rounded-lg border border-teal-200 px-3 py-2 text-sm"
                                        placeholder="مثال: التعرف على أصوات الحيوانات">
@@ -199,6 +200,14 @@
     const lessonsList = document.getElementById('nursery_unit_lessons_list');
     const addLessonBtn = document.getElementById('nursery_unit_add_lesson');
 
+    function renumberLessons() {
+        if (!lessonsList) return;
+        lessonsList.querySelectorAll('.nursery-unit-lesson-row').forEach(function (row, idx) {
+            const num = row.querySelector('span');
+            if (num) num.textContent = (idx + 1) + '.';
+        });
+    }
+
     function bindRemoveLesson(btn) {
         btn.addEventListener('click', function () {
             const rows = lessonsList.querySelectorAll('.nursery-unit-lesson-row');
@@ -207,6 +216,7 @@
                 return;
             }
             btn.closest('.nursery-unit-lesson-row').remove();
+            renumberLessons();
         });
     }
 
@@ -218,10 +228,12 @@
         addLessonBtn.addEventListener('click', function () {
             const row = document.createElement('div');
             row.className = 'nursery-unit-lesson-row flex gap-2 items-start';
-            row.innerHTML = '<input type="text" name="lessons[]" class="flex-1 rounded-lg border border-teal-200 px-3 py-2 text-sm" placeholder="اسم الدرس">'
+            row.innerHTML = '<span class="text-sm text-teal-800/70 pt-2 tabular-nums w-6 shrink-0"></span>'
+                + '<input type="text" name="lessons[]" class="flex-1 rounded-lg border border-teal-200 px-3 py-2 text-sm" placeholder="اسم الدرس">'
                 + '<button type="button" class="nursery-unit-remove-lesson nursery-btn nursery-btn-soft text-xs py-2 px-2 shrink-0" title="حذف">×</button>';
             lessonsList.appendChild(row);
             bindRemoveLesson(row.querySelector('.nursery-unit-remove-lesson'));
+            renumberLessons();
             row.querySelector('input').focus();
         });
     }

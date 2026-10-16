@@ -91,7 +91,7 @@
                         :options="$purchaseSupplierOptions"
                         :value="old('supplier_id', $isEdit ? ($editOrderModel->supplier_id ?? '') : '')"
                         :error="$errors->has('supplier_id')"
-                        empty-label="اختر المورد"
+                        empty-label="— المورد —"
                         placeholder="ابحث باسم المورد أو الرمز..."
                     />
                     @error('supplier_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -161,7 +161,7 @@
                             <tr class="border-b border-gray-100">
                                 <td class="py-2 px-3">
                                     <select :name="'lines[' + index + '][item_id]'" x-model="line.item_id" @change="onItemSelect(index)" required class="w-full min-w-[140px] px-3 py-2 pr-4 text-right bg-gray-50 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500">
-                                        <option value="">اختر</option>
+                                        <option value="">—</option>
                                         <template x-for="item in items" :key="item.id">
                                             <option :value="item.id" x-text="(item.name_ar || item.code) + ' - ' + (item.code || '')"></option>
                                         </template>

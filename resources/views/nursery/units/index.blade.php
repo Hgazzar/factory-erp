@@ -44,6 +44,7 @@
             <x-custom-select name="sort"
                 :options="[['value' => 'newest', 'label' => 'الأحدث أولاً'], ['value' => 'oldest', 'label' => 'الأقدم أولاً']]"
                 :value="$sort"
+                :empty-option="false"
                 :searchable="false" />
         </div>
         <button type="submit" class="nursery-btn nursery-btn-soft">تطبيق</button>

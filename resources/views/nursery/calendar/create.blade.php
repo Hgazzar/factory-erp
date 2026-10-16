@@ -16,6 +16,5 @@
     'children' => $children,
     'selectedClassroomIds' => $selectedClassroomIds,
     'selectedChildIds' => $selectedChildIds,
-    'mediaLinks' => $mediaLinks,
 ])
 @endsection

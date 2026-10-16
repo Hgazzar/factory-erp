@@ -81,7 +81,7 @@
                             :required="true"
                             :error="$errors->has('production_shift_id')"
                             :empty-option="true"
-                            empty-label="— اختر الوردية —"
+                            empty-label="— الوردية —"
                             placeholder="ابحث بالتاريخ أو الخط..."
                         />
                         @error('production_shift_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -127,7 +127,7 @@
                             :required="true"
                             :error="$errors->has('item_id')"
                             :empty-option="true"
-                            empty-label="— اختر الصنف —"
+                            empty-label="— الصنف —"
                             placeholder="ابحث بالكود أو الاسم..."
                         />
                         @error('item_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

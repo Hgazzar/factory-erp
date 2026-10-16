@@ -2,7 +2,9 @@
     $plansJson = collect($planOptions)->map(fn ($p) => [
         'id' => $p['value'],
         'amount' => $p['amount_after_tax'],
+        'plan_type' => $p['plan_type'] ?? 'custom',
     ])->values();
+    $defaultStarts = old('starts_on', '');
 @endphp
 <form method="post" action="{{ route('nursery.subscriptions.store') }}" class="space-y-4" id="nurserySubscriptionForm">
     @csrf
@@ -12,7 +14,8 @@
             اسم الطفل <span class="text-red-600">*</span>
             <x-info field="nursery.sub_child" />
         </label>
-        <x-custom-select name="child_id" :options="$childOptions" :value="old('child_id')" placeholder="اختر الطفل" :searchable="true" />
+        <x-custom-select name="child_id" :options="$childOptions" :value="old('child_id')"
+            empty-label="— الطفل —" placeholder="ابحث عن الطفل..." :searchable="true" />
         @error('child_id')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
@@ -21,7 +24,8 @@
             اسم الخطة <span class="text-red-600">*</span>
             <x-info field="nursery.sub_plan" />
         </label>
-        <x-custom-select name="plan_id" id="subscription_plan_select" :options="$planOptions" :value="old('plan_id')" placeholder="اختر الخطة" :searchable="true" />
+        <x-custom-select name="plan_id" id="subscription_plan_select" :options="$planOptions" :value="old('plan_id')"
+            empty-label="— الخطة —" placeholder="ابحث عن الخطة..." :searchable="true" />
         @error('plan_id')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
@@ -52,19 +56,23 @@
         @error('notes')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
-        <div>
-            <label class="block text-sm font-semibold text-teal-950 mb-1">تاريخ البداية <span class="text-red-600">*</span></label>
-            <input type="date" name="starts_on" value="{{ old('starts_on', now()->format('Y-m-d')) }}" required
-                   class="w-full rounded-lg border border-teal-200 px-3 py-2">
-            @error('starts_on')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+    <div class="space-y-1">
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-sm font-semibold text-teal-950 mb-1">تاريخ البداية <span class="text-red-600">*</span></label>
+                <input type="date" name="starts_on" id="subscription_starts_on" value="{{ $defaultStarts }}"
+                       min="{{ now()->format('Y-m-d') }}" required
+                       class="w-full rounded-lg border border-teal-200 px-3 py-2">
+                @error('starts_on')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-teal-950 mb-1">تاريخ الانتهاء <span class="text-red-600">*</span></label>
+                <input type="date" name="ends_on" id="subscription_ends_on" value="{{ old('ends_on') }}" required
+                       class="w-full rounded-lg border border-teal-200 px-3 py-2">
+                @error('ends_on')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
         </div>
-        <div>
-            <label class="block text-sm font-semibold text-teal-950 mb-1">تاريخ الانتهاء <span class="text-red-600">*</span></label>
-            <input type="date" name="ends_on" value="{{ old('ends_on') }}" required
-                   class="w-full rounded-lg border border-teal-200 px-3 py-2">
-            @error('ends_on')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
-        </div>
+        <p class="text-xs text-teal-700/70">يُحسب تلقائياً حسب الخطة — قابل للتعديل</p>
     </div>
 
     <div class="flex items-center gap-3">
@@ -86,21 +94,125 @@
 (function () {
     var plans = @json($plansJson);
     var amountInput = document.getElementById('subscription_amount_after_tax');
+    var startsInput = document.getElementById('subscription_starts_on');
+    var endsInput = document.getElementById('subscription_ends_on');
+    var endsTouched = {{ old('ends_on') ? 'true' : 'false' }};
 
-    function applyPlanAmount(planId) {
-        if (!amountInput) return;
-        var match = plans.find(function (p) { return String(p.id) === String(planId); });
-        if (match) amountInput.value = String(match.amount);
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function toIsoDate(d) {
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
+
+    function parseIsoDate(value) {
+        if (!value) return null;
+        var parts = String(value).split('-');
+        if (parts.length !== 3) return null;
+        var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    function addMonths(date, months) {
+        var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        var day = d.getDate();
+        d.setMonth(d.getMonth() + months);
+        if (d.getDate() < day) {
+            d.setDate(0);
+        }
+        return d;
+    }
+
+    function endsOnForType(starts, planType) {
+        if (!starts) return null;
+        switch (planType) {
+            case 'hourly':
+                return new Date(starts.getFullYear(), starts.getMonth(), starts.getDate());
+            case 'daily': {
+                var day = new Date(starts.getFullYear(), starts.getMonth(), starts.getDate());
+                day.setDate(day.getDate() + 1);
+                return day;
+            }
+            case 'weekly': {
+                var week = new Date(starts.getFullYear(), starts.getMonth(), starts.getDate());
+                week.setDate(week.getDate() + 7);
+                return week;
+            }
+            case 'monthly':
+                return addMonths(starts, 1);
+            case 'term':
+                return addMonths(starts, 3);
+            default:
+                return null;
+        }
+    }
+
+    function findPlan(planId) {
+        return plans.find(function (p) { return String(p.id) === String(planId); }) || null;
+    }
+
+    function currentPlan() {
+        var hidden = document.querySelector('#nurserySubscriptionForm input[name="plan_id"]');
+        var planId = hidden ? hidden.value : '';
+        return findPlan(planId);
+    }
+
+    function applyPlanAmount(plan) {
+        if (!amountInput || !plan) return;
+        amountInput.value = String(plan.amount);
+    }
+
+    function applyEndsOn(force, planOverride) {
+        if (!endsInput || !startsInput) return;
+        if (endsTouched && !force) return;
+        var plan = planOverride || currentPlan();
+        if (!plan) return;
+        var starts = parseIsoDate(startsInput.value);
+        if (!starts) return;
+        var ends = endsOnForType(starts, plan.plan_type);
+        if (ends) {
+            endsInput.value = toIsoDate(ends);
+        }
+    }
+
+    function applyPlan(planId, forceEnds) {
+        var plan = findPlan(planId);
+        if (!plan) return;
+        applyPlanAmount(plan);
+        if (plan.plan_type === 'custom') {
+            return;
+        }
+        endsTouched = false;
+        applyEndsOn(forceEnds !== false, plan);
     }
 
     document.addEventListener('custom-select-change', function (e) {
         if (e.detail && e.detail.name === 'plan_id') {
-            applyPlanAmount(e.detail.value);
+            applyPlan(e.detail.value, true);
         }
     });
 
-    var hidden = document.querySelector('input[name="plan_id"]');
-    if (hidden && hidden.value) applyPlanAmount(hidden.value);
+    if (startsInput) {
+        startsInput.addEventListener('change', function () {
+            applyEndsOn(true);
+        });
+        startsInput.addEventListener('input', function () {
+            applyEndsOn(true);
+        });
+    }
+
+    if (endsInput) {
+        endsInput.addEventListener('change', function () {
+            endsTouched = true;
+        });
+        endsInput.addEventListener('input', function () {
+            endsTouched = true;
+        });
+    }
+
+    var hidden = document.querySelector('#nurserySubscriptionForm input[name="plan_id"]');
+    if (hidden && hidden.value) {
+        applyPlan(hidden.value, !endsTouched);
+    }
 })();
 </script>
 @endpush

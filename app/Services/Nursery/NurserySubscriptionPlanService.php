@@ -5,31 +5,91 @@ declare(strict_types=1);
 namespace App\Services\Nursery;
 
 use App\Models\Nursery\SubscriptionPlan;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 final class NurserySubscriptionPlanService
 {
+    public const TYPE_HOURLY = 'hourly';
+
+    public const TYPE_DAILY = 'daily';
+
+    public const TYPE_WEEKLY = 'weekly';
+
+    /** @deprecated Legacy rows only — not offered as a nursery plan type. */
     public const TYPE_MONTHLY = 'monthly';
 
     public const TYPE_TERM = 'term';
 
-    public const TYPE_YEARLY = 'yearly';
-
     public const TYPE_CUSTOM = 'custom';
 
+    /** @deprecated Legacy DB rows only — not offered in the UI. */
+    public const TYPE_YEARLY = 'yearly';
+
     /**
+     * Canonical duration order everywhere: ساعة → يومي → أسبوعي → فصلي.
+     *
      * @return array<string, string>
      */
     public function planTypeOptions(): array
     {
         return [
-            self::TYPE_MONTHLY => 'شهري',
+            self::TYPE_HOURLY => 'ساعة',
+            self::TYPE_DAILY => 'يومي',
+            self::TYPE_WEEKLY => 'أسبوعي',
             self::TYPE_TERM => 'فصلي',
-            self::TYPE_YEARLY => 'سنوي',
             self::TYPE_CUSTOM => 'مخصص',
         ];
+    }
+
+    public function planTypeSortRank(string $planType): int
+    {
+        return match ($planType) {
+            self::TYPE_HOURLY => 1,
+            self::TYPE_DAILY => 2,
+            self::TYPE_WEEKLY => 3,
+            self::TYPE_TERM => 4,
+            self::TYPE_CUSTOM => 90,
+            default => 99,
+        };
+    }
+
+    /**
+     * @param  Collection<int, SubscriptionPlan>  $plans
+     * @return Collection<int, SubscriptionPlan>
+     */
+    public function sortByDuration(Collection $plans): Collection
+    {
+        return $plans
+            ->sortBy(fn (SubscriptionPlan $plan) => sprintf(
+                '%03d-%s',
+                $this->planTypeSortRank((string) ($plan->plan_type ?? '')),
+                mb_strtolower((string) $plan->name)
+            ))
+            ->values();
+    }
+
+    /**
+     * End date for a period starting on $startsOn (inclusive start).
+     * Example weekly: 2025-09-19 → 2025-09-26.
+     * Returns null for custom (no automatic duration).
+     */
+    public function endsOnForPlanType(CarbonInterface|string $startsOn, string $planType): ?Carbon
+    {
+        $start = Carbon::parse($startsOn)->startOfDay();
+
+        return match ($planType) {
+            self::TYPE_HOURLY => $start->copy(),
+            self::TYPE_DAILY => $start->copy()->addDay(),
+            self::TYPE_WEEKLY => $start->copy()->addWeek(),
+            self::TYPE_MONTHLY => $start->copy()->addMonth(),
+            self::TYPE_TERM => $start->copy()->addMonths(3),
+            self::TYPE_YEARLY => $start->copy()->addYear(),
+            default => null,
+        };
     }
 
     /**
@@ -47,10 +107,11 @@ final class NurserySubscriptionPlanService
      */
     public function listForTenant(int $tenantUserId): Collection
     {
-        return SubscriptionPlan::query()
-            ->where('user_id', $tenantUserId)
-            ->orderBy('name')
-            ->get();
+        return $this->sortByDuration(
+            SubscriptionPlan::query()
+                ->where('user_id', $tenantUserId)
+                ->get()
+        );
     }
 
     /**

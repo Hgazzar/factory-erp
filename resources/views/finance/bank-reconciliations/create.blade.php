@@ -55,7 +55,7 @@
                         :options="$bankReconAccountOptions"
                         :value="old('account_id')"
                         :required="true"
-                        empty-label="اختر حسابا بنكيا"
+                        empty-label="— حسابا بنكيا —"
                         placeholder="ابحث بالرمز أو اسم الحساب..."
                     />
                 </div>

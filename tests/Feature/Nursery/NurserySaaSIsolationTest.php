@@ -127,7 +127,8 @@ final class NurserySaaSIsolationTest extends NurseryTestCase
 
         $this->get(route('nursery.dashboard'))
             ->assertOk()
-            ->assertSee(route('nursery.classrooms.index'), false)
+            ->assertDontSee(route('nursery.classrooms.index'), false)
+            ->assertDontSee(route('nursery.attendance.index'), false)
             ->assertDontSee(route('nursery.settings.index'), false)
             ->assertDontSee(route('nursery.finance.index'), false)
             ->assertDontSee(route('finance.dashboard'), false)

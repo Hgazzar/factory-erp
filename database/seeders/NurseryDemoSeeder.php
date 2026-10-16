@@ -18,6 +18,7 @@ use App\Models\TenantFeature;
 use App\Models\TenantProfile;
 use App\Models\User;
 use App\Services\ChartOfAccountsProvisioner;
+use App\Services\Nursery\NurserySubscriptionService;
 use App\Services\Tenant\NicheCatalog;
 use App\Services\Tenant\TenantFeatureRegistry;
 use App\Services\Tenant\TenantModuleRegistry;
@@ -171,10 +172,14 @@ final class NurseryDemoSeeder extends Seeder
                 ],
             );
 
-            $plan = SubscriptionPlan::query()->firstOrCreate(
-                ['user_id' => (int) $tenant->id, 'name' => 'شهري تجريبي'],
-                ['plan_type' => 'monthly', 'amount' => 1000, 'tax_rate' => 15, 'is_active' => true],
-            );
+            app(NurserySubscriptionService::class)
+                ->ensureDefaultPlans((int) $tenant->id);
+
+            $plan = SubscriptionPlan::query()
+                ->where('user_id', (int) $tenant->id)
+                ->where('plan_type', 'term')
+                ->where('is_active', true)
+                ->firstOrFail();
 
             Subscription::query()->firstOrCreate(
                 [

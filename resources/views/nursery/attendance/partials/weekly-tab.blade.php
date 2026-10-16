@@ -37,7 +37,9 @@
                     الفصل <x-info field="nursery.filter_classroom" />
                 </label>
                 <x-custom-select name="classroom_id" :options="$classroomOptions"
-                    :value="(string) ($classroomId ?? '')" :searchable="true" />
+                    :value="(string) ($classroomId ?? '')"
+                    empty-label="جميع الفصول"
+                    :searchable="true" />
             </div>
         @endif
         <button type="submit" class="nursery-btn nursery-btn-soft">تطبيق</button>

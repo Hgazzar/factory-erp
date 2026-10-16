@@ -22,7 +22,7 @@
     @endif
 
     <div class="flex flex-wrap gap-2">
-        @foreach(['all' => 'الكل', 'day' => '1ي', 'week' => '1أ', 'month' => '1ش', 'year' => '1س'] as $key => $label)
+        @foreach(['all' => 'الكل', 'hour' => 'ساعة', 'day' => 'يومي', 'week' => 'أسبوعي', 'term' => 'فصلي'] as $key => $label)
             <a href="{{ route('nursery.subscriptions.index', array_merge(request()->except('page'), ['period' => $key])) }}"
                class="nursery-btn text-sm py-1.5 {{ $period === $key ? 'nursery-btn-primary' : 'nursery-btn-soft' }}">{{ $label }}</a>
         @endforeach

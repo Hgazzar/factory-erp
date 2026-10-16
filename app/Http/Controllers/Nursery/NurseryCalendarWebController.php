@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Nursery;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Nursery\CalendarEntry;
@@ -23,6 +24,7 @@ use InvalidArgumentException;
 
 final class NurseryCalendarWebController extends Controller
 {
+    use PersistsMorphAttachments;
     use ResolvesOperationsTenant;
 
     public function index(Request $request, NurseryCalendarService $calendar): View
@@ -101,7 +103,8 @@ final class NurseryCalendarWebController extends Controller
         $data = $this->validatePayload($request);
 
         try {
-            $calendar->create($tenantUserId, $data, auth()->id());
+            $entry = $calendar->create($tenantUserId, $data, auth()->id());
+            $this->persistCalendarImages($request, $entry, $tenantUserId);
         } catch (InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
@@ -115,6 +118,8 @@ final class NurseryCalendarWebController extends Controller
     {
         $tenantUserId = $this->resolveOperationsTenantUserId();
         abort_unless((int) $entry->user_id === $tenantUserId, 404);
+
+        $entry->load(['attachments']);
 
         return view('nursery.calendar.edit', array_merge(
             $this->formViewData($tenantUserId, $entry->entry_type, $entry),
@@ -130,7 +135,8 @@ final class NurseryCalendarWebController extends Controller
         $data = $this->validatePayload($request);
 
         try {
-            $calendar->update($entry, $tenantUserId, $data);
+            $entry = $calendar->update($entry, $tenantUserId, $data);
+            $this->persistCalendarImages($request, $entry, $tenantUserId);
         } catch (InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
@@ -218,10 +224,19 @@ final class NurseryCalendarWebController extends Controller
             'lessonOptions' => $lessonOptions,
             'classrooms' => $classrooms,
             'children' => $children,
-            'selectedClassroomIds' => old('classroom_ids', $entry?->classroom_ids ?? []),
-            'selectedChildIds' => old('child_ids', $entry?->child_ids ?? []),
-            'mediaLinks' => old('media_links', $entry?->media_links ?? []),
+            'selectedClassroomIds' => array_map('intval', old('classroom_ids', $entry?->classroom_ids ?? [])),
+            'selectedChildIds' => array_map('intval', old('child_ids', $entry?->child_ids ?? [])),
         ];
+    }
+
+    private function persistCalendarImages(Request $request, CalendarEntry $entry, int $tenantUserId): void
+    {
+        $uploads = $request->file('images', []) ?? [];
+        if ($uploads === []) {
+            return;
+        }
+
+        $this->persistMorphAttachments($entry, $uploads, $tenantUserId, 'nursery/calendar');
     }
 
     /**
@@ -230,7 +245,6 @@ final class NurseryCalendarWebController extends Controller
     private function classroomOptions(int $tenantUserId): array
     {
         $options = [
-            ['value' => '', 'label' => 'جميع الفصول'],
             ['value' => '-1', 'label' => 'غير معين لفصل'],
         ];
 
@@ -252,7 +266,7 @@ final class NurseryCalendarWebController extends Controller
      */
     private function typeOptions(): array
     {
-        $options = [['value' => '', 'label' => 'الجميع']];
+        $options = [];
         foreach (CalendarEntry::typeLabels() as $key => $label) {
             $options[] = ['value' => $key, 'label' => $label];
         }
@@ -280,9 +294,8 @@ final class NurseryCalendarWebController extends Controller
             'classroom_ids.*' => ['integer'],
             'child_ids' => ['nullable', 'array'],
             'child_ids.*' => ['integer'],
-            'media_links' => ['nullable', 'array'],
-            'media_links.*.url' => ['nullable', 'url', 'max:500'],
-            'media_links.*.label' => ['nullable', 'string', 'max:120'],
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*' => ['image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
             'is_recurring' => ['nullable'],
         ]);
     }

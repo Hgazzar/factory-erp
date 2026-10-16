@@ -25,14 +25,19 @@
                 <x-info field="nursery.calendar_filter_classroom" />
             </label>
             <x-custom-select name="classroom_id" :options="$classroomOptions"
-                :value="(string) ($classroomFilter ?? '')" :searchable="true" />
+                :value="(string) ($classroomFilter ?? '')"
+                empty-label="جميع الفصول"
+                :searchable="true" />
         </div>
         <div>
             <label class="block text-sm font-semibold text-teal-950 mb-1">
                 فرز بحسب
                 <x-info field="nursery.calendar_filter_type" />
             </label>
-            <x-custom-select name="type" :options="$typeOptions" :value="$typeFilter" :searchable="false" />
+            <x-custom-select name="type" :options="$typeOptions"
+                :value="$typeFilter"
+                empty-label="الجميع"
+                :searchable="false" />
         </div>
         <input type="hidden" name="view" id="calendar_view_input" value="{{ $initialView }}">
         <input type="hidden" name="from" id="calendar_from_input" value="{{ $initialDate }}">

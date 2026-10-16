@@ -96,7 +96,7 @@
                             class="form-select rounded-lg @error('warehouse_id') is-invalid @enderror"
                             required
                         >
-                            <option value="">اختر المخزن</option>
+                            <option value="">— المخزن —</option>
                             @foreach($warehouses as $warehouse)
                                 <option value="{{ $warehouse['id'] }}" @selected((string) old('warehouse_id') === (string) $warehouse['id'])>
                                     {{ $warehouse['name'] }} ({{ $warehouse['code'] }})

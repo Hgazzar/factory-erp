@@ -98,7 +98,7 @@
                 <div class="mb-3">
                     <label class="form-label">تابعة لخط إنتاج:</label>
                     <select name="production_line_id" class="form-select" required>
-                        <option value="">-- اختر خط الإنتاج --</option>
+                        <option value="">— خط الإنتاج —</option>
                         @foreach($productionLines as $line)
                             <option value="{{ $line->id }}">{{ $line->name_ar }} ({{ $line->code }})</option>
                         @endforeach

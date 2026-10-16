@@ -55,7 +55,7 @@
                     :value="old('inventory_account_id')"
                     :required="true"
                     :error="$errors->has('inventory_account_id')"
-                    empty-label="اختر حساب مخزون"
+                    empty-label="— حساب مخزون —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('inventory_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -69,7 +69,7 @@
                     :value="old('sales_income_account_id')"
                     :required="true"
                     :error="$errors->has('sales_income_account_id')"
-                    empty-label="اختر حساب إيراد"
+                    empty-label="— حساب إيراد —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('sales_income_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -83,7 +83,7 @@
                     :value="old('cogs_account_id')"
                     :required="true"
                     :error="$errors->has('cogs_account_id')"
-                    empty-label="اختر حساب COGS"
+                    empty-label="— حساب COGS —"
                     placeholder="ابحث بالرمز أو الاسم..."
                 />
                 @error('cogs_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror

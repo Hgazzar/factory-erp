@@ -47,7 +47,7 @@
                         :options="$customerOptions ?? []"
                         :value="old('customer_id', '')"
                         :empty-option="false"
-                        placeholder="اختر العميل"
+                        placeholder="ابحث عن العميل..."
                     />
                     @error('customer_id')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -62,7 +62,7 @@
                         :options="$planOptions ?? []"
                         :value="old('loyalty_program_id', '')"
                         :empty-option="false"
-                        placeholder="اختر الخطة"
+                        placeholder="ابحث عن الخطة..."
                     />
                     @error('loyalty_program_id')
                         <p class="mt-1 text-xs text-red-600">{{ $message }}</p>

@@ -18,6 +18,6 @@
         :options="\App\Support\SaudiRegions::citySelectOptions($regionKey)"
         :value="$cityValue"
         placeholder="ابحث عن المدينة"
-        empty-label="— اختر المدينة —"
+        empty-label="— المدينة —"
         :searchable="true" />
 @endif

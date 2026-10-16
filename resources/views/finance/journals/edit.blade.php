@@ -30,7 +30,7 @@
         'v' => (string) $account->id,
         'l' => trim((string) ($account->code ?? '').' - '.(string) ($account->name_ar ?? '')),
     ])->values()->all();
-    $journalAccountSelectOptions = array_merge([['v' => '', 'l' => 'اختر الحساب']], $journalAccountSelectOptions);
+    $journalAccountSelectOptions = array_merge([['v' => '', 'l' => '— الحساب —']], $journalAccountSelectOptions);
     $journalEditXDataConfig = [
         'initial' => $entryData,
         'accountOptions' => $journalAccountSelectOptions,

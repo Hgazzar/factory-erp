@@ -200,7 +200,7 @@ final class NurseryAttendanceDepthTest extends NurseryTestCase
     #[Test]
     public function view_only_cannot_bulk_or_correct(): void
     {
-        $staff = $this->makeLinkedStaff('depth-view@example.com', ['login.app']);
+        $staff = $this->makeLinkedStaff('depth-view@example.com', ['login.app', 'classrooms.assign_child']);
         [$room] = $this->makeTwoClassrooms();
         $child = $this->makeEnrolledChild($room, 'عرض فقط', '0502000016');
 
@@ -572,8 +572,7 @@ final class NurseryAttendanceDepthTest extends NurseryTestCase
         $viewer = $this->makeLinkedStaff('child-board-view@example.com', ['login.app']);
         $this->actingAs($viewer);
         $this->get(route('nursery.attendance.index', ['tab' => 'register']))
-            ->assertOk()
-            ->assertDontSee(route('nursery.attendance.bulk-check-in'), false);
+            ->assertForbidden();
     }
 
     private function makeStaffEmployee(string $email, string $code, string $status = 'active'): Employee

@@ -10,6 +10,7 @@ use App\Models\Nursery\Child;
 use App\Models\Nursery\Subscription;
 use App\Models\Nursery\SubscriptionPlan;
 use App\Services\Nursery\NurseryDashboardService;
+use App\Services\Nursery\NurserySubscriptionPlanService;
 use App\Services\Nursery\NurserySubscriptionService;
 use App\Support\NurseryAccess;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,10 @@ final class NurserySubscriptionWebController extends Controller
         $tenantUserId = $this->resolveOperationsTenantUserId();
         $subscriptions->ensureDefaultPlans($tenantUserId);
 
-        $period = $request->query('period', 'all');
+        $period = strtolower(trim((string) $request->query('period', 'all')));
+        if (! in_array($period, ['all', 'hour', 'day', 'week', 'term'], true)) {
+            $period = 'all';
+        }
         [$from, $to] = $subscriptions->resolvePeriod($period === 'all' ? null : $period);
         $reminderTab = $request->query('reminder', 'payment') === 'renewal' ? 'renewal' : 'payment';
 
@@ -39,10 +43,10 @@ final class NurserySubscriptionWebController extends Controller
             ->orderByDesc('created_at');
 
         if ($from !== null) {
-            $listQuery->where('created_at', '>=', $from->copy()->startOfDay());
+            $listQuery->where('created_at', '>=', $from);
         }
         if ($to !== null) {
-            $listQuery->where('created_at', '<=', $to->copy()->endOfDay());
+            $listQuery->where('created_at', '<=', $to);
         }
 
         $items = $listQuery->paginate(20)->withQueryString();
@@ -55,15 +59,18 @@ final class NurserySubscriptionWebController extends Controller
             ->map(fn (Child $c) => ['value' => (string) $c->id, 'label' => $c->name])
             ->all();
 
-        $planOptions = SubscriptionPlan::query()
-            ->where('user_id', $tenantUserId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
+        $planOptions = app(NurserySubscriptionPlanService::class)
+            ->sortByDuration(
+                SubscriptionPlan::query()
+                    ->where('user_id', $tenantUserId)
+                    ->where('is_active', true)
+                    ->get()
+            )
             ->map(fn (SubscriptionPlan $p) => [
                 'value' => (string) $p->id,
                 'label' => $p->name,
                 'amount_after_tax' => $p->amountAfterTax(),
+                'plan_type' => (string) ($p->plan_type ?? 'custom'),
             ])
             ->all();
 
@@ -89,8 +96,8 @@ final class NurserySubscriptionWebController extends Controller
         $data = $request->validate([
             'child_id' => ['required', 'integer'],
             'plan_id' => ['required', 'integer'],
-            'starts_on' => ['required', 'date'],
-            'ends_on' => ['required', 'date', 'after_or_equal:starts_on'],
+            'starts_on' => ['required', 'date', 'after_or_equal:today'],
+            'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
             'amount_after_tax' => ['nullable', 'numeric', 'min:0'],
             'discount_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:500'],

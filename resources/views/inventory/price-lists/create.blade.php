@@ -186,7 +186,7 @@
 
     function buildItemOptions(selectedId) {
         const used = usedItemIds();
-        let html = '<option value="">— اختر المنتج —</option>';
+        let html = '<option value="">— المنتج —</option>';
         items.forEach(function(it) {
             if (selectedId == it.id || !used.includes(it.id)) {
                 const label = (it.name_ar || it.name_en || it.code) + ' (' + it.code + ')';

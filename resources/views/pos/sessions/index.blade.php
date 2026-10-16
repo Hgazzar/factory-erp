@@ -27,7 +27,7 @@
                             <span class="inline-flex items-center gap-1">الجهاز <x-info field="pos.col_device" /></span>
                         </label>
                         <select id="pos_device_id" name="pos_device_id" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 @error('pos_device_id') border-red-400 @enderror" required>
-                            <option value="">اختر الجهاز</option>
+                            <option value="">— الجهاز —</option>
                             @foreach($devices as $device)
                                 <option value="{{ $device->id }}" @selected((string) old('pos_device_id') === (string) $device->id)>{{ $device->name }}</option>
                             @endforeach
@@ -42,7 +42,7 @@
                             <span class="inline-flex items-center gap-1">الكاشير <x-info field="pos.session_employee_label" /></span>
                         </label>
                         <select id="employee_id" name="employee_id" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 @error('employee_id') border-red-400 @enderror" required>
-                            <option value="">اختر الموظف</option>
+                            <option value="">— الموظف —</option>
                             @foreach($employees as $employee)
                                 <option value="{{ $employee->id }}" @selected((string) old('employee_id') === (string) $employee->id)>
                                     {{ $employee->name }}{{ $employee->code ? ' ('.$employee->code.')' : '' }}

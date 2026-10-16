@@ -49,7 +49,7 @@
                 <x-custom-select name="result" id="today_care_toilet" :options="NurseryChildDailyActivityCatalog::selectOptions('toilet', 'result')" :searchable="false" empty-label="النتيجة" :in-modal="true" />
             </div>
             <div x-show="careType === 'mood'">
-                <x-custom-select name="mood" id="today_care_mood" :options="NurseryChildDailyActivityCatalog::selectOptions('mood', 'mood')" :searchable="false" empty-label="اختر المزاج" :in-modal="true" />
+                <x-custom-select name="mood" id="today_care_mood" :options="NurseryChildDailyActivityCatalog::selectOptions('mood', 'mood')" :searchable="false" empty-label="— المزاج —" :in-modal="true" />
             </div>
             <div x-show="careType === 'activity'">
                 <input type="text" name="title" maxlength="80" placeholder="مثال: رسم حر"

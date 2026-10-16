@@ -90,7 +90,7 @@
             @endforelse
         </section>
         <section class="nursery-card p-4 lg:col-span-1">
-            <h2 class="font-bold text-emerald-700 mb-2">حاضرون ({{ $staffBoard['checked_in']->count() }})</h2>
+            <h2 class="font-bold text-emerald-700 mb-2">حضور ({{ $staffBoard['checked_in']->count() }})</h2>
             @forelse($staffBoard['checked_in'] as $row)
                 <div class="flex flex-wrap items-center justify-between gap-2 py-2 border-b border-teal-50 text-sm"
                      @if($canPostStaffAttendance) :class="selected[{{ (int) $row['employee']->id }}] ? 'bg-teal-50/80' : ''" @endif>
@@ -107,7 +107,7 @@
                         @endif
                         <div>
                             <span class="font-medium">{{ $row['employee']->name }}</span>
-                            <span class="text-xs text-emerald-600 ms-1">{{ $row['log']->checked_in_at?->format('H:i') }}</span>
+                            <span class="text-xs text-emerald-600 ms-1">@if($row['log']->checked_in_at) حضور {{ $row['log']->checked_in_at->format('H:i') }} @endif</span>
                         </div>
                     </div>
                     @if($canPostStaffAttendance)
@@ -123,11 +123,17 @@
             @endforelse
         </section>
         <section class="nursery-card p-4 lg:col-span-1">
-            <h2 class="font-bold text-sky-700 mb-2">انصرفوا ({{ $staffBoard['checked_out']->count() }})</h2>
+            <h2 class="font-bold text-sky-700 mb-2">انصراف ({{ $staffBoard['checked_out']->count() }})</h2>
             @forelse($staffBoard['checked_out'] as $row)
                 <div class="py-2 border-b border-teal-50 text-sm">
                     <span class="font-medium">{{ $row['employee']->name }}</span>
-                    <span class="text-xs text-sky-600 ms-1">{{ $row['log']->checked_out_at?->format('H:i') }}</span>
+                    <span class="text-xs text-sky-600 ms-1">
+                        @if($row['log']->checked_in_at) حضور {{ $row['log']->checked_in_at->format('H:i') }} @endif
+                        @if($row['log']->checked_out_at)
+                            @if($row['log']->checked_in_at) · @endif
+                            انصراف {{ $row['log']->checked_out_at->format('H:i') }}
+                        @endif
+                    </span>
                 </div>
             @empty
                 <p class="text-sm text-teal-700/60">—</p>

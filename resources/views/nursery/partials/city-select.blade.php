@@ -18,7 +18,7 @@
         :options="\App\Support\SaudiRegions::citySelectOptions($regionKey)"
         :value="$cityValue"
         placeholder="ابحث عن المدينة"
-        empty-label="— اختر المدينة —"
+        empty-label="— المدينة —"
         :searchable="true" />
     @error('guardian_city')
         <p class="text-sm text-red-600 mt-1">{{ $message }}</p>

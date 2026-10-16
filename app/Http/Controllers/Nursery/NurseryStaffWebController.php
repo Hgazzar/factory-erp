@@ -89,9 +89,10 @@ final class NurseryStaffWebController extends Controller
 
         $this->persistUploads($request, $result['employee'], $tenantUserId);
 
-        $success = 'تم إضافة الموظف وإنشاء حساب الدخول.';
+        $success = 'تم إضافة الموظف.';
         if (filled($result['temporary_password'] ?? null)) {
-            $success .= ' البريد: '.($result['user']->email ?? $result['employee']->email)
+            $success = 'تم إضافة الموظف وإنشاء حساب الدخول. البريد: '
+                .($result['user']->email ?? $result['employee']->email)
                 .' — كلمة المرور المؤقتة: '.$result['temporary_password'];
         }
 
@@ -216,7 +217,7 @@ final class NurseryStaffWebController extends Controller
             'nursery_job_role' => ['nullable', 'string', Rule::in($jobKeys)],
             'nursery_education' => ['nullable', 'string', 'max:120'],
             'nursery_specialization' => ['nullable', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
             'mobile' => ['required', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:500'],
             'region' => ['nullable', 'string', Rule::in($regionKeys)],

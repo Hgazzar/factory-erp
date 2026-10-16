@@ -44,6 +44,29 @@ final class NurseryChildRegisterShowTest extends NurseryTestCase
     }
 
     #[Test]
+    public function register_stores_social_media_photo_consent(): void
+    {
+        $this->get(route('nursery.children.create'))
+            ->assertOk()
+            ->assertSee('الموافقة على تصوير الطفل في وسائل التواصل');
+
+        $this->post(route('nursery.children.store'), [
+            'name' => 'نورة',
+            'gender' => 'female',
+            'guardian_name' => 'ولي نورة',
+            'guardian_phone' => '0507777888',
+            'social_media_photo_consent' => '1',
+        ])->assertRedirect();
+
+        $child = Child::query()->where('name', 'نورة')->firstOrFail();
+        $this->assertTrue($child->social_media_photo_consent);
+
+        $this->get(route('nursery.children.show', $child))
+            ->assertOk()
+            ->assertSee('موافق');
+    }
+
+    #[Test]
     public function register_with_avatar_stores_attachment(): void
     {
         Storage::fake('public');

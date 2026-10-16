@@ -158,7 +158,7 @@
                             <tr class="line-row border-b border-gray-100 hover:bg-gray-50/60">
                                 <td class="px-3 py-2">
                                     <select name="lines[{{ $idx }}][item_id]" class="line-item h-10 w-full min-w-[12rem] rounded-lg border border-gray-200 bg-gray-50 px-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" required>
-                                        <option value="">— اختر الصنف —</option>
+                                        <option value="">— الصنف —</option>
                                         @foreach($items as $it)
                                             @if($it->id == $itemId || !in_array($it->id, $others))
                                                 @php $defPrice = ($priceList->type ?? 'sale') === 'sale' ? ($it->selling_price ?? $it->cost ?? 0) : ($it->cost ?? $it->selling_price ?? 0); @endphp
@@ -219,7 +219,7 @@
 
     function buildItemOptions(selectedId, excludeRow) {
         const used = usedItemIds(excludeRow);
-        let html = '<option value="">— اختر الصنف —</option>';
+        let html = '<option value="">— الصنف —</option>';
         items.forEach(function(it) {
             if (selectedId == it.id || used.indexOf(it.id) === -1) {
                 const label = (it.name_ar || it.name_en || it.code) + ' (' + it.code + ')';

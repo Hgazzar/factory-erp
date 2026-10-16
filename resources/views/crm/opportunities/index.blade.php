@@ -51,7 +51,7 @@
                     :options="$stageSelectOptions"
                     :value="request('stage', '')"
                     :empty-option="false"
-                    placeholder="اختر المرحلة…"
+                    placeholder="ابحث عن المرحلة..."
                     :searchable="false"
                 />
             </div>

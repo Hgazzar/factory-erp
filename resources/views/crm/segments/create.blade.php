@@ -47,8 +47,8 @@
                         id="segment-type"
                         :options="$segmentTypeOptions ?? []"
                         :value="old('type', '')"
-                        empty-label="اختر"
-                        placeholder="اختر النوع"
+                        empty-label="—"
+                        placeholder="ابحث عن النوع..."
                         :searchable="false"
                     />
                     @error('type')
@@ -62,8 +62,8 @@
                         id="segment-status"
                         :options="$segmentStatusOptions ?? []"
                         :value="old('status', 'active')"
-                        empty-label="اختر"
-                        placeholder="اختر الحالة"
+                        empty-label="—"
+                        placeholder="ابحث عن الحالة..."
                         :searchable="false"
                     />
                     @error('status')

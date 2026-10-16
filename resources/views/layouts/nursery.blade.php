@@ -332,6 +332,65 @@
             color: var(--nursery-on-primary);
             box-shadow: none;
         }
+        .module-nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            width: 100%;
+        }
+        .module-nav-group__toggle {
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            font: inherit;
+        }
+        .module-nav-group__panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+            padding: 0.15rem 0 0.35rem 0.35rem;
+            margin-inline-start: 0.35rem;
+            border-inline-start: 2px solid color-mix(in srgb, var(--nursery-primary) 28%, transparent);
+        }
+        .module-nav-group__link {
+            padding-block: 0.55rem;
+            font-size: 0.875rem;
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav-group__chevron,
+        .nursery-shell.is-sidebar-collapsed .module-nav-group__chevron {
+            display: none;
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav-group__panel,
+        .nursery-shell.is-sidebar-collapsed .module-nav-group__panel {
+            position: absolute;
+            inset-inline-start: calc(100% + 0.4rem);
+            top: 0;
+            z-index: 40;
+            min-width: 13.5rem;
+            margin: 0;
+            padding: 0.4rem;
+            border: 1px solid var(--nursery-border);
+            border-radius: 0.9rem;
+            background: #fff;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+            border-inline-start: 0;
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav-group,
+        .nursery-shell.is-sidebar-collapsed .module-nav-group {
+            position: relative;
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav-group__panel .module-nav-label,
+        .nursery-shell.is-sidebar-collapsed .module-nav-group__panel .module-nav-label {
+            display: inline-flex;
+        }
+        html.nursery-sidebar-collapsed .nursery-shell .module-nav-group__panel .module-nav-link,
+        .nursery-shell.is-sidebar-collapsed .module-nav-group__panel .module-nav-link {
+            width: 100%;
+            height: auto;
+            padding: 0.55rem 0.7rem;
+            justify-content: flex-start;
+            border-radius: 0.7rem;
+        }
         .nursery-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
             padding: 0.55rem 1.1rem; border-radius: 0.75rem; font-size: 0.875rem; font-weight: 600;

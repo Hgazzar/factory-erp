@@ -5,9 +5,8 @@
     $formAction = $formAction ?? '';
     $formMethod = $formMethod ?? 'POST';
     $submitLabel = $submitLabel ?? 'إضافة';
-    $selectedClassroomIds = is_array($selectedClassroomIds ?? null) ? $selectedClassroomIds : [];
-    $selectedChildIds = is_array($selectedChildIds ?? null) ? $selectedChildIds : [];
-    $mediaLinks = is_array($mediaLinks ?? null) && ($mediaLinks ?? []) !== [] ? $mediaLinks : [['url' => '', 'label' => '']];
+    $selectedClassroomIds = array_values(array_map('intval', is_array($selectedClassroomIds ?? null) ? $selectedClassroomIds : []));
+    $selectedChildIds = array_values(array_map('intval', is_array($selectedChildIds ?? null) ? $selectedChildIds : []));
     $eventDate = old('event_date', $entry?->starts_at?->format('Y-m-d') ?? now()->format('Y-m-d'));
     $startsTime = old('starts_at_time', $entry?->starts_at?->format('H:i') ?? '09:00');
     $endsTime = old('ends_at_time', $entry?->ends_at?->format('H:i') ?? '10:00');
@@ -30,7 +29,7 @@
         </section>
     @endif
 
-    <form method="post" action="{{ $formAction }}" class="space-y-5" id="nurseryCalendarForm">
+    <form method="post" action="{{ $formAction }}" enctype="multipart/form-data" class="space-y-5" id="nurseryCalendarForm">
         @csrf
         @if(strtoupper($formMethod) !== 'POST')
             @method($formMethod)
@@ -87,7 +86,8 @@
                         </label>
                         <x-custom-select name="unit_id" id="calendar_unit_select" :options="$unitOptions"
                             :value="old('unit_id', (string) ($entry?->unit_id ?? ''))"
-                            placeholder="اسم الوحدة" :searchable="true" />
+                            empty-label="— الوحدة —"
+                            placeholder="ابحث عن الوحدة..." :searchable="true" />
                         @error('unit_id')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
@@ -97,7 +97,8 @@
                         </label>
                         <x-custom-select name="unit_lesson_id" id="calendar_lesson_select" :options="$lessonOptions"
                             :value="old('unit_lesson_id', (string) ($entry?->unit_lesson_id ?? ''))"
-                            placeholder="اسم الدرس" :searchable="true" />
+                            empty-label="— الدرس —"
+                            placeholder="ابحث عن الدرس..." :searchable="true" />
                         <input type="hidden" name="title" id="calendar_lesson_title_fallback"
                                value="{{ old('title', $entry?->title) }}">
                         @error('unit_lesson_id')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
@@ -125,7 +126,7 @@
                             <label class="nursery-age-row {{ $loop->iteration % 2 === 0 ? 'nursery-age-row--stripe' : '' }}">
                                 <input type="checkbox" name="classroom_ids[]" value="{{ $room->id }}"
                                        class="rounded border-teal-300 text-teal-600 focus:ring-teal-500 shrink-0"
-                                       @checked(in_array($room->id, $selectedClassroomIds, true))>
+                                       @checked(in_array((int) $room->id, $selectedClassroomIds, true))>
                                 <span class="flex-1">{{ $room->name }}</span>
                             </label>
                         @empty
@@ -136,7 +137,7 @@
 
                 <div class="lg:col-span-2">
                     <label class="block text-sm font-semibold text-teal-950 mb-1">
-                        حدد الحضور
+                        أطفال محددون (اختياري)
                         <x-info field="nursery.calendar_children" />
                     </label>
                     <div class="nursery-age-group-list max-h-[min(16rem,40vh)] overflow-y-auto">
@@ -144,7 +145,7 @@
                             <label class="nursery-age-row {{ $loop->iteration % 2 === 0 ? 'nursery-age-row--stripe' : '' }}">
                                 <input type="checkbox" name="child_ids[]" value="{{ $child->id }}"
                                        class="rounded border-teal-300 text-teal-600 focus:ring-teal-500 shrink-0"
-                                       @checked(in_array($child->id, $selectedChildIds, true))>
+                                       @checked(in_array((int) $child->id, $selectedChildIds, true))>
                                 <span class="flex-1">{{ $child->name }}</span>
                             </label>
                         @empty
@@ -177,39 +178,64 @@
         </section>
 
         <section class="nursery-card p-5 space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-lg font-bold text-teal-950">
-                    الوسائط
-                    <x-info field="nursery.calendar_media" />
-                </h2>
-                <button type="button" id="calendar_add_media_link" class="nursery-btn nursery-btn-soft text-xs py-1.5">+ رابط</button>
+            <h2 class="text-lg font-bold text-teal-950">
+                صور النشاط
+                <x-info field="nursery.calendar_media" />
+            </h2>
+
+            @if($entry !== null && $entry->relationLoaded('attachments') && $entry->attachments->isNotEmpty())
+                <x-attachment-handler
+                    theme="tailwind"
+                    hint-field="nursery.calendar_media"
+                    title="الصور الحالية"
+                    :existing="$entry->attachments"
+                    :uploadable="false"
+                    :allow-delete="true"
+                    accept=".jpg,.jpeg,.png,.gif,.webp"
+                    help-text="يمكنك حذف صورة قديمة. لإضافة صور جديدة استخدم حقل الرفع أدناه."
+                />
+            @endif
+
+            @if($entry !== null && is_array($entry->media_links) && $entry->media_links !== [])
+                <div class="rounded-lg border border-amber-100 bg-amber-50/50 p-3 space-y-1">
+                    <p class="text-xs font-semibold text-amber-900">روابط قديمة (للمرجع فقط — استخدم رفع الصور أعلاه)</p>
+                    @foreach($entry->media_links as $link)
+                        @if(! empty($link['url']))
+                            <a href="{{ $link['url'] }}" target="_blank" rel="noopener" class="block text-sm text-teal-700 underline truncate" dir="ltr">
+                                {{ $link['label'] ?? $link['url'] }}
+                            </a>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
+            <div>
+                <label class="block text-sm font-semibold text-teal-950 mb-1">
+                    رفع صور
+                    <x-info field="nursery.calendar_media_upload" />
+                </label>
+                <input type="file" name="images[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp"
+                       class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm bg-white">
+                @error('images')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                @error('images.*')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                <p class="text-xs text-teal-700/70 mt-1">يمكن اختيار أكثر من صورة (jpg, png, webp, gif — حتى 5 ميجا للصورة).</p>
             </div>
-            <div id="calendar_media_list" class="space-y-2">
-                @foreach($mediaLinks as $idx => $link)
-                    <div class="calendar-media-row flex flex-wrap gap-2 items-center">
-                        <input type="url" name="media_links[{{ $idx }}][url]" value="{{ $link['url'] ?? '' }}"
-                               placeholder="https://..." class="flex-1 min-w-[12rem] rounded-lg border border-teal-200 px-3 py-2 text-sm" dir="ltr">
-                        <input type="text" name="media_links[{{ $idx }}][label]" value="{{ $link['label'] ?? '' }}"
-                               placeholder="وصف (اختياري)" class="w-full sm:w-40 rounded-lg border border-teal-200 px-3 py-2 text-sm">
-                        <button type="button" class="calendar-remove-media nursery-btn nursery-btn-soft text-xs py-2 px-2">×</button>
-                    </div>
-                @endforeach
-            </div>
-            <p class="text-xs text-teal-700/70">قم بإضافة رابط (صورة أو ملف خارجي). رفع الملفات لاحقاً.</p>
         </section>
 
-        <div class="flex flex-wrap gap-2">
-            <button type="submit" class="nursery-btn nursery-btn-primary">{{ $submitLabel }}</button>
-            <a href="{{ route('nursery.calendar.index') }}" class="nursery-btn nursery-btn-soft">إلغاء</a>
-            @if($entry !== null && app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CALENDAR))
-                <button type="submit" formaction="{{ route('nursery.calendar.destroy', $entry) }}"
-                        formmethod="post" class="nursery-btn nursery-btn-soft text-red-700 border-red-200 ms-auto"
-                        onclick="return confirm('حذف هذا الإدخال من التقويم؟')">
-                    @csrf @method('DELETE') حذف
-                </button>
-            @endif
-        </div>
     </form>
+
+    <div class="flex flex-wrap gap-2 items-center">
+        <button type="submit" form="nurseryCalendarForm" class="nursery-btn nursery-btn-primary">{{ $submitLabel }}</button>
+        <a href="{{ route('nursery.calendar.index') }}" class="nursery-btn nursery-btn-soft">إلغاء</a>
+        @if($entry !== null && app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CALENDAR))
+            <form method="post" action="{{ route('nursery.calendar.destroy', $entry) }}" class="ms-auto"
+                  onsubmit="return confirm('حذف هذا الإدخال من التقويم؟')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="nursery-btn nursery-btn-soft text-red-700 border-red-200">حذف</button>
+            </form>
+        @endif
+    </div>
 </div>
 
 @push('scripts')
@@ -256,36 +282,6 @@
         }
     });
 
-    var mediaList = document.getElementById('calendar_media_list');
-    var addMediaBtn = document.getElementById('calendar_add_media_link');
-    var mediaIndex = mediaList ? mediaList.querySelectorAll('.calendar-media-row').length : 0;
-
-    function bindRemoveMedia(btn) {
-        btn.addEventListener('click', function () {
-            var rows = mediaList.querySelectorAll('.calendar-media-row');
-            if (rows.length <= 1) {
-                rows[0].querySelector('input[type="url"]').value = '';
-                rows[0].querySelector('input[type="text"]').value = '';
-                return;
-            }
-            btn.closest('.calendar-media-row').remove();
-        });
-    }
-
-    mediaList.querySelectorAll('.calendar-remove-media').forEach(bindRemoveMedia);
-
-    if (addMediaBtn && mediaList) {
-        addMediaBtn.addEventListener('click', function () {
-            var row = document.createElement('div');
-            row.className = 'calendar-media-row flex flex-wrap gap-2 items-center';
-            row.innerHTML = '<input type="url" name="media_links[' + mediaIndex + '][url]" placeholder="https://..." class="flex-1 min-w-[12rem] rounded-lg border border-teal-200 px-3 py-2 text-sm" dir="ltr">'
-                + '<input type="text" name="media_links[' + mediaIndex + '][label]" placeholder="وصف (اختياري)" class="w-full sm:w-40 rounded-lg border border-teal-200 px-3 py-2 text-sm">'
-                + '<button type="button" class="calendar-remove-media nursery-btn nursery-btn-soft text-xs py-2 px-2">×</button>';
-            mediaList.appendChild(row);
-            bindRemoveMedia(row.querySelector('.calendar-remove-media'));
-            mediaIndex++;
-        });
-    }
 })();
 </script>
 @endpush

@@ -312,7 +312,7 @@
                                 :required="true"
                                 :empty-option="false"
                                 in-modal="true"
-                                placeholder="اختر وسيلة الدفع…"
+                                placeholder="ابحث عن وسيلة الدفع..."
                                 class="[&_button]:min-h-[2.75rem] [&_button]:text-sm"
                             />
                         </div>

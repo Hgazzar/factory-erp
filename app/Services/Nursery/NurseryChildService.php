@@ -50,6 +50,7 @@ final class NurseryChildService
                 'allergies' => trim((string) ($data['allergies'] ?? '')) ?: null,
                 'diseases' => trim((string) ($data['diseases'] ?? '')) ?: null,
                 'health_notes' => trim((string) ($data['health_notes'] ?? '')) ?: null,
+                'social_media_photo_consent' => filter_var($data['social_media_photo_consent'] ?? false, FILTER_VALIDATE_BOOL),
                 'status' => Child::STATUS_ACTIVE,
             ]);
 
@@ -142,6 +143,7 @@ final class NurseryChildService
                 'allergies' => trim((string) ($data['allergies'] ?? '')) ?: null,
                 'diseases' => trim((string) ($data['diseases'] ?? '')) ?: null,
                 'health_notes' => trim((string) ($data['health_notes'] ?? '')) ?: null,
+                'social_media_photo_consent' => filter_var($data['social_media_photo_consent'] ?? false, FILTER_VALIDATE_BOOL),
                 'status' => $data['status'] ?? $child->status,
             ]);
             $child->save();

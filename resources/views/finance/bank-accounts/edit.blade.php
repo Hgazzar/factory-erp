@@ -147,7 +147,7 @@
                         :options="$currencyOpts"
                         :selected="old('currency', $account->currency)"
                         :empty-option="false"
-                        placeholder="اختر العملة..."
+                        placeholder="ابحث عن العملة..."
                         :error="$errors->has('currency')"
                     />
                     @error('currency') <p class="text-xs text-red-600">{{ $message }}</p> @enderror

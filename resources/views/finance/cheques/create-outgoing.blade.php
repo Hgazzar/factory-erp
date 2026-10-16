@@ -58,7 +58,7 @@
                         class="w-full"
                         :options="$outChequeBankOpts"
                         :selected="old('bank_name', $cheque->bank_name ?? '')"
-                        empty-label="اختر دفتر الشيكات"
+                        empty-label="— دفتر الشيكات —"
                         placeholder="ابحث عن البنك..."
                     />
                 </div>
@@ -81,7 +81,7 @@
                 <div class="space-y-1">
                     <label for="party_name" class="block text-sm font-medium text-gray-700">الموردين</label>
                     <select id="party_name" name="party_name" class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">اختر المورد</option>
+                        <option value="">— المورد —</option>
                         @if(old('party_name', $cheque->party_name ?? ''))
                             <option value="{{ old('party_name', $cheque->party_name ?? '') }}" selected>{{ old('party_name', $cheque->party_name ?? '') }}</option>
                         @endif

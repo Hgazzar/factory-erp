@@ -44,7 +44,7 @@
                                 id="activity-customer-id"
                                 :options="$customerOptions ?? []"
                                 :value="old('customer_id', '')"
-                                empty-label="اختر العميل"
+                                empty-label="— العميل —"
                                 placeholder="ابحث باسم العميل…"
                             />
                             @error('customer_id')
@@ -61,8 +61,8 @@
                                 id="activity-type"
                                 :options="$activityTypeOptions ?? []"
                                 :value="old('type', '')"
-                                empty-label="اختر النوع"
-                                placeholder="اختر النوع…"
+                                empty-label="— النوع —"
+                                placeholder="ابحث عن النوع..."
                                 :searchable="false"
                             />
                             @error('type')

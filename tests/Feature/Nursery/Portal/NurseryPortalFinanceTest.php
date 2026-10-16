@@ -52,8 +52,8 @@ final class NurseryPortalFinanceTest extends NurseryTestCase
 
         $plan = SubscriptionPlan::query()->create([
             'user_id' => $this->tenant->id,
-            'name' => 'شهري',
-            'plan_type' => 'monthly',
+            'name' => 'فصلي',
+            'plan_type' => 'term',
             'amount' => 1000,
             'tax_rate' => 15,
             'is_active' => true,

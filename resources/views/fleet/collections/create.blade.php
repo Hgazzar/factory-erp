@@ -24,7 +24,7 @@
                         name="agent_id"
                         :options="$agentOptions"
                         :selected="$selectedAgentId"
-                        empty-label="اختر المندوب"
+                        empty-label="— المندوب —"
                     />
                 </div>
                 <div>
@@ -47,7 +47,7 @@
                         name="payment_method"
                         :options="$paymentOptions"
                         :selected="old('payment_method', 'cod')"
-                        empty-label="اختر الطريقة"
+                        empty-label="— الطريقة —"
                         :searchable="false"
                     />
                 </div>
@@ -95,7 +95,7 @@
                                     name="lines[{{ $i }}][product_id]"
                                     :options="$productOptions"
                                     :selected="old('lines.'.$i.'.product_id', '')"
-                                    empty-label="اختر الصنف"
+                                    empty-label="— الصنف —"
                                     empty-option
                                     label=""
                                 />

@@ -19,7 +19,7 @@ final class NurseryStaffService
     /**
      * @param  array<string, mixed>  $data
      * @param  list<string>  $permissions
-     * @return array{employee: Employee, user: \App\Models\User, created: bool, temporary_password: ?string}
+     * @return array{employee: Employee, user: \App\Models\User|null, created: bool, temporary_password: ?string}
      */
     public function create(int $tenantUserId, array $data, array $permissions): array
     {
@@ -31,21 +31,15 @@ final class NurseryStaffService
             $payload['status'] = $payload['status'] ?? 'active';
 
             $employee = Employee::query()->create($payload);
-            $account = $this->accounts->ensureLoginUser($employee);
 
-            return [
-                'employee' => $employee->fresh(),
-                'user' => $account['user'],
-                'created' => $account['created'],
-                'temporary_password' => $account['temporary_password'],
-            ];
+            return $this->withOptionalLoginAccount($employee);
         });
     }
 
     /**
      * @param  array<string, mixed>  $data
      * @param  list<string>  $permissions
-     * @return array{employee: Employee, user: \App\Models\User, created: bool, temporary_password: ?string}
+     * @return array{employee: Employee, user: \App\Models\User|null, created: bool, temporary_password: ?string}
      */
     public function update(Employee $employee, int $tenantUserId, array $data, array $permissions): array
     {
@@ -56,15 +50,33 @@ final class NurseryStaffService
             $employee->fill($payload);
             $employee->save();
 
-            $account = $this->accounts->ensureLoginUser($employee);
-
-            return [
-                'employee' => $employee->fresh(['attachments']),
-                'user' => $account['user'],
-                'created' => $account['created'],
-                'temporary_password' => $account['temporary_password'],
-            ];
+            return $this->withOptionalLoginAccount($employee->fresh(['attachments']) ?? $employee);
         });
+    }
+
+    /**
+     * @return array{employee: Employee, user: \App\Models\User|null, created: bool, temporary_password: ?string}
+     */
+    private function withOptionalLoginAccount(Employee $employee): array
+    {
+        $email = strtolower(trim((string) $employee->email));
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return [
+                'employee' => $employee,
+                'user' => null,
+                'created' => false,
+                'temporary_password' => null,
+            ];
+        }
+
+        $account = $this->accounts->ensureLoginUser($employee);
+
+        return [
+            'employee' => $employee->fresh(['attachments']) ?? $employee,
+            'user' => $account['user'],
+            'created' => $account['created'],
+            'temporary_password' => $account['temporary_password'],
+        ];
     }
 
     /**
@@ -83,9 +95,7 @@ final class NurseryStaffService
         }
 
         $email = trim((string) ($data['email'] ?? ''));
-        if ($email === '') {
-            throw new InvalidArgumentException('البريد الإلكتروني مطلوب.');
-        }
+        $email = $email !== '' ? strtolower($email) : null;
 
         $mobile = trim((string) ($data['mobile'] ?? ''));
         if ($mobile === '') {
@@ -99,6 +109,13 @@ final class NurseryStaffService
 
         if ($fillRoleTemplateWhenEmpty && $permissions === [] && $systemRole !== '') {
             $permissions = NurseryPermissionCatalog::templateForRole($systemRole);
+        }
+
+        $needsLogin = in_array('login.app', $permissions, true)
+            || in_array('login.portal', $permissions, true);
+
+        if ($needsLogin && ($email === null || $email === '')) {
+            throw new InvalidArgumentException('البريد الإلكتروني مطلوب عند تفعيل صلاحية الدخول.');
         }
 
         return [

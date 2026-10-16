@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Nursery\Portal;
 
+use App\Models\Attachment;
 use App\Models\Nursery\CalendarEntry;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -44,6 +45,7 @@ final class NurseryPortalCalendarService
             ->where('user_id', $tenantUserId)
             ->where('starts_at', '<', $weekEnd->copy()->endOfDay())
             ->where('ends_at', '>', $weekStart->copy()->startOfDay())
+            ->with('attachments')
             ->orderBy('starts_at')
             ->get()
             ->filter(fn (CalendarEntry $entry) => $this->isVisibleToGuardian($entry, $classroomIds, $childIds));
@@ -69,26 +71,37 @@ final class NurseryPortalCalendarService
     }
 
     /**
+     * Visible when:
+     * - no classroom/child filters → everyone
+     * - classroom filter only → child's classroom matches
+     * - child filter only → child is listed
+     * - both filters → classroom OR child matches (so editing "حدد الحضور" لا يخفي النشاط عن فصل الأم)
+     *
      * @param  list<int>  $classroomIds
      * @param  list<int>  $childIds
      */
     private function isVisibleToGuardian(CalendarEntry $entry, array $classroomIds, array $childIds): bool
     {
-        $entryChildIds = array_map('intval', (array) ($entry->child_ids ?? []));
-        if ($entryChildIds !== []) {
-            return array_intersect($entryChildIds, $childIds) !== [];
-        }
+        $entryChildIds = array_values(array_filter(array_map('intval', (array) ($entry->child_ids ?? []))));
+        $entryClassroomIds = array_values(array_filter(array_map('intval', (array) ($entry->classroom_ids ?? []))));
 
-        $entryClassroomIds = array_map('intval', (array) ($entry->classroom_ids ?? []));
-        if ($entryClassroomIds === []) {
+        $hasChildFilter = $entryChildIds !== [];
+        $hasClassroomFilter = $entryClassroomIds !== [];
+
+        if (! $hasChildFilter && ! $hasClassroomFilter) {
             return true;
         }
 
-        if ($classroomIds === []) {
-            return false;
+        $childMatch = $hasChildFilter && array_intersect($entryChildIds, $childIds) !== [];
+        $classroomMatch = $hasClassroomFilter
+            && $classroomIds !== []
+            && array_intersect($entryClassroomIds, $classroomIds) !== [];
+
+        if ($hasChildFilter && $hasClassroomFilter) {
+            return $childMatch || $classroomMatch;
         }
 
-        return array_intersect($entryClassroomIds, $classroomIds) !== [];
+        return $hasChildFilter ? $childMatch : $classroomMatch;
     }
 
     /**
@@ -113,9 +126,38 @@ final class NurseryPortalCalendarService
                     'color' => $colors[$entry->entry_type] ?? '#069494',
                     'time' => $entry->starts_at?->format('H:i').' — '.$entry->ends_at?->format('H:i'),
                     'notes' => $entry->notes,
+                    'images' => $this->imageUrlsForEntry($entry),
                 ];
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function imageUrlsForEntry(CalendarEntry $entry): array
+    {
+        $attachments = $entry->relationLoaded('attachments')
+            ? $entry->attachments
+            : $entry->attachments()->orderBy('id')->get();
+
+        $urls = [];
+        foreach ($attachments as $att) {
+            if (! $att instanceof Attachment || blank($att->file_path)) {
+                continue;
+            }
+
+            $mime = strtolower((string) ($att->file_type ?? ''));
+            $name = strtolower((string) ($att->file_name ?? ''));
+            $isImage = str_starts_with($mime, 'image/')
+                || (bool) preg_match('/\.(jpe?g|png|gif|webp|bmp)$/', $name);
+
+            if ($isImage) {
+                $urls[] = asset('storage/'.ltrim((string) $att->file_path, '/'));
+            }
+        }
+
+        return $urls;
     }
 }

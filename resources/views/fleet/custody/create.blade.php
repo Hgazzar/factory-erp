@@ -24,7 +24,7 @@
                         name="agent_id"
                         :options="collect($agents)->map(fn ($a) => ['value' => (string) $a->id, 'label' => $a->name])->all()"
                         :selected="old('agent_id', '')"
-                        empty-label="اختر المندوب"
+                        empty-label="— المندوب —"
                     />
                 </div>
                 <div>
@@ -43,7 +43,7 @@
                                     name="lines[{{ $i }}][product_id]"
                                     :options="$productOptions"
                                     :selected="old('lines.'.$i.'.product_id', '')"
-                                    empty-label="اختر الصنف"
+                                    empty-label="— الصنف —"
                                     empty-option
                                     label=""
                                 />

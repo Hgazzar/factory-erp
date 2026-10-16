@@ -154,7 +154,7 @@ window.expenseCreateTotals = window.expenseCreateTotals || function (defaultVat,
                         :value="old('account_id')"
                         :required="true"
                         :error="$errors->has('account_id')"
-                        empty-label="اختر الحساب"
+                        empty-label="— الحساب —"
                         placeholder="ابحث بالرمز أو اسم الحساب..."
                     />
                     @error('account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -336,7 +336,7 @@ window.expenseCreateTotals = window.expenseCreateTotals || function (defaultVat,
                         :value="old('bank_account_id')"
                         :required="false"
                         :error="$errors->has('bank_account_id')"
-                        empty-label="اختر الحساب البنكي"
+                        empty-label="— الحساب البنكي —"
                         placeholder="ابحث باسم البنك أو رقم الحساب..."
                     />
                     @error('bank_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror

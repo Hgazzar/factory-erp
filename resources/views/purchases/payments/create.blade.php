@@ -49,7 +49,7 @@
                         :value="old('supplier_id')"
                         :required="true"
                         :error="$errors->has('supplier_id')"
-                        empty-label="— اختر المورد —"
+                        empty-label="— المورد —"
                         placeholder="ابحث باسم المورد أو الرمز..."
                     />
                     @error('supplier_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror

@@ -123,7 +123,7 @@
                     name="attendance_date"
                     :options="$dateOptions"
                     :value="$selectedDate"
-                    placeholder="اختر التاريخ..."
+                    placeholder="ابحث عن التاريخ..."
                     :empty-option="false"
                     :fixed-panel="true"
                 />

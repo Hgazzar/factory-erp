@@ -41,8 +41,8 @@
                                 :options="$typeOptions ?? []"
                                 :value="old('type', 'meeting')"
                                 :empty-option="false"
-                                empty-label="اختر النوع"
-                                placeholder="اختر النوع"
+                                empty-label="— النوع —"
+                                placeholder="ابحث عن النوع..."
                                 :searchable="false"
                             />
                             @error('type')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -55,8 +55,8 @@
                                 :options="$assigneeOptions ?? []"
                                 :value="old('assigned_to', '')"
                                 :empty-option="false"
-                                empty-label="اختر المسؤول"
-                                placeholder="اختر المسؤول"
+                                empty-label="— المسؤول —"
+                                placeholder="ابحث عن المسؤول..."
                                 :searchable="false"
                             />
                             @error('assigned_to')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -69,8 +69,8 @@
                                 :options="$statusOptions ?? []"
                                 :value="old('status', 'planned')"
                                 :empty-option="false"
-                                empty-label="اختر الحالة"
-                                placeholder="اختر الحالة"
+                                empty-label="— الحالة —"
+                                placeholder="ابحث عن الحالة..."
                                 :searchable="false"
                             />
                             @error('status')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -102,8 +102,8 @@
                                 :options="$customerOptions ?? []"
                                 :value="old('customer_id', '')"
                                 :empty-option="false"
-                                empty-label="اختر العميل"
-                                placeholder="اختر العميل"
+                                empty-label="— العميل —"
+                                placeholder="ابحث عن العميل..."
                             />
                             @error('customer_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                         </div>
@@ -192,8 +192,8 @@
                                 ]"
                                 :value="old('reminder_minutes', '30')"
                                 :empty-option="false"
-                                empty-label="اختر المدة"
-                                placeholder="اختر المدة"
+                                empty-label="— المدة —"
+                                placeholder="ابحث عن المدة..."
                                 :searchable="false"
                             />
                         </div>

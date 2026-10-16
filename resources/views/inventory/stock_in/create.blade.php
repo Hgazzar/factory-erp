@@ -47,7 +47,7 @@
                         :value="old('supplier_id')"
                         :required="true"
                         :error="$errors->has('supplier_id')"
-                        empty-label="اختر المورد"
+                        empty-label="— المورد —"
                         placeholder="ابحث باسم المورد أو الرمز..."
                     />
                     @error('supplier_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -145,7 +145,7 @@
                                 </td>
                                 <td class="py-2 px-3">
                                     <select :name="`lines[${index}][warehouse_id]`" x-model="line.warehouse_id" required class="w-full px-3 py-2 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                                        <option value="">اختر</option>
+                                        <option value="">—</option>
                                         <template x-for="wh in warehouses" :key="wh.id">
                                             <option :value="String(wh.id)" x-text="wh.name_ar || wh.code"></option>
                                         </template>

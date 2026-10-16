@@ -49,7 +49,7 @@
                                         <x-searchable-select
                                             name="route_id"
                                             :options="collect($routes)->map(fn ($r) => ['value' => (string) $r->id, 'label' => ($r->agent?->name ?? 'مندوب').' · '.$r->route_date->format('Y-m-d')])->all()"
-                                            empty-label="اختر خط سير"
+                                            empty-label="— خط سير —"
                                             :searchable="count($routes) > 6"
                                             class="min-w-[10rem]"
                                         />
@@ -66,7 +66,7 @@
                                         <x-searchable-select
                                             name="agent_id"
                                             :options="collect($agents)->map(fn ($a) => ['value' => (string) $a->id, 'label' => $a->name])->all()"
-                                            empty-label="اختر مندوب"
+                                            empty-label="— مندوب —"
                                             :searchable="count($agents) > 6"
                                             class="min-w-[8rem]"
                                         />

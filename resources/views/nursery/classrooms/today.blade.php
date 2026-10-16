@@ -90,7 +90,10 @@
             <div class="flex-1 min-w-[180px]">
                 <label class="block text-sm font-semibold text-teal-950 mb-1">الفصل</label>
                 <x-custom-select name="classroom_id" :options="$classroomOptions"
-                    :value="(string) $classroom->id" placeholder="اختر الفصل" :searchable="count($classroomOptions) > 6" />
+                    :value="(string) $classroom->id"
+                    :empty-option="false"
+                    placeholder="ابحث عن الفصل..."
+                    :searchable="count($classroomOptions) > 6" />
             </div>
             <button type="submit" class="nursery-btn nursery-btn-soft">عرض</button>
         </form>
@@ -105,7 +108,7 @@
                 <p class="mt-1 text-xl font-extrabold text-amber-600 tabular-nums">{{ $board['not_yet']->count() }}</p>
             </div>
             <div class="nursery-card px-3 py-3.5 text-center">
-                <p class="text-xs font-semibold text-sky-800/90">انصرفوا</p>
+                <p class="text-xs font-semibold text-sky-800/90">انصراف</p>
                 <p class="mt-1 text-xl font-extrabold text-sky-600 tabular-nums">{{ $board['checked_out']->count() }}</p>
             </div>
             <div class="nursery-card px-3 py-3.5 text-center">

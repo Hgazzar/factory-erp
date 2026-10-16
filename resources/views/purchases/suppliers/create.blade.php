@@ -58,7 +58,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">نوع المورد</label>
                         <select name="supplier_type" class="w-full px-3 py-2.5 rounded-2xl border border-gray-300 text-sm focus:ring-2 focus:ring-indigo-500">
-                            <option value="">— اختر —</option>
+                            <option value="">—</option>
                             <option value="محلي" {{ old('supplier_type', 'محلي') == 'محلي' ? 'selected' : '' }}>محلي</option>
                             <option value="دولي" {{ old('supplier_type') == 'دولي' ? 'selected' : '' }}>دولي</option>
                             <option value="مصنع" {{ old('supplier_type') == 'مصنع' ? 'selected' : '' }}>مصنع</option>

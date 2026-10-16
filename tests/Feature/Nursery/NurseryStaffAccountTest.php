@@ -94,6 +94,9 @@ final class NurseryStaffAccountTest extends NurseryTestCase
 
         $access = app(NurseryAccess::class);
         $this->assertTrue($access->allows(NurseryAccess::CAP_VIEW_DAILY, $user));
+        $this->assertFalse($access->allows(NurseryAccess::CAP_VIEW_ATTENDANCE, $user));
+        $this->assertFalse($access->allows(NurseryAccess::CAP_VIEW_CHILDREN, $user));
+        $this->assertFalse($access->allows(NurseryAccess::CAP_VIEW_CLASSROOMS, $user));
         $this->assertFalse($access->allows(NurseryAccess::CAP_MANAGE_CHILD_ATTENDANCE, $user));
     }
 

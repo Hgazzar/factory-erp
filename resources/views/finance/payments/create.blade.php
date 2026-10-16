@@ -103,7 +103,7 @@
                         :options="$paymentSupplierOpts"
                         :value="old('supplier_id')"
                         :error="$errors->has('supplier_id')"
-                        empty-label="— اختر المورد —"
+                        empty-label="— المورد —"
                         placeholder="ابحث باسم المورد أو الرمز..."
                     />
                     @error('supplier_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -129,7 +129,7 @@
                         :options="$paymentExpenseAccountOpts"
                         :value="old('expense_account_id')"
                         :error="$errors->has('expense_account_id')"
-                        empty-label="— اختر حساب المصروف —"
+                        empty-label="— حساب المصروف —"
                         placeholder="ابحث بالرمز أو اسم الحساب..."
                     />
                     @error('expense_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror

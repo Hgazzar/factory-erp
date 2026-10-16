@@ -62,7 +62,7 @@
                         class="w-full"
                         :options="$incomingPartyOpts"
                         :selected="old('party_name', $cheque->party_name ?? '')"
-                        empty-label="اختر العميل"
+                        empty-label="— العميل —"
                         placeholder="ابحث عن العميل..."
                     />
                 </div>

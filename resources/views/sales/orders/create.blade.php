@@ -63,7 +63,7 @@
                         :options="$salesOrderCustomerOptions"
                         :value="old('customer_id', $initialCustomerId ?? '')"
                         :error="$errors->has('customer_id')"
-                        empty-label="اختر العميل"
+                        empty-label="— العميل —"
                         placeholder="ابحث باسم العميل..."
                     />
                     @error('customer_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -137,7 +137,7 @@
                                         required
                                         class="w-full min-w-[12rem] px-3 py-2 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     >
-                                        <option value="">اختر المنتج</option>
+                                        <option value="">— المنتج —</option>
                                         @foreach($items as $item)
                                             <option value="{{ $item['id'] }}">{{ ($item['name_ar'] ?? $item['code'] ?? '—') }} — {{ $item['code'] ?? '' }}</option>
                                         @endforeach
@@ -160,7 +160,7 @@
                                 </td>
                                 <td class="py-2 px-3">
                                     <select :name="`lines[${index}][warehouse_id]`" x-model="line.warehouse_id" class="w-full px-3 py-2 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                                        <option value="">اختر (اختياري)</option>
+                                        <option value="">— (اختياري) —</option>
                                         <template x-for="wh in warehouses" :key="wh.id">
                                             <option :value="wh.id" x-text="wh.name_ar || wh.code"></option>
                                         </template>

@@ -77,6 +77,8 @@ return [
         'warehouse_id' => 'المستودع',
         'quotation_id' => 'عرض السعر',
         'date' => 'التاريخ',
+        'starts_on' => 'تاريخ البداية',
+        'ends_on' => 'تاريخ الانتهاء',
         'valid_until' => 'صالح حتى',
         'order_date' => 'تاريخ الأمر',
         'expected_delivery' => 'التسليم المتوقع',

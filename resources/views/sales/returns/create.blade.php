@@ -50,7 +50,7 @@
                         :options="$salesReturnCustomerOptions"
                         :value="old('customer_id')"
                         :error="$errors->has('customer_id')"
-                        empty-label="اختر العميل"
+                        empty-label="— العميل —"
                         placeholder="ابحث باسم العميل..."
                     />
                     @error('customer_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -58,7 +58,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">الفاتورة الأصلية</label>
                     <select x-model="salesInvoiceId" @change="onInvoiceChange()" class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" :disabled="!customerId">
-                        <option value="">اختر فاتورة</option>
+                        <option value="">— فاتورة —</option>
                         <template x-for="inv in invoices" :key="inv.id">
                             <option :value="inv.id" x-text="inv.label"></option>
                         </template>
@@ -75,7 +75,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">نوع السبب <span class="text-red-500">*</span></label>
                     <select name="reason_type" required class="w-full px-3 py-2.5 pr-4 text-right bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                        <option value="">اختر نوع السبب</option>
+                        <option value="">— نوع السبب —</option>
                         @foreach($reasonTypes as $rt)
                             <option value="{{ $rt }}">{{ $rt }}</option>
                         @endforeach

@@ -50,7 +50,7 @@
                         :value="old('customer_id')"
                         :required="true"
                         :error="$errors->has('customer_id')"
-                        empty-label="— اختر {{ niche_label('entities.customer', 'العميل') }} —"
+                        empty-label="— {{ niche_label('entities.customer', 'العميل') }} —"
                         placeholder="ابحث باسم {{ niche_label('entities.customer', 'العميل') }} أو الرمز..."
                     />
                     @error('customer_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror

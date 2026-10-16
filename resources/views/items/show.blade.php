@@ -127,7 +127,7 @@
                                             <tr>
                                                 <td>
                                                     <select class="form-select form-select-sm" x-model="row.component_item_id">
-                                                        <option value="">— اختر —</option>
+                                                        <option value="">—</option>
                                                         <template x-for="opt in rawOptions" :key="opt.id">
                                                             <option :value="String(opt.id)" x-text="opt.label"></option>
                                                         </template>

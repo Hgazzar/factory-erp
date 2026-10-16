@@ -87,7 +87,7 @@
                         :value="old('fixed_asset_category_id', isset($asset) ? $asset->fixed_asset_category_id : null)"
                         :required="true"
                         :error="$errors->has('fixed_asset_category_id')"
-                        empty-label="اختر فئة الأصل"
+                        empty-label="— فئة الأصل —"
                         placeholder="ابحث بالرمز أو اسم الفئة..."
                     />
                     @error('fixed_asset_category_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -121,7 +121,7 @@
                         :value="old('cost_center_id', isset($asset) ? $asset->cost_center_id : null)"
                         :required="true"
                         :error="$errors->has('cost_center_id')"
-                        empty-label="اختر مركز التكلفة"
+                        empty-label="— مركز التكلفة —"
                         placeholder="ابحث بالرمز أو اسم مركز التكلفة..."
                     />
                     @error('cost_center_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -191,7 +191,7 @@
                         :value="old('bank_account_id', isset($asset) ? $asset->bank_account_id : null)"
                         :required="false"
                         :error="$errors->has('bank_account_id')"
-                        empty-label="اختر الحساب البنكي"
+                        empty-label="— الحساب البنكي —"
                         placeholder="ابحث باسم البنك أو رقم الحساب..."
                     />
                     @error('bank_account_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -209,7 +209,7 @@
                         class="w-full"
                         :options="$faDepreciationMethodOpts"
                         :selected="old('depreciation_method', isset($asset) ? ($asset->depreciation_method ?? '') : '')"
-                        empty-label="اختر الطريقة"
+                        empty-label="— الطريقة —"
                         placeholder="ابحث عن طريقة الإهلاك..."
                         :error="$errors->has('depreciation_method')"
                     />

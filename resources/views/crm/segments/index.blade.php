@@ -40,7 +40,7 @@
                     :options="$segmentTypeOptions ?? []"
                     :value="request('type', '')"
                     empty-label="الكل"
-                    placeholder="اختر النوع"
+                    placeholder="ابحث عن النوع..."
                     :searchable="false"
                 />
             </div>
@@ -52,7 +52,7 @@
                     :options="$segmentStatusOptions ?? []"
                     :value="request('status', '')"
                     empty-label="الكل"
-                    placeholder="اختر الحالة"
+                    placeholder="ابحث عن الحالة..."
                     :searchable="false"
                 />
             </div>

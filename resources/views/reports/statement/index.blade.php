@@ -47,7 +47,7 @@
                     :options="$statementCustomerOptions"
                     :value="old('customer_id', $customerId)"
                     :required="true"
-                    empty-label="اختر العميل"
+                    empty-label="— العميل —"
                     placeholder="ابحث باسم العميل..."
                 />
             </div>

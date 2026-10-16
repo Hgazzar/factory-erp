@@ -78,7 +78,7 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1"><x-info field="services.warehouse_field" /> مستودع صرف القطع</label>
             <select name="warehouse_id" class="w-full rounded-lg border-gray-300 text-sm" required>
-                <option value="">— اختر مستودعاً —</option>
+                <option value="">— مستودعاً —</option>
                 @foreach($warehouses as $w)
                     <option value="{{ $w->id }}" @selected(old('warehouse_id')==$w->id)>{{ $w->name_ar ?? $w->code }}</option>
                 @endforeach

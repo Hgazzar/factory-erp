@@ -33,7 +33,7 @@ final class NurserySidebarNavigationTest extends NurseryTestCase
     }
 
     #[Test]
-    public function login_app_staff_sees_classrooms_in_nursery_nav(): void
+    public function login_app_only_staff_does_not_see_other_modules_in_nav(): void
     {
         $staff = \App\Models\User::factory()->create([
             'role' => 'supervisor',
@@ -55,9 +55,39 @@ final class NurserySidebarNavigationTest extends NurseryTestCase
 
         $this->get(route('nursery.dashboard'))
             ->assertOk()
-            ->assertSee(route('nursery.classrooms.index'), false)
-            ->assertSee(route('nursery.attendance.index'), false)
+            ->assertDontSee(route('nursery.classrooms.index'), false)
+            ->assertDontSee(route('nursery.attendance.index'), false)
+            ->assertDontSee(route('nursery.children.index'), false)
             ->assertDontSee(route('nursery.settings.index'), false)
             ->assertDontSee(route('nursery.finance.index'), false);
+    }
+
+    #[Test]
+    public function attendance_permission_shows_attendance_nav_only(): void
+    {
+        $staff = \App\Models\User::factory()->create([
+            'role' => 'supervisor',
+            'email' => 'nav-att@example.com',
+            'password' => 'password',
+        ]);
+
+        \App\Models\Employee::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'linked_user_id' => $staff->id,
+            'code' => 'EMP-NAV2',
+            'name' => 'Att Staff',
+            'email' => 'nav-att@example.com',
+            'status' => 'active',
+            'nursery_permissions' => ['login.app', 'attendance.children'],
+        ]);
+
+        $this->actingAs($staff);
+
+        $this->get(route('nursery.dashboard'))
+            ->assertOk()
+            ->assertSee(route('nursery.attendance.index'), false)
+            ->assertSee(route('nursery.classrooms.index'), false)
+            ->assertDontSee(route('nursery.settings.index'), false)
+            ->assertDontSee(route('nursery.subscriptions.index'), false);
     }
 }

@@ -152,13 +152,13 @@ final class NurseryCalendarService
             'notes' => $notes !== '' ? $notes : null,
             'classroom_ids' => $this->normalizeIds($data['classroom_ids'] ?? []),
             'child_ids' => $this->normalizeIds($data['child_ids'] ?? []),
-            'media_links' => $this->normalizeMediaLinks($data['media_links'] ?? []),
             'is_recurring' => filter_var($data['is_recurring'] ?? false, FILTER_VALIDATE_BOOL),
         ];
 
         if ($includeTenant) {
             $payload['user_id'] = $tenantUserId;
             $payload['created_by'] = $createdBy;
+            $payload['media_links'] = [];
         }
 
         return $payload;
@@ -190,35 +190,6 @@ final class NurseryCalendarService
             array_map(fn ($id) => (int) $id, $input),
             fn (int $id): bool => $id > 0
         )));
-    }
-
-    /**
-     * @param  mixed  $input
-     * @return list<array{type: string, url: string, label: string|null}>
-     */
-    private function normalizeMediaLinks(mixed $input): array
-    {
-        if (! is_array($input)) {
-            return [];
-        }
-
-        $links = [];
-        foreach ($input as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-            $url = trim((string) ($row['url'] ?? ''));
-            if ($url === '') {
-                continue;
-            }
-            $links[] = [
-                'type' => 'link',
-                'url' => $url,
-                'label' => trim((string) ($row['label'] ?? '')) ?: null,
-            ];
-        }
-
-        return $links;
     }
 
     private function assertUnitBelongsToTenant(int $unitId, int $tenantUserId): void

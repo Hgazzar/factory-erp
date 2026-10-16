@@ -35,6 +35,16 @@
                                 @if(!empty($event['notes']))
                                     <p class="text-xs text-teal-700/80 mt-1">{{ $event['notes'] }}</p>
                                 @endif
+                                @if(!empty($event['images']))
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        @foreach($event['images'] as $imageUrl)
+                                            <a href="{{ $imageUrl }}" target="_blank" rel="noopener" class="block">
+                                                <img src="{{ $imageUrl }}" alt="صورة النشاط"
+                                                     class="h-20 w-20 rounded-lg object-cover border border-teal-100 bg-teal-50">
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </li>
                         @endforeach
                     </ul>

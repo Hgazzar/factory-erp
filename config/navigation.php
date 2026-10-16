@@ -311,7 +311,7 @@ $config = [
             'shell' => 'nursery',
             'module' => 'nursery',
             'active' => 'nursery.attendance.*',
-            'nursery_capability' => NurseryAccess::CAP_VIEW_DAILY,
+            'nursery_capability' => NurseryAccess::CAP_VIEW_ATTENDANCE,
         ],
         'nursery.children' => [
             'route' => 'nursery.children.index',
@@ -321,7 +321,7 @@ $config = [
             'shell' => 'nursery',
             'module' => 'nursery',
             'active' => 'nursery.children.*',
-            'nursery_capability' => NurseryAccess::CAP_VIEW_DAILY,
+            'nursery_capability' => NurseryAccess::CAP_VIEW_CHILDREN,
         ],
         'nursery.guardians' => [
             'route' => 'nursery.guardians.index',
@@ -331,7 +331,7 @@ $config = [
             'module' => 'nursery',
             'active' => 'nursery.guardians.*',
             'feature' => 'nursery_portal',
-            'nursery_capability' => NurseryAccess::CAP_VIEW_DAILY,
+            'nursery_capability' => NurseryAccess::CAP_VIEW_GUARDIANS,
         ],
         'nursery.staff' => [
             'route' => 'nursery.staff.index',
@@ -350,7 +350,7 @@ $config = [
             'shell' => 'nursery',
             'module' => 'nursery',
             'active' => 'nursery.classrooms.*',
-            'nursery_capability' => NurseryAccess::CAP_VIEW_DAILY,
+            'nursery_capability' => NurseryAccess::CAP_VIEW_CLASSROOMS,
         ],
         'nursery.units' => [
             'route' => 'nursery.units.index',
