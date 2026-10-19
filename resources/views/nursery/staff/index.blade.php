@@ -109,6 +109,15 @@
                                         <x-erp-actions-menu-item :href="route('nursery.staff.edit', $emp)" icon="edit">
                                             تعديل
                                         </x-erp-actions-menu-item>
+                                        @if($emp->linked_user_id)
+                                            <form method="post" action="{{ route('nursery.staff.reset-login-password', $emp) }}">
+                                                @csrf
+                                                <x-erp-actions-menu-item type="submit" icon="renew"
+                                                    confirm="سيتم إنشاء كلمة مرور مؤقتة جديدة وإبطال القديمة. متابعة؟">
+                                                    إعادة كلمة مرور الدخول
+                                                </x-erp-actions-menu-item>
+                                            </form>
+                                        @endif
                                     </x-erp-actions-dropdown>
                                 </td>
                             @endif

@@ -195,6 +195,15 @@ final class NurseryStaffAccountTest extends NurseryTestCase
         $created = app(NurseryStaffAccountService::class)->ensureLoginUser($employee);
         $oldPassword = (string) $created['temporary_password'];
 
+        $this->get(route('nursery.staff.edit', $employee))
+            ->assertOk()
+            ->assertSee('حساب دخول النظام')
+            ->assertSee('إعادة كلمة مرور الدخول');
+
+        $this->get(route('nursery.staff.index'))
+            ->assertOk()
+            ->assertSee('إعادة كلمة مرور الدخول');
+
         $this->post(route('nursery.staff.reset-login-password', $employee))
             ->assertRedirect(route('nursery.staff.edit', $employee))
             ->assertSessionHas('staff_login_credentials.email', 'reset-me@example.com')
