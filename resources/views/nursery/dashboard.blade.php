@@ -44,13 +44,13 @@
     </section>
 
     <section class="nursery-stats-row">
-        <x-nursery-stat-card title="حضور اليوم" :value="$stats['present_today']" info="nursery.stat_present_today" tone="success" hint="داخل الحضانة الآن" spark="ring"
+        <x-nursery-stat-card title="الحضور" :value="$stats['present_today']" info="nursery.stat_present_today" tone="success" hint="داخل الحضانة الآن" spark="ring"
             :percent="$spark['present_today']['percent']" :trend="$spark['present_today']['trend']"
             :href="$canViewAttendance ? route('nursery.attendance.index') : null" :link-label="$canViewAttendance ? 'الحضور' : null" />
         <x-nursery-stat-card title="بانتظار التسجيل" :value="$stats['waiting_today']" info="nursery.stat_waiting_today" tone="warning" hint="لم يُسجَّل حضورهم" spark="bars"
             :percent="$spark['waiting_today']['percent']" :trend="$spark['waiting_today']['trend']"
             :href="$canViewAttendance ? route('nursery.attendance.index', ['tab' => 'register']) : null" :link-label="$canViewAttendance ? 'تسجيل' : null" />
-        <x-nursery-stat-card title="انصراف اليوم" :value="$stats['left_today']" info="nursery.stat_left_today" tone="info" hint="غادروا الحضانة" spark="line"
+        <x-nursery-stat-card title="الانصراف" :value="$stats['left_today']" info="nursery.stat_left_today" tone="info" hint="غادروا الحضانة" spark="line"
             :percent="$spark['left_today']['percent']" :trend="$spark['left_today']['trend']"
             :href="$canViewAttendance ? route('nursery.attendance.index') : null" :link-label="$canViewAttendance ? 'الحضور' : null" />
     </section>
@@ -217,7 +217,7 @@
                         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
                     </span>
                     <div>
-                        <h2 class="nursery-panel-head__title">انصراف اليوم</h2>
+                        <h2 class="nursery-panel-head__title">الانصراف</h2>
                         <p class="nursery-panel-head__sub">عدد الأطفال: {{ $board['checked_out']->count() }}</p>
                     </div>
                 </div>

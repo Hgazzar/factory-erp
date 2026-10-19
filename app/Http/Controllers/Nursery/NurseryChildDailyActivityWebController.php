@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Nursery;
 
+use App\Http\Controllers\Concerns\PersistsMorphAttachments;
 use App\Http\Controllers\Concerns\ResolvesOperationsTenant;
 use App\Http\Controllers\Controller;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\ChildDailyActivity;
 use App\Models\Nursery\Classroom;
 use App\Services\Nursery\NurseryChildDailyActivityService;
+use App\Support\NurseryChildDailyActivityCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
 final class NurseryChildDailyActivityWebController extends Controller
 {
+    use PersistsMorphAttachments;
     use ResolvesOperationsTenant;
 
     public function store(
@@ -28,8 +31,15 @@ final class NurseryChildDailyActivityWebController extends Controller
 
         $date = (string) $request->input('activity_date', now()->toDateString());
 
+        if ((string) $request->input('type') === NurseryChildDailyActivityCatalog::TYPE_ACTIVITY) {
+            $request->validate([
+                'images' => ['nullable', 'array', 'max:10'],
+                'images.*' => ['image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            ]);
+        }
+
         try {
-            $activities->create(
+            $activity = $activities->create(
                 $tenantUserId,
                 $child,
                 $request->all(),
@@ -38,6 +48,13 @@ final class NurseryChildDailyActivityWebController extends Controller
         } catch (InvalidArgumentException $e) {
             return $this->afterWriteRedirect($request, $tenantUserId, $child, $date, 'error', $e->getMessage())
                 ->withInput();
+        }
+
+        if ((string) $activity->type === NurseryChildDailyActivityCatalog::TYPE_ACTIVITY) {
+            $uploads = $request->file('images', []) ?? [];
+            if ($uploads !== []) {
+                $this->persistMorphAttachments($activity, $uploads, $tenantUserId, 'nursery/child-daily-activities');
+            }
         }
 
         return $this->afterWriteRedirect($request, $tenantUserId, $child, $date, 'success', 'تم تسجيل نشاط اليوم.');

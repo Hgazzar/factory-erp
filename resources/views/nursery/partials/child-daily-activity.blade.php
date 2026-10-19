@@ -97,7 +97,7 @@
                 <button type="submit" class="nursery-btn nursery-btn-primary text-xs py-1.5 w-full">حفظ المزاج</button>
             </form>
 
-            <form method="post" action="{{ route('nursery.children.daily-activities.store', $child) }}" class="rounded-xl border border-teal-100 p-3 space-y-2">
+            <form method="post" action="{{ route('nursery.children.daily-activities.store', $child) }}" enctype="multipart/form-data" class="rounded-xl border border-teal-100 p-3 space-y-2">
                 @csrf
                 <input type="hidden" name="activity_date" value="{{ $activityDate }}">
                 <input type="hidden" name="type" value="activity">
@@ -106,6 +106,17 @@
                        class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm">
                 <input type="text" name="note" maxlength="500" placeholder="ملاحظة اختيارية"
                        class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm">
+                <div>
+                    <label class="block text-xs text-teal-800/80 mb-1">
+                        صور النشاط
+                        <x-info field="nursery.child_daily_play_photos" />
+                    </label>
+                    <input type="file" name="images[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp"
+                           class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm bg-white">
+                    <p class="text-[11px] text-teal-700/70 mt-1">jpg, png, webp, gif — حتى 5 ميجا للصورة.</p>
+                    @error('images')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                    @error('images.*')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                </div>
                 <button type="submit" class="nursery-btn nursery-btn-primary text-xs py-1.5 w-full">حفظ النشاط</button>
             </form>
 
@@ -174,6 +185,20 @@
                     <div class="min-w-0">
                         <p class="font-semibold text-teal-950">{{ $item->typeLabel() }}</p>
                         <p class="text-teal-800/90">{{ $item->summaryLine() }}</p>
+                        @if($item->relationLoaded('attachments') && $item->attachments->isNotEmpty())
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                @foreach($item->attachments as $att)
+                                    @if(filled($att->file_path))
+                                        <a href="{{ asset('storage/'.ltrim($att->file_path, '/')) }}" target="_blank" rel="noopener"
+                                           class="block overflow-hidden rounded-lg border border-teal-100">
+                                            <img src="{{ asset('storage/'.ltrim($att->file_path, '/')) }}"
+                                                 alt="{{ $att->file_name }}"
+                                                 class="h-16 w-16 object-cover">
+                                        </a>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @endif
                         <p class="text-xs text-teal-700/70 mt-0.5">
                             {{ $item->recorded_at?->format('H:i') }}
                             @if($item->recorder?->name) · {{ $item->recorder->name }} @endif

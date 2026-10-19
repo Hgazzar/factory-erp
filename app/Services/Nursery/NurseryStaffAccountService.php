@@ -6,8 +6,13 @@ namespace App\Services\Nursery;
 
 use App\Models\Employee;
 use App\Models\User;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 final class NurseryStaffAccountService
 {
@@ -18,6 +23,12 @@ final class NurseryStaffAccountService
      */
     public function ensureLoginUser(Employee $employee): array
     {
+        if (! Schema::hasColumn('employees', 'linked_user_id')) {
+            throw new RuntimeException(
+                'عمود ربط حساب الدخول غير موجود على قاعدة البيانات. شغّل ترحيلات قاعدة البيانات ثم أعد المحاولة.'
+            );
+        }
+
         if ($employee->linked_user_id) {
             $linked = User::query()->find($employee->linked_user_id);
             if ($linked instanceof User) {
@@ -59,40 +70,71 @@ final class NurseryStaffAccountService
                 ];
             }
 
-            if (in_array($existing->role, ['admin', 'super_admin'], true)) {
+            if (in_array((string) $existing->role, ['admin', 'super_admin'], true)) {
                 throw new InvalidArgumentException('هذا البريد مرتبط بحساب موجود ولا يمكن ربطه بهذا الموظف.');
             }
 
-            if ($existing->role === 'worker') {
-                $existing->forceFill(['role' => 'supervisor'])->save();
-            } elseif ($existing->role !== 'supervisor') {
+            if ((string) $existing->role !== 'supervisor') {
                 $existing->forceFill(['role' => 'supervisor'])->save();
             }
 
             $employee->forceFill(['linked_user_id' => $existing->id])->save();
 
             return [
-                'user' => $existing->fresh(),
+                'user' => $existing->fresh() ?? $existing,
                 'created' => false,
                 'temporary_password' => null,
             ];
         }
 
-        $temporaryPassword = Str::password(12);
+        // أحرف وأرقام فقط — رموز خاصة كانت تسبب مشاكل عرض/جلسة على بعض البيئات.
+        $temporaryPassword = Str::password(12, letters: true, numbers: true, symbols: false);
 
-        $user = User::query()->create([
-            'name' => (string) $employee->name,
-            'email' => $email,
-            'role' => 'supervisor',
-            'password' => $temporaryPassword,
-        ]);
+        try {
+            $user = User::query()->create([
+                'name' => (string) $employee->name,
+                'email' => $email,
+                'role' => 'supervisor',
+                'is_technician' => false,
+                // يُشفَّر عبر cast `hashed` على نموذج User
+                'password' => $temporaryPassword,
+            ]);
+        } catch (UniqueConstraintViolationException $e) {
+            throw new InvalidArgumentException('هذا البريد الإلكتروني مستخدم مسبقاً في النظام.', 0, $e);
+        } catch (QueryException $e) {
+            if ($this->isUniqueViolation($e)) {
+                throw new InvalidArgumentException('هذا البريد الإلكتروني مستخدم مسبقاً في النظام.', 0, $e);
+            }
 
-        $employee->forceFill(['linked_user_id' => $user->id])->save();
+            report($e);
+            throw new RuntimeException('تعذّر إنشاء حساب الدخول لهذا الموظف. تحقق من سجلات الخادم.', 0, $e);
+        }
+
+        try {
+            $employee->forceFill(['linked_user_id' => $user->id])->save();
+        } catch (Throwable $e) {
+            report($e);
+            throw new RuntimeException(
+                'تم إنشاء المستخدم لكن تعذّر ربطه بالموظف. تحقق من عمود linked_user_id وترحيلات قاعدة البيانات.',
+                0,
+                $e
+            );
+        }
 
         return [
             'user' => $user,
             'created' => true,
             'temporary_password' => $temporaryPassword,
         ];
+    }
+
+    private function isUniqueViolation(QueryException $e): bool
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? '');
+        $message = strtolower($e->getMessage());
+
+        return $sqlState === '23505'
+            || str_contains($message, 'unique')
+            || str_contains($message, 'duplicate');
     }
 }

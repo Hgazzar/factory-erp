@@ -81,6 +81,7 @@ final class NurseryStaffAccountTest extends NurseryTestCase
         $result = app(NurseryStaffAccountService::class)->ensureLoginUser($employee);
         $this->assertTrue($result['created']);
         $this->assertNotEmpty($result['temporary_password']);
+        $this->assertDoesNotMatchRegularExpression('/[^A-Za-z0-9]/', (string) $result['temporary_password']);
 
         Auth::logout();
         $this->assertTrue(Auth::attempt([
@@ -98,6 +99,67 @@ final class NurseryStaffAccountTest extends NurseryTestCase
         $this->assertFalse($access->allows(NurseryAccess::CAP_VIEW_CHILDREN, $user));
         $this->assertFalse($access->allows(NurseryAccess::CAP_VIEW_CLASSROOMS, $user));
         $this->assertFalse($access->allows(NurseryAccess::CAP_MANAGE_CHILD_ATTENDANCE, $user));
+    }
+
+    #[Test]
+    public function two_step_create_then_invite_creates_login_without_500(): void
+    {
+        $this->post(route('nursery.staff.store'), [
+            'first_name' => 'ليان',
+            'last_name' => 'عادل',
+            'mobile' => '0503333444',
+            'permissions' => ['attendance.children'],
+        ])->assertRedirect(route('nursery.staff.index'));
+
+        $employee = Employee::query()->where('mobile', '0503333444')->firstOrFail();
+        $this->assertNull($employee->linked_user_id);
+        $this->assertNull($employee->email);
+
+        $this->from(route('nursery.staff.edit', $employee))
+            ->put(route('nursery.staff.update', $employee), [
+                'first_name' => 'ليان',
+                'last_name' => 'عادل',
+                'mobile' => '0503333444',
+                'email' => 'layan-invite@example.com',
+                'permissions' => ['attendance.children'],
+                'submit_action' => 'save_and_invite',
+            ])
+            ->assertRedirect(route('nursery.staff.index'))
+            ->assertSessionHas('success')
+            ->assertSessionMissing('error');
+
+        $employee->refresh();
+        $this->assertNotNull($employee->linked_user_id);
+        $this->assertContains('login.app', $employee->nursery_permissions ?? []);
+
+        $user = User::query()->find($employee->linked_user_id);
+        $this->assertNotNull($user);
+        $this->assertSame('layan-invite@example.com', $user->email);
+        $this->assertSame('supervisor', $user->role);
+    }
+
+    #[Test]
+    public function duplicate_email_on_invite_returns_flash_not_500(): void
+    {
+        User::factory()->create([
+            'email' => 'taken-staff@example.com',
+            'role' => 'admin',
+            'password' => 'password',
+        ]);
+
+        $employee = $this->makeEmployee('other-mail@example.com');
+
+        $this->from(route('nursery.staff.edit', $employee))
+            ->put(route('nursery.staff.update', $employee), [
+                'first_name' => 'موظف',
+                'last_name' => 'اختبار',
+                'mobile' => '0502222333',
+                'email' => 'taken-staff@example.com',
+                'permissions' => ['login.app'],
+                'submit_action' => 'save_and_invite',
+            ])
+            ->assertRedirect(route('nursery.staff.edit', $employee))
+            ->assertSessionHas('error');
     }
 
     private function makeEmployee(string $email, string $code = 'EMP-00010'): Employee

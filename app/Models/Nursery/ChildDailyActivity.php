@@ -8,6 +8,7 @@ use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\Scopes\BelongsToTenantContextScope;
 use App\Models\User;
 use App\Support\NurseryChildDailyActivityCatalog;
+use App\Traits\HasAttachments;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ScopedBy([BelongsToTenantContextScope::class])]
 class ChildDailyActivity extends Model
 {
+    use HasAttachments;
     use ResolvesRouteBindingForTenant;
 
     protected $table = 'nursery_child_daily_activities';

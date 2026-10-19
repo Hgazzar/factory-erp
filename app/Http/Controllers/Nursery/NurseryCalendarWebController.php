@@ -231,6 +231,11 @@ final class NurseryCalendarWebController extends Controller
 
     private function persistCalendarImages(Request $request, CalendarEntry $entry, int $tenantUserId): void
     {
+        // صور أنشطة الطفل تُرفع من «يوم الطفل» وليس من تقويم الأنشطة.
+        if ((string) $entry->entry_type === CalendarEntry::TYPE_ACTIVITY) {
+            return;
+        }
+
         $uploads = $request->file('images', []) ?? [];
         if ($uploads === []) {
             return;

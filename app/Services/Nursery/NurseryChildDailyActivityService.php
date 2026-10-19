@@ -98,7 +98,7 @@ final class NurseryChildDailyActivityService
     {
         return ChildDailyActivity::query()
             ->withoutGlobalScopes()
-            ->with('recorder:id,name')
+            ->with(['recorder:id,name', 'attachments'])
             ->where('user_id', $tenantUserId)
             ->where('child_id', $childId)
             ->whereDate('activity_date', $date)
@@ -110,26 +110,42 @@ final class NurseryChildDailyActivityService
 
     /**
      * @param  Collection<int, ChildDailyActivity>  $activities
-     * @return list<array{type: string, label: string, lines: list<string>}>
+     * @return list<array{type: string, label: string, lines: list<string>, items: list<array{line: string, image_urls: list<string>}>}>
      */
     public function summary(Collection $activities): array
     {
         $grouped = [];
         foreach (NurseryChildDailyActivityCatalog::keys() as $type) {
-            $items = $activities->where('type', $type)->values();
-            if ($items->isEmpty()) {
+            $rows = $activities->where('type', $type)->values();
+            if ($rows->isEmpty()) {
                 continue;
             }
 
             $lines = [];
-            foreach ($items as $item) {
-                $lines[] = $item->summaryLine();
+            $items = [];
+            foreach ($rows as $item) {
+                $line = $item->summaryLine();
+                $lines[] = $line;
+                $imageUrls = [];
+                if ($item->relationLoaded('attachments')) {
+                    foreach ($item->attachments as $att) {
+                        if (! filled($att->file_path)) {
+                            continue;
+                        }
+                        $imageUrls[] = asset('storage/'.ltrim((string) $att->file_path, '/'));
+                    }
+                }
+                $items[] = [
+                    'line' => $line,
+                    'image_urls' => $imageUrls,
+                ];
             }
 
             $grouped[] = [
                 'type' => $type,
                 'label' => NurseryChildDailyActivityCatalog::label($type),
                 'lines' => $lines,
+                'items' => $items,
             ];
         }
 

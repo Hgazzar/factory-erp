@@ -60,7 +60,25 @@ final class NurseryStaffService
     private function withOptionalLoginAccount(Employee $employee): array
     {
         $email = strtolower(trim((string) $employee->email));
+        $permissions = NurseryPermissionCatalog::normalize($employee->nursery_permissions);
+        $wantsLogin = in_array('login.app', $permissions, true)
+            || in_array('login.portal', $permissions, true);
+
+        // لا ننشئ حساب دخول تلقائياً لمجرد وجود بريد — فقط عند صلاحية الدخول أو ربط سابق.
+        if (! $wantsLogin && blank($employee->linked_user_id)) {
+            return [
+                'employee' => $employee,
+                'user' => null,
+                'created' => false,
+                'temporary_password' => null,
+            ];
+        }
+
         if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if ($wantsLogin) {
+                throw new InvalidArgumentException('البريد الإلكتروني مطلوب عند تفعيل صلاحية الدخول.');
+            }
+
             return [
                 'employee' => $employee,
                 'user' => null,

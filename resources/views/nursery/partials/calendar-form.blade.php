@@ -177,50 +177,52 @@
             </div>
         </section>
 
-        <section class="nursery-card p-5 space-y-3">
-            <h2 class="text-lg font-bold text-teal-950">
-                صور النشاط
-                <x-info field="nursery.calendar_media" />
-            </h2>
+        @if($entryType !== 'activity')
+            <section class="nursery-card p-5 space-y-3">
+                <h2 class="text-lg font-bold text-teal-950">
+                    صور
+                    <x-info field="nursery.calendar_media" />
+                </h2>
 
-            @if($entry !== null && $entry->relationLoaded('attachments') && $entry->attachments->isNotEmpty())
-                <x-attachment-handler
-                    theme="tailwind"
-                    hint-field="nursery.calendar_media"
-                    title="الصور الحالية"
-                    :existing="$entry->attachments"
-                    :uploadable="false"
-                    :allow-delete="true"
-                    accept=".jpg,.jpeg,.png,.gif,.webp"
-                    help-text="يمكنك حذف صورة قديمة. لإضافة صور جديدة استخدم حقل الرفع أدناه."
-                />
-            @endif
+                @if($entry !== null && $entry->relationLoaded('attachments') && $entry->attachments->isNotEmpty())
+                    <x-attachment-handler
+                        theme="tailwind"
+                        hint-field="nursery.calendar_media"
+                        title="الصور الحالية"
+                        :existing="$entry->attachments"
+                        :uploadable="false"
+                        :allow-delete="true"
+                        accept=".jpg,.jpeg,.png,.gif,.webp"
+                        help-text="يمكنك حذف صورة قديمة. لإضافة صور جديدة استخدم حقل الرفع أدناه."
+                    />
+                @endif
 
-            @if($entry !== null && is_array($entry->media_links) && $entry->media_links !== [])
-                <div class="rounded-lg border border-amber-100 bg-amber-50/50 p-3 space-y-1">
-                    <p class="text-xs font-semibold text-amber-900">روابط قديمة (للمرجع فقط — استخدم رفع الصور أعلاه)</p>
-                    @foreach($entry->media_links as $link)
-                        @if(! empty($link['url']))
-                            <a href="{{ $link['url'] }}" target="_blank" rel="noopener" class="block text-sm text-teal-700 underline truncate" dir="ltr">
-                                {{ $link['label'] ?? $link['url'] }}
-                            </a>
-                        @endif
-                    @endforeach
+                @if($entry !== null && is_array($entry->media_links) && $entry->media_links !== [])
+                    <div class="rounded-lg border border-amber-100 bg-amber-50/50 p-3 space-y-1">
+                        <p class="text-xs font-semibold text-amber-900">روابط قديمة (للمرجع فقط — استخدم رفع الصور أعلاه)</p>
+                        @foreach($entry->media_links as $link)
+                            @if(! empty($link['url']))
+                                <a href="{{ $link['url'] }}" target="_blank" rel="noopener" class="block text-sm text-teal-700 underline truncate" dir="ltr">
+                                    {{ $link['label'] ?? $link['url'] }}
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
+
+                <div>
+                    <label class="block text-sm font-semibold text-teal-950 mb-1">
+                        رفع صور
+                        <x-info field="nursery.calendar_media_upload" />
+                    </label>
+                    <input type="file" name="images[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp"
+                           class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm bg-white">
+                    @error('images')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                    @error('images.*')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                    <p class="text-xs text-teal-700/70 mt-1">يمكن اختيار أكثر من صورة (jpg, png, webp, gif — حتى 5 ميجا للصورة).</p>
                 </div>
-            @endif
-
-            <div>
-                <label class="block text-sm font-semibold text-teal-950 mb-1">
-                    رفع صور
-                    <x-info field="nursery.calendar_media_upload" />
-                </label>
-                <input type="file" name="images[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp"
-                       class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm bg-white">
-                @error('images')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
-                @error('images.*')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
-                <p class="text-xs text-teal-700/70 mt-1">يمكن اختيار أكثر من صورة (jpg, png, webp, gif — حتى 5 ميجا للصورة).</p>
-            </div>
-        </section>
+            </section>
+        @endif
 
     </form>
 

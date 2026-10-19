@@ -45,10 +45,27 @@
         @forelse($dailySummary ?? [] as $group)
             <div class="text-sm">
                 <p class="font-semibold text-teal-950">{{ $group['label'] }}</p>
-                <ul class="mt-1 space-y-1 text-teal-800/90">
-                    @foreach($group['lines'] as $line)
-                        <li>{{ $line }}</li>
+                <ul class="mt-1 space-y-2 text-teal-800/90">
+                    @foreach(($group['items'] ?? []) as $row)
+                        <li>
+                            <span>{{ $row['line'] }}</span>
+                            @if(! empty($row['image_urls']))
+                                <div class="mt-1.5 flex flex-wrap gap-2">
+                                    @foreach($row['image_urls'] as $url)
+                                        <a href="{{ $url }}" target="_blank" rel="noopener"
+                                           class="block overflow-hidden rounded-lg border border-teal-100">
+                                            <img src="{{ $url }}" alt="" class="h-16 w-16 object-cover">
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </li>
                     @endforeach
+                    @if(empty($group['items']))
+                        @foreach($group['lines'] as $line)
+                            <li>{{ $line }}</li>
+                        @endforeach
+                    @endif
                 </ul>
             </div>
         @empty

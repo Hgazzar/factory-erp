@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Nursery;
 
+use App\Models\Attachment;
 use App\Models\Employee;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\ChildDailyActivity;
 use App\Models\Nursery\Guardian;
 use App\Models\User;
 use App\Support\NurseryChildDailyActivityCatalog;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\NurseryTestCase;
 
@@ -231,6 +234,51 @@ final class NurseryChildDailyActivityTest extends NurseryTestCase
             ->assertSee('شراب حرارة')
             ->assertSee('أُعطيت')
             ->assertSee('10:30');
+    }
+
+    #[Test]
+    public function activity_form_accepts_photo_uploads_on_child_day_screen(): void
+    {
+        Storage::fake('public');
+
+        $child = $this->makeChild('طفل صور');
+
+        $this->get(route('nursery.children.show', $child))
+            ->assertOk()
+            ->assertSee('يوم الطفل')
+            ->assertSee('صور النشاط')
+            ->assertSee('name="images[]"', false);
+
+        $this->post(route('nursery.children.daily-activities.store', $child), [
+            'activity_date' => now()->toDateString(),
+            'type' => NurseryChildDailyActivityCatalog::TYPE_ACTIVITY,
+            'title' => 'رسم حر',
+            'note' => 'مع ألوان',
+            'images' => [
+                UploadedFile::fake()->image('paint.jpg', 200, 200),
+                UploadedFile::fake()->image('group.png', 180, 180),
+            ],
+        ])->assertRedirect();
+
+        $activity = ChildDailyActivity::query()
+            ->where('child_id', $child->id)
+            ->where('type', NurseryChildDailyActivityCatalog::TYPE_ACTIVITY)
+            ->first();
+
+        $this->assertNotNull($activity);
+        $this->assertCount(2, $activity->attachments);
+        $this->assertTrue(
+            Attachment::query()
+                ->where('attachable_type', ChildDailyActivity::class)
+                ->where('attachable_id', $activity->id)
+                ->exists()
+        );
+
+        $path = (string) $activity->attachments->first()->file_path;
+        $this->get(route('nursery.children.show', $child))
+            ->assertOk()
+            ->assertSee('رسم حر')
+            ->assertSee('storage/'.$path, false);
     }
 
     /**

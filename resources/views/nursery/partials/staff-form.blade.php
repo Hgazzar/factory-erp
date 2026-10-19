@@ -133,7 +133,7 @@
 
     <div class="flex flex-wrap gap-2">
         <button type="submit" name="submit_action" value="save" class="nursery-btn nursery-btn-primary">{{ $submitLabel }}</button>
-        @if($employee === null)
+        @if($employee === null || blank($employee->linked_user_id))
             <button type="submit" name="submit_action" value="save_and_invite" class="nursery-btn nursery-btn-soft">حفظ وإنشاء حساب دخول</button>
         @endif
         <a href="{{ route('nursery.staff.index') }}" class="nursery-btn nursery-btn-soft">إلغاء</a>

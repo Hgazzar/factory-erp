@@ -15,11 +15,15 @@ use App\Support\NurseryAccess;
 use App\Support\NurseryPermissionCatalog;
 use App\Support\NurseryStaffPermissionGate;
 use App\Support\SaudiRegions;
+use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 final class NurseryStaffWebController extends Controller
 {
@@ -82,12 +86,24 @@ final class NurseryStaffWebController extends Controller
         $permissions = $gate->filterGrantable(null, $request->input('permissions', []));
 
         try {
+            $permissions = $this->permissionsForLoginInvite($request, $permissions, $gate);
             $result = $staff->create($tenantUserId, $data, $permissions);
-        } catch (InvalidArgumentException $e) {
+            $this->persistUploads($request, $result['employee'], $tenantUserId);
+        } catch (InvalidArgumentException|RuntimeException $e) {
             return back()->withInput()->with('error', $e->getMessage());
-        }
+        } catch (UniqueConstraintViolationException $e) {
+            report($e);
 
-        $this->persistUploads($request, $result['employee'], $tenantUserId);
+            return back()->withInput()->with('error', 'تعذّر الحفظ بسبب تكرار بيانات (بريد أو كود). استخدم بريداً مختلفاً.');
+        } catch (QueryException $e) {
+            report($e);
+
+            return back()->withInput()->with('error', 'تعذّر حفظ الموظف أو إنشاء حساب الدخول. راجع سجلات الخادم أو ترحيلات قاعدة البيانات.');
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->withInput()->with('error', 'حدث خطأ غير متوقع أثناء حفظ الموظف.');
+        }
 
         $success = 'تم إضافة الموظف.';
         if (filled($result['temporary_password'] ?? null)) {
@@ -123,12 +139,24 @@ final class NurseryStaffWebController extends Controller
         $permissions = $this->permissionsForUpdate($gate, $employee, $request->input('permissions', []));
 
         try {
+            $permissions = $this->permissionsForLoginInvite($request, $permissions, $gate);
             $result = $staff->update($employee, $tenantUserId, $data, $permissions);
-        } catch (InvalidArgumentException $e) {
+            $this->persistUploads($request, $result['employee'], $tenantUserId);
+        } catch (InvalidArgumentException|RuntimeException $e) {
             return back()->withInput()->with('error', $e->getMessage());
-        }
+        } catch (UniqueConstraintViolationException $e) {
+            report($e);
 
-        $this->persistUploads($request, $result['employee'], $tenantUserId);
+            return back()->withInput()->with('error', 'تعذّر الحفظ بسبب تكرار بيانات (بريد أو كود). استخدم بريداً مختلفاً.');
+        } catch (QueryException $e) {
+            report($e);
+
+            return back()->withInput()->with('error', 'تعذّر حفظ الموظف أو إنشاء حساب الدخول. راجع سجلات الخادم أو ترحيلات قاعدة البيانات.');
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->withInput()->with('error', 'حدث خطأ غير متوقع أثناء حفظ الموظف.');
+        }
 
         if ($result['created'] && filled($result['temporary_password'] ?? null)) {
             return redirect()
@@ -251,6 +279,29 @@ final class NurseryStaffWebController extends Controller
         ));
 
         return array_values(array_unique(array_merge($preserved, $posted)));
+    }
+
+    /**
+     * زر «حفظ وإنشاء حساب دخول» يفعّل صلاحية الدخول ويتطلب بريداً.
+     *
+     * @param  list<string>  $permissions
+     * @return list<string>
+     */
+    private function permissionsForLoginInvite(Request $request, array $permissions, NurseryStaffPermissionGate $gate): array
+    {
+        if ((string) $request->input('submit_action') !== 'save_and_invite') {
+            return $permissions;
+        }
+
+        if (! $gate->canGrant(null, 'login.app')) {
+            throw new InvalidArgumentException('لا تملك صلاحية منح دخول النظام لهذا الموظف.');
+        }
+
+        if (! in_array('login.app', $permissions, true)) {
+            $permissions[] = 'login.app';
+        }
+
+        return array_values(array_unique($permissions));
     }
 
     private function persistUploads(Request $request, Employee $employee, int $tenantUserId): void

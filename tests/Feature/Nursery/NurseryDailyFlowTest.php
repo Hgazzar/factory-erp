@@ -20,7 +20,7 @@ final class NurseryDailyFlowTest extends NurseryTestCase
             ->assertSee('لوحة التحكم')
             ->assertSee('الأطفال النشطون')
             ->assertSee('طاقم العمل')
-            ->assertSee('حضور اليوم');
+            ->assertSee('الحضور');
 
         $guardian = Guardian::query()->create([
             'user_id' => (int) $this->tenant->id,

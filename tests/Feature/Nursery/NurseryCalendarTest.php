@@ -65,15 +65,16 @@ final class NurseryCalendarTest extends NurseryTestCase
     }
 
     #[Test]
-    public function activity_can_upload_images_instead_of_media_links(): void
+    public function activity_form_does_not_offer_image_upload(): void
     {
         Storage::fake('public');
 
         $this->get(route('nursery.calendar.create', ['type' => 'activity']))
             ->assertOk()
-            ->assertSee('رفع صور')
-            ->assertDontSee('name="media_links', false)
-            ->assertSee('name="images[]"', false);
+            ->assertSee('بيانات النشاط')
+            ->assertDontSee('رفع صور')
+            ->assertDontSee('name="images[]"', false)
+            ->assertDontSee('name="media_links', false);
 
         $this->post(route('nursery.calendar.store'), [
             'entry_type' => 'activity',
@@ -94,8 +95,8 @@ final class NurseryCalendarTest extends NurseryTestCase
 
         $this->assertNotNull($entry);
         $this->assertSame(CalendarEntry::TYPE_ACTIVITY, $entry->entry_type);
-        $this->assertCount(2, $entry->attachments);
-        $this->assertTrue(
+        $this->assertCount(0, $entry->attachments);
+        $this->assertFalse(
             Attachment::query()
                 ->where('attachable_type', CalendarEntry::class)
                 ->where('attachable_id', $entry->id)
@@ -104,7 +105,8 @@ final class NurseryCalendarTest extends NurseryTestCase
 
         $edit = $this->get(route('nursery.calendar.edit', $entry))
             ->assertOk()
-            ->assertSee('الصور الحالية');
+            ->assertDontSee('رفع صور')
+            ->assertDontSee('الصور الحالية');
 
         // Delete must live in its own form — nested _method=DELETE inside the save form
         // used to make "حفظ" submit as DELETE and flash «تم حذف الإدخال».
