@@ -36,6 +36,7 @@ final class NurserySubscriptionTest extends NurseryTestCase
             ->assertSee('إجمالي الاشتراكات')
             ->assertSee('المنتهية')
             ->assertSee('التذكيرات')
+            ->assertSee('المبلغ بعد الخصم')
             ->assertSeeInOrder(['الكل', 'ساعة', 'يومي', 'أسبوعي', 'شهري', 'فصلي']);
 
         $plan = SubscriptionPlan::query()

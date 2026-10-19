@@ -55,10 +55,20 @@
 
     <div x-data="{ showDiscount: {{ old('discount_amount') ? 'true' : 'false' }} }">
         <button type="button" @click="showDiscount = !showDiscount" class="text-sm font-semibold text-teal-600 hover:underline">+ إضافة خصم</button>
-        <div x-show="showDiscount" x-cloak class="mt-2">
-            <label class="block text-sm font-semibold text-teal-950 mb-1">قيمة الخصم <x-info field="nursery.sub_discount" /></label>
-            <input type="number" name="discount_amount" step="0.01" min="0" value="{{ old('discount_amount', 0) }}"
-                   class="w-full rounded-lg border border-teal-200 px-3 py-2" dir="ltr">
+        <div x-show="showDiscount" x-cloak class="mt-2 space-y-2">
+            <div>
+                <label class="block text-sm font-semibold text-teal-950 mb-1">قيمة الخصم <x-info field="nursery.sub_discount" /></label>
+                <input type="number" name="discount_amount" id="subscription_discount_amount" step="0.01" min="0"
+                       value="{{ old('discount_amount', 0) }}"
+                       class="w-full rounded-lg border border-teal-200 px-3 py-2" dir="ltr">
+            </div>
+            <div class="rounded-lg border border-teal-100 bg-teal-50/60 px-3 py-2">
+                <p class="text-xs font-semibold text-teal-800 mb-0.5">
+                    المبلغ بعد الخصم
+                    <x-info field="nursery.sub_amount" />
+                </p>
+                <p id="subscription_final_amount" class="text-base font-bold tabular-nums text-teal-950" dir="ltr">—</p>
+            </div>
         </div>
     </div>
 
@@ -107,6 +117,8 @@
 (function () {
     var plans = @json($plansJson);
     var amountInput = document.getElementById('subscription_amount_after_tax');
+    var discountInput = document.getElementById('subscription_discount_amount');
+    var finalAmountEl = document.getElementById('subscription_final_amount');
     var startsInput = document.getElementById('subscription_starts_on');
     var endsInput = document.getElementById('subscription_ends_on');
     var hoursWrap = document.getElementById('subscription_hours_wrap');
@@ -114,6 +126,17 @@
     var hoursChips = document.getElementById('subscription_hours_chips');
     var endsTouched = {{ old('ends_on') ? 'true' : 'false' }};
     var oldHours = @json(old('hours'));
+
+    function syncFinalAmount() {
+        if (!finalAmountEl) return;
+        var amount = parseFloat(amountInput && amountInput.value !== '' ? amountInput.value : '0') || 0;
+        var discount = parseFloat(discountInput && discountInput.value !== '' ? discountInput.value : '0') || 0;
+        var final = Math.max(0, Math.round((amount - discount) * 100) / 100);
+        finalAmountEl.textContent = final.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
 
     function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -229,6 +252,7 @@
         if (!amountInput || !plan) return;
         var fromHours = selectedHoursAmount(plan);
         amountInput.value = fromHours != null ? fromHours : String(plan.amount);
+        syncFinalAmount();
     }
 
     function applyEndsOn(force, planOverride) {
@@ -280,9 +304,20 @@
         });
     }
 
+    if (amountInput) {
+        amountInput.addEventListener('input', syncFinalAmount);
+        amountInput.addEventListener('change', syncFinalAmount);
+    }
+    if (discountInput) {
+        discountInput.addEventListener('input', syncFinalAmount);
+        discountInput.addEventListener('change', syncFinalAmount);
+    }
+
     var hidden = document.querySelector('#nurserySubscriptionForm input[name="plan_id"]');
     if (hidden && hidden.value) {
         applyPlan(hidden.value, !endsTouched, oldHours);
+    } else {
+        syncFinalAmount();
     }
 })();
 </script>
