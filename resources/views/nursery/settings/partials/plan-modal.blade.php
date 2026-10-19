@@ -5,11 +5,11 @@
         @foreach($plans as $plan)
             @php
                 $planHourRates = $plan->relationLoaded('hourRates')
-                    ? $plan->hourRates->map(fn ($r) => ['hours' => (int) $r->hours, 'amount' => (float) $r->amount])->values()->all()
+                    ? $plan->hourRates->map(fn ($r) => [
+                        'hours' => (int) $r->hours,
+                        'amount' => (float) $r->amount,
+                    ])->values()->all()
                     : [];
-                if ($planHourRates === []) {
-                    $planHourRates = [['hours' => '', 'amount' => '']];
-                }
             @endphp
             <template x-if="editPlan === {{ $plan->id }}">
                 <form method="POST" action="{{ route('nursery.settings.plans.update', $plan) }}" class="space-y-4"
@@ -34,7 +34,7 @@
                   x-data="planCalc({
                       amount: {{ (float) old('amount', 0) }},
                       tax: {{ (float) old('tax_rate', 15) }},
-                      hourRates: @js(old('hour_rates', [['hours' => '', 'amount' => '']]))
+                      hourRates: @js(old('hour_rates', []))
                   })">
                 @csrf
                 @include('nursery.settings.partials.plan-fields', [
@@ -50,11 +50,20 @@
 @push('scripts')
 <script>
 function planCalc(initial) {
+    var uid = 1;
+    function makeRow(hours, amount) {
+        return {
+            uid: uid++,
+            hours: (hours === 0 || hours) ? hours : '',
+            amount: (amount === 0 || amount) ? amount : '',
+        };
+    }
+
     var rows = Array.isArray(initial.hourRates) && initial.hourRates.length
         ? initial.hourRates.map(function (r) {
-            return { hours: r.hours ?? '', amount: r.amount ?? '' };
+            return makeRow(r.hours ?? '', r.amount ?? '');
         })
-        : [{ hours: '', amount: '' }];
+        : [makeRow('', '')];
 
     return {
         amount: Number(initial.amount) || 0,
@@ -65,17 +74,19 @@ function planCalc(initial) {
             const rate = Number(this.tax) || 0;
             return (base * (1 + rate / 100)).toFixed(2);
         },
-        rowAfterTax(row) {
-            const raw = row && row.amount;
-            if (raw === '' || raw === null || typeof raw === 'undefined') {
+        formatRowAfterTax(amount) {
+            if (amount === '' || amount === null || typeof amount === 'undefined') {
                 return '—';
             }
-            const base = Number(raw);
+            const base = Number(amount);
             if (!Number.isFinite(base)) {
                 return '—';
             }
             const rate = Number(this.tax) || 0;
             return (base * (1 + rate / 100)).toFixed(2);
+        },
+        addHourRow() {
+            this.hourRates.push(makeRow('', ''));
         },
         removeHourRow(index) {
             if (this.hourRates.length > 1) {

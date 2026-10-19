@@ -46,50 +46,48 @@
 <div class="rounded-xl border border-teal-200 bg-white p-4 space-y-3">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-teal-950">جدول أسعار الساعات <x-info field="nursery.settings_plan_hour_rates" /></p>
+            <p class="text-sm font-bold text-teal-950">باقات الساعات (للحضانة) <x-info field="nursery.settings_plan_hour_rates" /></p>
             <p class="text-xs text-teal-700/80 mt-1 leading-relaxed">
-                للفائدة: باقة يوم بساعات محددة بسعر ثابت (مثل 4 ساعات = 1000، 8 ساعات = 1400) — وليس ضرب ساعة×عدد فقط.
-                عند إضافة اشتراك يختار الموظف عدد الساعات فتُحسب القيمة بعد الضريبة تلقائياً.
+                من هنا تضيف باقات الحضانة: كل صف = باقة (مثال: 4 ساعات بسعر 1000، ثم صف جديد 5 ساعات بسعر 1100).
+                الأفضل على خطة «أسبوعي» أو «شهري». الصف الجديد يكون فارغاً — غيّر الساعات والسعر يدوياً.
             </p>
         </div>
         <button type="button" class="nursery-btn nursery-btn-soft text-xs py-1.5 shrink-0"
-                @click="hourRates.push({ hours: '', amount: '' })">+ إضافة صف</button>
+                @click="addHourRow()">+ باقة جديدة</button>
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-teal-100">
         <table class="w-full min-w-[420px] text-sm">
             <thead>
                 <tr class="bg-teal-50/80 text-teal-900">
-                    <th class="px-3 py-2 text-right font-semibold w-[28%]">الساعات</th>
-                    <th class="px-3 py-2 text-right font-semibold w-[32%]">السعر قبل الضريبة</th>
+                    <th class="px-3 py-2 text-right font-semibold w-[28%]">ساعات الباقة</th>
+                    <th class="px-3 py-2 text-right font-semibold w-[32%]">سعر الباقة قبل الضريبة</th>
                     <th class="px-3 py-2 text-right font-semibold w-[28%]">بعد الضريبة</th>
                     <th class="px-3 py-2 text-center font-semibold w-[12%]"></th>
                 </tr>
             </thead>
             <tbody>
-                <template x-for="(row, index) in hourRates" :key="index">
+                <template x-for="(row, index) in hourRates" :key="row.uid">
                     <tr class="border-t border-teal-100">
                         <td class="px-3 py-2">
-                            <input type="number" min="1" max="24" step="1" x-model.number="row.hours"
+                            <input type="number" min="1" max="24" step="1" x-model="row.hours"
                                    :name="'hour_rates[' + index + '][hours]'"
                                    class="w-full rounded-lg border border-teal-200 px-2.5 py-1.5 tabular-nums" dir="ltr"
-                                   placeholder="4">
+                                   placeholder="مثال: 4">
                         </td>
                         <td class="px-3 py-2">
-                            <input type="number" min="0" step="0.01" x-model.number="row.amount"
+                            <input type="number" min="0" step="0.01" x-model="row.amount"
                                    :name="'hour_rates[' + index + '][amount]'"
                                    class="w-full rounded-lg border border-teal-200 px-2.5 py-1.5 tabular-nums" dir="ltr"
-                                   placeholder="1000">
+                                   placeholder="مثال: 1000">
                         </td>
                         <td class="px-3 py-2">
                             <span class="inline-block w-full rounded-lg border border-teal-100 bg-teal-50/60 px-2.5 py-1.5 tabular-nums font-semibold text-teal-800"
-                                  x-text="rowAfterTax(row)" dir="ltr"></span>
+                                  x-text="formatRowAfterTax(row.amount)" dir="ltr"></span>
                         </td>
                         <td class="px-2 py-2 text-center">
                             <button type="button" class="text-xs font-semibold text-red-600 hover:underline px-1"
-                                    @click="removeHourRow(index)"
-                                    :disabled="hourRates.length <= 1 && !row.hours && !row.amount"
-                                    :class="(hourRates.length <= 1 && !row.hours && !row.amount) ? 'opacity-40 cursor-not-allowed' : ''">
+                                    @click="removeHourRow(index)">
                                 حذف
                             </button>
                         </td>
@@ -98,7 +96,7 @@
             </tbody>
         </table>
     </div>
-    <p class="text-[11px] text-teal-700/70">اترك الجدول فارغاً إن كانت الخطة بسعر واحد فقط (القيمة الافتراضية أعلاه).</p>
+    <p class="text-[11px] text-teal-700/70">مثال تظافر على خطة شهري: صف 4→1000، صف 5→1100، صف 6→1200… ثم احفظ.</p>
 </div>
 
 <div class="flex flex-wrap gap-2 pt-2">
