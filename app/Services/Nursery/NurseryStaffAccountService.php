@@ -128,6 +128,35 @@ final class NurseryStaffAccountService
         ];
     }
 
+    /**
+     * إعادة توليد كلمة مرور مؤقتة لحساب موظف مرتبط مسبقاً.
+     *
+     * @return array{user: User, temporary_password: string}
+     */
+    public function resetLoginPassword(Employee $employee): array
+    {
+        if (! $employee->linked_user_id) {
+            throw new InvalidArgumentException('لا يوجد حساب دخول مرتبط بهذا الموظف. أنشئ الحساب أولاً.');
+        }
+
+        $user = User::query()->find($employee->linked_user_id);
+        if (! $user instanceof User) {
+            throw new InvalidArgumentException('حساب الدخول المرتبط غير موجود. أعد إنشاء الحساب من زر حفظ وإنشاء حساب دخول.');
+        }
+
+        if (in_array((string) $user->role, ['admin', 'super_admin'], true)) {
+            throw new InvalidArgumentException('لا يمكن إعادة تعيين كلمة مرور حساب إداري من هنا.');
+        }
+
+        $temporaryPassword = Str::password(12, letters: true, numbers: true, symbols: false);
+        $user->forceFill(['password' => $temporaryPassword])->save();
+
+        return [
+            'user' => $user->fresh() ?? $user,
+            'temporary_password' => $temporaryPassword,
+        ];
+    }
+
     private function isUniqueViolation(QueryException $e): bool
     {
         $sqlState = (string) ($e->errorInfo[0] ?? '');

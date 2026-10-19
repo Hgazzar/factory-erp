@@ -515,6 +515,8 @@ Route::prefix('nursery')->name('nursery.')->middleware(['auth', 'worker.scope', 
         Route::post('staff', [NurseryStaffWebController::class, 'store'])->name('staff.store');
         Route::get('staff/{employee}/edit', [NurseryStaffWebController::class, 'edit'])->name('staff.edit');
         Route::put('staff/{employee}', [NurseryStaffWebController::class, 'update'])->name('staff.update');
+        Route::post('staff/{employee}/reset-login-password', [NurseryStaffWebController::class, 'resetLoginPassword'])
+            ->name('staff.reset-login-password');
     });
 
     Route::middleware('nursery.capability:view_units')->group(function () {

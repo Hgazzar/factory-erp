@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\Nursery\NurseryShift;
 use App\Services\Nursery\NurseryDashboardService;
+use App\Services\Nursery\NurseryStaffAccountService;
 use App\Services\Nursery\NurseryStaffService;
 use App\Support\NurseryAccess;
 use App\Support\NurseryPermissionCatalog;
@@ -105,16 +106,13 @@ final class NurseryStaffWebController extends Controller
             return back()->withInput()->with('error', 'حدث خطأ غير متوقع أثناء حفظ الموظف.');
         }
 
-        $success = 'تم إضافة الموظف.';
-        if (filled($result['temporary_password'] ?? null)) {
-            $success = 'تم إضافة الموظف وإنشاء حساب الدخول. البريد: '
-                .($result['user']->email ?? $result['employee']->email)
-                .' — كلمة المرور المؤقتة: '.$result['temporary_password'];
-        }
-
-        return redirect()
+        $redirect = redirect()
             ->route('nursery.staff.index')
-            ->with('success', $success);
+            ->with('success', filled($result['temporary_password'] ?? null)
+                ? 'تم إضافة الموظف وإنشاء حساب الدخول. انسخ البيانات من البطاقة الصفراء أدناه قبل إغلاق الصفحة.'
+                : 'تم إضافة الموظف.');
+
+        return $this->withStaffLoginCredentialsFlash($redirect, $result);
     }
 
     public function edit(Employee $employee, NurseryStaffPermissionGate $gate): View
@@ -159,19 +157,42 @@ final class NurseryStaffWebController extends Controller
         }
 
         if ($result['created'] && filled($result['temporary_password'] ?? null)) {
-            return redirect()
+            $redirect = redirect()
                 ->route('nursery.staff.index')
-                ->with(
-                    'success',
-                    'تم تحديث الموظف وإنشاء حساب الدخول. البريد: '
-                    .($result['user']->email ?? $result['employee']->email)
-                    .' — كلمة المرور المؤقتة: '.$result['temporary_password']
-                );
+                ->with('success', 'تم تحديث الموظف وإنشاء حساب الدخول. انسخ البيانات من البطاقة الصفراء أدناه قبل إغلاق الصفحة.');
+
+            return $this->withStaffLoginCredentialsFlash($redirect, $result);
         }
 
         return redirect()
             ->route('nursery.staff.index')
             ->with('success', 'تم تحديث بيانات الموظف.');
+    }
+
+    public function resetLoginPassword(
+        Employee $employee,
+        NurseryStaffAccountService $accounts,
+    ): RedirectResponse {
+        $tenantUserId = $this->resolveOperationsTenantUserId();
+        abort_unless((int) $employee->user_id === $tenantUserId, 404);
+
+        try {
+            $result = $accounts->resetLoginPassword($employee);
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            return redirect()
+                ->route('nursery.staff.edit', $employee)
+                ->with('error', $e->getMessage());
+        }
+
+        $redirect = redirect()
+            ->route('nursery.staff.edit', $employee)
+            ->with('success', 'تم إنشاء كلمة مرور مؤقتة جديدة. انسخها من البطاقة الصفراء أدناه — لن تظهر مرة أخرى إلا بإعادة التعيين.');
+
+        return $this->withStaffLoginCredentialsFlash($redirect, [
+            'employee' => $employee->fresh() ?? $employee,
+            'user' => $result['user'],
+            'temporary_password' => $result['temporary_password'],
+        ]);
     }
 
     public function citySelectPartial(Request $request): View
@@ -317,5 +338,25 @@ final class NurseryStaffWebController extends Controller
             'nursery/staff',
             $request->boolean('remove_avatar')
         );
+    }
+
+    /**
+     * @param  array{employee?: Employee|null, user?: \App\Models\User|null, temporary_password?: ?string}  $result
+     */
+    private function withStaffLoginCredentialsFlash(RedirectResponse $redirect, array $result): RedirectResponse
+    {
+        $password = $result['temporary_password'] ?? null;
+        if (! filled($password)) {
+            return $redirect;
+        }
+
+        $email = (string) (($result['user']->email ?? null) ?: ($result['employee']->email ?? ''));
+
+        return $redirect->with('staff_login_credentials', [
+            'email' => $email,
+            'password' => (string) $password,
+            'employee_name' => (string) ($result['employee']->name ?? ''),
+            'login_url' => route('nursery.login'),
+        ]);
     }
 }

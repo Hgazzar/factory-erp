@@ -5,6 +5,8 @@
 
 @section('content')
 <div class="w-full space-y-6" dir="rtl">
+    @include('nursery.partials.staff-login-credentials')
+
     <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-extrabold text-teal-950">طاقم العمل</h1>

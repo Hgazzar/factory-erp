@@ -162,6 +162,53 @@ final class NurseryStaffAccountTest extends NurseryTestCase
             ->assertSessionHas('error');
     }
 
+    #[Test]
+    public function invite_flashes_persistent_credentials_card_not_only_auto_dismiss_success(): void
+    {
+        $this->post(route('nursery.staff.store'), [
+            'first_name' => 'ريم',
+            'last_name' => 'ناصر',
+            'email' => 'reem-creds@example.com',
+            'mobile' => '0505555666',
+            'permissions' => ['login.app'],
+            'submit_action' => 'save_and_invite',
+        ])
+            ->assertRedirect(route('nursery.staff.index'))
+            ->assertSessionHas('staff_login_credentials.email', 'reem-creds@example.com')
+            ->assertSessionHas('staff_login_credentials.password');
+
+        $password = (string) session('staff_login_credentials.password');
+        $this->assertNotSame('', $password);
+
+        $this->get(route('nursery.staff.index'))
+            ->assertOk()
+            ->assertSee('بيانات دخول مؤقتة')
+            ->assertSee('reem-creds@example.com')
+            ->assertSee($password)
+            ->assertSee('نسخ البريد وكلمة المرور');
+    }
+
+    #[Test]
+    public function admin_can_reset_staff_login_password_and_see_new_credentials(): void
+    {
+        $employee = $this->makeEmployee('reset-me@example.com');
+        $created = app(NurseryStaffAccountService::class)->ensureLoginUser($employee);
+        $oldPassword = (string) $created['temporary_password'];
+
+        $this->post(route('nursery.staff.reset-login-password', $employee))
+            ->assertRedirect(route('nursery.staff.edit', $employee))
+            ->assertSessionHas('staff_login_credentials.email', 'reset-me@example.com')
+            ->assertSessionHas('staff_login_credentials.password');
+
+        $newPassword = (string) session('staff_login_credentials.password');
+        $this->assertNotSame('', $newPassword);
+        $this->assertNotSame($oldPassword, $newPassword);
+
+        Auth::logout();
+        $this->assertFalse(Auth::attempt(['email' => 'reset-me@example.com', 'password' => $oldPassword]));
+        $this->assertTrue(Auth::attempt(['email' => 'reset-me@example.com', 'password' => $newPassword]));
+    }
+
     private function makeEmployee(string $email, string $code = 'EMP-00010'): Employee
     {
         return Employee::query()->create([
