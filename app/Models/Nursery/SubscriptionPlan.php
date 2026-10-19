@@ -86,4 +86,37 @@ class SubscriptionPlan extends Model
 
         return $this->hourRates()->exists();
     }
+
+    /**
+     * ملخص للعرض في قائمة الخطط عندما تعتمد الأسعار على باقات الساعات.
+     *
+     * @return array{count: int, min_before: float, max_before: float, min_after: float, max_after: float}|null
+     */
+    public function hourRatesSummary(): ?array
+    {
+        $rates = $this->relationLoaded('hourRates')
+            ? $this->hourRates
+            : $this->hourRates()->orderBy('hours')->get();
+
+        if ($rates->isEmpty()) {
+            return null;
+        }
+
+        $amounts = $rates->map(fn (SubscriptionPlanHourRate $r) => (float) $r->amount)->filter(fn ($a) => $a >= 0);
+        if ($amounts->isEmpty()) {
+            return null;
+        }
+
+        $minBefore = (float) $amounts->min();
+        $maxBefore = (float) $amounts->max();
+        $tax = (float) $this->tax_rate;
+
+        return [
+            'count' => $rates->count(),
+            'min_before' => $minBefore,
+            'max_before' => $maxBefore,
+            'min_after' => round($minBefore * (1 + ($tax / 100)), 2),
+            'max_after' => round($maxBefore * (1 + ($tax / 100)), 2),
+        ];
+    }
 }

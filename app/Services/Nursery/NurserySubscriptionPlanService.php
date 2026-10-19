@@ -130,6 +130,8 @@ final class NurserySubscriptionPlanService
             throw ValidationException::withMessages(['name' => 'يوجد خطة بنفس الاسم.']);
         }
 
+        $payload = $this->applyDefaultAmountFromHourRates($payload, $hourRates);
+
         return DB::transaction(function () use ($tenantUserId, $payload, $hourRates): SubscriptionPlan {
             $plan = SubscriptionPlan::query()->create([
                 'user_id' => $tenantUserId,
@@ -162,6 +164,8 @@ final class NurserySubscriptionPlanService
         if ($duplicate) {
             throw ValidationException::withMessages(['name' => 'يوجد خطة بنفس الاسم.']);
         }
+
+        $payload = $this->applyDefaultAmountFromHourRates($payload, $hourRates);
 
         return DB::transaction(function () use ($plan, $tenantUserId, $payload, $hourRates): SubscriptionPlan {
             $plan->update($payload);
@@ -272,6 +276,25 @@ final class NurserySubscriptionPlanService
         usort($normalized, fn (array $a, array $b): int => $a['hours'] <=> $b['hours']);
 
         return $normalized;
+    }
+
+    /**
+     * إذا كانت القيمة الافتراضية صفراً ووُجدت باقات ساعات، نأخذ أقل سعر باقة كقيمة افتراضية للعرض.
+     *
+     * @param  array{name: string, plan_type: string, amount: float, tax_rate: float, currency_code: string}  $payload
+     * @param  list<array{hours: int, amount: float}>  $hourRates
+     * @return array{name: string, plan_type: string, amount: float, tax_rate: float, currency_code: string}
+     */
+    private function applyDefaultAmountFromHourRates(array $payload, array $hourRates): array
+    {
+        if ($hourRates === [] || (float) $payload['amount'] > 0) {
+            return $payload;
+        }
+
+        $min = min(array_map(static fn (array $row): float => (float) $row['amount'], $hourRates));
+        $payload['amount'] = round($min, 2);
+
+        return $payload;
     }
 
     /**

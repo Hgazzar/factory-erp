@@ -152,6 +152,35 @@ final class NurserySubscriptionTest extends NurseryTestCase
     }
 
     #[Test]
+    public function saving_hour_rates_with_zero_default_amount_uses_lowest_package_price(): void
+    {
+        $plan = app(NurserySubscriptionPlanService::class)->create((int) $this->tenant->id, [
+            'name' => 'per hour packages',
+            'plan_type' => NurserySubscriptionPlanService::TYPE_CUSTOM,
+            'amount' => 0,
+            'tax_rate' => 15,
+            'currency_code' => 'SAR',
+            'hour_rates' => [
+                ['hours' => 4, 'amount' => 1000],
+                ['hours' => 8, 'amount' => 1400],
+            ],
+        ]);
+
+        $this->assertEqualsWithDelta(1000.0, (float) $plan->amount, 0.01);
+        $this->assertNotNull($plan->hourRatesSummary());
+        $this->assertSame(2, $plan->hourRatesSummary()['count']);
+
+        $this->get(route('nursery.settings.index', ['tab' => 'plans']))
+            ->assertOk()
+            ->assertSee('per hour packages')
+            ->assertSee('2 باقة ساعات')
+            ->assertSee('1,000.00')
+            ->assertSee('1,400.00')
+            ->assertSee('1,150.00')
+            ->assertSee('1,610.00');
+    }
+
+    #[Test]
     public function weekly_subscription_auto_fills_end_date_from_start(): void
     {
         $guardian = Guardian::query()->create([

@@ -39,17 +39,43 @@
                         @php
                             $typeLabel = collect($planTypeOptions)->firstWhere('value', $plan->plan_type ?? 'custom')['label'] ?? 'مخصص';
                             $currencyCode = (string) ($plan->currency_code ?? 'SAR');
+                            $hourSummary = $plan->hourRatesSummary();
                         @endphp
                         <tr>
                             <td>
                                 <div class="nursery-table-name__text">
                                     <span class="nursery-table-name__title">{{ $plan->name }}</span>
-                                    <span class="nursery-table-name__sub">{{ $typeLabel }}</span>
+                                    <span class="nursery-table-name__sub">
+                                        {{ $typeLabel }}
+                                        @if($hourSummary)
+                                            · {{ $hourSummary['count'] }} باقة ساعات
+                                        @endif
+                                    </span>
                                 </div>
                             </td>
-                            <td class="tabular-nums font-semibold text-slate-700 whitespace-nowrap">{{ number_format((float) $plan->amount, 2) }}</td>
+                            <td class="tabular-nums font-semibold text-slate-700 whitespace-nowrap">
+                                @if($hourSummary)
+                                    @if($hourSummary['min_before'] === $hourSummary['max_before'])
+                                        {{ number_format($hourSummary['min_before'], 2) }}
+                                    @else
+                                        {{ number_format($hourSummary['min_before'], 2) }} – {{ number_format($hourSummary['max_before'], 2) }}
+                                    @endif
+                                @else
+                                    {{ number_format((float) $plan->amount, 2) }}
+                                @endif
+                            </td>
                             <td class="tabular-nums whitespace-nowrap">{{ number_format((float) $plan->tax_rate, 0) }}%</td>
-                            <td class="tabular-nums font-semibold text-teal-700 whitespace-nowrap">{{ number_format($plan->amountAfterTax(), 2) }}</td>
+                            <td class="tabular-nums font-semibold text-teal-700 whitespace-nowrap">
+                                @if($hourSummary)
+                                    @if($hourSummary['min_after'] === $hourSummary['max_after'])
+                                        {{ number_format($hourSummary['min_after'], 2) }}
+                                    @else
+                                        {{ number_format($hourSummary['min_after'], 2) }} – {{ number_format($hourSummary['max_after'], 2) }}
+                                    @endif
+                                @else
+                                    {{ number_format($plan->amountAfterTax(), 2) }}
+                                @endif
+                            </td>
                             <td class="whitespace-nowrap">
                                 <span class="font-semibold text-slate-700">{{ $currencyCode }}</span>
                             </td>
