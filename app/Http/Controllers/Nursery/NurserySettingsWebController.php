@@ -168,6 +168,9 @@ final class NurserySettingsWebController extends Controller
             'amount' => ['required', 'numeric', 'min:0'],
             'tax_rate' => ['required', 'numeric', 'min:0', 'max:100'],
             'currency_code' => ['required', 'string', 'max:8'],
+            'hour_rates' => ['nullable', 'array'],
+            'hour_rates.*.hours' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'hour_rates.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         try {
@@ -190,6 +193,9 @@ final class NurserySettingsWebController extends Controller
             'amount' => ['required', 'numeric', 'min:0'],
             'tax_rate' => ['required', 'numeric', 'min:0', 'max:100'],
             'currency_code' => ['required', 'string', 'max:8'],
+            'hour_rates' => ['nullable', 'array'],
+            'hour_rates.*.hours' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'hour_rates.*.amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         try {

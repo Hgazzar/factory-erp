@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Services\Nursery;
 
 use App\Models\Nursery\SubscriptionPlan;
+use App\Models\Nursery\SubscriptionPlanHourRate;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -19,7 +21,6 @@ final class NurserySubscriptionPlanService
 
     public const TYPE_WEEKLY = 'weekly';
 
-    /** @deprecated Legacy rows only — not offered as a nursery plan type. */
     public const TYPE_MONTHLY = 'monthly';
 
     public const TYPE_TERM = 'term';
@@ -30,7 +31,7 @@ final class NurserySubscriptionPlanService
     public const TYPE_YEARLY = 'yearly';
 
     /**
-     * Canonical duration order everywhere: ساعة → يومي → أسبوعي → فصلي.
+     * Canonical duration order: ساعة → يومي → أسبوعي → شهري → فصلي.
      *
      * @return array<string, string>
      */
@@ -40,6 +41,7 @@ final class NurserySubscriptionPlanService
             self::TYPE_HOURLY => 'ساعة',
             self::TYPE_DAILY => 'يومي',
             self::TYPE_WEEKLY => 'أسبوعي',
+            self::TYPE_MONTHLY => 'شهري',
             self::TYPE_TERM => 'فصلي',
             self::TYPE_CUSTOM => 'مخصص',
         ];
@@ -51,7 +53,8 @@ final class NurserySubscriptionPlanService
             self::TYPE_HOURLY => 1,
             self::TYPE_DAILY => 2,
             self::TYPE_WEEKLY => 3,
-            self::TYPE_TERM => 4,
+            self::TYPE_MONTHLY => 4,
+            self::TYPE_TERM => 5,
             self::TYPE_CUSTOM => 90,
             default => 99,
         };
@@ -110,6 +113,7 @@ final class NurserySubscriptionPlanService
         return $this->sortByDuration(
             SubscriptionPlan::query()
                 ->where('user_id', $tenantUserId)
+                ->with(['hourRates' => fn ($q) => $q->orderBy('hours')])
                 ->get()
         );
     }
@@ -120,16 +124,23 @@ final class NurserySubscriptionPlanService
     public function create(int $tenantUserId, array $data): SubscriptionPlan
     {
         $payload = $this->normalizePayload($data);
+        $hourRates = $this->normalizeHourRates($data['hour_rates'] ?? []);
 
         if (SubscriptionPlan::query()->where('user_id', $tenantUserId)->where('name', $payload['name'])->exists()) {
             throw ValidationException::withMessages(['name' => 'يوجد خطة بنفس الاسم.']);
         }
 
-        return SubscriptionPlan::query()->create([
-            'user_id' => $tenantUserId,
-            ...$payload,
-            'is_active' => true,
-        ]);
+        return DB::transaction(function () use ($tenantUserId, $payload, $hourRates): SubscriptionPlan {
+            $plan = SubscriptionPlan::query()->create([
+                'user_id' => $tenantUserId,
+                ...$payload,
+                'is_active' => true,
+            ]);
+
+            $this->syncHourRates($plan, $tenantUserId, $hourRates);
+
+            return $plan->fresh(['hourRates']) ?? $plan;
+        });
     }
 
     /**
@@ -140,6 +151,7 @@ final class NurserySubscriptionPlanService
         abort_unless((int) $plan->user_id === $tenantUserId, 404);
 
         $payload = $this->normalizePayload($data);
+        $hourRates = $this->normalizeHourRates($data['hour_rates'] ?? []);
 
         $duplicate = SubscriptionPlan::query()
             ->where('user_id', $tenantUserId)
@@ -151,9 +163,12 @@ final class NurserySubscriptionPlanService
             throw ValidationException::withMessages(['name' => 'يوجد خطة بنفس الاسم.']);
         }
 
-        $plan->update($payload);
+        return DB::transaction(function () use ($plan, $tenantUserId, $payload, $hourRates): SubscriptionPlan {
+            $plan->update($payload);
+            $this->syncHourRates($plan, $tenantUserId, $hourRates);
 
-        return $plan->fresh();
+            return $plan->fresh(['hourRates']) ?? $plan;
+        });
     }
 
     public function deactivate(SubscriptionPlan $plan, int $tenantUserId): void
@@ -205,5 +220,89 @@ final class NurserySubscriptionPlanService
             'tax_rate' => round($taxRate, 2),
             'currency_code' => $currency,
         ];
+    }
+
+    /**
+     * @param  mixed  $raw
+     * @return list<array{hours: int, amount: float}>
+     */
+    private function normalizeHourRates(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $normalized = [];
+        $seenHours = [];
+
+        foreach ($raw as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $hoursRaw = $row['hours'] ?? null;
+            $amountRaw = $row['amount'] ?? null;
+
+            if ($hoursRaw === null || $hoursRaw === '' || $amountRaw === null || $amountRaw === '') {
+                continue;
+            }
+
+            $hours = (int) $hoursRaw;
+            $amount = (float) $amountRaw;
+
+            if ($hours < 1 || $hours > 24) {
+                throw new InvalidArgumentException('عدد الساعات يجب أن يكون بين 1 و 24.');
+            }
+
+            if ($amount < 0) {
+                throw new InvalidArgumentException('سعر الساعات يجب أن يكون موجباً.');
+            }
+
+            if (isset($seenHours[$hours])) {
+                throw new InvalidArgumentException('لا يمكن تكرار نفس عدد الساعات أكثر من مرة.');
+            }
+
+            $seenHours[$hours] = true;
+            $normalized[] = [
+                'hours' => $hours,
+                'amount' => round($amount, 2),
+            ];
+        }
+
+        usort($normalized, fn (array $a, array $b): int => $a['hours'] <=> $b['hours']);
+
+        return $normalized;
+    }
+
+    /**
+     * @param  list<array{hours: int, amount: float}>  $hourRates
+     */
+    private function syncHourRates(SubscriptionPlan $plan, int $tenantUserId, array $hourRates): void
+    {
+        $keepHours = [];
+
+        foreach ($hourRates as $row) {
+            $keepHours[] = $row['hours'];
+
+            SubscriptionPlanHourRate::query()->updateOrCreate(
+                [
+                    'plan_id' => (int) $plan->id,
+                    'hours' => $row['hours'],
+                ],
+                [
+                    'user_id' => $tenantUserId,
+                    'amount' => $row['amount'],
+                ]
+            );
+        }
+
+        $deleteQuery = SubscriptionPlanHourRate::query()
+            ->where('plan_id', (int) $plan->id);
+
+        if ($keepHours !== []) {
+            $deleteQuery->whereNotIn('hours', $keepHours);
+        }
+
+        $deleteQuery->delete();
     }
 }

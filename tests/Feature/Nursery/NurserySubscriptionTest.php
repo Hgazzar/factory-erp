@@ -36,7 +36,7 @@ final class NurserySubscriptionTest extends NurseryTestCase
             ->assertSee('إجمالي الاشتراكات')
             ->assertSee('المنتهية')
             ->assertSee('التذكيرات')
-            ->assertSeeInOrder(['الكل', 'ساعة', 'يومي', 'أسبوعي', 'فصلي']);
+            ->assertSeeInOrder(['الكل', 'ساعة', 'يومي', 'أسبوعي', 'شهري', 'فصلي']);
 
         $plan = SubscriptionPlan::query()
             ->where('user_id', $this->tenant->id)
@@ -81,19 +81,74 @@ final class NurserySubscriptionTest extends NurseryTestCase
             ->all();
 
         $this->assertEqualsCanonicalizing(
-            ['hourly', 'daily', 'weekly', 'term'],
+            ['hourly', 'daily', 'weekly', 'monthly', 'term'],
             $activeTypes
         );
         $this->assertNotContains('yearly', $activeTypes);
-        $this->assertNotContains('monthly', $activeTypes);
+        $this->assertContains('monthly', $activeTypes);
 
         $options = app(NurserySubscriptionPlanService::class)->planTypeOptions();
         $this->assertArrayHasKey('hourly', $options);
         $this->assertArrayHasKey('daily', $options);
         $this->assertArrayHasKey('weekly', $options);
+        $this->assertArrayHasKey('monthly', $options);
         $this->assertArrayHasKey('term', $options);
         $this->assertArrayNotHasKey('yearly', $options);
-        $this->assertArrayNotHasKey('monthly', $options);
+        $this->assertSame(
+            ['hourly', 'daily', 'weekly', 'monthly', 'term', 'custom'],
+            array_keys($options)
+        );
+    }
+
+    #[Test]
+    public function subscription_uses_hour_rate_table_for_amount_after_tax(): void
+    {
+        $guardian = Guardian::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'name' => 'ولي ساعات',
+            'phone' => '0509988776',
+        ]);
+        $child = Child::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'name' => 'جنى',
+            'guardian_id' => $guardian->id,
+            'status' => Child::STATUS_ACTIVE,
+        ]);
+
+        $plan = SubscriptionPlan::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'name' => 'شهري ساعات اختبار',
+            'plan_type' => NurserySubscriptionPlanService::TYPE_MONTHLY,
+            'amount' => 1000,
+            'tax_rate' => 15,
+            'currency_code' => 'SAR',
+            'is_active' => true,
+        ]);
+
+        app(NurserySubscriptionPlanService::class)->update($plan, (int) $this->tenant->id, [
+            'name' => 'شهري ساعات اختبار',
+            'plan_type' => NurserySubscriptionPlanService::TYPE_MONTHLY,
+            'amount' => 1000,
+            'tax_rate' => 15,
+            'currency_code' => 'SAR',
+            'hour_rates' => [
+                ['hours' => 4, 'amount' => 1000],
+                ['hours' => 8, 'amount' => 1400],
+            ],
+        ]);
+
+        $this->from(route('nursery.subscriptions.index'))
+            ->post(route('nursery.subscriptions.store'), [
+                'child_id' => $child->id,
+                'plan_id' => $plan->id,
+                'hours' => 8,
+                'starts_on' => now()->format('Y-m-d'),
+            ])
+            ->assertRedirect(route('nursery.subscriptions.index'));
+
+        $sub = Subscription::query()->where('child_id', $child->id)->firstOrFail();
+        $this->assertSame(8, (int) $sub->hours);
+        $this->assertEqualsWithDelta(1610.0, (float) $sub->amount_after_tax, 0.01);
     }
 
     #[Test]
@@ -205,7 +260,7 @@ final class NurserySubscriptionTest extends NurseryTestCase
             ->values()
             ->all();
 
-        $this->assertSame(['ساعة', 'يومي', 'أسبوعي', 'فصلي'], $names);
+        $this->assertSame(['ساعة', 'يومي', 'أسبوعي', 'شهري', 'فصلي'], $names);
     }
 
     #[Test]
@@ -240,8 +295,8 @@ final class NurserySubscriptionTest extends NurseryTestCase
             ->pluck('plan_type')
             ->all();
 
-        $this->assertEqualsCanonicalizing(['hourly', 'daily', 'weekly', 'term'], $active);
+        $this->assertEqualsCanonicalizing(['hourly', 'daily', 'weekly', 'monthly', 'term'], $active);
         $this->assertNotContains('yearly', $active);
-        $this->assertNotContains('monthly', $active);
+        $this->assertContains('monthly', $active);
     }
 }

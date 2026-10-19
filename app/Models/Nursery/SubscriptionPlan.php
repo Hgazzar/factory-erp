@@ -48,11 +48,42 @@ class SubscriptionPlan extends Model
         return $this->hasMany(Subscription::class, 'plan_id');
     }
 
+    public function hourRates(): HasMany
+    {
+        return $this->hasMany(SubscriptionPlanHourRate::class, 'plan_id')->orderBy('hours');
+    }
+
     public function amountAfterTax(): float
     {
         $base = (float) $this->amount;
         $tax = (float) $this->tax_rate;
 
         return round($base * (1 + ($tax / 100)), 2);
+    }
+
+    public function amountAfterTaxForHours(?int $hours): float
+    {
+        if ($hours === null || $hours < 1) {
+            return $this->amountAfterTax();
+        }
+
+        $rate = $this->relationLoaded('hourRates')
+            ? $this->hourRates->firstWhere('hours', $hours)
+            : $this->hourRates()->where('hours', $hours)->first();
+
+        if ($rate instanceof SubscriptionPlanHourRate) {
+            return $rate->amountAfterTax((float) $this->tax_rate);
+        }
+
+        return $this->amountAfterTax();
+    }
+
+    public function hasHourRates(): bool
+    {
+        if ($this->relationLoaded('hourRates')) {
+            return $this->hourRates->isNotEmpty();
+        }
+
+        return $this->hourRates()->exists();
     }
 }

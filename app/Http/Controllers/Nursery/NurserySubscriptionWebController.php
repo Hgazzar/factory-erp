@@ -29,7 +29,7 @@ final class NurserySubscriptionWebController extends Controller
         $subscriptions->ensureDefaultPlans($tenantUserId);
 
         $period = strtolower(trim((string) $request->query('period', 'all')));
-        if (! in_array($period, ['all', 'hour', 'day', 'week', 'term'], true)) {
+        if (! in_array($period, ['all', 'hour', 'day', 'week', 'month', 'term'], true)) {
             $period = 'all';
         }
         [$from, $to] = $subscriptions->resolvePeriod($period === 'all' ? null : $period);
@@ -62,6 +62,7 @@ final class NurserySubscriptionWebController extends Controller
         $planOptions = app(NurserySubscriptionPlanService::class)
             ->sortByDuration(
                 SubscriptionPlan::query()
+                    ->with(['hourRates' => fn ($q) => $q->orderBy('hours')])
                     ->where('user_id', $tenantUserId)
                     ->where('is_active', true)
                     ->get()
@@ -71,6 +72,10 @@ final class NurserySubscriptionWebController extends Controller
                 'label' => $p->name,
                 'amount_after_tax' => $p->amountAfterTax(),
                 'plan_type' => (string) ($p->plan_type ?? 'custom'),
+                'hour_rates' => $p->hourRates->map(fn ($rate) => [
+                    'hours' => (int) $rate->hours,
+                    'amount_after_tax' => $rate->amountAfterTax((float) $p->tax_rate),
+                ])->values()->all(),
             ])
             ->all();
 
@@ -96,6 +101,7 @@ final class NurserySubscriptionWebController extends Controller
         $data = $request->validate([
             'child_id' => ['required', 'integer'],
             'plan_id' => ['required', 'integer'],
+            'hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'starts_on' => ['required', 'date', 'after_or_equal:today'],
             'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
             'amount_after_tax' => ['nullable', 'numeric', 'min:0'],

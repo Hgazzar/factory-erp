@@ -24,7 +24,7 @@ final class NurserySubscriptionService
     ) {}
 
     /**
-     * Canonical nursery plans: ساعة / يومي / أسبوعي / فصلي (no yearly, no monthly default).
+     * Canonical nursery plans: ساعة / يومي / أسبوعي / شهري / فصلي (no yearly).
      * Syncs existing tenants — creates missing types, renames defaults, deactivates yearly.
      * Safe against unique(user_id, name) conflicts on live DBs with legacy plan rows.
      */
@@ -34,6 +34,7 @@ final class NurserySubscriptionService
             ['name' => 'ساعة', 'plan_type' => NurserySubscriptionPlanService::TYPE_HOURLY, 'amount' => 50],
             ['name' => 'يومي', 'plan_type' => NurserySubscriptionPlanService::TYPE_DAILY, 'amount' => 150],
             ['name' => 'أسبوعي', 'plan_type' => NurserySubscriptionPlanService::TYPE_WEEKLY, 'amount' => 700],
+            ['name' => 'شهري', 'plan_type' => NurserySubscriptionPlanService::TYPE_MONTHLY, 'amount' => 2500],
             ['name' => 'فصلي', 'plan_type' => NurserySubscriptionPlanService::TYPE_TERM, 'amount' => 5500],
         ];
 
@@ -89,12 +90,9 @@ final class NurserySubscriptionService
             ]);
         }
 
-        // Hide legacy yearly (and leftover monthly defaults) from new-subscription pickers.
+        // Hide legacy yearly from new-subscription pickers.
         $base()
-            ->whereIn('plan_type', [
-                NurserySubscriptionPlanService::TYPE_YEARLY,
-                NurserySubscriptionPlanService::TYPE_MONTHLY,
-            ])
+            ->where('plan_type', NurserySubscriptionPlanService::TYPE_YEARLY)
             ->where('is_active', true)
             ->update(['is_active' => false]);
     }
@@ -121,6 +119,7 @@ final class NurserySubscriptionService
             ->firstOrFail();
 
         $plan = SubscriptionPlan::query()
+            ->with('hourRates')
             ->where('user_id', $tenantUserId)
             ->whereKey($planId)
             ->where('is_active', true)
@@ -145,10 +144,27 @@ final class NurserySubscriptionService
             throw new InvalidArgumentException('تاريخ الانتهاء يجب أن يكون بعد البداية.');
         }
 
+        $hours = null;
+        if (array_key_exists('hours', $data) && $data['hours'] !== null && $data['hours'] !== '') {
+            $hours = (int) $data['hours'];
+            if ($hours < 1 || $hours > 24) {
+                throw new InvalidArgumentException('عدد الساعات غير صالح.');
+            }
+        }
+
+        if ($plan->hasHourRates()) {
+            if ($hours === null) {
+                throw new InvalidArgumentException('عدد الساعات مطلوب لهذه الخطة.');
+            }
+            if (! $plan->hourRates->contains(fn ($rate) => (int) $rate->hours === $hours)) {
+                throw new InvalidArgumentException('عدد الساعات غير موجود في جدول أسعار هذه الخطة.');
+            }
+        }
+
         $discount = max(0, (float) ($data['discount_amount'] ?? 0));
         $amountAfterTax = isset($data['amount_after_tax']) && $data['amount_after_tax'] !== ''
             ? (float) $data['amount_after_tax']
-            : $plan->amountAfterTax();
+            : $plan->amountAfterTaxForHours($hours);
 
         if ($discount > $amountAfterTax) {
             throw new InvalidArgumentException('الخصم لا يمكن أن يتجاوز قيمة الاشتراك.');
@@ -169,6 +185,7 @@ final class NurserySubscriptionService
             'user_id' => $tenantUserId,
             'child_id' => $childId,
             'plan_id' => $planId,
+            'hours' => $hours,
             'starts_on' => $startsOn,
             'ends_on' => $endsOn,
             'amount_after_tax' => $amountAfterTax,

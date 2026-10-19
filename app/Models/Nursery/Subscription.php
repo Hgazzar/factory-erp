@@ -38,6 +38,7 @@ class Subscription extends Model
         'user_id',
         'child_id',
         'plan_id',
+        'hours',
         'starts_on',
         'ends_on',
         'amount_after_tax',
@@ -60,6 +61,7 @@ class Subscription extends Model
         return [
             'starts_on' => 'date',
             'ends_on' => 'date',
+            'hours' => 'integer',
             'amount_after_tax' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'is_paid' => 'boolean',
