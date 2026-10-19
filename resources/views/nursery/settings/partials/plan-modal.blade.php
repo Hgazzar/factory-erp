@@ -66,10 +66,24 @@ function planCalc(initial) {
             return (base * (1 + rate / 100)).toFixed(2);
         },
         rowAfterTax(row) {
-            const base = Number(row.amount) || 0;
+            const raw = row && row.amount;
+            if (raw === '' || raw === null || typeof raw === 'undefined') {
+                return '—';
+            }
+            const base = Number(raw);
+            if (!Number.isFinite(base)) {
+                return '—';
+            }
             const rate = Number(this.tax) || 0;
-            if (!row.amount && row.amount !== 0) return '—';
             return (base * (1 + rate / 100)).toFixed(2);
+        },
+        removeHourRow(index) {
+            if (this.hourRates.length > 1) {
+                this.hourRates.splice(index, 1);
+                return;
+            }
+            this.hourRates[0].hours = '';
+            this.hourRates[0].amount = '';
         },
     };
 }
