@@ -27,7 +27,7 @@ final class NurseryStaffService
 
         return DB::transaction(function () use ($tenantUserId, $payload): array {
             $payload['user_id'] = $tenantUserId;
-            $payload['code'] = $this->nextCode($tenantUserId);
+            $payload['code'] = $this->nextCode();
             $payload['status'] = $payload['status'] ?? 'active';
 
             $employee = Employee::query()->create($payload);
@@ -159,12 +159,30 @@ final class NurseryStaffService
         ];
     }
 
-    private function nextCode(int $tenantUserId): string
+    /**
+     * يولّد كوداً غير مستخدم عالمياً — اللايف ما زال فيه unique على code لكل الجدول.
+     */
+    private function nextCode(): string
     {
-        $count = Employee::withoutGlobalScopes()
-            ->where('user_id', $tenantUserId)
-            ->count();
+        $codes = Employee::withoutGlobalScopes()
+            ->where('code', 'like', 'EMP-%')
+            ->pluck('code');
 
-        return 'EMP-'.str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
+        $max = 0;
+        foreach ($codes as $code) {
+            if (preg_match('/^EMP-(\d+)$/i', (string) $code, $match) === 1) {
+                $max = max($max, (int) $match[1]);
+            }
+        }
+
+        $next = max(1, $max + 1);
+
+        do {
+            $code = 'EMP-'.str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+            $exists = Employee::withoutGlobalScopes()->where('code', $code)->exists();
+            $next++;
+        } while ($exists);
+
+        return $code;
     }
 }

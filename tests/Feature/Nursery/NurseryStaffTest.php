@@ -238,4 +238,30 @@ final class NurseryStaffTest extends NurseryTestCase
         $this->assertContains('login.app', $kept);
         $this->assertContains('employees.manage', $kept);
     }
+
+    #[Test]
+    public function new_staff_skips_employee_codes_already_used_by_other_tenants(): void
+    {
+        $otherTenant = User::factory()->create(['role' => 'admin']);
+        Employee::query()->create([
+            'user_id' => (int) $otherTenant->id,
+            'code' => 'EMP-00001',
+            'name' => 'موظف منشأة أخرى',
+            'first_name' => 'موظف',
+            'last_name' => 'آخر',
+            'status' => 'active',
+        ]);
+
+        $this->post(route('nursery.staff.store'), [
+            'first_name' => 'شروق',
+            'last_name' => 'الحارثي',
+            'mobile' => '05993112011',
+            'permissions' => ['attendance.children'],
+        ])->assertRedirect(route('nursery.staff.index'))->assertSessionHas('success');
+
+        $emp = Employee::query()->where('mobile', '05993112011')->first();
+        $this->assertNotNull($emp);
+        $this->assertNotSame('EMP-00001', $emp->code);
+        $this->assertMatchesRegularExpression('/^EMP-\d{5}$/', (string) $emp->code);
+    }
 }
