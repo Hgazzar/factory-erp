@@ -23,5 +23,8 @@ final class NurseryChildDailyActivityCatalogTest extends TestCase
         $this->assertTrue(NurseryChildDailyActivityCatalog::defaultParentVisible('meal'));
         $this->assertTrue(NurseryChildDailyActivityCatalog::defaultParentVisible('medication'));
         $this->assertFalse(NurseryChildDailyActivityCatalog::defaultParentVisible('note'));
+        $this->assertTrue(NurseryChildDailyActivityCatalog::acceptsPhotoUploads('meal'));
+        $this->assertTrue(NurseryChildDailyActivityCatalog::acceptsPhotoUploads('activity'));
+        $this->assertFalse(NurseryChildDailyActivityCatalog::acceptsPhotoUploads('nap'));
     }
 }

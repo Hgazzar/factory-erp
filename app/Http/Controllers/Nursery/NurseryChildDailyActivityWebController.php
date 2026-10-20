@@ -30,8 +30,9 @@ final class NurseryChildDailyActivityWebController extends Controller
         abort_unless((int) $child->user_id === $tenantUserId, 404);
 
         $date = (string) $request->input('activity_date', now()->toDateString());
+        $type = (string) $request->input('type');
 
-        if ((string) $request->input('type') === NurseryChildDailyActivityCatalog::TYPE_ACTIVITY) {
+        if (NurseryChildDailyActivityCatalog::acceptsPhotoUploads($type)) {
             $request->validate([
                 'images' => ['nullable', 'array', 'max:10'],
                 'images.*' => ['image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
@@ -50,7 +51,7 @@ final class NurseryChildDailyActivityWebController extends Controller
                 ->withInput();
         }
 
-        if ((string) $activity->type === NurseryChildDailyActivityCatalog::TYPE_ACTIVITY) {
+        if (NurseryChildDailyActivityCatalog::acceptsPhotoUploads((string) $activity->type)) {
             $uploads = $request->file('images', []) ?? [];
             if ($uploads !== []) {
                 $this->persistMorphAttachments($activity, $uploads, $tenantUserId, 'nursery/child-daily-activities');

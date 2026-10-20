@@ -21,7 +21,7 @@
             @endforeach
         </div>
 
-        <form method="post" class="space-y-3" :action="'{{ url('/nursery/children') }}/' + careChildId + '/daily-activities'">
+        <form method="post" enctype="multipart/form-data" class="space-y-3" :action="'{{ url('/nursery/children') }}/' + careChildId + '/daily-activities'">
             @csrf
             <input type="hidden" name="activity_date" value="{{ now()->toDateString() }}">
             <input type="hidden" name="type" :value="careType">
@@ -31,6 +31,15 @@
             <div x-show="careType === 'meal'" class="space-y-2">
                 <x-custom-select name="meal" id="today_care_meal" :options="NurseryChildDailyActivityCatalog::selectOptions('meal', 'meal')" :searchable="false" empty-label="نوع الوجبة" :in-modal="true" />
                 <x-custom-select name="amount" id="today_care_amount" :options="NurseryChildDailyActivityCatalog::selectOptions('meal', 'amount')" :searchable="false" empty-label="الكمية" :in-modal="true" />
+                <div>
+                    <label class="block text-xs text-teal-800/80 mb-1">
+                        صور الوجبة
+                        <x-info field="nursery.child_daily_meal_photos" />
+                    </label>
+                    <input type="file" name="images[]" multiple accept=".jpg,.jpeg,.png,.gif,.webp"
+                           class="w-full rounded-lg border border-teal-200 px-3 py-2 text-sm bg-white">
+                    <p class="text-[11px] text-teal-700/70 mt-1">jpg, png, webp, gif — حتى 5 ميجا للصورة.</p>
+                </div>
             </div>
             <div x-show="careType === 'nap'" class="grid grid-cols-2 gap-2">
                 <div>

@@ -183,6 +183,45 @@ final class NurseryPortalDailyActivityTest extends NurseryTestCase
             ->assertSee('storage/'.$path, false);
     }
 
+    #[Test]
+    public function parent_sees_meal_photos_on_child_day(): void
+    {
+        Storage::fake('public');
+
+        $activity = ChildDailyActivity::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'child_id' => $this->child->id,
+            'activity_date' => now()->toDateString(),
+            'type' => NurseryChildDailyActivityCatalog::TYPE_MEAL,
+            'payload' => ['meal' => 'lunch', 'amount' => 'eaten'],
+            'is_parent_visible' => true,
+            'recorded_by' => (int) $this->tenant->id,
+            'recorded_at' => now(),
+        ]);
+
+        $path = 'nursery/child-daily-activities/'.$activity->id.'/lunch.jpg';
+        Storage::disk('public')->put($path, 'fake-image');
+        Attachment::query()->create([
+            'user_id' => $this->tenant->id,
+            'attachable_type' => ChildDailyActivity::class,
+            'attachable_id' => $activity->id,
+            'file_path' => $path,
+            'file_name' => 'lunch.jpg',
+            'file_type' => 'image/jpeg',
+            'file_size' => 12,
+        ]);
+
+        $this->loginPortal('0507777888');
+
+        $this->get(route('nursery.portal.children.show', [
+            'tenant_slug' => $this->slug,
+            'childId' => $this->child->id,
+        ]))
+            ->assertOk()
+            ->assertSee('غداء')
+            ->assertSee('storage/'.$path, false);
+    }
+
     private function loginPortal(string $phone): void
     {
         app(NurseryPortalAuthService::class)->requestOtp((int) $this->tenant->id, $phone);

@@ -6,11 +6,14 @@ namespace Tests\Feature\Nursery;
 
 use App\Models\Employee;
 use App\Models\Nursery\Child;
+use App\Models\Nursery\ChildDailyActivity;
 use App\Models\Nursery\Classroom;
 use App\Models\Nursery\Enrollment;
 use App\Models\Nursery\Guardian;
 use App\Models\User;
 use App\Support\NurseryChildDailyActivityCatalog;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\NurseryTestCase;
 
@@ -32,7 +35,8 @@ final class NurseryClassroomTodayTest extends NurseryTestCase
             ->assertDontSee('طفل فصل آخر')
             ->assertDontSee('طفل مؤرشف')
             ->assertSee('حضور')
-            ->assertSee('وجبة');
+            ->assertSee('وجبة')
+            ->assertSee('صور الوجبة');
 
         $this->assertDatabaseHas('nursery_children', ['id' => $inClass->id]);
         $this->assertDatabaseHas('nursery_children', ['id' => $otherClass->id]);
@@ -80,6 +84,35 @@ final class NurseryClassroomTodayTest extends NurseryTestCase
             'child_id' => $child->id,
             'type' => 'mood',
         ]);
+    }
+
+    #[Test]
+    public function classroom_today_meal_can_include_photos(): void
+    {
+        Storage::fake('public');
+
+        [$room] = $this->makeTwoClassrooms();
+        $child = $this->makeEnrolledChild($room, 'سارة الوجبة', '0501111008');
+
+        $this->post(route('nursery.children.daily-activities.store', $child), [
+            'activity_date' => now()->toDateString(),
+            'type' => NurseryChildDailyActivityCatalog::TYPE_MEAL,
+            'meal' => 'breakfast',
+            'amount' => 'partial',
+            'return_to' => 'classroom_today',
+            'classroom_id' => $room->id,
+            'images' => [
+                UploadedFile::fake()->image('breakfast.jpg', 160, 160),
+            ],
+        ])->assertRedirect(route('nursery.classrooms.today', $room));
+
+        $activity = ChildDailyActivity::query()
+            ->where('child_id', $child->id)
+            ->where('type', NurseryChildDailyActivityCatalog::TYPE_MEAL)
+            ->first();
+
+        $this->assertNotNull($activity);
+        $this->assertCount(1, $activity->attachments);
     }
 
     #[Test]

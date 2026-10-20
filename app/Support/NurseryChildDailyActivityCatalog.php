@@ -87,4 +87,9 @@ final class NurseryChildDailyActivityCatalog
     {
         return in_array($type, self::keys(), true);
     }
+
+    public static function acceptsPhotoUploads(string $type): bool
+    {
+        return in_array($type, [self::TYPE_MEAL, self::TYPE_ACTIVITY], true);
+    }
 }

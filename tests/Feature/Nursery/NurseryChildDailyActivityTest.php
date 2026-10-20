@@ -281,6 +281,43 @@ final class NurseryChildDailyActivityTest extends NurseryTestCase
             ->assertSee('storage/'.$path, false);
     }
 
+    #[Test]
+    public function meal_form_accepts_photo_uploads_on_child_day_screen(): void
+    {
+        Storage::fake('public');
+
+        $child = $this->makeChild('طفل وجبة');
+
+        $this->get(route('nursery.children.show', $child))
+            ->assertOk()
+            ->assertSee('صور الوجبة')
+            ->assertSee('name="images[]"', false);
+
+        $this->post(route('nursery.children.daily-activities.store', $child), [
+            'activity_date' => now()->toDateString(),
+            'type' => NurseryChildDailyActivityCatalog::TYPE_MEAL,
+            'meal' => 'lunch',
+            'amount' => 'eaten',
+            'images' => [
+                UploadedFile::fake()->image('lunch.jpg', 200, 200),
+            ],
+        ])->assertRedirect();
+
+        $activity = ChildDailyActivity::query()
+            ->where('child_id', $child->id)
+            ->where('type', NurseryChildDailyActivityCatalog::TYPE_MEAL)
+            ->first();
+
+        $this->assertNotNull($activity);
+        $this->assertCount(1, $activity->attachments);
+
+        $path = (string) $activity->attachments->first()->file_path;
+        $this->get(route('nursery.children.show', $child))
+            ->assertOk()
+            ->assertSee('غداء')
+            ->assertSee('storage/'.$path, false);
+    }
+
     /**
      * @param  list<string>  $permissions
      */
