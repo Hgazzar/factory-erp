@@ -23,6 +23,7 @@ final class NurseryStaffAccountTest extends NurseryTestCase
             'last_name' => 'سالم',
             'email' => 'huda@example.com',
             'mobile' => '0501111000',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['login.app'],
         ])->assertRedirect(route('nursery.staff.index'));
 
@@ -109,6 +110,7 @@ final class NurseryStaffAccountTest extends NurseryTestCase
             'last_name' => 'عادل',
             'email' => 'layan-invite@example.com',
             'mobile' => '0503333444',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['attendance.children'],
         ])->assertRedirect(route('nursery.staff.index'));
 
@@ -122,6 +124,7 @@ final class NurseryStaffAccountTest extends NurseryTestCase
                 'last_name' => 'عادل',
                 'mobile' => '0503333444',
                 'email' => 'layan-invite@example.com',
+                'nursery_job_role' => 'teacher',
                 'permissions' => ['attendance.children'],
                 'submit_action' => 'save_and_invite',
             ])
@@ -156,6 +159,7 @@ final class NurseryStaffAccountTest extends NurseryTestCase
                 'last_name' => 'اختبار',
                 'mobile' => '0502222333',
                 'email' => 'taken-staff@example.com',
+                'nursery_job_role' => 'teacher',
                 'permissions' => ['login.app'],
                 'submit_action' => 'save_and_invite',
             ])
@@ -171,6 +175,7 @@ final class NurseryStaffAccountTest extends NurseryTestCase
             'last_name' => 'ناصر',
             'email' => 'reem-creds@example.com',
             'mobile' => '0505555666',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['login.app'],
             'submit_action' => 'save_and_invite',
         ])

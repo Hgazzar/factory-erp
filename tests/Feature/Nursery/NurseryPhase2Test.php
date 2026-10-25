@@ -110,6 +110,7 @@ final class NurseryPhase2Test extends NurseryTestCase
             'last_name' => 'أحمد',
             'email' => 'nora@example.com',
             'mobile' => '0551234567',
+            'nursery_job_role' => 'teacher',
             'nursery_shift_id' => $shift->id,
         ]);
 

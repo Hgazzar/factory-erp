@@ -48,8 +48,9 @@
                         <input type="date" name="birth_date" value="{{ old('birth_date', $employee?->birth_date?->format('Y-m-d')) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-teal-950 mb-1">الدور الوظيفي <x-info field="nursery.staff_job_role" /></label>
-                        <x-custom-select name="nursery_job_role" :options="$jobRoleOptions" :value="old('nursery_job_role', $employee?->nursery_job_role)" :searchable="true" empty-label="— الدور —" />
+                        <label class="block text-sm font-semibold text-teal-950 mb-1">الدور الوظيفي <span class="text-red-600">*</span> <x-info field="nursery.staff_job_role" /></label>
+                        <x-custom-select name="nursery_job_role" :options="$jobRoleOptions" :value="old('nursery_job_role', $employee?->nursery_job_role)" :searchable="true" empty-label="— الدور —" :required="true" />
+                        @error('nursery_job_role')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-teal-950 mb-1">مناوبة الحضانة <x-info field="nursery.staff_nursery_shift" /></label>

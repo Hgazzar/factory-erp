@@ -22,6 +22,7 @@ final class NurseryStaffTest extends NurseryTestCase
             ->assertSee('الاسم الأول')
             ->assertSee('رقم الجوال')
             ->assertSee('البريد الإلكتروني')
+            ->assertSee('الدور الوظيفي')
             ->assertSee('text-red-600', false);
 
         $response = $this->post(route('nursery.staff.store'), [
@@ -54,7 +55,7 @@ final class NurseryStaffTest extends NurseryTestCase
                 'permissions' => ['attendance.children'],
             ])
             ->assertRedirect(route('nursery.staff.create'))
-            ->assertSessionHasErrors(['first_name', 'last_name', 'mobile', 'email']);
+            ->assertSessionHasErrors(['first_name', 'last_name', 'mobile', 'email', 'nursery_job_role']);
     }
 
     #[Test]
@@ -77,6 +78,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'خالد',
             'email' => 'mona-att@example.com',
             'mobile' => '0501234001',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['login.app', 'attendance.children', 'attendance.staff'],
         ]);
 
@@ -95,6 +97,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'معلم',
             'email' => 'lina-teacher@example.com',
             'mobile' => '0501234002',
+            'nursery_job_role' => 'teacher',
             'nursery_role' => 'teacher',
         ]);
 
@@ -114,6 +117,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'سعد',
             'email' => 'hind-upd@example.com',
             'mobile' => '0501234003',
+            'nursery_job_role' => 'teacher',
             'nursery_role' => 'teacher',
             'permissions' => ['login.app', 'children.manage', 'attendance.children'],
         ]);
@@ -126,6 +130,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'سعد',
             'email' => 'hind-upd@example.com',
             'mobile' => '0501234003',
+            'nursery_job_role' => 'teacher',
             'nursery_role' => 'teacher',
             'permissions' => ['login.app', 'children.manage'],
             'status' => 'active',
@@ -145,6 +150,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'علي',
             'email' => 'reem-cap@example.com',
             'mobile' => '0501234004',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['login.app'],
         ]);
 
@@ -156,6 +162,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'علي',
             'email' => 'reem-cap@example.com',
             'mobile' => '0501234004',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['login.app', 'attendance.children'],
             'status' => 'active',
         ])->assertRedirect(route('nursery.staff.index'));
@@ -167,6 +174,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'علي',
             'email' => 'reem-cap@example.com',
             'mobile' => '0501234004',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['login.app'],
             'status' => 'active',
         ])->assertRedirect(route('nursery.staff.index'));
@@ -182,6 +190,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'حفظ',
             'email' => 'target-keep@example.com',
             'mobile' => '0501234005',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['login.app', 'settings.manage'],
         ]);
 
@@ -214,6 +223,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'حفظ',
             'email' => 'target-keep@example.com',
             'mobile' => '0501234005',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['login.app', 'employees.manage'],
             'status' => 'active',
         ])->assertRedirect(route('nursery.staff.index'));
@@ -242,6 +252,7 @@ final class NurseryStaffTest extends NurseryTestCase
             'last_name' => 'الحارثي',
             'email' => 'shurooq@example.com',
             'mobile' => '05993112011',
+            'nursery_job_role' => 'teacher',
             'permissions' => ['attendance.children'],
         ])->assertRedirect(route('nursery.staff.index'))->assertSessionHas('success');
 

@@ -1431,7 +1431,7 @@ return [
         'staff_id_number' => 'رقم الهوية أو الإقامة.',
         'staff_gender' => 'الجنس.',
         'staff_birth_date' => 'تاريخ الميلاد (ميلادي).',
-        'staff_job_role' => 'المسمى الوظيفي (معلمة، محاسب، …).',
+        'staff_job_role' => 'المسمى الوظيفي (معلمة، محاسب، …) — حقل إلزامي.',
         'staff_education' => 'المؤهل العلمي.',
         'staff_specialization' => 'التخصص.',
         'staff_mobile' => 'رقم الجوال للتواصل.',
