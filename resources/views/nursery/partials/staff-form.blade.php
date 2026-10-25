@@ -71,8 +71,8 @@
                         <input type="text" name="mobile" value="{{ old('mobile', $employee?->mobile ?? $employee?->phone) }}" required class="w-full rounded-lg border border-teal-200 px-3 py-2" dir="ltr">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-teal-950 mb-1">البريد الإلكتروني <x-info field="nursery.staff_email" /></label>
-                        <input type="email" name="email" value="{{ old('email', $employee?->email) }}" class="w-full rounded-lg border border-teal-200 px-3 py-2" dir="ltr" placeholder="اختياري — مطلوب عند تفعيل دخول التطبيق">
+                        <label class="block text-sm font-semibold text-teal-950 mb-1">البريد الإلكتروني <span class="text-red-600">*</span> <x-info field="nursery.staff_email" /></label>
+                        <input type="email" name="email" value="{{ old('email', $employee?->email) }}" required class="w-full rounded-lg border border-teal-200 px-3 py-2" dir="ltr">
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-semibold text-teal-950 mb-1">العنوان <x-info field="nursery.staff_address" /></label>

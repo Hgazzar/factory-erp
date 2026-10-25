@@ -107,13 +107,14 @@ final class NurseryStaffAccountTest extends NurseryTestCase
         $this->post(route('nursery.staff.store'), [
             'first_name' => 'ليان',
             'last_name' => 'عادل',
+            'email' => 'layan-invite@example.com',
             'mobile' => '0503333444',
             'permissions' => ['attendance.children'],
         ])->assertRedirect(route('nursery.staff.index'));
 
         $employee = Employee::query()->where('mobile', '0503333444')->firstOrFail();
         $this->assertNull($employee->linked_user_id);
-        $this->assertNull($employee->email);
+        $this->assertSame('layan-invite@example.com', $employee->email);
 
         $this->from(route('nursery.staff.edit', $employee))
             ->put(route('nursery.staff.update', $employee), [

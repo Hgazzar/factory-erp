@@ -16,7 +16,13 @@ final class NurseryStaffTest extends NurseryTestCase
     public function admin_can_create_staff_with_permissions_and_attachments_meta(): void
     {
         $this->get(route('nursery.staff.index'))->assertOk()->assertSee('طاقم العمل');
-        $this->get(route('nursery.staff.create'))->assertOk()->assertSee('الصلاحيات');
+        $this->get(route('nursery.staff.create'))
+            ->assertOk()
+            ->assertSee('الصلاحيات')
+            ->assertSee('الاسم الأول')
+            ->assertSee('رقم الجوال')
+            ->assertSee('البريد الإلكتروني')
+            ->assertSee('text-red-600', false);
 
         $response = $this->post(route('nursery.staff.store'), [
             'first_name' => 'سارة',
@@ -41,35 +47,14 @@ final class NurseryStaffTest extends NurseryTestCase
     }
 
     #[Test]
-    public function staff_can_be_created_without_email_when_login_not_granted(): void
-    {
-        $response = $this->post(route('nursery.staff.store'), [
-            'first_name' => 'نورة',
-            'last_name' => 'بلا',
-            'mobile' => '0509998877',
-            'permissions' => ['attendance.children'],
-        ]);
-
-        $emp = Employee::query()->where('mobile', '0509998877')->first();
-        $this->assertNotNull($emp);
-        $response->assertRedirect(route('nursery.staff.index'));
-        $this->assertNull($emp->email);
-        $this->assertNull($emp->linked_user_id);
-        $this->assertContains('attendance.children', $emp->nursery_permissions);
-    }
-
-    #[Test]
-    public function login_permission_requires_email(): void
+    public function staff_create_requires_name_mobile_and_email(): void
     {
         $this->from(route('nursery.staff.create'))
             ->post(route('nursery.staff.store'), [
-                'first_name' => 'فاطمة',
-                'last_name' => 'دخول',
-                'mobile' => '0501112233',
-                'permissions' => ['login.app'],
+                'permissions' => ['attendance.children'],
             ])
             ->assertRedirect(route('nursery.staff.create'))
-            ->assertSessionHas('error');
+            ->assertSessionHasErrors(['first_name', 'last_name', 'mobile', 'email']);
     }
 
     #[Test]
@@ -255,6 +240,7 @@ final class NurseryStaffTest extends NurseryTestCase
         $this->post(route('nursery.staff.store'), [
             'first_name' => 'شروق',
             'last_name' => 'الحارثي',
+            'email' => 'shurooq@example.com',
             'mobile' => '05993112011',
             'permissions' => ['attendance.children'],
         ])->assertRedirect(route('nursery.staff.index'))->assertSessionHas('success');

@@ -266,7 +266,7 @@ final class NurseryStaffWebController extends Controller
             'nursery_job_role' => ['nullable', 'string', Rule::in($jobKeys)],
             'nursery_education' => ['nullable', 'string', 'max:120'],
             'nursery_specialization' => ['nullable', 'string', 'max:120'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
             'mobile' => ['required', 'string', 'max:32'],
             'address' => ['nullable', 'string', 'max:500'],
             'region' => ['nullable', 'string', Rule::in($regionKeys)],
