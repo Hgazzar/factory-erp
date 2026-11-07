@@ -10,6 +10,7 @@ use App\Models\Nursery\Subscription;
 use App\Models\Nursery\SubscriptionPlan;
 use App\Services\Nursery\NurserySubscriptionPlanService;
 use App\Services\Nursery\NurserySubscriptionService;
+use App\Support\WhatsApp;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\NurseryTestCase;
 
@@ -37,6 +38,7 @@ final class NurserySubscriptionTest extends NurseryTestCase
             ->assertSee('المنتهية')
             ->assertSee('التذكيرات')
             ->assertSee('المبلغ بعد الخصم')
+            ->assertSee('واتساب ولي الأمر')
             ->assertSeeInOrder(['الكل', 'ساعة', 'يومي', 'أسبوعي', 'شهري', 'فصلي']);
 
         $plan = SubscriptionPlan::query()
@@ -68,6 +70,55 @@ final class NurserySubscriptionTest extends NurseryTestCase
 
         $sub->refresh();
         $this->assertSame(Subscription::STATUS_CANCELLED, $sub->status);
+    }
+
+    #[Test]
+    public function creating_subscription_with_discount_flashes_guardian_whatsapp_link(): void
+    {
+        $guardian = Guardian::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'name' => 'ولي خصم',
+            'phone' => '0509876543',
+        ]);
+        $child = Child::query()->create([
+            'user_id' => (int) $this->tenant->id,
+            'name' => 'جنى',
+            'guardian_id' => $guardian->id,
+            'status' => Child::STATUS_ACTIVE,
+        ]);
+        app(NurserySubscriptionService::class)->ensureDefaultPlans((int) $this->tenant->id);
+        $plan = SubscriptionPlan::query()
+            ->where('user_id', $this->tenant->id)
+            ->where('plan_type', 'daily')
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $this->from(route('nursery.subscriptions.index'))
+            ->post(route('nursery.subscriptions.store'), [
+                'child_id' => $child->id,
+                'plan_id' => $plan->id,
+                'starts_on' => now()->format('Y-m-d'),
+                'amount_after_tax' => 172.5,
+                'discount_amount' => 20,
+            ])
+            ->assertRedirect(route('nursery.subscriptions.index'))
+            ->assertSessionHas('discount_whatsapp_url');
+
+        $url = (string) session('discount_whatsapp_url');
+        $this->assertStringStartsWith('https://wa.me/966509876543?text=', $url);
+        $this->assertTrue(str_contains(urldecode($url), 'بوابة ولي الأمر:') || str_contains($url, rawurlencode('بوابة ولي الأمر:')));
+
+        $sub = Subscription::query()->where('child_id', $child->id)->firstOrFail();
+        $sub->load('child.guardian');
+        $message = $sub->discountNotifyMessage('https://example.test/portal');
+        $this->assertStringContainsString('20.00', $message);
+        $this->assertStringContainsString('بوابة ولي الأمر:', $message);
+        $this->assertStringContainsString('https://example.test/portal', $message);
+
+        $this->get(route('nursery.subscriptions.index'))
+            ->assertOk()
+            ->assertSee('إبلاغ بالخصم واتساب')
+            ->assertSee('واتساب ولي الأمر');
     }
 
     #[Test]

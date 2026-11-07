@@ -8,6 +8,7 @@ use App\Models\Concerns\ResolvesRouteBindingForTenant;
 use App\Models\JournalEntry;
 use App\Models\Scopes\BelongsToTenantContextScope;
 use App\Models\User;
+use App\Support\WhatsApp;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -166,5 +167,44 @@ class Subscription extends Model
     public function finalAmount(): float
     {
         return max(0, round((float) $this->amount_after_tax - (float) $this->discount_amount, 2));
+    }
+
+    public function discountNotifyMessage(?string $portalUrl = null): string
+    {
+        $guardianName = trim((string) ($this->child?->guardian?->name ?? '')) ?: 'ولي الأمر';
+        $childName = trim((string) ($this->child?->name ?? '')) ?: 'طفلك';
+        $discount = number_format((float) $this->discount_amount, 2);
+        $final = number_format($this->finalAmount(), 2);
+
+        $lines = [
+            "مرحباً {$guardianName}،",
+            "تم تطبيق خصم {$discount} ر.س على اشتراك {$childName}.",
+            "المبلغ بعد الخصم: {$final} ر.س.",
+        ];
+
+        if (filled($portalUrl)) {
+            $lines[] = '';
+            $lines[] = 'بوابة ولي الأمر:';
+            $lines[] = $portalUrl;
+        }
+
+        $lines[] = '';
+        $lines[] = '— يمكنك تعديل الرسالة أو إضافة ملاحظة قبل الإرسال —';
+
+        return implode("\n", $lines);
+    }
+
+    public function discountWhatsappUrl(?string $portalUrl = null, ?string $customMessage = null): ?string
+    {
+        if ((float) $this->discount_amount <= 0) {
+            return null;
+        }
+
+        $phone = $this->child?->guardian?->phone;
+        $message = filled($customMessage)
+            ? (string) $customMessage
+            : $this->discountNotifyMessage($portalUrl);
+
+        return WhatsApp::chatUrl($phone, $message);
     }
 }

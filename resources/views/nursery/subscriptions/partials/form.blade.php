@@ -5,6 +5,13 @@
         'plan_type' => $p['plan_type'] ?? 'custom',
         'hour_rates' => $p['hour_rates'] ?? [],
     ])->values();
+    $childrenJson = collect($childOptions)->map(fn ($c) => [
+        'id' => $c['value'],
+        'name' => $c['label'] ?? '',
+        'guardian_name' => $c['guardian_name'] ?? '',
+        'guardian_phone' => $c['guardian_phone'] ?? '',
+    ])->values();
+    $portalUrl = $portalUrl ?? null;
     $defaultStarts = old('starts_on', '');
     $hourOptions = [];
 @endphp
@@ -69,7 +76,36 @@
                 </p>
                 <p id="subscription_final_amount" class="text-base font-bold tabular-nums text-teal-950" dir="ltr">—</p>
             </div>
+            <div id="subscription_discount_whatsapp_wrap" class="hidden space-y-2 rounded-lg border border-emerald-100 bg-emerald-50/50 px-3 py-2">
+                <label class="block text-xs font-semibold text-emerald-900">
+                    رسالة واتساب لولي الأمر
+                    <x-info field="nursery.sub_discount_whatsapp" />
+                </label>
+                <textarea id="subscription_discount_whatsapp_message" rows="5"
+                          class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm"
+                          placeholder="اكتب أو عدّل الرسالة هنا قبل فتح واتساب…"></textarea>
+                <p id="subscription_discount_whatsapp_hint" class="text-[11px] text-emerald-800/80"></p>
+                <a id="subscription_discount_whatsapp_btn" href="#" target="_blank" rel="noopener"
+                   class="nursery-btn nursery-btn-primary text-xs py-1.5 inline-flex items-center gap-1 pointer-events-none opacity-50">
+                    فتح واتساب
+                </a>
+            </div>
         </div>
+    </div>
+
+    <div id="subscription_guardian_whatsapp_wrap" class="hidden space-y-2 rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+        <p class="text-sm font-bold text-emerald-950">
+            واتساب ولي الأمر
+            <x-info field="nursery.sub_guardian_whatsapp" />
+        </p>
+        <textarea id="subscription_guardian_whatsapp_message" rows="5"
+                  class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm"
+                  placeholder="اكتب رسالتك هنا — رابط البوابة يُضاف تلقائياً…"></textarea>
+        <p id="subscription_guardian_whatsapp_hint" class="text-[11px] text-emerald-800/80"></p>
+        <a id="subscription_guardian_whatsapp_btn" href="#" target="_blank" rel="noopener"
+           class="nursery-btn nursery-btn-primary text-xs py-1.5 inline-flex items-center gap-1 pointer-events-none opacity-50">
+            فتح واتساب
+        </a>
     </div>
 
     <div>
@@ -116,6 +152,8 @@
 <script>
 (function () {
     var plans = @json($plansJson);
+    var children = @json($childrenJson);
+    var portalUrl = @json($portalUrl);
     var amountInput = document.getElementById('subscription_amount_after_tax');
     var discountInput = document.getElementById('subscription_discount_amount');
     var finalAmountEl = document.getElementById('subscription_final_amount');
@@ -124,8 +162,120 @@
     var hoursWrap = document.getElementById('subscription_hours_wrap');
     var hoursInput = document.getElementById('subscription_hours');
     var hoursChips = document.getElementById('subscription_hours_chips');
+    var discountWaWrap = document.getElementById('subscription_discount_whatsapp_wrap');
+    var discountWaMessage = document.getElementById('subscription_discount_whatsapp_message');
+    var discountWaHint = document.getElementById('subscription_discount_whatsapp_hint');
+    var discountWaBtn = document.getElementById('subscription_discount_whatsapp_btn');
+    var guardianWaWrap = document.getElementById('subscription_guardian_whatsapp_wrap');
+    var guardianWaMessage = document.getElementById('subscription_guardian_whatsapp_message');
+    var guardianWaHint = document.getElementById('subscription_guardian_whatsapp_hint');
+    var guardianWaBtn = document.getElementById('subscription_guardian_whatsapp_btn');
     var endsTouched = {{ old('ends_on') ? 'true' : 'false' }};
     var oldHours = @json(old('hours'));
+    var discountDraftTouched = false;
+    var guardianDraftTouched = false;
+
+    function money(n) {
+        return Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function waDigits(phone) {
+        var digits = String(phone || '').replace(/\D+/g, '');
+        if (!digits) return null;
+        if (digits.indexOf('00') === 0) digits = digits.slice(2);
+        if (digits.charAt(0) === '0') digits = '966' + digits.replace(/^0+/, '');
+        else if (digits.indexOf('966') !== 0 && digits.length === 9) digits = '966' + digits;
+        return digits || null;
+    }
+
+    function waUrl(phone, text) {
+        var digits = waDigits(phone);
+        if (!digits) return null;
+        var url = 'https://wa.me/' + digits;
+        if (text) url += '?text=' + encodeURIComponent(text);
+        return url;
+    }
+
+    function currentChild() {
+        var hidden = document.querySelector('#nurserySubscriptionForm input[name="child_id"]');
+        var id = hidden ? hidden.value : '';
+        return children.find(function (c) { return String(c.id) === String(id); }) || null;
+    }
+
+    function portalBlock() {
+        if (!portalUrl) return '';
+        return '\nبوابة ولي الأمر:\n' + portalUrl;
+    }
+
+    function discountDraft(child) {
+        var amount = parseFloat(amountInput && amountInput.value !== '' ? amountInput.value : '0') || 0;
+        var discount = parseFloat(discountInput && discountInput.value !== '' ? discountInput.value : '0') || 0;
+        var final = Math.max(0, Math.round((amount - discount) * 100) / 100);
+        var guardian = (child && child.guardian_name) ? child.guardian_name : 'ولي الأمر';
+        var childName = (child && child.name) ? child.name : 'طفلك';
+        return 'مرحباً ' + guardian + '،\n'
+            + 'تم تطبيق خصم ' + money(discount) + ' ر.س على اشتراك ' + childName + '.\n'
+            + 'المبلغ بعد الخصم: ' + money(final) + ' ر.س.'
+            + portalBlock()
+            + '\n\n— يمكنك تعديل الرسالة أو إضافة ملاحظة قبل الإرسال —';
+    }
+
+    function guardianDraft(child) {
+        var guardian = (child && child.guardian_name) ? child.guardian_name : 'ولي الأمر';
+        return 'مرحباً ' + guardian + '،\n\n'
+            + portalBlock()
+            + '\n\n— اكتب رسالتك في المساحة الفارغة أعلاه إن رغبت، ثم أرسل —';
+    }
+
+    function setWaButton(btn, url) {
+        if (!btn) return;
+        if (url) {
+            btn.href = url;
+            btn.classList.remove('pointer-events-none', 'opacity-50');
+        } else {
+            btn.href = '#';
+            btn.classList.add('pointer-events-none', 'opacity-50');
+        }
+    }
+
+    function syncWhatsAppDrafts() {
+        var child = currentChild();
+        var phone = child ? child.guardian_phone : '';
+        var hasPhone = !!waDigits(phone);
+        var discount = parseFloat(discountInput && discountInput.value !== '' ? discountInput.value : '0') || 0;
+
+        if (guardianWaWrap) {
+            if (hasPhone) {
+                guardianWaWrap.classList.remove('hidden');
+                if (guardianWaMessage && !guardianDraftTouched) {
+                    guardianWaMessage.value = guardianDraft(child);
+                }
+                if (guardianWaHint) {
+                    guardianWaHint.textContent = 'الرقم: ' + phone + ' — عدّل الرسالة ثم افتح واتساب.';
+                }
+                setWaButton(guardianWaBtn, waUrl(phone, guardianWaMessage ? guardianWaMessage.value : ''));
+            } else {
+                guardianWaWrap.classList.add('hidden');
+                setWaButton(guardianWaBtn, null);
+            }
+        }
+
+        if (discountWaWrap) {
+            if (hasPhone && discount > 0) {
+                discountWaWrap.classList.remove('hidden');
+                if (discountWaMessage && !discountDraftTouched) {
+                    discountWaMessage.value = discountDraft(child);
+                }
+                if (discountWaHint) {
+                    discountWaHint.textContent = 'رسالة الخصم تتضمن رابط البوابة — عدّلها قبل الإرسال.';
+                }
+                setWaButton(discountWaBtn, waUrl(phone, discountWaMessage ? discountWaMessage.value : ''));
+            } else {
+                discountWaWrap.classList.add('hidden');
+                setWaButton(discountWaBtn, null);
+            }
+        }
+    }
 
     function syncFinalAmount() {
         if (!finalAmountEl) return;
@@ -136,6 +286,7 @@
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
+        syncWhatsAppDrafts();
     }
 
     function pad(n) { return String(n).padStart(2, '0'); }
@@ -284,7 +435,25 @@
         if (e.detail && e.detail.name === 'plan_id') {
             applyPlan(e.detail.value, true, null);
         }
+        if (e.detail && e.detail.name === 'child_id') {
+            discountDraftTouched = false;
+            guardianDraftTouched = false;
+            syncWhatsAppDrafts();
+        }
     });
+
+    if (discountWaMessage) {
+        discountWaMessage.addEventListener('input', function () {
+            discountDraftTouched = true;
+            syncWhatsAppDrafts();
+        });
+    }
+    if (guardianWaMessage) {
+        guardianWaMessage.addEventListener('input', function () {
+            guardianDraftTouched = true;
+            syncWhatsAppDrafts();
+        });
+    }
 
     if (startsInput) {
         startsInput.addEventListener('change', function () {

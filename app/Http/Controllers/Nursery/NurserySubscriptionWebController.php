@@ -10,6 +10,7 @@ use App\Models\Nursery\Child;
 use App\Models\Nursery\Subscription;
 use App\Models\Nursery\SubscriptionPlan;
 use App\Services\Nursery\NurseryDashboardService;
+use App\Services\Nursery\NurseryPortalInviteService;
 use App\Services\Nursery\NurserySubscriptionPlanService;
 use App\Services\Nursery\NurserySubscriptionService;
 use App\Support\NurseryAccess;
@@ -38,7 +39,13 @@ final class NurserySubscriptionWebController extends Controller
         $stats = $subscriptions->stats($tenantUserId, $from, $to);
 
         $listQuery = Subscription::query()
-            ->with(['child:id,name', 'child.attachments', 'plan:id,name', 'renewedFrom:id,starts_on,ends_on'])
+            ->with([
+                'child:id,name,guardian_id',
+                'child.attachments',
+                'child.guardian:id,name,phone',
+                'plan:id,name',
+                'renewedFrom:id,starts_on,ends_on',
+            ])
             ->where('user_id', $tenantUserId)
             ->orderByDesc('created_at');
 
@@ -52,11 +59,17 @@ final class NurserySubscriptionWebController extends Controller
         $items = $listQuery->paginate(20)->withQueryString();
 
         $childOptions = Child::query()
+            ->with('guardian:id,name,phone')
             ->where('user_id', $tenantUserId)
             ->where('status', Child::STATUS_ACTIVE)
             ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn (Child $c) => ['value' => (string) $c->id, 'label' => $c->name])
+            ->get(['id', 'name', 'guardian_id'])
+            ->map(fn (Child $c) => [
+                'value' => (string) $c->id,
+                'label' => $c->name,
+                'guardian_name' => (string) ($c->guardian?->name ?? ''),
+                'guardian_phone' => (string) ($c->guardian?->phone ?? ''),
+            ])
             ->all();
 
         $planOptions = app(NurserySubscriptionPlanService::class)
@@ -80,6 +93,7 @@ final class NurserySubscriptionWebController extends Controller
             ->all();
 
         $canManage = app(NurseryAccess::class)->allows(NurseryAccess::CAP_MANAGE_SUBSCRIPTIONS);
+        $portalUrl = app(NurseryPortalInviteService::class)->portalLoginUrl($tenantUserId);
 
         return view('nursery.subscriptions.index', [
             'items' => $items,
@@ -92,11 +106,15 @@ final class NurserySubscriptionWebController extends Controller
             'childOptions' => $childOptions,
             'planOptions' => $planOptions,
             'canManage' => $canManage,
+            'portalUrl' => $portalUrl,
         ]);
     }
 
-    public function store(Request $request, NurserySubscriptionService $subscriptions): RedirectResponse
-    {
+    public function store(
+        Request $request,
+        NurserySubscriptionService $subscriptions,
+        NurseryPortalInviteService $portalInvite,
+    ): RedirectResponse {
         $tenantUserId = $this->resolveOperationsTenantUserId();
         $data = $request->validate([
             'child_id' => ['required', 'integer'],
@@ -126,7 +144,16 @@ final class NurserySubscriptionWebController extends Controller
             $message .= ' وتمت جدولة رسالة التأكيد لولي الأمر.';
         }
 
-        return redirect()->route('nursery.subscriptions.index')->with('success', $message);
+        $redirect = redirect()->route('nursery.subscriptions.index')->with('success', $message);
+
+        $subscription = $result['subscription']->loadMissing(['child.guardian']);
+        $portalUrl = $portalInvite->portalLoginUrl($tenantUserId);
+        $waUrl = $subscription->discountWhatsappUrl($portalUrl);
+        if ($waUrl !== null) {
+            $redirect->with('discount_whatsapp_url', $waUrl);
+        }
+
+        return $redirect;
     }
 
     public function cancel(Subscription $subscription, NurserySubscriptionService $subscriptions): RedirectResponse

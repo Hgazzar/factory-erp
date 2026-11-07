@@ -205,9 +205,22 @@ final class NurseryChildWebController extends Controller
         $canManageChildAttendance = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILD_ATTENDANCE);
         $canManageChildActivity = app(\App\Support\NurseryAccess::class)->allows(\App\Support\NurseryAccess::CAP_MANAGE_CHILD_ACTIVITY);
         $portalInviteUrl = null;
+        $portalLoginUrl = null;
+        $guardianWhatsappDraft = null;
+        $guardianWhatsappUrl = null;
         if ($child->guardian !== null) {
             try {
-                $portalInviteUrl = app(NurseryPortalInviteService::class)->inviteUrl($tenantUserId, $child->guardian);
+                $portalInvite = app(NurseryPortalInviteService::class);
+                $portalInviteUrl = $portalInvite->inviteUrl($tenantUserId, $child->guardian);
+                $portalLoginUrl = $portalInvite->portalLoginUrl($tenantUserId);
+                $guardianWhatsappDraft = \App\Support\WhatsApp::portalDraftMessage(
+                    $portalLoginUrl,
+                    $child->guardian->name
+                );
+                $guardianWhatsappUrl = \App\Support\WhatsApp::chatUrl(
+                    $child->guardian->phone,
+                    $guardianWhatsappDraft
+                );
             } catch (\Throwable $e) {
                 report($e);
             }
@@ -221,6 +234,9 @@ final class NurseryChildWebController extends Controller
             'canManageChildAttendance',
             'canManageChildActivity',
             'portalInviteUrl',
+            'portalLoginUrl',
+            'guardianWhatsappDraft',
+            'guardianWhatsappUrl',
             'activityDate',
             'todaysActivities',
             'dailySummary',

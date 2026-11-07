@@ -20,6 +20,12 @@
     @if(session('error'))
         <div class="nursery-card px-4 py-3 text-sm text-red-800 bg-red-50">{{ session('error') }}</div>
     @endif
+    @if(session('discount_whatsapp_url'))
+        <div class="nursery-card px-4 py-3 text-sm text-emerald-900 bg-emerald-50 border border-emerald-100 flex flex-wrap items-center justify-between gap-3">
+            <p>تم حفظ الخصم — يمكنك إبلاغ ولي الأمر عبر واتساب برسالة جاهزة (قابلة للتعديل قبل الإرسال).</p>
+            <a href="{{ session('discount_whatsapp_url') }}" target="_blank" rel="noopener" class="nursery-btn nursery-btn-primary text-xs py-1.5">فتح واتساب</a>
+        </div>
+    @endif
 
     <div class="flex flex-wrap gap-2">
         @foreach(['all' => 'الكل', 'hour' => 'ساعة', 'day' => 'يومي', 'week' => 'أسبوعي', 'month' => 'شهري', 'term' => 'فصلي'] as $key => $label)
@@ -69,7 +75,13 @@
                     <tbody>
                         @forelse($items as $sub)
                             @php
-                                $hasSubActions = $sub->canBeMarkedPaid() || $sub->canBeRenewed() || $sub->isActive();
+                                $discountWaUrl = $sub->discountWhatsappUrl($portalUrl ?? null);
+                                $guardianWaUrl = \App\Support\WhatsApp::chatUrl(
+                                    $sub->child?->guardian?->phone,
+                                    \App\Support\WhatsApp::portalDraftMessage($portalUrl ?? null, $sub->child?->guardian?->name)
+                                );
+                                $hasSubActions = $sub->canBeMarkedPaid() || $sub->canBeRenewed() || $sub->isActive()
+                                    || $discountWaUrl || $guardianWaUrl;
                             @endphp
                             <tr>
                                 <td>
@@ -131,6 +143,16 @@
                                                             تجديد
                                                         </x-erp-actions-menu-item>
                                                     </form>
+                                                @endif
+                                                @if($discountWaUrl)
+                                                    <x-erp-actions-menu-item type="link" :href="$discountWaUrl" icon="invite" target="_blank" rel="noopener">
+                                                        إبلاغ بالخصم واتساب
+                                                    </x-erp-actions-menu-item>
+                                                @endif
+                                                @if($guardianWaUrl)
+                                                    <x-erp-actions-menu-item type="link" :href="$guardianWaUrl" icon="invite" target="_blank" rel="noopener">
+                                                        واتساب ولي الأمر
+                                                    </x-erp-actions-menu-item>
                                                 @endif
                                                 @if($sub->isActive())
                                                     <div class="mx-2 my-2 border-t border-gray-100"></div>

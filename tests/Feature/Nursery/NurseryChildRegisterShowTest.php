@@ -28,7 +28,11 @@ final class NurseryChildRegisterShowTest extends NurseryTestCase
         $child = Child::query()->where('user_id', $this->tenant->id)->where('name', 'حمد')->first();
         $this->assertNotNull($child);
 
-        $this->get(route('nursery.children.show', $child))->assertOk()->assertSee('حمد');
+        $this->get(route('nursery.children.show', $child))
+            ->assertOk()
+            ->assertSee('حمد')
+            ->assertSee('واتساب ولي الأمر')
+            ->assertSee('فتح واتساب');
         $this->get(route('nursery.children.index'))->assertOk()->assertSee('حمد');
 
         $this->from(route('nursery.children.create'))

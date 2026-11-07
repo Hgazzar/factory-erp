@@ -60,8 +60,8 @@
             @include('nursery.partials.medications-readonly-table', ['medications' => $child->medications])
         </section>
 
-        <section class="nursery-card p-4 lg:col-span-2">
-            <h2 class="font-bold text-teal-950 mb-3">معلومات ولي الأمر</h2>
+        <section class="nursery-card p-4 lg:col-span-2 space-y-4">
+            <h2 class="font-bold text-teal-950">معلومات ولي الأمر</h2>
             <dl class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
                 <div><dt class="text-teal-800/70">الاسم</dt><dd class="font-medium">{{ $child->guardian?->name }}</dd></div>
                 <div><dt class="text-teal-800/70">العلاقة</dt><dd class="font-medium">{{ $relationshipLabels[$child->guardian_relationship] ?? '—' }}</dd></div>
@@ -72,6 +72,36 @@
                 <div><dt class="text-teal-800/70">المدينة</dt><dd class="font-medium">{{ $child->guardian?->city ?? '—' }}</dd></div>
                 <div class="sm:col-span-2 lg:col-span-3"><dt class="text-teal-800/70">العنوان</dt><dd class="font-medium">{{ $child->guardian?->address ?? '—' }}</dd></div>
             </dl>
+
+            @if($guardianWhatsappUrl)
+                <div class="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 space-y-2"
+                     x-data="{
+                        draft: @js($guardianWhatsappDraft),
+                        phone: @js($child->guardian?->phone),
+                        buildUrl() {
+                            const digits = String(this.phone || '').replace(/\D+/g, '');
+                            let d = digits;
+                            if (!d) return '#';
+                            if (d.startsWith('00')) d = d.slice(2);
+                            if (d.startsWith('0')) d = '966' + d.replace(/^0+/, '');
+                            else if (!d.startsWith('966') && d.length === 9) d = '966' + d;
+                            return 'https://wa.me/' + d + '?text=' + encodeURIComponent(this.draft || '');
+                        }
+                     }">
+                    <p class="text-sm font-bold text-emerald-950">
+                        واتساب ولي الأمر
+                        <x-info field="nursery.child_guardian_whatsapp" />
+                    </p>
+                    <textarea x-model="draft" rows="5"
+                              class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm"
+                              placeholder="اكتب رسالتك — رابط البوابة موجود في المسودة…"></textarea>
+                    <p class="text-[11px] text-emerald-800/80">المسودة فيها رابط البوابة ومساحة فاضية للكتابة. عدّل ثم افتح واتساب.</p>
+                    <a :href="buildUrl()" target="_blank" rel="noopener"
+                       class="nursery-btn nursery-btn-primary text-xs py-1.5 inline-flex">فتح واتساب</a>
+                </div>
+            @elseif($child->guardian && ! filled($child->guardian->phone))
+                <p class="text-sm text-amber-700">أضف رقم جوال ولي الأمر لإرسال واتساب يدوياً.</p>
+            @endif
         </section>
     </div>
 
