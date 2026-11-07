@@ -88,6 +88,13 @@ final class NurseryChildWebController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $portalUrl = null;
+        try {
+            $portalUrl = app(NurseryPortalInviteService::class)->portalLoginUrl($tenantUserId);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return view('nursery.children.index', [
             'children' => $children,
             'q' => $q,
@@ -95,6 +102,7 @@ final class NurseryChildWebController extends Controller
             'classrooms' => $classrooms,
             'classroomId' => $classroomId,
             'spark' => app(NurseryDashboardService::class)->listSparkMeta($listStats),
+            'portalUrl' => $portalUrl,
         ]);
     }
 

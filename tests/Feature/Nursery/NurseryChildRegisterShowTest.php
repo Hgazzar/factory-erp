@@ -33,7 +33,10 @@ final class NurseryChildRegisterShowTest extends NurseryTestCase
             ->assertSee('حمد')
             ->assertSee('واتساب ولي الأمر')
             ->assertSee('فتح واتساب');
-        $this->get(route('nursery.children.index'))->assertOk()->assertSee('حمد');
+        $this->get(route('nursery.children.index'))
+            ->assertOk()
+            ->assertSee('حمد')
+            ->assertSee('واتساب ولي الأمر');
 
         $this->from(route('nursery.children.create'))
             ->post(route('nursery.children.store'), [

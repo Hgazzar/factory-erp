@@ -108,10 +108,21 @@
                                 @endif
                             </td>
                             <td class="text-center">
+                                @php
+                                    $guardianWaUrl = \App\Support\WhatsApp::chatUrl(
+                                        $child->guardian?->phone,
+                                        \App\Support\WhatsApp::portalDraftMessage($portalUrl ?? null, $child->guardian?->name)
+                                    );
+                                @endphp
                                 <x-erp-actions-dropdown :menu-id="'nursery-child-'.$child->id">
                                     <x-erp-actions-menu-item :href="route('nursery.children.show', $child)" icon="view">
                                         عرض الملف
                                     </x-erp-actions-menu-item>
+                                    @if($guardianWaUrl)
+                                        <x-erp-actions-menu-item type="link" :href="$guardianWaUrl" icon="invite" target="_blank" rel="noopener">
+                                            واتساب ولي الأمر
+                                        </x-erp-actions-menu-item>
+                                    @endif
                                     @if($canManageChildren)
                                         <x-erp-actions-menu-item :href="route('nursery.children.edit', $child)" icon="edit">
                                             تعديل
