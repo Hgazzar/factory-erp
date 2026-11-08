@@ -3,53 +3,20 @@
 @section('title', 'تسجيل الدخول')
 
 @section('content')
-@php
-    $otpStep = session('otp_sent') ? 'verify' : 'phone';
-@endphp
 <div class="np-card">
     <h2 class="text-lg font-bold text-teal-950 mb-1">مرحباً بك</h2>
     <p class="text-sm text-teal-800/80 mb-4">
-        سجّل دخولك برقم الجوال المسجّل لدى الحضانة.
-        <x-info field="nursery.portal_login_phone" />
+        الدخول يتم عبر <strong>رابط الدعوة</strong> الذي ترسله الحضانة على واتساب، ثم تأكيد رقم الجوال المسجّل.
+        <x-info field="nursery.portal_login_invite" />
     </p>
 
-    @if($otpLogOnly)
-        <p class="text-xs bg-teal-50 border border-teal-100 rounded-lg px-3 py-2 mb-4 text-teal-800">
-            بيئة التطوير: رمز OTP ثابت <strong dir="ltr">{{ config('nursery.portal.dev_otp_code', '123456') }}</strong> — يُسجَّل أيضاً في الـ log.
-        </p>
-    @endif
-
-    @if($otpStep === 'phone')
-        <form method="POST" action="{{ route('nursery.portal.otp.request', ['tenant_slug' => $tenantSlug]) }}" class="space-y-4">
-            @csrf
-            <div>
-                <label class="np-label" for="phone">رقم الجوال <x-info field="nursery.portal_login_phone" /></label>
-                <input type="tel" name="phone" id="phone" class="np-input" dir="ltr"
-                       value="{{ old('phone') }}" required autocomplete="tel"
-                       placeholder="05xxxxxxxx">
-                @error('phone')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-            </div>
-            <button type="submit" class="np-btn np-btn-primary">إرسال رمز التحقق</button>
-        </form>
-    @else
-        <form method="POST" action="{{ route('nursery.portal.otp.verify', ['tenant_slug' => $tenantSlug]) }}" class="space-y-4">
-            @csrf
-            <div>
-                <label class="np-label" for="phone_verify">رقم الجوال</label>
-                <input type="tel" name="phone" id="phone_verify" class="np-input" dir="ltr"
-                       value="{{ old('phone') }}" required readonly>
-            </div>
-            <div>
-                <label class="np-label" for="otp">رمز التحقق <x-info field="nursery.portal_login_otp" /></label>
-                <input type="text" name="otp" id="otp" class="np-input text-center tracking-widest" dir="ltr"
-                       maxlength="8" inputmode="numeric" autocomplete="one-time-code" required
-                       placeholder="••••••" autofocus>
-                @error('otp')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
-            </div>
-            <button type="submit" class="np-btn np-btn-primary">تسجيل الدخول</button>
-            <a href="{{ route('nursery.portal.login', ['tenant_slug' => $tenantSlug]) }}"
-               class="np-btn np-btn-soft mt-2">تغيير الرقم</a>
-        </form>
-    @endif
+    <div class="rounded-xl border border-teal-100 bg-teal-50/60 px-3 py-3 text-sm text-teal-900 space-y-2">
+        <p class="font-semibold">كيف تدخل؟</p>
+        <ol class="list-decimal list-inside space-y-1 text-teal-800/90">
+            <li>افتح رابط الدعوة من رسالة واتساب الحضانة.</li>
+            <li>أدخل رقم جوالك المسجّل لدى الحضانة.</li>
+            <li>ادخل لمتابعة أطفالك.</li>
+        </ol>
+    </div>
 </div>
 @endsection

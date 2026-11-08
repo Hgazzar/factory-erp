@@ -60,8 +60,9 @@ final class WhatsApp
         ];
 
         if (filled($portalUrl)) {
-            $lines[] = 'بوابة ولي الأمر:';
+            $lines[] = 'رابط دخول بوابة ولي الأمر:';
             $lines[] = $portalUrl;
+            $lines[] = 'بعد فتح الرابط أدخل رقم جوالك المسجّل لدى الحضانة.';
         }
 
         $lines[] = '';

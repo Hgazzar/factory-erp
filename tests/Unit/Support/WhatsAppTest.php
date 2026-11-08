@@ -34,7 +34,8 @@ final class WhatsAppTest extends TestCase
     {
         $draft = WhatsApp::portalDraftMessage('https://example.test/portal', 'أحمد');
         $this->assertStringContainsString('مرحباً أحمد،', $draft);
-        $this->assertStringContainsString('بوابة ولي الأمر:', $draft);
+        $this->assertStringContainsString('رابط دخول بوابة ولي الأمر:', $draft);
+        $this->assertStringContainsString('رقم جوالك المسجّل', $draft);
         $this->assertStringContainsString('https://example.test/portal', $draft);
         $this->assertStringContainsString("\n\n", $draft);
     }

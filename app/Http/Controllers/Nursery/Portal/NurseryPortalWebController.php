@@ -13,7 +13,6 @@ use App\Services\Nursery\Portal\NurseryPortalAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use InvalidArgumentException;
 
 /**
  * صفحات بوابة أولياء الأمور — عامة ومحمية.
@@ -21,7 +20,7 @@ use InvalidArgumentException;
 final class NurseryPortalWebController extends Controller
 {
     /**
-     * صفحة تسجيل الدخول (OTP أو إعادة توجيه للرئيسية إن كانت الجلسة نشطة).
+     * صفحة إرشادية — الدخول الفعلي عبر رابط الدعوة + رقم الجوال.
      */
     public function login(Request $request, NurseryPortalAuthService $auth): View|RedirectResponse
     {
@@ -33,9 +32,7 @@ final class NurseryPortalWebController extends Controller
             ]);
         }
 
-        return view('nursery.portal.login', $this->portalViewData($request, [
-            'otpLogOnly' => (bool) config('nursery.portal.otp_log_only', true),
-        ]));
+        return view('nursery.portal.login', $this->portalViewData($request));
     }
 
     /**
@@ -58,27 +55,30 @@ final class NurseryPortalWebController extends Controller
     }
 
     /**
-     * قبول دعوة الانضمام عبر magic link.
+     * رابط الدعوة — يطلب رقم الجوال المسجّل لنفس ولي الأمر قبل فتح الجلسة.
      */
     public function acceptInvite(
         Request $request,
         NurseryPortalAuthService $auth,
-    ): RedirectResponse {
+    ): View|RedirectResponse {
         $tenantUserId = $this->tenantUserId($request);
         $slug = $this->tenantSlug($request);
-        $token = (string) $request->route('token');
+        $token = trim((string) $request->route('token'));
 
-        try {
-            $auth->loginViaInviteToken($tenantUserId, $token);
-        } catch (InvalidArgumentException $e) {
-            return redirect()
-                ->route('nursery.portal.login', ['tenant_slug' => $slug])
-                ->with('error', $e->getMessage());
+        if ($auth->isAuthenticatedForTenant($tenantUserId)) {
+            return redirect()->route('nursery.portal.home', ['tenant_slug' => $slug]);
         }
 
-        return redirect()
-            ->route('nursery.portal.home', ['tenant_slug' => $slug])
-            ->with('success', 'مرحباً بك في بوابة أولياء الأمور.');
+        $guardian = \App\Models\Nursery\Guardian::findByPortalToken($tenantUserId, $token);
+        if ($guardian === null) {
+            return redirect()
+                ->route('nursery.portal.login', ['tenant_slug' => $slug])
+                ->with('error', 'رابط الدعوة غير صالح أو منتهٍ.');
+        }
+
+        return view('nursery.portal.invite', $this->portalViewData($request, [
+            'inviteToken' => $token,
+        ]));
     }
 
     /**

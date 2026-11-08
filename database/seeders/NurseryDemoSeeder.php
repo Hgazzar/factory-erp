@@ -240,8 +240,8 @@ final class NurseryDemoSeeder extends Seeder
         $this->command?->info('✓ Nursery demo tenant ready.');
         $this->command?->line("  Tenant user id: {$tenantId}");
         $this->command?->line('  Admin login: '.self::EMAIL.' / '.self::PASSWORD);
-        $this->command?->line('  Portal (OTP): '.$portalLogin);
-        $this->command?->line('  Guardian phone: '.self::GUARDIAN_PHONE.' — OTP dev: '.config('nursery.portal.dev_otp_code', '123456'));
+        $this->command?->line('  Portal login info: '.$portalLogin);
+        $this->command?->line('  Invite link + phone: '.self::GUARDIAN_PHONE);
         $this->command?->line('  Portal (invite link): '.$portalInvite);
     }
 }

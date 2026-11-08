@@ -63,7 +63,7 @@ final class NurseryChildWebController extends Controller
         ];
 
         $children = Child::query()
-            ->with(['guardian:id,name,phone', 'activeEnrollment.classroom:id,name', 'attachments'])
+            ->with(['guardian:id,name,phone,portal_access_token,portal_invited_at', 'activeEnrollment.classroom:id,name', 'attachments'])
             ->where('user_id', $tenantUserId)
             ->when($classroomId > 0, function ($query) use ($classroomId): void {
                 $query->whereHas('activeEnrollment', fn ($e) => $e
@@ -88,12 +88,7 @@ final class NurseryChildWebController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $portalUrl = null;
-        try {
-            $portalUrl = app(NurseryPortalInviteService::class)->portalLoginUrl($tenantUserId);
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        $portalInvite = app(NurseryPortalInviteService::class);
 
         return view('nursery.children.index', [
             'children' => $children,
@@ -102,7 +97,8 @@ final class NurseryChildWebController extends Controller
             'classrooms' => $classrooms,
             'classroomId' => $classroomId,
             'spark' => app(NurseryDashboardService::class)->listSparkMeta($listStats),
-            'portalUrl' => $portalUrl,
+            'portalInvite' => $portalInvite,
+            'tenantUserId' => $tenantUserId,
         ]);
     }
 
@@ -222,7 +218,7 @@ final class NurseryChildWebController extends Controller
                 $portalInviteUrl = $portalInvite->inviteUrl($tenantUserId, $child->guardian);
                 $portalLoginUrl = $portalInvite->portalLoginUrl($tenantUserId);
                 $guardianWhatsappDraft = \App\Support\WhatsApp::portalDraftMessage(
-                    $portalLoginUrl,
+                    $portalInviteUrl ?? $portalLoginUrl,
                     $child->guardian->name
                 );
                 $guardianWhatsappUrl = \App\Support\WhatsApp::chatUrl(

@@ -34,7 +34,10 @@ return [
     'shift_late_grace_minutes' => (int) env('NURSERY_SHIFT_LATE_GRACE_MINUTES', 15),
 
     'portal' => [
-        /** في التطوير: OTP ثابت يُسجَّل في الـ log — الإرسال عبر Outbox/واتساب */
+        /**
+         * إعدادات قديمة لـ OTP — الدخول الحالي عبر رابط الدعوة + رقم الجوال فقط.
+         * تُبقى للتوافق مع بيئات قديمة ولم تَعُد واجهة البوابة تستخدمها.
+         */
         'otp_log_only' => (bool) env('NURSERY_PORTAL_OTP_LOG_ONLY', true),
         'otp_length' => (int) env('NURSERY_PORTAL_OTP_LENGTH', 6),
         'otp_ttl_minutes' => (int) env('NURSERY_PORTAL_OTP_TTL_MINUTES', 10),

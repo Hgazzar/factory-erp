@@ -42,7 +42,7 @@ final class NurserySubscriptionWebController extends Controller
             ->with([
                 'child:id,name,guardian_id',
                 'child.attachments',
-                'child.guardian:id,name,phone',
+                'child.guardian:id,name,phone,portal_access_token,portal_invited_at',
                 'plan:id,name',
                 'renewedFrom:id,starts_on,ends_on',
             ])
@@ -58,8 +58,9 @@ final class NurserySubscriptionWebController extends Controller
 
         $items = $listQuery->paginate(20)->withQueryString();
 
+        $portalInvite = app(NurseryPortalInviteService::class);
         $childOptions = Child::query()
-            ->with('guardian:id,name,phone')
+            ->with('guardian:id,name,phone,portal_access_token,portal_invited_at')
             ->where('user_id', $tenantUserId)
             ->where('status', Child::STATUS_ACTIVE)
             ->orderBy('name')
@@ -69,6 +70,9 @@ final class NurserySubscriptionWebController extends Controller
                 'label' => $c->name,
                 'guardian_name' => (string) ($c->guardian?->name ?? ''),
                 'guardian_phone' => (string) ($c->guardian?->phone ?? ''),
+                'invite_url' => $c->guardian
+                    ? ($portalInvite->inviteUrl($tenantUserId, $c->guardian) ?? '')
+                    : '',
             ])
             ->all();
 
@@ -93,7 +97,6 @@ final class NurserySubscriptionWebController extends Controller
             ->all();
 
         $canManage = app(NurseryAccess::class)->allows(NurseryAccess::CAP_MANAGE_SUBSCRIPTIONS);
-        $portalUrl = app(NurseryPortalInviteService::class)->portalLoginUrl($tenantUserId);
 
         return view('nursery.subscriptions.index', [
             'items' => $items,
@@ -106,7 +109,8 @@ final class NurserySubscriptionWebController extends Controller
             'childOptions' => $childOptions,
             'planOptions' => $planOptions,
             'canManage' => $canManage,
-            'portalUrl' => $portalUrl,
+            'portalInvite' => $portalInvite,
+            'tenantUserId' => $tenantUserId,
         ]);
     }
 
@@ -147,7 +151,10 @@ final class NurserySubscriptionWebController extends Controller
         $redirect = redirect()->route('nursery.subscriptions.index')->with('success', $message);
 
         $subscription = $result['subscription']->loadMissing(['child.guardian']);
-        $portalUrl = $portalInvite->portalLoginUrl($tenantUserId);
+        $guardian = $subscription->child?->guardian;
+        $portalUrl = $guardian !== null
+            ? ($portalInvite->inviteUrl($tenantUserId, $guardian) ?? $portalInvite->portalLoginUrl($tenantUserId))
+            : $portalInvite->portalLoginUrl($tenantUserId);
         $waUrl = $subscription->discountWhatsappUrl($portalUrl);
         if ($waUrl !== null) {
             $redirect->with('discount_whatsapp_url', $waUrl);

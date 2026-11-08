@@ -75,10 +75,13 @@
                     <tbody>
                         @forelse($items as $sub)
                             @php
-                                $discountWaUrl = $sub->discountWhatsappUrl($portalUrl ?? null);
+                                $inviteUrl = $sub->child?->guardian
+                                    ? $portalInvite->inviteUrl((int) $tenantUserId, $sub->child->guardian)
+                                    : null;
+                                $discountWaUrl = $sub->discountWhatsappUrl($inviteUrl);
                                 $guardianWaUrl = \App\Support\WhatsApp::chatUrl(
                                     $sub->child?->guardian?->phone,
-                                    \App\Support\WhatsApp::portalDraftMessage($portalUrl ?? null, $sub->child?->guardian?->name)
+                                    \App\Support\WhatsApp::portalDraftMessage($inviteUrl, $sub->child?->guardian?->name)
                                 );
                                 $hasSubActions = $sub->canBeMarkedPaid() || $sub->canBeRenewed() || $sub->isActive()
                                     || $discountWaUrl || $guardianWaUrl;

@@ -112,7 +112,7 @@ final class NurserySubscriptionTest extends NurseryTestCase
         $sub->load('child.guardian');
         $message = $sub->discountNotifyMessage('https://example.test/portal');
         $this->assertStringContainsString('20.00', $message);
-        $this->assertStringContainsString('بوابة ولي الأمر:', $message);
+        $this->assertStringContainsString('رابط دخول بوابة ولي الأمر:', $message);
         $this->assertStringContainsString('https://example.test/portal', $message);
 
         $this->get(route('nursery.subscriptions.index'))

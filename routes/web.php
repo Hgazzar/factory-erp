@@ -333,9 +333,8 @@ Route::prefix('nursery-portal/{tenant_slug}')
     ->middleware(['nursery.portal.tenant', 'feature:nursery_portal'])
     ->group(function () {
         Route::get('/', [NurseryPortalWebController::class, 'login'])->name('login');
-        Route::post('otp/request', [NurseryPortalAuthController::class, 'requestOtp'])->name('otp.request');
-        Route::post('otp/verify', [NurseryPortalAuthController::class, 'verifyOtp'])->name('otp.verify');
         Route::get('invite/{token}', [NurseryPortalWebController::class, 'acceptInvite'])->name('invite');
+        Route::post('invite/{token}/login', [NurseryPortalAuthController::class, 'loginWithInvite'])->name('invite.login');
 
         Route::middleware('nursery.portal.guardian')->group(function () {
             Route::get('home', [NurseryPortalWebController::class, 'home'])->name('home');

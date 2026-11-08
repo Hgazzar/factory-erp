@@ -93,8 +93,9 @@ final class NurseryPortalCalendarTest extends NurseryTestCase
             'file_size' => 12,
         ]);
 
-        app(NurseryPortalAuthService::class)->requestOtp((int) $this->tenant->id, '0504444555');
-        app(NurseryPortalAuthService::class)->verifyOtp((int) $this->tenant->id, '0504444555', '123456');
+        $auth = app(NurseryPortalAuthService::class);
+        $token = $auth->ensurePortalInviteToken($guardian);
+        $auth->loginViaInvitePhone((int) $this->tenant->id, $token, '0504444555');
 
         $this->get(route('nursery.portal.calendar', ['tenant_slug' => $this->slug]))
             ->assertOk()

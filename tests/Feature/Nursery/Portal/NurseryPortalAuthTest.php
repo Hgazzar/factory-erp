@@ -8,6 +8,7 @@ use App\Models\Nursery\Child;
 use App\Models\Nursery\ChildMedication;
 use App\Models\Nursery\Guardian;
 use App\Models\User;
+use App\Services\Nursery\Portal\NurseryPortalAuthService;
 use App\Support\PremiumFeatureKeys;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\DB;
@@ -34,12 +35,13 @@ final class NurseryPortalAuthTest extends NurseryTestCase
     }
 
     #[Test]
-    public function portal_login_page_is_public_when_feature_enabled(): void
+    public function portal_login_page_explains_invite_flow_without_dev_otp(): void
     {
         $this->get(route('nursery.portal.login', ['tenant_slug' => $this->slug]))
             ->assertOk()
-            ->assertSee('مرحباً بك')
-            ->assertSee('123456');
+            ->assertSee('رابط الدعوة')
+            ->assertDontSee('بيئة التطوير')
+            ->assertDontSee('123456');
     }
 
     #[Test]
@@ -57,16 +59,14 @@ final class NurseryPortalAuthTest extends NurseryTestCase
     }
 
     #[Test]
-    public function guardian_can_login_with_otp_and_see_home(): void
+    public function invite_link_asks_for_phone_then_logs_in(): void
     {
-        $this->post(route('nursery.portal.otp.request', ['tenant_slug' => $this->slug]), [
-            'phone' => '0551234567',
-        ])->assertRedirect();
+        $token = app(NurseryPortalAuthService::class)->ensurePortalInviteToken($this->guardian);
 
-        $this->post(route('nursery.portal.otp.verify', ['tenant_slug' => $this->slug]), [
-            'phone' => '0551234567',
-            'otp' => '123456',
-        ])->assertRedirect(route('nursery.portal.home', ['tenant_slug' => $this->slug]));
+        $this->get(route('nursery.portal.invite', ['tenant_slug' => $this->slug, 'token' => $token]))
+            ->assertOk()
+            ->assertSee('رقم الجوال')
+            ->assertSee('دخول البوابة');
 
         Child::query()->create([
             'user_id' => $this->tenant->id,
@@ -76,10 +76,45 @@ final class NurseryPortalAuthTest extends NurseryTestCase
             'status' => Child::STATUS_ACTIVE,
         ]);
 
+        $this->post(route('nursery.portal.invite.login', ['tenant_slug' => $this->slug, 'token' => $token]), [
+            'phone' => '0551234567',
+        ])->assertRedirect(route('nursery.portal.home', ['tenant_slug' => $this->slug]));
+
         $this->get(route('nursery.portal.home', ['tenant_slug' => $this->slug]))
             ->assertOk()
             ->assertSee('أم سارة')
             ->assertSee('سارة');
+    }
+
+    #[Test]
+    public function wrong_phone_on_invite_is_rejected_even_if_registered_elsewhere(): void
+    {
+        $token = app(NurseryPortalAuthService::class)->ensurePortalInviteToken($this->guardian);
+
+        Guardian::query()->create([
+            'user_id' => $this->tenant->id,
+            'name' => 'ولي آخر',
+            'phone' => '0559999999',
+        ]);
+
+        $this->post(route('nursery.portal.invite.login', ['tenant_slug' => $this->slug, 'token' => $token]), [
+            'phone' => '0559999999',
+        ])->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->get(route('nursery.portal.home', ['tenant_slug' => $this->slug]))
+            ->assertRedirect(route('nursery.portal.login', ['tenant_slug' => $this->slug]));
+    }
+
+    #[Test]
+    public function unregistered_phone_on_invite_is_rejected(): void
+    {
+        $token = app(NurseryPortalAuthService::class)->ensurePortalInviteToken($this->guardian);
+
+        $this->post(route('nursery.portal.invite.login', ['tenant_slug' => $this->slug, 'token' => $token]), [
+            'phone' => '0500000000',
+        ])->assertRedirect()
+            ->assertSessionHas('error');
     }
 
     #[Test]
@@ -90,19 +125,13 @@ final class NurseryPortalAuthTest extends NurseryTestCase
     }
 
     #[Test]
-    public function invite_token_logs_guardian_in(): void
+    public function invalid_invite_token_redirects_to_login(): void
     {
-        $token = str_repeat('a', 48);
-        $this->guardian->forceFill([
-            'portal_access_token' => $token,
-            'portal_invited_at' => now(),
-        ])->save();
-
-        $this->get(route('nursery.portal.invite', ['tenant_slug' => $this->slug, 'token' => $token]))
-            ->assertRedirect(route('nursery.portal.home', ['tenant_slug' => $this->slug]));
-
-        $this->get(route('nursery.portal.home', ['tenant_slug' => $this->slug]))
-            ->assertOk();
+        $this->get(route('nursery.portal.invite', [
+            'tenant_slug' => $this->slug,
+            'token' => str_repeat('x', 48),
+        ]))->assertRedirect(route('nursery.portal.login', ['tenant_slug' => $this->slug]))
+            ->assertSessionHas('error');
     }
 
     #[Test]

@@ -109,9 +109,12 @@
                             </td>
                             <td class="text-center">
                                 @php
+                                    $inviteUrl = $child->guardian
+                                        ? $portalInvite->inviteUrl((int) $tenantUserId, $child->guardian)
+                                        : null;
                                     $guardianWaUrl = \App\Support\WhatsApp::chatUrl(
                                         $child->guardian?->phone,
-                                        \App\Support\WhatsApp::portalDraftMessage($portalUrl ?? null, $child->guardian?->name)
+                                        \App\Support\WhatsApp::portalDraftMessage($inviteUrl, $child->guardian?->name)
                                     );
                                 @endphp
                                 <x-erp-actions-dropdown :menu-id="'nursery-child-'.$child->id">

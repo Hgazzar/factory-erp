@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Nursery;
 
 use App\Jobs\Nursery\SendNurseryGuardianInviteWhatsAppJob;
-use App\Jobs\Nursery\SendNurseryGuardianOtpWhatsAppJob;
 use App\Jobs\Nursery\SendNurseryPaymentReminderWhatsAppJob;
 use App\Models\Nursery\Child;
 use App\Models\Nursery\Guardian;
@@ -126,34 +125,30 @@ final class NurseryWhatsAppOutboxTest extends NurseryTestCase
     }
 
     #[Test]
-    public function portal_otp_writes_guardian_otp_outbox_and_login_still_works(): void
+    public function portal_invite_phone_login_works_without_otp_outbox(): void
     {
-        Queue::fake();
         $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
 
         $guardian = Guardian::query()->create([
             'user_id' => $this->tenant->id,
-            'name' => 'أم OTP',
+            'name' => 'أم دعوة',
             'phone' => '0551234567',
         ]);
 
-        $this->post(route('nursery.portal.otp.request', ['tenant_slug' => 'test-nursery']), [
-            'phone' => '0551234567',
-        ])->assertRedirect()
-            ->assertSessionHas('success', fn (string $message): bool => str_contains($message, 'ستتم جدولة')
-                && ! str_contains($message, 'تم إرسال رمز التحقق'));
+        $token = app(\App\Services\Nursery\Portal\NurseryPortalAuthService::class)
+            ->ensurePortalInviteToken($guardian);
 
-        Queue::assertPushed(SendNurseryGuardianOtpWhatsAppJob::class);
-        $this->assertDatabaseHas('nursery_outbound_messages', [
+        $this->post(route('nursery.portal.invite.login', [
+            'tenant_slug' => 'test-nursery',
+            'token' => $token,
+        ]), [
+            'phone' => '0551234567',
+        ])->assertRedirect(route('nursery.portal.home', ['tenant_slug' => 'test-nursery']));
+
+        $this->assertDatabaseMissing('nursery_outbound_messages', [
             'type' => NurseryOutboundMessage::TYPE_GUARDIAN_OTP,
             'related_id' => $guardian->id,
-            'status' => NurseryOutboundMessage::STATUS_QUEUED,
         ]);
-
-        $this->post(route('nursery.portal.otp.verify', ['tenant_slug' => 'test-nursery']), [
-            'phone' => '0551234567',
-            'otp' => '123456',
-        ])->assertRedirect(route('nursery.portal.home', ['tenant_slug' => 'test-nursery']));
     }
 
     #[Test]

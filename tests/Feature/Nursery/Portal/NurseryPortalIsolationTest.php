@@ -62,12 +62,7 @@ final class NurseryPortalIsolationTest extends NurseryTestCase
     #[Test]
     public function guardian_cannot_view_another_guardians_child_profile(): void
     {
-        app(NurseryPortalAuthService::class)->requestOtp((int) $this->tenant->id, '0501111111');
-        app(NurseryPortalAuthService::class)->verifyOtp(
-            (int) $this->tenant->id,
-            '0501111111',
-            '123456',
-        );
+        $this->loginAsGuardian($this->guardianA);
 
         $this->get(route('nursery.portal.children.show', [
             'tenant_slug' => $this->slug,
@@ -78,8 +73,7 @@ final class NurseryPortalIsolationTest extends NurseryTestCase
     #[Test]
     public function guardian_can_view_own_child_profile(): void
     {
-        app(NurseryPortalAuthService::class)->requestOtp((int) $this->tenant->id, '0501111111');
-        app(NurseryPortalAuthService::class)->verifyOtp((int) $this->tenant->id, '0501111111', '123456');
+        $this->loginAsGuardian($this->guardianA);
 
         $this->get(route('nursery.portal.children.show', [
             'tenant_slug' => $this->slug,
@@ -87,5 +81,12 @@ final class NurseryPortalIsolationTest extends NurseryTestCase
         ]))
             ->assertOk()
             ->assertSee('طفل أ');
+    }
+
+    private function loginAsGuardian(Guardian $guardian): void
+    {
+        $auth = app(NurseryPortalAuthService::class);
+        $token = $auth->ensurePortalInviteToken($guardian);
+        $auth->loginViaInvitePhone((int) $this->tenant->id, $token, (string) $guardian->phone);
     }
 }

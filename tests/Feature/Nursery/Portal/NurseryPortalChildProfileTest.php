@@ -44,8 +44,9 @@ final class NurseryPortalChildProfileTest extends NurseryTestCase
             'sort_order' => 0,
         ]);
 
-        app(NurseryPortalAuthService::class)->requestOtp((int) $this->tenant->id, '0503333333');
-        app(NurseryPortalAuthService::class)->verifyOtp((int) $this->tenant->id, '0503333333', '123456');
+        $auth = app(NurseryPortalAuthService::class);
+        $token = $auth->ensurePortalInviteToken($guardian);
+        $auth->loginViaInvitePhone((int) $this->tenant->id, $token, '0503333333');
 
         $this->get(route('nursery.portal.children.show', [
             'tenant_slug' => $this->slug,

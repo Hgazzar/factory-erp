@@ -10,8 +10,8 @@
         'name' => $c['label'] ?? '',
         'guardian_name' => $c['guardian_name'] ?? '',
         'guardian_phone' => $c['guardian_phone'] ?? '',
+        'invite_url' => $c['invite_url'] ?? '',
     ])->values();
-    $portalUrl = $portalUrl ?? null;
     $defaultStarts = old('starts_on', '');
     $hourOptions = [];
 @endphp
@@ -153,7 +153,6 @@
 (function () {
     var plans = @json($plansJson);
     var children = @json($childrenJson);
-    var portalUrl = @json($portalUrl);
     var amountInput = document.getElementById('subscription_amount_after_tax');
     var discountInput = document.getElementById('subscription_discount_amount');
     var finalAmountEl = document.getElementById('subscription_final_amount');
@@ -202,9 +201,11 @@
         return children.find(function (c) { return String(c.id) === String(id); }) || null;
     }
 
-    function portalBlock() {
-        if (!portalUrl) return '';
-        return '\nبوابة ولي الأمر:\n' + portalUrl;
+    function portalBlock(child) {
+        var inviteUrl = child && child.invite_url ? child.invite_url : '';
+        if (!inviteUrl) return '';
+        return '\nرابط دخول بوابة ولي الأمر:\n' + inviteUrl
+            + '\nبعد فتح الرابط أدخل رقم جوالك المسجّل لدى الحضانة.';
     }
 
     function discountDraft(child) {
@@ -216,14 +217,14 @@
         return 'مرحباً ' + guardian + '،\n'
             + 'تم تطبيق خصم ' + money(discount) + ' ر.س على اشتراك ' + childName + '.\n'
             + 'المبلغ بعد الخصم: ' + money(final) + ' ر.س.'
-            + portalBlock()
+            + portalBlock(child)
             + '\n\n— يمكنك تعديل الرسالة أو إضافة ملاحظة قبل الإرسال —';
     }
 
     function guardianDraft(child) {
         var guardian = (child && child.guardian_name) ? child.guardian_name : 'ولي الأمر';
         return 'مرحباً ' + guardian + '،\n\n'
-            + portalBlock()
+            + portalBlock(child)
             + '\n\n— اكتب رسالتك في المساحة الفارغة أعلاه إن رغبت، ثم أرسل —';
     }
 

@@ -73,6 +73,7 @@ final class NurseryPortalInviteService
             "مرحباً {$guardian->name}،",
             "دعوة للانضمام لبوابة {$nurseryName}.",
             $childNames !== '' ? "أطفالك: {$childNames}" : null,
+            'افتح الرابط ثم أدخل رقم جوالك المسجّل:',
             $url,
         ]));
 
@@ -121,7 +122,9 @@ final class NurseryPortalInviteService
         $message = implode("\n", [
             "مرحباً {$guardian->name}،",
             "دعوة للانضمام لبوابة {$nurseryName}.",
-            "تابع {$child->name}: {$url}",
+            "تابع {$child->name}.",
+            'افتح الرابط ثم أدخل رقم جوالك المسجّل:',
+            $url,
         ]);
 
         $this->enqueueInviteWhatsApp($tenantUserId, $guardian, $message);

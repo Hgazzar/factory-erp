@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Nursery;
 
-use App\Jobs\Nursery\SendNurseryGuardianOtpWhatsAppJob;
+use App\Jobs\Nursery\SendNurseryGuardianInviteWhatsAppJob;
 use App\Jobs\Nursery\SendNurseryPaymentReminderWhatsAppJob;
 use App\Jobs\Nursery\SendNurserySubscriptionPaidConfirmationWhatsAppJob;
 use App\Models\Nursery\Child;
@@ -150,30 +150,26 @@ final class NurseryWhatsAppOutboxReliabilityTest extends NurseryTestCase
     }
 
     #[Test]
-    public function duplicate_in_flight_otp_does_not_dispatch_second_job(): void
+    public function duplicate_in_flight_invite_does_not_dispatch_second_job(): void
     {
         Queue::fake();
-        $this->withoutMiddleware(ValidateCsrfToken::class);
 
         $guardian = Guardian::query()->create([
             'user_id' => $this->tenant->id,
-            'name' => 'ولي OTP مكرر',
+            'name' => 'ولي دعوة مكرر',
             'phone' => '0551234567',
         ]);
 
-        $this->post(route('nursery.portal.otp.request', ['tenant_slug' => 'test-nursery']), [
-            'phone' => '0551234567',
-        ])->assertRedirect();
-        $this->post(route('nursery.portal.otp.request', ['tenant_slug' => 'test-nursery']), [
-            'phone' => '0551234567',
-        ])->assertRedirect();
+        $invite = app(\App\Services\Nursery\NurseryPortalInviteService::class);
+        $invite->sendInviteToGuardian((int) $this->tenant->id, $guardian);
+        $invite->sendInviteToGuardian((int) $this->tenant->id, $guardian);
 
-        Queue::assertPushed(SendNurseryGuardianOtpWhatsAppJob::class, 1);
+        Queue::assertPushed(SendNurseryGuardianInviteWhatsAppJob::class, 1);
         $this->assertSame(1, NurseryOutboundMessage::withoutGlobalScopes()->count());
         $this->assertDatabaseHas('nursery_outbound_messages', [
-            'type' => NurseryOutboundMessage::TYPE_GUARDIAN_OTP,
+            'type' => NurseryOutboundMessage::TYPE_GUARDIAN_INVITE,
             'related_id' => $guardian->id,
-            'dedupe_key' => NurseryOutboundMessage::TYPE_GUARDIAN_OTP.':'.$this->tenant->id.':'.$guardian->id,
+            'dedupe_key' => NurseryOutboundMessage::TYPE_GUARDIAN_INVITE.':'.$this->tenant->id.':'.$guardian->id,
             'status' => NurseryOutboundMessage::STATUS_QUEUED,
         ]);
     }

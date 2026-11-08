@@ -83,8 +83,9 @@ final class NurseryPortalFinanceTest extends NurseryTestCase
             'status' => Subscription::STATUS_ACTIVE,
         ]);
 
-        app(NurseryPortalAuthService::class)->requestOtp((int) $this->tenant->id, '0504444444');
-        app(NurseryPortalAuthService::class)->verifyOtp((int) $this->tenant->id, '0504444444', '123456');
+        $auth = app(NurseryPortalAuthService::class);
+        $token = $auth->ensurePortalInviteToken($guardian);
+        $auth->loginViaInvitePhone((int) $this->tenant->id, $token, '0504444444');
 
         $this->get(route('nursery.portal.finance', ['tenant_slug' => $this->slug]))
             ->assertOk()

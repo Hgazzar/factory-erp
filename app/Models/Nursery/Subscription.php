@@ -184,8 +184,9 @@ class Subscription extends Model
 
         if (filled($portalUrl)) {
             $lines[] = '';
-            $lines[] = 'بوابة ولي الأمر:';
+            $lines[] = 'رابط دخول بوابة ولي الأمر:';
             $lines[] = $portalUrl;
+            $lines[] = 'بعد فتح الرابط أدخل رقم جوالك المسجّل لدى الحضانة.';
         }
 
         $lines[] = '';

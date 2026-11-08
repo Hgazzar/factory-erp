@@ -224,7 +224,13 @@ final class NurseryPortalDailyActivityTest extends NurseryTestCase
 
     private function loginPortal(string $phone): void
     {
-        app(NurseryPortalAuthService::class)->requestOtp((int) $this->tenant->id, $phone);
-        app(NurseryPortalAuthService::class)->verifyOtp((int) $this->tenant->id, $phone, '123456');
+        $guardian = Guardian::query()
+            ->withoutGlobalScopes()
+            ->where('user_id', $this->tenant->id)
+            ->where('phone', $phone)
+            ->firstOrFail();
+        $auth = app(NurseryPortalAuthService::class);
+        $token = $auth->ensurePortalInviteToken($guardian);
+        $auth->loginViaInvitePhone((int) $this->tenant->id, $token, $phone);
     }
 }
